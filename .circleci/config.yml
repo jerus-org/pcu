@@ -1,0 +1,142 @@
+version: 2.1
+
+parameters:
+  min-rust-version:
+    type: string
+    default: "1.61"
+
+executors:
+  rust-env:
+    docker:
+      - image: jerusdp/ci-rust:<<pipeline.parameters.min-rust-version>>
+
+commands:
+  cargo-build:
+    parameters:
+      rust-version:
+        default: "stable"
+        type: string
+    steps:
+      - run:
+          name: Update Rust and check build <<parameters.rust-version>>
+          command: |
+            cargo +<<parameters.rust-version>> check --all-features
+
+jobs:
+  required-builds:
+    executor: rust-env
+    steps:
+      - checkout
+      - run: cargo --version
+      - cargo-build:
+          rust-version: "stable"
+      - cargo-build:
+          rust-version: "<<pipeline.parameters.min-rust-version>>"
+
+  optional-builds:
+    executor: rust-env
+    steps:
+      - checkout
+      - run: cargo --version
+      - cargo-build:
+          rust-version: "nightly"
+      - cargo-build:
+          rust-version: "beta"
+
+  basic-test:
+    executor: rust-env
+    steps:
+      - checkout
+      - run: cargo --version
+      - run:
+          name: Check formatting for code
+          command: |
+            rustfmt --version
+            cargo fmt --all -- --check
+      - run:
+          name: Check idiomatic code use with Clippy
+          command: "cargo clippy --all --tests --all-features -- -D warnings"
+      - run:
+          name: Test crate with no features specified
+          command: "cargo test"
+
+  docs:
+    executor: rust-env
+    environment:
+      RUSTDOCFLAGS: --cfg docsrs -Dwarnings
+    steps:
+      - checkout
+      - run:
+          name: Test generation of all of the documentation for the crate
+          command: |
+            cargo +nightly doc --lib --no-deps --all-features --document-private-items
+
+  pr-changelog-update:
+    executor: rust-env
+    steps:
+      - checkout
+      - run:
+          name: Install pcu
+          command: |
+            cargo install --git https://github.com/jerus-org/pcu.git  
+      - run:
+          name: Update changelog
+          command: |
+            pcu 
+
+  make-release:
+    executor: rust-env
+    steps:
+      - checkout
+      - run:
+          name: import GPG key
+          command: |
+            echo -e $GPGKEY \
+              | base64 --decode --ignore-garbage \
+              | gpg --batch --allow-secret-key-import --import 
+            gpg --keyid-format  LONG --list-secret-keys
+      - run:
+          name: Configure git for user and signing
+          command: |
+            git config user.email "$USER_EMAIL"
+            git config user.name "$USER_NAME"
+            git config --global gpg.program gpg
+            git config --global user.signingkey "$SIGNKEY"
+      - run:
+          name: Publish update
+          command: |
+            set -exo pipefail
+            export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGES.md -f CHANGELOG.md feature)
+            if [ $NEXTSV_LEVEL != "none" ] ; then 
+              cargo release changes
+              cargo release -vvv --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
+            else 
+              echo "Not ready to release yet."
+            fi
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  validation:
+    when:
+      not:
+        equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+    jobs:
+      - required-builds
+      - basic-test
+      - pr-changelog-update:
+          requires:
+            - required-builds
+            - basic-test
+      - optional-builds
+      - docs
+      - optional-builds
+  release:
+    when:
+      and:
+        - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+        - equal: ["release check", << pipeline.schedule.name >>]
+    jobs:
+      - make-release:
+          context:
+            - release
