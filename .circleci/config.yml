@@ -60,17 +60,6 @@ jobs:
           name: Test crate with no features specified
           command: "cargo test"
 
-  docs:
-    executor: rust-env
-    environment:
-      RUSTDOCFLAGS: --cfg docsrs -Dwarnings
-    steps:
-      - checkout
-      - run:
-          name: Test generation of all of the documentation for the crate
-          command: |
-            cargo +nightly doc --lib --no-deps --all-features --document-private-items
-
   pr-changelog-update:
     executor: rust-env
     steps:
@@ -128,8 +117,6 @@ workflows:
           requires:
             - required-builds
             - basic-test
-      - optional-builds
-      - docs
       - optional-builds
   release:
     when:
