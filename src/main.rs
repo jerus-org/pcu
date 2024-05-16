@@ -1,5 +1,7 @@
 use std::env;
 
+mod log_update;
+
 #[tokio::main]
 async fn main() {
     let branch = env::var("CIRCLE_BRANCH").unwrap_or("".to_string());
