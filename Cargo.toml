@@ -2,5 +2,8 @@
 name = "pcu"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.73"
 
 [dependencies]
+octocrab = "0.38.0"
+tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
