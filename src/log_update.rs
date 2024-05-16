@@ -15,7 +15,7 @@
 // }
 
 #[derive(Debug)]
-struct PrTitle {
+pub struct PrTitle {
     title: String,
     commit_type: Option<String>,
     commit_scope: Option<String>,
@@ -23,7 +23,7 @@ struct PrTitle {
 }
 
 impl PrTitle {
-    fn parse_title(title: &str) -> Self {
+    pub fn parse(title: &str) -> Self {
         let re = regex::Regex::new(
             r"^(?P<type>[a-z]+)(?:\((?P<scope>[a-z]+)\))?(?P<breaking>!)?: (?P<description>.*)$",
         )
@@ -62,19 +62,19 @@ mod tests {
 
     #[test]
     fn test_pr_title_parse() {
-        let pr_title = PrTitle::parse_title("feat: add new feature");
+        let pr_title = PrTitle::parse("feat: add new feature");
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, None);
         assert_eq!(pr_title.commit_breaking, false);
 
-        let pr_title = PrTitle::parse_title("feat(core): add new feature");
+        let pr_title = PrTitle::parse("feat(core): add new feature");
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, Some("core".to_string()));
         assert_eq!(pr_title.commit_breaking, false);
 
-        let pr_title = PrTitle::parse_title("feat(core)!: add new feature");
+        let pr_title = PrTitle::parse("feat(core)!: add new feature");
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, Some("core".to_string()));
