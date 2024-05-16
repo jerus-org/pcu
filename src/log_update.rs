@@ -66,18 +66,18 @@ mod tests {
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, None);
-        assert_eq!(pr_title.commit_breaking, false);
+        assert!(!pr_title.commit_breaking);
 
         let pr_title = PrTitle::parse("feat(core): add new feature");
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, Some("core".to_string()));
-        assert_eq!(pr_title.commit_breaking, false);
+        assert!(!pr_title.commit_breaking);
 
         let pr_title = PrTitle::parse("feat(core)!: add new feature");
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, Some("core".to_string()));
-        assert_eq!(pr_title.commit_breaking, true);
+        assert!(pr_title.commit_breaking);
     }
 }
