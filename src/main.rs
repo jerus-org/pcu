@@ -1,5 +1,9 @@
 use std::env;
 
+use crate::log_update::PrTitle;
+
+mod log_update;
+
 #[tokio::main]
 async fn main() {
     let branch = env::var("CIRCLE_BRANCH").unwrap_or("".to_string());
@@ -28,7 +32,10 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
         .await?;
 
     pr_list.items.iter().for_each(|pr| {
-        println!("PR: {:?}", pr.title);
+        if let Some(title) = pr.title.as_ref() {
+            let pr_title = PrTitle::parse(title);
+            println!("PR: {:?}", pr_title);
+        }
     });
 
     Ok(())
