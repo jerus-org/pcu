@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::log_update::PrTitle;
+use crate::log_update::{ChangeRecord, PrTitle};
 
 mod log_update;
 
@@ -34,7 +34,9 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
     pr_list.items.iter().for_each(|pr| {
         if let Some(title) = pr.title.as_ref() {
             let pr_title = PrTitle::parse(title);
-            println!("PR: {:?}", pr_title);
+            println!("PR: {:#?}", pr_title);
+            let change_frag = ChangeRecord::from(&pr_title);
+            println!("Change record: {:#?}", change_frag);
         }
     });
 
