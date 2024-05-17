@@ -1,18 +1,95 @@
-// #[derive(Debug)]
-// struct ChangeRecord {
-//     heading: String,
-//     description: String,
-// }
+use std::fmt::{self, Display, Formatter};
 
-// impl ChangeRecord {
-//     fn new(heading: &str, description: &str) -> Self {
-//         // <1>
-//         Self {
-//             heading: heading.to_string(),
-//             description: description.to_string(),
-//         }
-//     }
-// }
+#[derive(Debug)]
+enum Heading {
+    Added,
+    Changed,
+    Deprecated,
+    Remnoved,
+    Fixed,
+    Security,
+}
+
+impl Display for Heading {
+    // <1>
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Heading::Added => write!(f, "Added"),
+            Heading::Changed => write!(f, "Changed"),
+            Heading::Deprecated => write!(f, "Deprecated"),
+            Heading::Remnoved => write!(f, "Remnoved"),
+            Heading::Fixed => write!(f, "Fixed"),
+            Heading::Security => write!(f, "Security"),
+        }
+    }
+}
+
+impl From<&str> for Heading {
+    // <2>
+    fn from(s: &str) -> Self {
+        match s {
+            "feat" => Heading::Added,
+            "fix" => Heading::Fixed,
+            "docs" => Heading::Changed,
+            "style" => Heading::Changed,
+            "refactor" => Heading::Changed,
+            "perf" => Heading::Changed,
+            "test" => Heading::Changed,
+            "chore" => Heading::Changed,
+            "revert" => Heading::Remnoved,
+            "build" => Heading::Changed,
+            "ci" => Heading::Changed,
+            "breaking" => Heading::Changed,
+            "security" => Heading::Security,
+            "deprecate" => Heading::Deprecated,
+            "remove" => Heading::Remnoved,
+            _ => Heading::Changed,
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct ChangeRecord {
+    heading: Heading,
+    description: String,
+}
+
+impl ChangeRecord {
+    fn new(heading: &str, description: &str) -> Self {
+        // <1>
+        let heading = Heading::from(heading);
+        Self {
+            heading,
+            description: description.to_string(),
+        }
+    }
+}
+
+impl From<&PrTitle> for ChangeRecord {
+    fn from(pr_title: &PrTitle) -> Self {
+        // <2>
+        let mut heading_str = pr_title
+            .commit_type
+            .as_ref()
+            .unwrap_or(&"".to_string())
+            .to_string();
+        if pr_title.commit_scope.is_some() {
+            match pr_title.commit_scope.as_ref().unwrap().as_str() {
+                "deps" => heading_str = "security".to_string(),
+                "security" => heading_str = "security".to_string(),
+                "deprecate" => heading_str = "deprecate".to_string(),
+                _ => (),
+            }
+        }
+
+        if pr_title.commit_breaking {
+            heading_str = "breaking:".to_string()
+        }
+
+        Self::new(&heading_str, &pr_title.title)
+    }
+}
 
 #[derive(Debug)]
 pub struct PrTitle {
