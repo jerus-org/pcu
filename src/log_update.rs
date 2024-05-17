@@ -48,6 +48,7 @@ impl From<&str> for Heading {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ChangeRecord {
     heading: Heading,
