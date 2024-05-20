@@ -1,6 +1,6 @@
 use std::env;
 
-use pcu_lib::{ChangeFrag, PrTitle};
+use pcu_lib::PrTitle;
 
 #[tokio::main]
 async fn main() {
@@ -33,8 +33,6 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
         if let Some(title) = pr.title.as_ref() {
             let pr_title = PrTitle::parse(title);
             println!("PR: {:#?}", pr_title);
-            let change_frag = ChangeFrag::from(&pr_title);
-            println!("Change record: {:#?}", change_frag);
         }
     });
 
