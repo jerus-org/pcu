@@ -12,6 +12,7 @@ keywords = ["ci", "github", "changelog"]
 include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
 
 [dependencies]
+keep-a-changelog = "0.1.2"
 octocrab = "0.38.0"
 regex = "1.10.4"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
