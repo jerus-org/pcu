@@ -1,4 +1,4 @@
-use keep_a_changelog::ChangeKind;
+use keep_a_changelog::{ChangeKind, Changelog};
 use log::debug;
 
 #[derive(Debug)]
@@ -121,6 +121,37 @@ impl PrTitle {
         } else {
             self.description.clone()
         }
+    }
+
+    pub fn update_change_log(&mut self, log_file: &str) {
+        self.calculate_kind_and_description();
+
+        let mut change_log = Changelog::parse_from_file(log_file, None).unwrap();
+
+        let unreleased = change_log.get_unreleased_mut().unwrap();
+
+        match self.kind() {
+            ChangeKind::Added => {
+                unreleased.added(self.description());
+            }
+            ChangeKind::Fixed => {
+                unreleased.fixed(self.description());
+            }
+            ChangeKind::Security => {
+                unreleased.security(self.description());
+            }
+            ChangeKind::Removed => {
+                unreleased.removed(self.description());
+            }
+            ChangeKind::Deprecated => {
+                unreleased.deprecated(self.description());
+            }
+            ChangeKind::Changed => {
+                unreleased.changed(self.description());
+            }
+        }
+
+        change_log.save_to_file(log_file).unwrap();
     }
 }
 
