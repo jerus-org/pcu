@@ -158,10 +158,17 @@ impl PrTitle {
 //test module
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs::{self, File},
+        io::Write,
+        path::Path,
+    };
+
     use super::*;
     use log::LevelFilter;
     use log4rs_test_utils::test_logging;
     use rstest::rstest;
+    use uuid::Uuid;
 
     #[test]
     fn test_pr_title_parse() {
@@ -269,5 +276,45 @@ mod tests {
         pr_title.calculate_kind_and_description();
         assert_eq!(expected_kind, pr_title.kind());
         assert_eq!(expected_desciption, pr_title.description);
+    }
+
+    use eyre::Result;
+
+    #[rstest]
+    fn test_update_change_log_added() -> Result<()> {
+        test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
+
+        let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
+        let expected_content = fs::read_to_string("tests/data/expected_changelog.md")?;
+
+        let temp_dir_string = format!("tests/tmp/test-{}", Uuid::new_v4());
+        let temp_dir = Path::new(&temp_dir_string);
+        fs::create_dir_all(temp_dir)?;
+
+        let file_name = temp_dir.join("CHANGELOG.md");
+        debug!("filename : {:?}", file_name);
+
+        let mut file = File::create(&file_name).unwrap();
+        file.write_all(initial_content.as_bytes()).unwrap();
+
+        let mut pr_title = PrTitle {
+            title: "add new feature".to_string(),
+            commit_type: Some("feat".to_string()),
+            commit_scope: None,
+            commit_breaking: false,
+            kind: Some(ChangeKind::Added),
+            description: "add new feature".to_string(),
+        };
+
+        pr_title.update_change_log(file_name.to_str().unwrap());
+
+        let actual_content = fs::read_to_string(&file_name).unwrap();
+
+        assert_eq!(actual_content, expected_content);
+
+        // tidy up the test environment
+        std::fs::remove_dir_all(temp_dir)?;
+
+        Ok(())
     }
 }
