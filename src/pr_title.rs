@@ -1,9 +1,12 @@
 use keep_a_changelog::{ChangeKind, Changelog};
 use log::debug;
+use url::Url;
 
 #[derive(Debug)]
 pub struct PrTitle {
     pub title: String,
+    pub pr_id: Option<u64>,
+    pub pr_url: Option<Url>,
     pub commit_type: Option<String>,
     pub commit_scope: Option<String>,
     pub commit_breaking: bool,
@@ -31,6 +34,8 @@ impl PrTitle {
 
             Self {
                 title,
+                pr_id: None,
+                pr_url: None,
                 commit_type,
                 commit_scope,
                 commit_breaking,
@@ -40,6 +45,8 @@ impl PrTitle {
         } else {
             Self {
                 title: title.to_string(),
+                pr_id: None,
+                pr_url: None,
                 commit_type: None,
                 commit_scope: None,
                 commit_breaking: false,
@@ -51,6 +58,14 @@ impl PrTitle {
         debug!("Parsed title: {:?}", pr_title);
 
         pr_title
+    }
+
+    pub fn set_pr_id(&mut self, id: u64) {
+        self.pr_id = Some(id);
+    }
+
+    pub fn set_pr_url(&mut self, url: Url) {
+        self.pr_url = Some(url);
     }
 
     fn calculate_kind_and_description(&mut self) {
@@ -92,8 +107,13 @@ impl PrTitle {
                 }
                 _ => {
                     kind = ChangeKind::Changed;
-                    description =
-                        format!("{}({})", description, self.commit_scope.as_ref().unwrap());
+                    let split_description = description.splitn(2, '-').collect::<Vec<&str>>();
+                    description = format!(
+                        "{}({})-{}",
+                        split_description[0],
+                        self.commit_scope.as_ref().unwrap(),
+                        split_description[1]
+                    );
                 }
             }
         }
@@ -103,6 +123,17 @@ impl PrTitle {
         if self.commit_breaking {
             description = format!("BREAKING: {}", description);
         }
+
+        if let Some(id) = self.pr_id {
+            description = format!("{}(pr #{})", description, id);
+
+            debug!("After checking pr id `{}`", description);
+
+            if let Some(url) = &self.pr_url {
+                let split_description = description.splitn(2, '(').collect::<Vec<&str>>();
+                description = format!("{}(pr [#{}]({}))", split_description[0], id, url);
+            }
+        };
 
         self.kind = Some(kind);
         self.description = description;
@@ -228,54 +259,114 @@ mod tests {
     }
 
     #[rstest]
-    #[case("feat: add new feature", ChangeKind::Added, "add new feature")]
+    #[case(
+        "feat: add new feature",
+        Some(5),
+        Some("https://github.com/jerus-org/pcu/pull/5"),
+        ChangeKind::Added,
+        "add new feature(pr [#5](https://github.com/jerus-org/pcu/pull/5))"
+    )]
+    #[case(
+        "feat: add new feature",
+        Some(5),
+        None,
+        ChangeKind::Added,
+        "add new feature(pr #5)"
+    )]
+    #[case(
+        "feat: add new feature",
+        None,
+        Some("https://github.com/jerus-org/pcu/pull/5"),
+        ChangeKind::Added,
+        "add new feature"
+    )]
+    #[case(
+        "feat: add new feature",
+        None,
+        None,
+        ChangeKind::Added,
+        "add new feature"
+    )]
     #[case(
         "fix: fix an existing feature",
+        None,
+        None,
         ChangeKind::Fixed,
         "fix an existing feature"
     )]
-    #[case("test: update tests", ChangeKind::Changed, "test-update tests")]
+    #[case(
+        "test: update tests",
+        None,
+        None,
+        ChangeKind::Changed,
+        "test-update tests"
+    )]
     #[case(
         "fix(security): Fix security vulnerability",
+        None,
+        None,
         ChangeKind::Security,
         "Security: Fix security vulnerability"
     )]
     #[case(
         "chore(deps): Update dependencies",
+        None,
+        None,
         ChangeKind::Security,
         "Dependencies: Update dependencies"
     )]
     #[case(
         "refactor(remove): Remove unused code",
+        None,
+        None,
         ChangeKind::Removed,
         "Removed: Remove unused code"
     )]
     #[case(
         "docs(deprecate): Deprecate old API",
+        None,
+        None,
         ChangeKind::Deprecated,
         "Deprecated: Deprecate old API"
     )]
     #[case(
         "ci(other-scope): Update CI configuration",
+        None,
+        None,
         ChangeKind::Changed,
-        "ci-Update CI configuration(other-scope)"
+        "ci(other-scope)-Update CI configuration"
     )]
     #[case(
         "test!: Update test cases",
+        None,
+        None,
         ChangeKind::Changed,
         "BREAKING: test-Update test cases"
     )]
     fn test_calculate_kind_and_description(
         #[case] title: &str,
+        #[case] pr_id: Option<u64>,
+        #[case] pr_url: Option<&str>,
         #[case] expected_kind: ChangeKind,
         #[case] expected_desciption: &str,
-    ) {
+    ) -> Result<()> {
         test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
 
         let mut pr_title = PrTitle::parse(title);
+        if let Some(id) = pr_id {
+            pr_title.set_pr_id(id);
+        }
+        if let Some(url) = pr_url {
+            let url = Url::parse(url)?;
+            pr_title.set_pr_url(url);
+        }
+        // pr_title.set_pr_id(5);
+        // pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
         pr_title.calculate_kind_and_description();
         assert_eq!(expected_kind, pr_title.kind());
         assert_eq!(expected_desciption, pr_title.description);
+
+        Ok(())
     }
 
     use eyre::Result;
@@ -299,6 +390,8 @@ mod tests {
 
         let mut pr_title = PrTitle {
             title: "add new feature".to_string(),
+            pr_id: Some(5),
+            pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
             commit_type: Some("feat".to_string()),
             commit_scope: None,
             commit_breaking: false,
