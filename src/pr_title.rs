@@ -360,8 +360,6 @@ mod tests {
             let url = Url::parse(url)?;
             pr_title.set_pr_url(url);
         }
-        // pr_title.set_pr_id(5);
-        // pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
         pr_title.calculate_kind_and_description();
         assert_eq!(expected_kind, pr_title.kind());
         assert_eq!(expected_desciption, pr_title.description);
