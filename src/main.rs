@@ -36,5 +36,10 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
         }
     });
 
+    if let Some(title) = pr_list.items[0].title.as_ref() {
+        let pr_title = PrTitle::parse(title);
+        println!("PR: {:#?}", pr_title);
+    }
+
     Ok(())
 }
