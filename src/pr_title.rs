@@ -1,4 +1,6 @@
-use keep_a_changelog::{ChangeKind, Changelog};
+use std::path;
+
+use keep_a_changelog::{changelog::ChangelogBuilder, ChangeKind, Changelog, Release};
 use log::debug;
 use url::Url;
 
@@ -157,7 +159,22 @@ impl PrTitle {
     pub fn update_change_log(&mut self, log_file: &str) {
         self.calculate_kind_and_description();
 
-        let mut change_log = Changelog::parse_from_file(log_file, None).unwrap();
+        let mut change_log = if path::Path::new(log_file).exists() {
+            println!("The changelog exists!");
+            Changelog::parse_from_file(log_file, None).unwrap()
+        } else {
+            println!("The changelog does not exist!");
+            let mut changelog = ChangelogBuilder::default().build().unwrap();
+            log::debug!("Changelog: {:#?}", changelog);
+            let release = Release::builder().build().unwrap();
+            changelog.add_release(release);
+            log::debug!("Changelog: {:#?}", changelog);
+
+            changelog.save_to_file(log_file).unwrap();
+            changelog
+        };
+
+        //          Changelog::parse_from_file(log_file, None).unwrap();
 
         let unreleased = change_log.get_unreleased_mut().unwrap();
 
