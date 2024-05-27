@@ -12,7 +12,7 @@ keywords = ["ci", "github", "changelog"]
 include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
 
 [dependencies]
-keep-a-changelog = { path = "../keep-a-changelog-rs" }
+keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs", branch = "save-testing-and-integrity" }
 octocrab = "0.38.0"
 regex = "1.10.4"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
