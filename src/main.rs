@@ -8,6 +8,8 @@ const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 async fn main() {
     let branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
 
+    sameness_check();
+
     if branch == "main" {
         println!("I am on the main branch, so nothing more to do!");
     } else {
@@ -64,4 +66,16 @@ fn get_changelog_name() -> String {
     }
 
     CHANGELOG_FILENAME.to_string()
+}
+
+fn sameness_check() {
+    let pcu = env::var("PCU_BRANCH").unwrap_or("".to_string());
+    let circle = env::var("CIRCLE_BRANCH").unwrap_or("".to_string());
+
+    println!("Are they the same? {pcu} vs {circle}");
+    if pcu == circle {
+        println!("They are the same!");
+    } else {
+        println!("They are not the same!");
+    }
 }
