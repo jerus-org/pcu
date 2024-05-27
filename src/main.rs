@@ -14,8 +14,17 @@ async fn main() {
     let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
     let pr = env::var(pcu_pull_request).unwrap_or("".to_string());
 
-    let parts = pr.splitn(7, '/');
+    let parts = pr.splitn(7, '/').collect::<Vec<&str>>();
     println!("Parts: {parts:?}");
+
+    let pr_id = parts[7];
+    println!("PR ID: {pr_id}");
+
+    let owner = parts[4];
+    println!("Owner: {owner}");
+
+    let repo = parts[5];
+    println!("Repo: {repo}");
 
     let branch = env::var(pcu_branch).unwrap_or("".to_string());
 
@@ -38,9 +47,11 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
     let pcu_username = env::var("PCU_USERNAME").unwrap_or("".to_string());
     let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
 
-    let owner = env::var(pcu_reponame).unwrap_or("".to_string());
-    let repo = env::var(pcu_username).unwrap_or("".to_string());
+    let repo = env::var(pcu_reponame).unwrap_or("".to_string());
+    let owner = env::var(pcu_username).unwrap_or("".to_string());
     let pr = env::var(pcu_pull_request).unwrap_or("".to_string());
+
+    println!("Ownere and Repo: {owner}/{repo}!");
 
     println!("I am in pr: {pr}!");
     println!("I am on the project: {owner}/{repo}!");
