@@ -1,5 +1,6 @@
-use std::env;
+use std::{env, path::Path};
 
+use git2::Repository;
 use pcu_lib::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
@@ -48,11 +49,16 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
             println!("Changelog file name: {change_log}");
 
             pr_title.update_change_log(&change_log);
+
+            if let Err(e) = commit_changelog(&change_log) {
+                eprintln!("Error committing changelog: {}", e);
+            }
         }
     };
 
     Ok(())
 }
+
 fn get_changelog_name() -> String {
     let files = std::fs::read_dir(".").unwrap();
     for file in files.into_iter().flatten() {
@@ -80,4 +86,24 @@ fn sameness_check() {
     } else {
         println!("They are not the same!");
     }
+}
+
+fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
+    let repo = Repository::open(".")?;
+    let mut index = repo.index()?;
+    index.add_path(Path::new(changelog_path))?;
+    index.write()?;
+    let tree_id = index.write_tree()?;
+    let head = repo.head()?;
+    let parent = repo.find_commit(head.target().unwrap())?;
+    let sig = repo.signature()?;
+    let _commit_id = repo.commit(
+        Some("HEAD"),
+        &sig,
+        &sig,
+        "Update changelog",
+        &repo.find_tree(tree_id)?,
+        &[&parent],
+    )?;
+    Ok(())
 }
