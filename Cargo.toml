@@ -12,12 +12,18 @@ keywords = ["ci", "github", "changelog"]
 include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
 
 [dependencies]
+keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs", branch = "save-testing-and-integrity" }
 octocrab = "0.38.0"
 regex = "1.10.4"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
+log = "0.4.21"
+url = "2.5.0"
 
 [dev-dependencies]
+eyre = "0.6.12"
+log4rs_test_utils = "0.2.3"
 rstest = "0.19.0"
+uuid = { version = "1.8.0", features = ["v4"] }
 
 [lib]
 name = "pcu_lib"
