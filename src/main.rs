@@ -21,12 +21,15 @@ async fn main() {
 async fn changelog_update() -> Result<(), octocrab::Error> {
     let owner = env::var("CIRCLE_PROJECT_USERNAME").unwrap_or("".to_string());
     let repo = env::var("CIRCLE_PROJECT_REPONAME").unwrap_or("".to_string());
-    let pr_number = env::var("CIRCLE_PR_NUMBER").unwrap_or("".to_string());
+    let pr_number = env::var("CIRCLE_PULL_REQUEST").unwrap_or("".to_string());
 
     println!("I am in pr: {pr_number}!");
     println!("I am on the project: {owner}/{repo}!");
 
     let last_slash = pr_number.rfind('/').unwrap_or(0);
+    println!("Last slash: {last_slash}");
+    println!("Length of pr number: {}", pr_number.len());
+
     let pr_id = &pr_number[last_slash + 1..];
     if let Ok(pr_id) = pr_id.parse::<u64>() {
         println!("I am in pr: {pr_id}!");
