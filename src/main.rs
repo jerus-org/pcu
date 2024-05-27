@@ -21,12 +21,15 @@ async fn main() {
 async fn changelog_update() -> Result<(), octocrab::Error> {
     let owner = env::var("CIRCLE_PROJECT_USERNAME").unwrap_or("".to_string());
     let repo = env::var("CIRCLE_PROJECT_REPONAME").unwrap_or("".to_string());
-    let pr_number = env::var("CIRCLE_PR_NUMBER").unwrap_or("".to_string());
+    let pr_number = env::var("CIRCLE_PULL_REQUEST").unwrap_or("".to_string());
 
     println!("I am in pr: {pr_number}!");
     println!("I am on the project: {owner}/{repo}!");
 
     let last_slash = pr_number.rfind('/').unwrap_or(0);
+    println!("Last slash: {last_slash}");
+    println!("Length of pr number: {}", pr_number.len());
+
     let pr_id = &pr_number[last_slash + 1..];
     if let Ok(pr_id) = pr_id.parse::<u64>() {
         println!("I am in pr: {pr_id}!");
@@ -37,7 +40,24 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
             let pr_title = PrTitle::parse(&title);
             println!("PR: {:#?}", pr_title);
         }
+
+        let change_log = get_changelog_name();
+        println!("Changelog file name: {change_log}");
     };
 
     Ok(())
+}
+fn get_changelog_name() -> String {
+    let files = std::fs::read_dir(".").unwrap();
+    for file in files.into_iter().flatten() {
+        println!("File: {:?}", file.path());
+
+        if file.file_name().to_string_lossy().contains("change")
+            && file.file_type().unwrap().is_file()
+        {
+            return file.file_name().to_string_lossy().into_owned();
+        }
+    }
+
+    "CHANGELOG.md".to_string()
 }
