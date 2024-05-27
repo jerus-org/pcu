@@ -1,6 +1,7 @@
 use std::{env, path::Path, str::FromStr};
 
 use git2::Repository;
+use octocrab::models::PullRequestId;
 use pcu_lib::PrTitle;
 use url::Url;
 
@@ -46,7 +47,18 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
     if let Ok(pr_id) = pr_id.parse::<u64>() {
         println!("Pr #: {pr_id}!");
 
-        let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
+        let pulls = octocrab::instance()
+            .pulls(owner, repo)
+            .list()
+            .send()
+            .await?;
+        println!("Pulls: {pulls:#?}");
+
+        let pull_release = pulls
+            .into_iter()
+            .find(|pr| pr.id == PullRequestId(pr_id))
+            .unwrap();
+        // let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
 
         if let Some(title) = pull_release.title {
             let mut pr_title = PrTitle::parse(&title);
