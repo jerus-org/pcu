@@ -1,7 +1,7 @@
 use std::{env, path::Path};
 
 use git2::Repository;
-use octocrab::models::{pulls::PullRequest, PullRequestId};
+use octocrab::models::PullRequestId;
 use pcu_lib::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
