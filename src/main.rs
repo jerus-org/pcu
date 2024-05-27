@@ -7,7 +7,9 @@ const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 
 #[tokio::main]
 async fn main() {
-    let branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
+    let pcu_branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
+
+    let branch = env::var(pcu_branch).unwrap_or("".to_string());
 
     sameness_check();
 
@@ -24,20 +26,24 @@ async fn main() {
 }
 
 async fn changelog_update() -> Result<(), octocrab::Error> {
-    let owner = env::var("CIRCLE_PROJECT_USERNAME").unwrap_or("".to_string());
-    let repo = env::var("CIRCLE_PROJECT_REPONAME").unwrap_or("".to_string());
-    let pr_number = env::var("CIRCLE_PULL_REQUEST").unwrap_or("".to_string());
+    let pcu_reponame = env::var("PCU_REPONAME").unwrap_or("".to_string());
+    let pcu_username = env::var("PCU_USERNAME").unwrap_or("".to_string());
+    let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
 
-    println!("I am in pr: {pr_number}!");
+    let owner = env::var(pcu_reponame).unwrap_or("".to_string());
+    let repo = env::var(pcu_username).unwrap_or("".to_string());
+    let pr = env::var(pcu_pull_request).unwrap_or("".to_string());
+
+    println!("I am in pr: {pr}!");
     println!("I am on the project: {owner}/{repo}!");
 
-    let last_slash = pr_number.rfind('/').unwrap_or(0);
+    let last_slash = pr.rfind('/').unwrap_or(0);
     println!("Last slash: {last_slash}");
-    println!("Length of pr number: {}", pr_number.len());
+    println!("Length of pr: {}", pr.len());
 
-    let pr_id = &pr_number[last_slash + 1..];
+    let pr_id = &pr[last_slash + 1..];
     if let Ok(pr_id) = pr_id.parse::<u64>() {
-        println!("I am in pr: {pr_id}!");
+        println!("Pr #: {pr_id}!");
 
         let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
 
