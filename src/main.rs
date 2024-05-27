@@ -9,6 +9,12 @@ const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 async fn main() {
     let pcu_branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
 
+    let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
+    let pr = env::var(pcu_pull_request).unwrap_or("".to_string());
+
+    let parts = pr.splitn(7, '/');
+    println!("Parts: {parts:?}");
+
     let branch = env::var(pcu_branch).unwrap_or("".to_string());
 
     sameness_check();
