@@ -37,7 +37,24 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
             let pr_title = PrTitle::parse(&title);
             println!("PR: {:#?}", pr_title);
         }
+
+        let change_log = get_changelog_name();
+        println!("Changelog file name: {change_log}");
     };
 
     Ok(())
+}
+fn get_changelog_name() -> String {
+    let files = std::fs::read_dir(".").unwrap();
+    for file in files.into_iter().flatten() {
+        println!("File: {:?}", file.path());
+
+        if file.file_name().to_string_lossy().contains("change")
+            && file.file_type().unwrap().is_file()
+        {
+            return file.file_name().to_string_lossy().into_owned();
+        }
+    }
+
+    "CHANGELOG.md".to_string()
 }
