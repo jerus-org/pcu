@@ -2,6 +2,8 @@ use std::env;
 
 use pcu_lib::PrTitle;
 
+const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
+
 #[tokio::main]
 async fn main() {
     let branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
@@ -37,12 +39,14 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
         let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
 
         if let Some(title) = pull_release.title {
-            let pr_title = PrTitle::parse(&title);
+            let mut pr_title = PrTitle::parse(&title);
             println!("PR: {:#?}", pr_title);
-        }
 
-        let change_log = get_changelog_name();
-        println!("Changelog file name: {change_log}");
+            let change_log = get_changelog_name();
+            println!("Changelog file name: {change_log}");
+
+            pr_title.update_change_log(&change_log);
+        }
     };
 
     Ok(())
@@ -59,5 +63,5 @@ fn get_changelog_name() -> String {
         }
     }
 
-    "CHANGELOG.md".to_string()
+    CHANGELOG_FILENAME.to_string()
 }
