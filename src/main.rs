@@ -4,7 +4,7 @@ use pcu_lib::PrTitle;
 
 #[tokio::main]
 async fn main() {
-    let branch = env::var("CIRCLE_BRANCH").unwrap_or("".to_string());
+    let branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
 
     if branch == "main" {
         println!("I am on the main branch, so nothing more to do!");
@@ -19,9 +19,9 @@ async fn main() {
 }
 
 async fn changelog_update() -> Result<(), octocrab::Error> {
-    let owner = env::var("CIRCLE_PROJECT_USERNAME").unwrap_or("".to_string());
-    let repo = env::var("CIRCLE_PROJECT_REPONAME").unwrap_or("".to_string());
-    let pr_number = env::var("CIRCLE_PULL_REQUEST").unwrap_or("".to_string());
+    let owner = env::var("PCU_PROJECT_USERNAME").unwrap_or("".to_string());
+    let repo = env::var("PCU_PROJECT_REPONAME").unwrap_or("".to_string());
+    let pr_number = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
 
     println!("I am in pr: {pr_number}!");
     println!("I am on the project: {owner}/{repo}!");
