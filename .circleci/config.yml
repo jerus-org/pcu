@@ -21,6 +21,26 @@ commands:
           name: Update Rust and check build <<parameters.rust-version>>
           command: |
             cargo +<<parameters.rust-version>> check --all-features
+  gpg-key:
+    steps:    
+      - run:
+          name: import GPG key
+          command: |
+            echo -e $GPGKEY \
+              | base64 --decode --ignore-garbage \
+              | gpg --batch --allow-secret-key-import --import 
+            gpg --keyid-format  LONG --list-secret-keys
+
+  git-config:
+    steps:
+      - run:
+          name: Configure git for user and signing
+          command: |
+            git config user.email "$USER_EMAIL"
+            git config user.name "$USER_NAME"
+            git config --global gpg.program gpg
+            git config --global user.signingkey "$SIGNKEY"
+
 
 jobs:
   required-builds:
@@ -64,6 +84,8 @@ jobs:
     executor: rust-env
     steps:
       - checkout
+      - gpg-key
+      - git-config
       - run:
           name: Install pcu
           command: |
@@ -77,20 +99,8 @@ jobs:
     executor: rust-env
     steps:
       - checkout
-      - run:
-          name: import GPG key
-          command: |
-            echo -e $GPGKEY \
-              | base64 --decode --ignore-garbage \
-              | gpg --batch --allow-secret-key-import --import 
-            gpg --keyid-format  LONG --list-secret-keys
-      - run:
-          name: Configure git for user and signing
-          command: |
-            git config user.email "$USER_EMAIL"
-            git config user.name "$USER_NAME"
-            git config --global gpg.program gpg
-            git config --global user.signingkey "$SIGNKEY"
+      - gpg-key
+      - git-config
       - run:
           name: Publish update
           command: |
@@ -113,11 +123,13 @@ workflows:
     jobs:
       - required-builds
       - basic-test
+      - optional-builds
       - pr-changelog-update:
           requires:
             - required-builds
             - basic-test
-      - optional-builds
+          context:
+            - release
   release:
     when:
       and:
