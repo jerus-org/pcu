@@ -42,9 +42,9 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
     let parts = pr.splitn(7, '/').collect::<Vec<&str>>();
     println!("Parts: {parts:?}");
 
-    let pr_id = parts[7];
-    let owner = parts[4];
-    let repo = parts[5];
+    let pr_id = parts[6];
+    let owner = parts[3];
+    let repo = parts[4];
     println!("PR ID: {pr_id} - Owner: {owner} - Repo: {repo}");
 
     println!("Owner and Repo: {owner}/{repo}!");
