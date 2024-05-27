@@ -1,8 +1,8 @@
-use std::{env, path::Path};
+use std::{env, path::Path, str::FromStr};
 
 use git2::Repository;
-use octocrab::models::PullRequestId;
 use pcu_lib::PrTitle;
+use url::Url;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 
@@ -48,12 +48,10 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
 
         let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
 
-        let PullRequestId(id) = pull_release.id;
-
         if let Some(title) = pull_release.title {
             let mut pr_title = PrTitle::parse(&title);
-            pr_title.pr_id = Some(id);
-            pr_title.pr_url = pull_release.html_url;
+            pr_title.pr_id = Some(pr_id);
+            pr_title.pr_url = Some(Url::from_str(&pr).unwrap());
 
             println!("PR: {:#?}", pr_title);
 
