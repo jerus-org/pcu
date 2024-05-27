@@ -70,7 +70,7 @@ fn get_changelog_name() -> String {
 
 fn sameness_check() {
     let pcu = env::var("PCU_BRANCH").unwrap_or("".to_string());
-    let circle = env::var(keys::CIRCLE_BRANCH).unwrap_or("".to_string());
+    let circle = env::var("CIRCLE_BRANCH").unwrap_or("".to_string());
 
     println!("Are they the same? {pcu} vs {circle}");
     if pcu == circle {
