@@ -38,14 +38,17 @@ async fn changelog_update(client: Client) -> Result<()> {
     if let Ok(pr_number) = client.pr_number().parse::<u64>() {
         println!("Pr #: {pr_number}!");
 
-        let pulls = octocrab::instance()
-            .pulls(client.owner(), client.repo())
-            .list()
-            .send()
-            .await?;
+        // let pulls = octocrab::instance()
+        //     .pulls(client.owner(), client.repo())
+        //     .list()
+        //     .send()
+        //     .await?;
 
-        let pull_release = pulls.into_iter().find(|pr| pr.number == pr_number).unwrap();
-        // let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
+        // let pull_release = pulls.into_iter().find(|pr| pr.number == pr_number).unwrap();
+        let pull_release = octocrab::instance()
+            .pulls(client.owner(), client.repo())
+            .get(pr_number)
+            .await?;
 
         if let Some(title) = pull_release.title {
             let mut pr_title = PrTitle::parse(&title);
