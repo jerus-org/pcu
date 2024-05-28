@@ -14,6 +14,37 @@ async fn main() {
     // let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
     // let pr = env::var(pcu_pull_request).unwrap_or("".to_string());
 
+    // get the head and the reference it is pointing to, check that it use std::env;
+    let repo = Repository::open(".").unwrap();
+
+    let head = repo.head().unwrap();
+
+    if head.is_branch() {
+        println!("Is a branch");
+    } else {
+        println!("Is not a branch");
+    }
+
+    let statuses = repo.statuses(None).unwrap();
+    println!("Statuses: ");
+    for status in statuses.iter() {
+        println!("\t{:?}\t{:?}", status.path(), status.status());
+    }
+
+    // let branch = repo.branch(branch_name, target, force)
+
+    // let head_ref = head.shorthand().unwrap();
+    // let head_commit = repo.find_commit(head.target().unwrap()).unwrap();
+    // let head_tree = head_commit.tree().unwrap();
+
+    // let tree = repo.find_tree(head_tree).unwrap();
+    // let mut paths = tree.walk().unwrap();
+    // while let Some(entry) = paths.next() {
+    //     println!("{:?}", entry.path());
+    // }
+
+    // is a branch then get the branch name and get the pull request that relates to the branch
+
     let branch = env::var(pcu_branch).unwrap_or("".to_string());
 
     sameness_check();
