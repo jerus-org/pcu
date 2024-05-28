@@ -131,7 +131,7 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
 
             pr_title.update_change_log(&change_log);
 
-            println!("Change entry:{:#?}", pr_title.description);
+            println!("Change entry:{:#?}", pr_title.entry);
 
             if let Err(e) = commit_changelog(&change_log) {
                 eprintln!("Error committing changelog: {}", e);

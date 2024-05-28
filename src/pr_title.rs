@@ -12,8 +12,8 @@ pub struct PrTitle {
     pub commit_type: Option<String>,
     pub commit_scope: Option<String>,
     pub commit_breaking: bool,
-    pub kind: Option<ChangeKind>,
-    pub description: String,
+    pub section: Option<ChangeKind>,
+    pub entry: String,
 }
 
 impl PrTitle {
@@ -41,8 +41,8 @@ impl PrTitle {
                 commit_type,
                 commit_scope,
                 commit_breaking,
-                kind: None,
-                description: String::new(),
+                section: None,
+                entry: String::new(),
             }
         } else {
             Self {
@@ -52,8 +52,8 @@ impl PrTitle {
                 commit_type: None,
                 commit_scope: None,
                 commit_breaking: false,
-                kind: None,
-                description: String::new(),
+                section: None,
+                entry: String::new(),
             }
         };
 
@@ -137,22 +137,22 @@ impl PrTitle {
             }
         };
 
-        self.kind = Some(kind);
-        self.description = description;
+        self.section = Some(kind);
+        self.entry = description;
     }
 
     fn kind(&self) -> ChangeKind {
-        match &self.kind {
+        match &self.section {
             Some(kind) => kind.clone(),
             None => ChangeKind::Changed,
         }
     }
 
     fn description(&self) -> String {
-        if self.description.as_str() == "" {
+        if self.entry.as_str() == "" {
             self.title.clone()
         } else {
-            self.description.clone()
+            self.entry.clone()
         }
     }
 
@@ -379,7 +379,7 @@ mod tests {
         }
         pr_title.calculate_kind_and_description();
         assert_eq!(expected_kind, pr_title.kind());
-        assert_eq!(expected_desciption, pr_title.description);
+        assert_eq!(expected_desciption, pr_title.entry);
 
         Ok(())
     }
@@ -410,8 +410,8 @@ mod tests {
             commit_type: Some("feat".to_string()),
             commit_scope: None,
             commit_breaking: false,
-            kind: Some(ChangeKind::Added),
-            description: "add new feature".to_string(),
+            section: Some(ChangeKind::Added),
+            entry: "add new feature".to_string(),
         };
 
         pr_title.update_change_log(file_name.to_str().unwrap());
