@@ -10,6 +10,8 @@ const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 async fn main() {
     let pcu_branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
 
+    println!("***Figuring it out for myself***");
+
     // let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
     // let pr = env::var(pcu_pull_request).unwrap_or("".to_string());
 
@@ -20,12 +22,21 @@ async fn main() {
 
     if let Some(kind) = head.kind() {
         match kind {
-            ReferenceType::Symbolic => println!("Is a symbolic reference"),
-            ReferenceType::Direct => println!("Is a direct reference"),
+            ReferenceType::Symbolic => {
+                println!("Is a symbolic reference");
+                println!("Target: {:?}", head.symbolic_target().unwrap());
+            }
+            ReferenceType::Direct => {
+                println!("Is a direct reference");
+                println!("Head: {:?}", head.target());
+            }
         }
     }
 
-    println!("Head: {:?}", head.target());
+    let oid = head.resolve().unwrap();
+    println!("OID Target: {:?}", oid.target());
+
+    println!("***Figuring it out for myself***\n");
 
     if head.is_branch() {
         println!("Is a branch");
