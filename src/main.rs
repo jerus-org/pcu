@@ -1,7 +1,6 @@
 use std::{env, path::Path, str::FromStr};
 
 use git2::Repository;
-use octocrab::models::PullRequestId;
 use pcu_lib::PrTitle;
 use url::Url;
 
@@ -88,8 +87,8 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
     println!("Length of pr: {}", pr.len());
 
     let pr_id = &pr[last_slash + 1..];
-    if let Ok(pr_id) = pr_id.parse::<u64>() {
-        println!("Pr #: {pr_id}!");
+    if let Ok(pr_number) = pr_id.parse::<u64>() {
+        println!("Pr #: {pr_number}!");
 
         let pulls = octocrab::instance()
             .pulls(owner, repo)
@@ -98,15 +97,12 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
             .await?;
         println!("Pulls: {pulls:#?}");
 
-        let pull_release = pulls
-            .into_iter()
-            .find(|pr| pr.id == PullRequestId(pr_id))
-            .unwrap();
+        let pull_release = pulls.into_iter().find(|pr| pr.number == pr_number).unwrap();
         // let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
 
         if let Some(title) = pull_release.title {
             let mut pr_title = PrTitle::parse(&title);
-            pr_title.pr_id = Some(pr_id);
+            pr_title.pr_id = Some(pr_number);
             pr_title.pr_url = Some(Url::from_str(&pr).unwrap());
 
             println!("PR: {:#?}", pr_title);
