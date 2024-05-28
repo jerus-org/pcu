@@ -1,3 +1,4 @@
+#[derive(Debug, Default)]
 pub struct Client {}
 
 impl Client {
