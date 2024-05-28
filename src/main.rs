@@ -1,4 +1,4 @@
-use std::{env, path::Path, str::FromStr};
+use std::{path::Path, str::FromStr};
 
 use git2::Repository;
 use pcu_lib::{Client, PrTitle};
@@ -20,33 +20,26 @@ async fn main() {
             client.branch()
         );
 
-        match changelog_update().await {
+        match changelog_update(client).await {
             Ok(_) => println!("Changelog updated!"),
             Err(e) => println!("Error updating changelog: {e}"),
         }
     }
 }
 
-async fn changelog_update() -> Result<()> {
-    let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
-    let pr = env::var(pcu_pull_request).unwrap_or("".to_string());
+async fn changelog_update(client: Client) -> Result<()> {
+    println!(
+        "PR ID: {} - Owner: {} - Repo: {}",
+        client.pr_number(),
+        client.owner(),
+        client.repo()
+    );
 
-    let parts = pr.splitn(7, '/').collect::<Vec<&str>>();
-    println!("Parts: {parts:?}");
-
-    let pr_number = parts[6];
-    let owner = parts[3];
-    let repo = parts[4];
-    println!("PR ID: {pr_number} - Owner: {owner} - Repo: {repo}");
-
-    println!("I am in pr: {pr}!");
-    println!("I am on the project: {owner}/{repo}!");
-
-    if let Ok(pr_number) = pr_number.parse::<u64>() {
+    if let Ok(pr_number) = client.pr_number().parse::<u64>() {
         println!("Pr #: {pr_number}!");
 
         let pulls = octocrab::instance()
-            .pulls(owner, repo)
+            .pulls(client.owner(), client.repo())
             .list()
             .send()
             .await?;
@@ -57,7 +50,7 @@ async fn changelog_update() -> Result<()> {
         if let Some(title) = pull_release.title {
             let mut pr_title = PrTitle::parse(&title);
             pr_title.pr_id = Some(pr_number);
-            pr_title.pr_url = Some(Url::from_str(&pr).unwrap());
+            pr_title.pr_url = Some(Url::from_str(client.pull_release()).unwrap());
 
             let change_log = get_changelog_name();
             println!("Changelog file name: {change_log}");
