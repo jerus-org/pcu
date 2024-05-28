@@ -124,5 +124,9 @@ fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
 
     println!("Repo state (after commit): {:?}", repo.state());
 
+    // let mut remote = repo.remote("origin", "https://github.com/jerus-org/pcu.git")?;
+    // remote.push(&["master"], None)?;
+    // println!("Pushed to remote origin");
+
     Ok(())
 }
