@@ -3,7 +3,7 @@ use std::env;
 #[derive(Debug, Default)]
 pub struct Client {
     branch: String,
-    pull_release: String,
+    pull_request: String,
 }
 
 impl Client {
@@ -14,11 +14,15 @@ impl Client {
 
         // Use the PCU_PULL_REQUEST env variable to direct to the appropriate CI environment variable to find the PR data
         let pcu_pull_request = env::var("PCU_PULL_REQUEST").unwrap_or("".to_string());
-        let pull_release = env::var(pcu_pull_request).unwrap().clone();
+        let pull_request = if let Ok(pr) = env::var(pcu_pull_request) {
+            pr.clone()
+        } else {
+            String::new()
+        };
 
         Self {
             branch,
-            pull_release,
+            pull_request,
         }
     }
 
@@ -27,12 +31,12 @@ impl Client {
     }
 
     pub fn pull_release(&self) -> &str {
-        &self.pull_release
+        &self.pull_request
     }
 
     pub fn pr_number(&self) -> &str {
-        if self.pull_release.contains("github.com") {
-            let parts = self.pull_release.splitn(7, '/').collect::<Vec<&str>>();
+        if self.pull_request.contains("github.com") {
+            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
             parts[6]
         } else {
             ""
@@ -40,8 +44,8 @@ impl Client {
     }
 
     pub fn owner(&self) -> &str {
-        if self.pull_release.contains("github.com") {
-            let parts = self.pull_release.splitn(7, '/').collect::<Vec<&str>>();
+        if self.pull_request.contains("github.com") {
+            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
             parts[3]
         } else {
             ""
@@ -49,8 +53,8 @@ impl Client {
     }
 
     pub fn repo(&self) -> &str {
-        if self.pull_release.contains("github.com") {
-            let parts = self.pull_release.splitn(7, '/').collect::<Vec<&str>>();
+        if self.pull_request.contains("github.com") {
+            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
             parts[4]
         } else {
             ""
