@@ -70,47 +70,47 @@ impl PrTitle {
         self.pr_url = Some(url);
     }
 
-    fn calculate_kind_and_description(&mut self) {
-        let mut kind = ChangeKind::Changed;
-        let mut description = self.title.clone();
+    pub fn calculate_section_and_entry(&mut self) {
+        let mut section = ChangeKind::Changed;
+        let mut entry = self.title.clone();
 
-        debug!("Initial description `{}`", description);
+        debug!("Initial description `{}`", entry);
 
         if let Some(commit_type) = &self.commit_type {
             match commit_type.as_str() {
-                "feat" => kind = ChangeKind::Added,
-                "fix" => kind = ChangeKind::Fixed,
+                "feat" => section = ChangeKind::Added,
+                "fix" => section = ChangeKind::Fixed,
                 _ => {
-                    kind = ChangeKind::Changed;
-                    description = format!("{}-{}", self.commit_type.as_ref().unwrap(), description);
+                    section = ChangeKind::Changed;
+                    entry = format!("{}-{}", self.commit_type.as_ref().unwrap(), entry);
                 }
             }
         }
 
-        debug!("After checking type `{}`", description);
+        debug!("After checking type `{}`", entry);
 
         if let Some(commit_scope) = &self.commit_scope {
             match commit_scope.as_str() {
                 "security" => {
-                    kind = ChangeKind::Security;
-                    description = format!("Security: {}", self.title);
+                    section = ChangeKind::Security;
+                    entry = format!("Security: {}", self.title);
                 }
                 "deps" => {
-                    kind = ChangeKind::Security;
-                    description = format!("Dependencies: {}", self.title);
+                    section = ChangeKind::Security;
+                    entry = format!("Dependencies: {}", self.title);
                 }
                 "remove" => {
-                    kind = ChangeKind::Removed;
-                    description = format!("Removed: {}", self.title);
+                    section = ChangeKind::Removed;
+                    entry = format!("Removed: {}", self.title);
                 }
                 "deprecate" => {
-                    kind = ChangeKind::Deprecated;
-                    description = format!("Deprecated: {}", self.title);
+                    section = ChangeKind::Deprecated;
+                    entry = format!("Deprecated: {}", self.title);
                 }
                 _ => {
-                    kind = ChangeKind::Changed;
-                    let split_description = description.splitn(2, '-').collect::<Vec<&str>>();
-                    description = format!(
+                    section = ChangeKind::Changed;
+                    let split_description = entry.splitn(2, '-').collect::<Vec<&str>>();
+                    entry = format!(
                         "{}({})-{}",
                         split_description[0],
                         self.commit_scope.as_ref().unwrap(),
@@ -120,35 +120,35 @@ impl PrTitle {
             }
         }
 
-        debug!("After checking scope `{}`", description);
+        debug!("After checking scope `{}`", entry);
 
         if self.commit_breaking {
-            description = format!("BREAKING: {}", description);
+            entry = format!("BREAKING: {}", entry);
         }
 
         if let Some(id) = self.pr_id {
-            description = format!("{}(pr #{})", description, id);
+            entry = format!("{}(pr #{})", entry, id);
 
-            debug!("After checking pr id `{}`", description);
+            debug!("After checking pr id `{}`", entry);
 
             if let Some(url) = &self.pr_url {
-                let split_description = description.splitn(2, '(').collect::<Vec<&str>>();
-                description = format!("{}(pr [#{}]({}))", split_description[0], id, url);
+                let split_description = entry.splitn(2, '(').collect::<Vec<&str>>();
+                entry = format!("{}(pr [#{}]({}))", split_description[0], id, url);
             }
         };
 
-        self.section = Some(kind);
-        self.entry = description;
+        self.section = Some(section);
+        self.entry = entry;
     }
 
-    fn kind(&self) -> ChangeKind {
+    fn section(&self) -> ChangeKind {
         match &self.section {
             Some(kind) => kind.clone(),
             None => ChangeKind::Changed,
         }
     }
 
-    fn description(&self) -> String {
+    fn entry(&self) -> String {
         if self.entry.as_str() == "" {
             self.title.clone()
         } else {
@@ -157,7 +157,7 @@ impl PrTitle {
     }
 
     pub fn update_change_log(&mut self, log_file: &str) {
-        self.calculate_kind_and_description();
+        self.calculate_section_and_entry();
 
         let mut change_log = if path::Path::new(log_file).exists() {
             println!("The changelog exists!");
@@ -178,24 +178,24 @@ impl PrTitle {
 
         let unreleased = change_log.get_unreleased_mut().unwrap();
 
-        match self.kind() {
+        match self.section() {
             ChangeKind::Added => {
-                unreleased.added(self.description());
+                unreleased.added(self.entry());
             }
             ChangeKind::Fixed => {
-                unreleased.fixed(self.description());
+                unreleased.fixed(self.entry());
             }
             ChangeKind::Security => {
-                unreleased.security(self.description());
+                unreleased.security(self.entry());
             }
             ChangeKind::Removed => {
-                unreleased.removed(self.description());
+                unreleased.removed(self.entry());
             }
             ChangeKind::Deprecated => {
-                unreleased.deprecated(self.description());
+                unreleased.deprecated(self.entry());
             }
             ChangeKind::Changed => {
-                unreleased.changed(self.description());
+                unreleased.changed(self.entry());
             }
         }
 
@@ -377,8 +377,8 @@ mod tests {
             let url = Url::parse(url)?;
             pr_title.set_pr_url(url);
         }
-        pr_title.calculate_kind_and_description();
-        assert_eq!(expected_kind, pr_title.kind());
+        pr_title.calculate_section_and_entry();
+        assert_eq!(expected_kind, pr_title.section());
         assert_eq!(expected_desciption, pr_title.entry);
 
         Ok(())

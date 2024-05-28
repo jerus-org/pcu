@@ -1,16 +1,15 @@
-use std::{path::Path, str::FromStr};
+use std::path::Path;
 
 use git2::Repository;
-use pcu_lib::{Client, PrTitle};
-use url::Url;
+use pcu_lib::Client;
 
 use eyre::Result;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 
 #[tokio::main]
-async fn main() {
-    let client = Client::new();
+async fn main() -> Result<()> {
+    let client = Client::new().await?;
 
     if client.branch() == "main" {
         println!("I am on the main branch, so nothing more to do!");
@@ -25,6 +24,8 @@ async fn main() {
             Err(e) => println!("Error updating changelog: {e}"),
         }
     }
+
+    Ok(())
 }
 
 async fn changelog_update(client: Client) -> Result<()> {
@@ -35,25 +36,34 @@ async fn changelog_update(client: Client) -> Result<()> {
         client.repo()
     );
 
-    let title = client.pull_release_title().await;
+    let title = client.title();
 
-    let mut pr_title = PrTitle::parse(&title);
-    pr_title.pr_id = Some(client.pr_number_as_u64());
-    pr_title.pr_url = Some(Url::from_str(client.pull_release()).unwrap());
+    println!("Pull Request Title: {title}");
+
+    client.entry();
+
+    let section = client.section().unwrap_or("none");
+    let entry = client.entry().unwrap_or("none");
+
+    println!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
 
     let change_log = get_changelog_name();
     println!("Changelog file name: {change_log}");
 
-    pr_title.update_change_log(&change_log);
+    // pr_title.update_change_log(&change_log);
 
-    println!("Change entry:{:#?}", pr_title.entry);
+    // format!("{}: {}", self.pr_number(), self.pull_release_title());
 
-    if let Err(e) = commit_changelog(&change_log) {
-        eprintln!("Error committing changelog: {}", e);
-        return Err(e.into());
-    }
+    // PrTitle::parse(&self.title);
 
-    println!("Changelog updated!");
+    // println!("Change entry:{:#?}", entry);
+
+    // if let Err(e) = commit_changelog(&change_log) {
+    //     eprintln!("Error committing changelog: {}", e);
+    //     return Err(e.into());
+    // }
+
+    // println!("Changelog updated!");
 
     Ok(())
 }
@@ -73,6 +83,7 @@ fn get_changelog_name() -> String {
     CHANGELOG_FILENAME.to_string()
 }
 
+#[allow(dead_code)]
 fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
     println!("Committing changelog: {changelog_path}");
     let files = std::fs::read_dir(".").unwrap();
