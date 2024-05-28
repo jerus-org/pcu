@@ -100,6 +100,9 @@ fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
     }
 
     let repo = Repository::open(".")?;
+
+    println!("Repo state (before commit): {:?}", repo.state());
+
     let mut index = repo.index()?;
     index.add_path(Path::new(changelog_path))?;
     index.write()?;
@@ -119,9 +122,7 @@ fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
         &[&parent],
     )?;
 
-    let repo_state = repo.state();
-
-    println!("Repo state (after commit): {repo_state:?}");
+    println!("Repo state (after commit): {:?}", repo.state());
 
     Ok(())
 }
