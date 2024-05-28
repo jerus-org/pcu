@@ -1,6 +1,6 @@
 use std::{env, path::Path, str::FromStr};
 
-use git2::Repository;
+use git2::{ReferenceType, Repository};
 use pcu_lib::PrTitle;
 use url::Url;
 
@@ -17,6 +17,15 @@ async fn main() {
     let repo = Repository::open(".").unwrap();
 
     let head = repo.head().unwrap();
+
+    if let Some(kind) = head.kind() {
+        match kind {
+            ReferenceType::Symbolic => println!("Is a symbolic reference"),
+            ReferenceType::Direct => println!("Is a direct reference"),
+        }
+    }
+
+    println!("Head: {:?}", head.target());
 
     if head.is_branch() {
         println!("Is a branch");
