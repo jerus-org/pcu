@@ -12,8 +12,8 @@ pub struct PrTitle {
     pub commit_type: Option<String>,
     pub commit_scope: Option<String>,
     pub commit_breaking: bool,
-    kind: Option<ChangeKind>,
-    description: String,
+    pub kind: Option<ChangeKind>,
+    pub description: String,
 }
 
 impl PrTitle {
