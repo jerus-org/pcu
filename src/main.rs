@@ -111,5 +111,10 @@ fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
         &repo.find_tree(tree_id)?,
         &[&parent],
     )?;
+
+    let repo_state = repo.state();
+
+    println!("Repo state (after commit): {repo_state:?}");
+
     Ok(())
 }
