@@ -50,21 +50,6 @@ async fn changelog_update(client: Client) -> Result<()> {
     let change_log = get_changelog_name();
     println!("Changelog file name: {change_log}");
 
-    // pr_title.update_change_log(&change_log);
-
-    // format!("{}: {}", self.pr_number(), self.pull_release_title());
-
-    // PrTitle::parse(&self.title);
-
-    // println!("Change entry:{:#?}", entry);
-
-    // if let Err(e) = commit_changelog(&change_log) {
-    //     eprintln!("Error committing changelog: {}", e);
-    //     return Err(e.into());
-    // }
-
-    // println!("Changelog updated!");
-
     Ok(())
 }
 
