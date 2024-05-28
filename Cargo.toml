@@ -20,6 +20,7 @@ log = "0.4.21"
 url = "2.5.0"
 git2 = "0.18.3"
 eyre = "0.6.12"
+thiserror = "1.0.61"
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"
