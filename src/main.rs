@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use git2::Repository;
-use pcu_lib::Client;
+use pcu_lib::{Client, Error};
 
 use eyre::Result;
 
@@ -9,26 +9,31 @@ const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let client = Client::new().await?;
+    let client = match Client::new().await {
+        Ok(client) => client,
+        Err(e) => match e {
+            Error::EnvVarPullRequestNotFound => {
+                println!("I am on the main branch, so nothing more to do!");
+                return Ok(());
+            }
+            _ => return Err(e.into()),
+        },
+    };
 
-    if client.branch() == "main" {
-        println!("I am on the main branch, so nothing more to do!");
-    } else {
-        println!(
-            "I am on the `{}` branch, so time to get to work!",
-            client.branch()
-        );
+    println!(
+        "I am on the `{}` branch, so time to get to work!",
+        client.branch()
+    );
 
-        match changelog_update(client).await {
-            Ok(_) => println!("Changelog updated!"),
-            Err(e) => println!("Error updating changelog: {e}"),
-        }
-    }
+    match changelog_update(client).await {
+        Ok(_) => println!("Changelog updated!"),
+        Err(e) => println!("Error updating changelog: {e}"),
+    };
 
     Ok(())
 }
 
-async fn changelog_update(client: Client) -> Result<()> {
+async fn changelog_update(mut client: Client) -> Result<()> {
     println!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
@@ -40,9 +45,9 @@ async fn changelog_update(client: Client) -> Result<()> {
 
     println!("Pull Request Title: {title}");
 
-    client.entry();
+    client.create_entry()?;
 
-    println!("Client: {:?}", client);
+    println!("Client: {:#?}", client);
 
     let section = client.section().unwrap_or("none");
     let entry = client.entry().unwrap_or("none");
