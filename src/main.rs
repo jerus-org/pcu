@@ -1,7 +1,7 @@
 use std::{env, path::Path, str::FromStr};
 
 use git2::Repository;
-use pcu_lib::PrTitle;
+use pcu_lib::{Client, PrTitle};
 use url::Url;
 
 use eyre::Result;
@@ -10,13 +10,15 @@ const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 
 #[tokio::main]
 async fn main() {
-    let pcu_branch = env::var("PCU_BRANCH").unwrap_or("".to_string());
-    let branch = env::var(pcu_branch).unwrap_or("".to_string());
+    let client = Client::new();
 
-    if branch == "main" {
+    if client.branch() == "main" {
         println!("I am on the main branch, so nothing more to do!");
     } else {
-        println!("I am on the `{branch}` branch, so time to get to work!");
+        println!(
+            "I am on the `{}` branch, so time to get to work!",
+            client.branch()
+        );
 
         match changelog_update().await {
             Ok(_) => println!("Changelog updated!"),
