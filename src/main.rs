@@ -92,6 +92,13 @@ fn get_changelog_name() -> String {
 }
 
 fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
+    println!("Committing changelog: {changelog_path}");
+    let files = std::fs::read_dir(".").unwrap();
+    println!("Files: ");
+    for file in files.into_iter().flatten() {
+        println!("\t{:?}", file.path());
+    }
+
     let repo = Repository::open(".")?;
     let mut index = repo.index()?;
     index.add_path(Path::new(changelog_path))?;
