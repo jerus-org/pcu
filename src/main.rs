@@ -104,7 +104,6 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
             .list()
             .send()
             .await?;
-        println!("Pulls: {pulls:#?}");
 
         let pull_release = pulls.into_iter().find(|pr| pr.number == pr_number).unwrap();
         // let pull_release = octocrab::instance().pulls(owner, repo).get(pr_id).await?;
@@ -120,6 +119,8 @@ async fn changelog_update() -> Result<(), octocrab::Error> {
             println!("Changelog file name: {change_log}");
 
             pr_title.update_change_log(&change_log);
+
+            println!("Change entry:{:#?}", pr_title.description);
 
             if let Err(e) = commit_changelog(&change_log) {
                 eprintln!("Error committing changelog: {}", e);
