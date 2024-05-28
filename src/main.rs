@@ -35,41 +35,25 @@ async fn changelog_update(client: Client) -> Result<()> {
         client.repo()
     );
 
-    if let Ok(pr_number) = client.pr_number().parse::<u64>() {
-        println!("Pr #: {pr_number}!");
+    let title = client.pull_release_title().await;
 
-        // let pulls = octocrab::instance()
-        //     .pulls(client.owner(), client.repo())
-        //     .list()
-        //     .send()
-        //     .await?;
+    let mut pr_title = PrTitle::parse(&title);
+    pr_title.pr_id = Some(client.pr_number_as_u64());
+    pr_title.pr_url = Some(Url::from_str(client.pull_release()).unwrap());
 
-        // let pull_release = pulls.into_iter().find(|pr| pr.number == pr_number).unwrap();
-        let pull_release = octocrab::instance()
-            .pulls(client.owner(), client.repo())
-            .get(pr_number)
-            .await?;
+    let change_log = get_changelog_name();
+    println!("Changelog file name: {change_log}");
 
-        if let Some(title) = pull_release.title {
-            let mut pr_title = PrTitle::parse(&title);
-            pr_title.pr_id = Some(pr_number);
-            pr_title.pr_url = Some(Url::from_str(client.pull_release()).unwrap());
+    pr_title.update_change_log(&change_log);
 
-            let change_log = get_changelog_name();
-            println!("Changelog file name: {change_log}");
+    println!("Change entry:{:#?}", pr_title.entry);
 
-            pr_title.update_change_log(&change_log);
+    if let Err(e) = commit_changelog(&change_log) {
+        eprintln!("Error committing changelog: {}", e);
+        return Err(e.into());
+    }
 
-            println!("Change entry:{:#?}", pr_title.entry);
-
-            if let Err(e) = commit_changelog(&change_log) {
-                eprintln!("Error committing changelog: {}", e);
-                return Err(e.into());
-            }
-
-            println!("Changelog updated!");
-        }
-    };
+    println!("Changelog updated!");
 
     Ok(())
 }

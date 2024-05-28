@@ -43,6 +43,20 @@ impl Client {
         }
     }
 
+    pub fn pr_number_as_u64(&self) -> u64 {
+        if self.pull_request.contains("github.com") {
+            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
+
+            if let Ok(pr_number) = parts[6].parse::<u64>() {
+                pr_number
+            } else {
+                0
+            }
+        } else {
+            0
+        }
+    }
+
     pub fn owner(&self) -> &str {
         if self.pull_request.contains("github.com") {
             let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
@@ -58,6 +72,29 @@ impl Client {
             parts[4]
         } else {
             ""
+        }
+    }
+
+    pub async fn pull_release_title(&self) -> String {
+        if let Ok(pr_number) = self.pr_number().parse::<u64>() {
+            println!("Pr #: {pr_number}!");
+
+            // let pulls = octocrab::instance()
+            //     .pulls(client.owner(), client.repo())
+            //     .list()
+            //     .send()
+            //     .await?;
+
+            // let pull_release = pulls.into_iter().find(|pr| pr.number == pr_number).unwrap();
+            let pull_release = octocrab::instance()
+                .pulls(self.owner(), self.repo())
+                .get(pr_number)
+                .await
+                .unwrap();
+
+            pull_release.title.unwrap_or("".to_owned())
+        } else {
+            "".to_owned()
         }
     }
 }
