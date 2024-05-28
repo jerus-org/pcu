@@ -71,7 +71,7 @@ async fn main() {
     if branch == "main" {
         println!("I am on the main branch, so nothing more to do!");
     } else {
-        println!("I am on the {branch}  branch, so time to get to work!");
+        println!("I am on the `{branch}` branch, so time to get to work!");
 
         match changelog_update().await {
             Ok(_) => println!("Changelog updated!"),
