@@ -374,7 +374,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
             header = true;
         }
         let file = entry.index_to_workdir().unwrap().old_file().path().unwrap();
-        println!("#\t{}", file.display());
+        output = format!("{}\n#\t{}", output, file.display());
     }
     header = false;
 
