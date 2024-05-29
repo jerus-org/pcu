@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{fs, path::Path};
 
 use git2::Repository;
 use pcu_lib::{Client, Error};
@@ -53,6 +53,13 @@ async fn changelog_update(mut client: Client) -> Result<()> {
     println!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
 
     println!("Changelog file name: {}", client.changelog());
+
+    client.update_changelog()?;
+
+    println!(
+        "Changelog:\n{:#?}\n----------------------------\n",
+        fs::read_to_string("CHANGELOG.md")?
+    );
 
     Ok(())
 }
