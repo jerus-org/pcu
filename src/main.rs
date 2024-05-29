@@ -45,8 +45,6 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     client.create_entry()?;
 
-    println!("Client: {:#?}", client);
-
     let section = client.section().unwrap_or("none");
     let entry = client.entry().unwrap_or("none");
 
