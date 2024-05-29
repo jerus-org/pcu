@@ -1,6 +1,6 @@
 use std::{env, ffi::OsString, str::FromStr};
 
-use git2::{Repository, RepositoryState, StatusOptions};
+use git2::Repository;
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
