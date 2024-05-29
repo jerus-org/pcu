@@ -1,6 +1,6 @@
 use std::{env, ffi::OsString, str::FromStr};
 
-use git2::{Repository, RepositoryState};
+use git2::Repository;
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
@@ -209,22 +209,17 @@ impl Client {
         self.changelog = changelog.into();
     }
 
-    pub fn repo_state(&self) -> &str {
-        let repo = Repository::open(".").unwrap();
+    pub fn repo_status(&self) -> Result<Vec<String>, Error> {
+        let repo = Repository::open(".")?;
 
-        match repo.state() {
-            RepositoryState::Clean => "clean",
-            RepositoryState::Merge => "merge",
-            RepositoryState::Revert => "revert",
-            RepositoryState::RevertSequence => "revert_sequence",
-            RepositoryState::CherryPick => "cherry_pick",
-            RepositoryState::CherryPickSequence => "cherry_pick_sequence",
-            RepositoryState::Rebase => "rebase",
-            RepositoryState::RebaseInteractive => "rebase_interactive",
-            RepositoryState::RebaseMerge => "rebase_merge",
-            RepositoryState::ApplyMailbox => "apply_mailbox",
-            RepositoryState::ApplyMailboxOrRebase => "apply_mailbox_or_rebase",
-            RepositoryState::Bisect => "bisect",
+        let status = repo.statuses(None)?;
+
+        let mut result = vec![] as Vec<String>;
+
+        for status in status.iter() {
+            result.push(format!("{}: {:?}", status.path().unwrap(), status.status()));
         }
+
+        Ok(result)
     }
 }

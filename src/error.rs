@@ -23,4 +23,6 @@ pub enum Error {
     Octocrab(#[from] octocrab::Error),
     #[error("0:?")]
     UrlParse(#[from] url::ParseError),
+    #[error("0:?")]
+    Git2(#[from] git2::Error),
 }
