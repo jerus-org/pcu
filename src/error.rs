@@ -15,6 +15,8 @@ pub enum Error {
     OnDefaultBranch,
     #[error("Unknown format for pull request: {0}")]
     UknownPullRequestFormat(String),
+    #[error("No default changelog file found")]
+    NoChangeLogFileFound,
     #[error("0:?")]
     ParseInt(#[from] ParseIntError),
     #[error("0:?")]
