@@ -316,13 +316,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
         if !header {
             output = format!(
-                "{}\n
-                \
-                # Changes not staged for commit:
-                #   (use \"git add{} <file>...\" to update what will be committed)
-                #   (use \"git checkout -- <file>...\" to discard changes in working directory)
-                #\
-                ",
+                "{}\n# Changes not staged for commit:\n#   (use \"git add{} <file>...\" to update what will be committed)\n#   (use \"git checkout -- <file>...\" to discard changes in working directory)\n#               ",
                 output,
                 if rm_in_workdir { "/rm" } else { "" }
             );
@@ -365,10 +359,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
     {
         if !header {
             output = format!(
-                "{}\n
-                # Untracked files
-                #   (use \"git add <file>...\" to include in what will be committed)
-                #",
+                "{}# Untracked files\n#   (use \"git add <file>...\" to include in what will be committed)\n#",
                 output
             );
             header = true;
@@ -385,10 +376,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
     {
         if !header {
             output = format!(
-                "{}\n
-                # Ignored files
-                #   (use \"git add -f <file>...\" to include in what will be committed)
-                #",
+                "{}\n# Ignored files\n#   (use \"git add -f <file>...\" to include in what will be committed)\n#",
                 output
             );
             header = true;
