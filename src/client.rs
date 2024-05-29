@@ -250,6 +250,12 @@ impl Client {
 
         // Ok(result)
     }
+
+    pub fn branch_status(&self) -> Result<String, Error> {
+        let repo = Repository::open(".")?;
+        let branch = repo.head()?.shorthand().unwrap().to_string();
+        Ok(format!("On branch {}\n", branch))
+    }
 }
 
 // This function print out an output similar to git's status command in long

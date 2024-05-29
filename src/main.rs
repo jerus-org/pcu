@@ -63,6 +63,8 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     println!("Repo state (after commit):\n{}", client.repo_status()?);
 
+    println!("Branch status: {}", client.branch_status()?);
+
     // let statuses = client.repo_status()?;
 
     // println!("Repo state:");
