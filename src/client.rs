@@ -1,4 +1,4 @@
-use std::{env, ffi::OsString, str::FromStr};
+use std::{env, ffi::OsString, path::Path, str::FromStr};
 
 use git2::Repository;
 use keep_a_changelog::ChangeKind;
@@ -112,6 +112,27 @@ impl Client {
         if let Some(update) = &mut self.changelog_update {
             update.update_changelog(&self.changelog);
         }
+        Ok(())
+    }
+
+    pub fn commit_changelog(&self) -> Result<(), git2::Error> {
+        let repo = Repository::open(".")?;
+        let mut index = repo.index()?;
+        index.add_path(Path::new(self.changelog()))?;
+        index.write()?;
+        let tree_id = index.write_tree()?;
+        let head = repo.head()?;
+        let parent = repo.find_commit(head.target().unwrap())?;
+        let sig = repo.signature()?;
+        let _commit_id = repo.commit(
+            Some("HEAD"),
+            &sig,
+            &sig,
+            "Update changelog",
+            &repo.find_tree(tree_id)?,
+            &[&parent],
+        )?;
+
         Ok(())
     }
 }
