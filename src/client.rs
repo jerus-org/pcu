@@ -1,10 +1,12 @@
-use std::{env, str::FromStr};
+use std::{env, ffi::OsString, str::FromStr};
 
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
 use crate::Error;
 use crate::PrTitle;
+
+const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 
 #[derive(Debug, Default)]
 pub struct Client {
@@ -16,6 +18,7 @@ pub struct Client {
     #[allow(dead_code)]
     repo: String,
     pr_number: u64,
+    changelog: OsString,
     changelog_update: Option<PrTitle>,
 }
 
@@ -46,6 +49,21 @@ impl Client {
 
         let title = pr.title.unwrap_or("".to_owned());
 
+        // Get the name of the changelog file
+        let mut changelog = OsString::from(CHANGELOG_FILENAME);
+        if let Ok(files) = std::fs::read_dir(".") {
+            for file in files.into_iter().flatten() {
+                println!("File: {:?}", file.path());
+
+                if file.file_name().to_string_lossy().contains("change")
+                    && file.file_type().unwrap().is_file()
+                {
+                    changelog = file.file_name();
+                    break;
+                }
+            }
+        };
+
         Ok(Self {
             branch,
             pull_request,
@@ -53,6 +71,7 @@ impl Client {
             owner,
             repo,
             pr_number,
+            changelog,
             changelog_update: None,
         })
     }
@@ -161,6 +180,14 @@ impl Client {
         if self.pull_request.contains("github.com") {
             let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
             parts[4]
+        } else {
+            ""
+        }
+    }
+
+    pub fn changelog(&self) -> &str {
+        if let Some(cl) = &self.changelog.to_str() {
+            cl
         } else {
             ""
         }
