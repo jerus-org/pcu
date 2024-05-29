@@ -56,10 +56,7 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     client.update_changelog()?;
 
-    println!(
-        "Changelog:\n{:#?}\n----------------------------\n",
-        fs::read_to_string("CHANGELOG.md")?
-    );
+    print_changelog(client.changelog());
 
     Ok(())
 }
@@ -103,4 +100,15 @@ fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
     // println!("Pushed to remote origin");
 
     Ok(())
+}
+
+fn print_changelog(changelog_path: &str) {
+    if let Ok(change_log) = fs::read_to_string(changelog_path) {
+        println!("\nChangelog:\n");
+        println!("----------------------------",);
+        for line in change_log.lines() {
+            println!("{line}");
+        }
+        println!("----------------------------\n",);
+    };
 }
