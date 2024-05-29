@@ -103,6 +103,32 @@ impl Client {
         Ok(())
     }
 
+    pub fn update_changelog(&mut self) -> Result<(), Error> {
+        if self.changelog_update.is_none() {
+            return Err(Error::NoChangeLogFileFound);
+        }
+
+        if let Some(update) = &mut self.changelog_update {
+            update.update_changelog(&self.changelog);
+        }
+        Ok(())
+    }
+}
+
+fn get_keys(pull_request: &str) -> Result<(String, String, String), Error> {
+    if pull_request.contains("github.com") {
+        let parts = pull_request.splitn(7, '/').collect::<Vec<&str>>();
+        Ok((
+            parts[3].to_string(),
+            parts[4].to_string(),
+            parts[6].to_string(),
+        ))
+    } else {
+        Err(Error::UknownPullRequestFormat(pull_request.to_string()))
+    }
+}
+
+impl Client {
     pub fn section(&self) -> Option<&str> {
         if let Some(update) = &self.changelog_update {
             if let Some(section) = &update.section {
@@ -129,21 +155,6 @@ impl Client {
             None
         }
     }
-}
-
-fn get_keys(pull_request: &str) -> Result<(String, String, String), Error> {
-    if pull_request.contains("github.com") {
-        let parts = pull_request.splitn(7, '/').collect::<Vec<&str>>();
-        Ok((
-            parts[3].to_string(),
-            parts[4].to_string(),
-            parts[6].to_string(),
-        ))
-    } else {
-        Err(Error::UknownPullRequestFormat(pull_request.to_string()))
-    }
-}
-impl Client {
     pub fn pr_number(&self) -> &str {
         if self.pull_request.contains("github.com") {
             let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
@@ -191,5 +202,9 @@ impl Client {
         } else {
             ""
         }
+    }
+
+    pub fn set_changelog(&mut self, changelog: &str) {
+        self.changelog = changelog.into();
     }
 }

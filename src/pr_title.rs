@@ -1,4 +1,4 @@
-use std::path;
+use std::{ffi::OsStr, path};
 
 use keep_a_changelog::{changelog::ChangelogBuilder, ChangeKind, Changelog, Release};
 use log::debug;
@@ -156,7 +156,8 @@ impl PrTitle {
         }
     }
 
-    pub fn update_change_log(&mut self, log_file: &str) {
+    pub fn update_changelog(&mut self, log_file: &OsStr) {
+        let log_file = log_file.to_str().unwrap();
         self.calculate_section_and_entry();
 
         let mut change_log = if path::Path::new(log_file).exists() {
@@ -414,9 +415,10 @@ mod tests {
             entry: "add new feature".to_string(),
         };
 
-        pr_title.update_change_log(file_name.to_str().unwrap());
+        let file_name = &file_name.into_os_string();
+        pr_title.update_changelog(file_name);
 
-        let actual_content = fs::read_to_string(&file_name).unwrap();
+        let actual_content = fs::read_to_string(file_name).unwrap();
 
         assert_eq!(actual_content, expected_content);
 
