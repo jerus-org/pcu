@@ -58,6 +58,8 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     print_changelog(client.changelog());
 
+    println!("Repo state: {:?}", client.repo_state());
+
     Ok(())
 }
 
