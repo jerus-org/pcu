@@ -1,5 +1,6 @@
 use std::{env, ffi::OsString, str::FromStr};
 
+use git2::{Repository, RepositoryState};
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
@@ -206,5 +207,24 @@ impl Client {
 
     pub fn set_changelog(&mut self, changelog: &str) {
         self.changelog = changelog.into();
+    }
+
+    pub fn repo_state(&self) -> &str {
+        let repo = Repository::open(".").unwrap();
+
+        match repo.state() {
+            RepositoryState::Clean => "clean",
+            RepositoryState::Merge => "merge",
+            RepositoryState::Revert => "revert",
+            RepositoryState::RevertSequence => "revert_sequence",
+            RepositoryState::CherryPick => "cherry_pick",
+            RepositoryState::CherryPickSequence => "cherry_pick_sequence",
+            RepositoryState::Rebase => "rebase",
+            RepositoryState::RebaseInteractive => "rebase_interactive",
+            RepositoryState::RebaseMerge => "rebase_merge",
+            RepositoryState::ApplyMailbox => "apply_mailbox",
+            RepositoryState::ApplyMailboxOrRebase => "apply_mailbox_or_rebase",
+            RepositoryState::Bisect => "bisect",
+        }
     }
 }
