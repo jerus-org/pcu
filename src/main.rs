@@ -56,7 +56,8 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     print_changelog(client.changelog());
 
-    client.repo_status()?;
+    let report = client.repo_status()?;
+    println!("Repo state:\n{report}");
     // let statuses = client.repo_status()?;
 
     // println!("Repo state:");
