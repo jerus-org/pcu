@@ -5,8 +5,6 @@ use pcu_lib::{Client, Error};
 
 use eyre::Result;
 
-const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let client = match Client::new().await {
@@ -54,25 +52,9 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     println!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
 
-    let change_log = get_changelog_name();
-    println!("Changelog file name: {change_log}");
+    println!("Changelog file name: {}", client.changelog());
 
     Ok(())
-}
-
-fn get_changelog_name() -> String {
-    let files = std::fs::read_dir(".").unwrap();
-    for file in files.into_iter().flatten() {
-        println!("File: {:?}", file.path());
-
-        if file.file_name().to_string_lossy().contains("change")
-            && file.file_type().unwrap().is_file()
-        {
-            return file.file_name().to_string_lossy().into_owned();
-        }
-    }
-
-    CHANGELOG_FILENAME.to_string()
 }
 
 #[allow(dead_code)]
