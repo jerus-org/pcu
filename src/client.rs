@@ -116,6 +116,7 @@ impl Client {
     }
 
     pub fn commit_changelog(&self) -> Result<(), git2::Error> {
+        println!("Starting commit");
         let repo = Repository::open(".")?;
         let mut index = repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
@@ -245,10 +246,12 @@ impl Client {
 
         let branches = repo.branches(None)?;
 
+        println!("\nList of branches:\n");
         for item in branches {
             let (branch, branch_type) = item?;
             println!("# Branch and type: {:?}\t{:?}", branch.name(), branch_type);
         }
+        println!();
 
         let branch_remote = repo.find_branch(
             format!("origin/{}", self.branch).as_str(),
@@ -257,14 +260,14 @@ impl Client {
 
         if branch_remote.get().target() == repo.head()?.target() {
             return Ok(format!(
-                "On branch {}\nYour branch is up to date with `{}`",
+                "\n\nOn branch {}\nYour branch is up to date with `{}`\n",
                 self.branch,
                 branch_remote.name()?.unwrap()
             ));
         }
 
         Ok(String::from(
-            "There is a difference between the remote and local branch, need to push.",
+            "\nThere is a difference between the remote and local branch, need to push.",
         ))
         // STEP 4: walk from the head of the local branch to the head of the remote branch collecting the names of files in the commits and report theses
 
