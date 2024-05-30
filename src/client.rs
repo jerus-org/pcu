@@ -9,8 +9,8 @@ use crate::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 
-#[derive(Debug, Default)]
 pub struct Client {
+    git_repo: Repository,
     branch: String,
     pull_request: String,
     title: String,
@@ -65,7 +65,10 @@ impl Client {
             }
         };
 
+        let git_repo = git2::Repository::open(".")?;
+
         Ok(Self {
+            git_repo,
             branch,
             pull_request,
             title,
@@ -117,24 +120,27 @@ impl Client {
 
     pub fn commit_changelog(&self) -> Result<(), git2::Error> {
         println!("Starting commit");
-        let repo = Repository::open(".")?;
-        let mut index = repo.index()?;
+
+        let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
         index.write()?;
         let tree_id = index.write_tree()?;
-        let head = repo.head()?;
-        let parent = repo.find_commit(head.target().unwrap())?;
-        let sig = repo.signature()?;
-        let commit_id = repo.commit(
+        let head = self.git_repo.head()?;
+        let parent = self.git_repo.find_commit(head.target().unwrap())?;
+        let sig = self.git_repo.signature()?;
+        let commit_id = self.git_repo.commit(
             Some("HEAD"),
             &sig,
             &sig,
             "Update changelog",
-            &repo.find_tree(tree_id)?,
+            &self.git_repo.find_tree(tree_id)?,
             &[&parent],
         )?;
 
-        let _branch = repo.branch(self.branch(), &repo.find_commit(commit_id)?, true)?;
+        println!("Commit id: {commit_id}");
+        let _branch =
+            self.git_repo
+                .branch(self.branch(), &self.git_repo.find_commit(commit_id)?, true)?;
 
         Ok(())
     }
@@ -234,17 +240,14 @@ impl Client {
     }
 
     pub fn repo_status(&self) -> Result<String, Error> {
-        let repo = Repository::open(".")?;
-        let statuses = repo.statuses(None)?;
+        let statuses = self.git_repo.statuses(None)?;
 
         let report = print_long(&statuses);
         Ok(report)
     }
 
     pub fn branch_status(&self) -> Result<String, Error> {
-        let repo = Repository::open(".")?;
-
-        let branches = repo.branches(None)?;
+        let branches = self.git_repo.branches(None)?;
 
         println!("\nList of branches:\n");
         for item in branches {
@@ -253,12 +256,12 @@ impl Client {
         }
         println!();
 
-        let branch_remote = repo.find_branch(
+        let branch_remote = self.git_repo.find_branch(
             format!("origin/{}", self.branch).as_str(),
             git2::BranchType::Remote,
         )?;
 
-        if branch_remote.get().target() == repo.head()?.target() {
+        if branch_remote.get().target() == self.git_repo.head()?.target() {
             return Ok(format!(
                 "\n\nOn branch {}\nYour branch is up to date with `{}`\n",
                 self.branch,
