@@ -124,7 +124,7 @@ impl Client {
         let head = repo.head()?;
         let parent = repo.find_commit(head.target().unwrap())?;
         let sig = repo.signature()?;
-        let _commit_id = repo.commit(
+        let commit_id = repo.commit(
             Some("HEAD"),
             &sig,
             &sig,
@@ -132,6 +132,8 @@ impl Client {
             &repo.find_tree(tree_id)?,
             &[&parent],
         )?;
+
+        let _branch = repo.branch(self.branch(), &repo.find_commit(commit_id)?, true)?;
 
         Ok(())
     }
@@ -232,29 +234,36 @@ impl Client {
 
     pub fn repo_status(&self) -> Result<String, Error> {
         let repo = Repository::open(".")?;
-        // let remote = repo.find_remote(&self.branch)?;
         let statuses = repo.statuses(None)?;
 
         let report = print_long(&statuses);
         Ok(report)
-
-        // // if statuses.is_empty() {
-        // //     Ok(format!("On branch {}\n", self.branch))
-        // // }
-
-        // let mut result = vec![] as Vec<String>;
-
-        // for status in status.iter() {
-        //     result.push(format!("{}: {:?}", status.path().unwrap(), status.status()));
-        // }
-
-        // Ok(result)
     }
 
     pub fn branch_status(&self) -> Result<String, Error> {
+        // STEP 1: get the current local branch
         let repo = Repository::open(".")?;
-        let branch = repo.head()?.shorthand().unwrap().to_string();
-        Ok(format!("On branch {}\n", branch))
+        // STEP 2: get the current remote branch
+        let branch_remote = repo.find_branch(&self.branch, git2::BranchType::Remote)?;
+
+        // STEP 3: if the head of both is the same then return with a message
+        if branch_remote.get().target() == repo.head()?.target() {
+            return Ok(format!(
+                "On branch {}\nYour branch is up to date with `{}`",
+                self.branch,
+                branch_remote.name()?.unwrap()
+            ));
+        }
+
+        Ok(String::from(
+            "There is a difference between the remote and local branch, need to push.",
+        ))
+        // STEP 4: walk from the head of the local branch to the head of the remote branch collecting the names of files in the commits and report theses
+
+        // let repo = Repository::open(".")?;
+        // let branch = repo.head()?.shorthand().unwrap().to_string();
+        // let branch = repo.find_branch(&branch, git2::BranchType::Remote)?;
+        // branch.Ok(format!("On branch {}\n", branch))
     }
 }
 
