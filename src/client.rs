@@ -241,9 +241,7 @@ impl Client {
     }
 
     pub fn branch_status(&self) -> Result<String, Error> {
-        // STEP 1: get the current local branch
         let repo = Repository::open(".")?;
-        // STEP 2: get the current remote branch
 
         let branches = repo.branches(None)?;
 
@@ -256,7 +254,7 @@ impl Client {
             format!("origin/{}", self.branch).as_str(),
             git2::BranchType::Remote,
         )?;
-        // STEP 3: if the head of both is the same then return with a message
+
         if branch_remote.get().target() == repo.head()?.target() {
             return Ok(format!(
                 "On branch {}\nYour branch is up to date with `{}`",
