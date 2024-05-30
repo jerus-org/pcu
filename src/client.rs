@@ -265,14 +265,14 @@ impl Client {
             ));
         }
 
-        let remote_name = self.git_repo.branch_remote_name(&self.branch)?;
-        let upstream_name = self.git_repo.branch_upstream_name(&self.branch)?;
+        let remote_name = self.git_repo.branch_remote_name(&self.branch).is_ok();
+        let upstream_name = self.git_repo.branch_upstream_name(&self.branch).is_ok();
 
         println!(
-            "\n\nOn branch {}\nYour branch and `{}` have diverged, and have diverged from `{}`\n",
+            "\n\nOn branch {}\nYour branch and `{:?}` have diverged, and have diverged from `{:?}`\n",
             self.branch,
-            remote_name.as_str().unwrap_or_default(),
-            upstream_name.as_str().unwrap_or_default()
+            remote_name,
+            upstream_name
         );
 
         Ok(String::from(
