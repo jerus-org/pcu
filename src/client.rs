@@ -139,9 +139,18 @@ impl Client {
     }
 
     pub fn push_changelog(&self) -> Result<(), git2::Error> {
-        let mut remote = self
+        let mut remote = match self
             .git_repo
-            .find_remote(format!("origin/{}", self.branch).as_str())?;
+            .find_remote(format!("origin/{}", self.branch).as_str())
+        {
+            Ok(remote) => remote,
+            Err(_) => {
+                println!("Remote not found");
+                self.git_repo
+                    .remote_anonymous(format!("origin/{}", self.branch).as_str())?
+            }
+        };
+        println!("Pushing changes to {}", remote.name().unwrap());
         // remote.connect(git2::Direction::Push)?;
         remote.push(&[""], None)?;
 
