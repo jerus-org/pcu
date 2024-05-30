@@ -18,6 +18,8 @@ pub struct Client {
     owner: String,
     #[allow(dead_code)]
     repo: String,
+    #[allow(dead_code)]
+    repo_url: String,
     pr_number: u64,
     changelog: OsString,
     changelog_update: Option<PrTitle>,
@@ -37,7 +39,7 @@ impl Client {
         let pull_request =
             env::var(pcu_pull_request).map_err(|_| Error::EnvVarPullRequestNotFound)?;
 
-        let (owner, repo, pr_number) = get_keys(&pull_request)?;
+        let (owner, repo, pr_number, repo_url) = get_keys(&pull_request)?;
 
         let pr_number = pr_number.parse::<u64>()?;
 
@@ -74,6 +76,7 @@ impl Client {
             title,
             owner,
             repo,
+            repo_url,
             pr_number,
             changelog,
             changelog_update: None,
@@ -139,18 +142,8 @@ impl Client {
     }
 
     pub fn push_changelog(&self) -> Result<(), Error> {
-        self.branch_list()?;
-        let mut remote = match self
-            .git_repo
-            .find_remote(format!("origin/{}", self.branch).as_str())
-        {
-            Ok(remote) => remote,
-            Err(_) => {
-                println!("Remote not found");
-                self.git_repo
-                    .remote_anonymous(format!("origin/{}", self.branch).as_str())?
-            }
-        };
+        println!("{}", self.branch_list()?);
+        let mut remote = self.git_repo.find_remote("origin")?;
         println!("Pushing changes to {:?}", remote.name());
         // remote.connect(git2::Direction::Push)?;
         remote.push(&[""], None)?;
@@ -159,13 +152,14 @@ impl Client {
     }
 }
 
-fn get_keys(pull_request: &str) -> Result<(String, String, String), Error> {
+fn get_keys(pull_request: &str) -> Result<(String, String, String, String), Error> {
     if pull_request.contains("github.com") {
         let parts = pull_request.splitn(7, '/').collect::<Vec<&str>>();
         Ok((
             parts[3].to_string(),
             parts[4].to_string(),
             parts[6].to_string(),
+            format!("https://github.com/{}/{}", parts[3], parts[4]),
         ))
     } else {
         Err(Error::UknownPullRequestFormat(pull_request.to_string()))
