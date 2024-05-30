@@ -242,16 +242,25 @@ impl Client {
         Ok(report)
     }
 
-    pub fn branch_status(&self) -> Result<String, Error> {
+    pub fn branch_list(&self) -> Result<String, Error> {
         let branches = self.git_repo.branches(None)?;
 
-        println!("\nList of branches:\n");
+        let mut output = String::from("\nList of branches:\n");
         for item in branches {
             let (branch, branch_type) = item?;
-            println!("# Branch and type: {:?}\t{:?}", branch.name(), branch_type);
+            output = format!(
+                "{}\n# Branch and type: {:?}\t{:?}",
+                output,
+                branch.name(),
+                branch_type
+            );
         }
-        println!();
+        output = format!("{}\n", output);
 
+        Ok(output)
+    }
+
+    pub fn branch_status(&self) -> Result<String, Error> {
         let branch_remote = self.git_repo.find_branch(
             format!("origin/{}", self.branch).as_str(),
             git2::BranchType::Remote,
@@ -268,28 +277,14 @@ impl Client {
         let local = self.git_repo.head()?.target().unwrap();
         let remote = branch_remote.get().target().unwrap();
 
-        println!(
-            "\n\nOn branch {}\nLocal target: {:?}\nRemote target: {:?}\n",
-            self.branch, local, remote
-        );
-
         let (ahead, behind) = self.git_repo.graph_ahead_behind(local, remote)?;
 
-        println!(
+        let output = format!(
             "Your branch is {} commits ahead and {} commits behind\n",
             ahead, behind
         );
 
-        Ok(String::from(
-            "\nThere is a difference between the remote and local branch, need to push.",
-        ))
-
-        // STEP 4: walk from the head of the local branch to the head of the remote branch collecting the names of files in the commits and report theses
-
-        // let repo = Repository::open(".")?;
-        // let branch = repo.head()?.shorthand().unwrap().to_string();
-        // let branch = repo.find_branch(&branch, git2::BranchType::Remote)?;
-        // branch.Ok(format!("On branch {}\n", branch))
+        Ok(output)
     }
 }
 
