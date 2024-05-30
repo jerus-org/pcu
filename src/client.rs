@@ -265,12 +265,19 @@ impl Client {
             ));
         }
 
-        let local = self.git_repo.head()?.target();
-        let remote = branch_remote.get().target();
+        let local = self.git_repo.head()?.target().unwrap();
+        let remote = branch_remote.get().target().unwrap();
 
         println!(
             "\n\nOn branch {}\nLocal target: {:?}\nRemote target: {:?}\n",
             self.branch, local, remote
+        );
+
+        let (ahead, behind) = self.git_repo.graph_ahead_behind(local, remote)?;
+
+        println!(
+            "Your branch is {} commits ahead and {} commits behind\n",
+            ahead, behind
         );
 
         Ok(String::from(
