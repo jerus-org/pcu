@@ -119,8 +119,6 @@ impl Client {
     }
 
     pub fn commit_changelog(&self) -> Result<String, git2::Error> {
-        println!("Starting commit");
-
         let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
         index.write()?;
@@ -137,8 +135,17 @@ impl Client {
             &[&parent],
         )?;
 
-        println!("Commit id: {commit_id}");
         Ok(commit_id.to_string())
+    }
+
+    pub fn push_changelog(&self) -> Result<(), git2::Error> {
+        let mut remote = self
+            .git_repo
+            .find_remote(format!("origin/{}", self.branch).as_str())?;
+        // remote.connect(git2::Direction::Push)?;
+        remote.push(&[""], None)?;
+
+        Ok(())
     }
 }
 
