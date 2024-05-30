@@ -17,12 +17,12 @@ pub enum Error {
     UknownPullRequestFormat(String),
     #[error("No default changelog file found")]
     NoChangeLogFileFound,
-    #[error("0:?")]
+    #[error("ParseInt says: {0:?}")]
     ParseInt(#[from] ParseIntError),
-    #[error("0:?")]
+    #[error("Octocrab says: {0:?}")]
     Octocrab(#[from] octocrab::Error),
-    #[error("0:?")]
+    #[error("Url says: {0:?}")]
     UrlParse(#[from] url::ParseError),
-    #[error("0:?")]
+    #[error("Git2 says: {0:?}")]
     Git2(#[from] git2::Error),
 }
