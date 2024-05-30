@@ -138,11 +138,11 @@ impl Client {
         )?;
 
         println!("Commit id: {commit_id}");
-        let branch =
-            self.git_repo
-                .branch(self.branch(), &self.git_repo.find_commit(commit_id)?, false)?;
+        // let branch =
+        //     self.git_repo
+        //         .branch(self.branch(), &self.git_repo.find_commit(commit_id)?, false)?;
 
-        println!("Branch: {}", branch.name()?.unwrap());
+        // println!("Branch: {}", branch.name()?.unwrap());
 
         Ok(())
     }
