@@ -118,7 +118,7 @@ impl Client {
         Ok(())
     }
 
-    pub fn commit_changelog(&self) -> Result<(), git2::Error> {
+    pub fn commit_changelog(&self) -> Result<String, git2::Error> {
         println!("Starting commit");
 
         let mut index = self.git_repo.index()?;
@@ -138,13 +138,7 @@ impl Client {
         )?;
 
         println!("Commit id: {commit_id}");
-        // let branch =
-        //     self.git_repo
-        //         .branch(self.branch(), &self.git_repo.find_commit(commit_id)?, false)?;
-
-        // println!("Branch: {}", branch.name()?.unwrap());
-
-        Ok(())
+        Ok(commit_id.to_string())
     }
 }
 
@@ -271,9 +265,20 @@ impl Client {
             ));
         }
 
+        let remote_name = self.git_repo.branch_remote_name(&self.branch)?;
+        let upstream_name = self.git_repo.branch_upstream_name(&self.branch)?;
+
+        println!(
+            "\n\nOn branch {}\nYour branch and `{}` have diverged, and have diverged from `{}`\n",
+            self.branch,
+            remote_name.as_str().unwrap_or_default(),
+            upstream_name.as_str().unwrap_or_default()
+        );
+
         Ok(String::from(
             "\nThere is a difference between the remote and local branch, need to push.",
         ))
+
         // STEP 4: walk from the head of the local branch to the head of the remote branch collecting the names of files in the commits and report theses
 
         // let repo = Repository::open(".")?;
