@@ -252,7 +252,10 @@ impl Client {
             println!("# Branch and type: {:?}\t{:?}", branch.name(), branch_type);
         }
 
-        let branch_remote = repo.find_branch(&self.branch, git2::BranchType::Remote)?;
+        let branch_remote = repo.find_branch(
+            format!("origin/{}", self.branch).as_str(),
+            git2::BranchType::Remote,
+        )?;
         // STEP 3: if the head of both is the same then return with a message
         if branch_remote.get().target() == repo.head()?.target() {
             return Ok(format!(
