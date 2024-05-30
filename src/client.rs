@@ -118,7 +118,7 @@ impl Client {
         Ok(())
     }
 
-    pub fn commit_changelog(&self) -> Result<String, git2::Error> {
+    pub fn commit_changelog(&self) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
         index.write()?;
@@ -138,7 +138,8 @@ impl Client {
         Ok(commit_id.to_string())
     }
 
-    pub fn push_changelog(&self) -> Result<(), git2::Error> {
+    pub fn push_changelog(&self) -> Result<(), Error> {
+        self.branch_list()?;
         let mut remote = match self
             .git_repo
             .find_remote(format!("origin/{}", self.branch).as_str())
@@ -150,7 +151,7 @@ impl Client {
                     .remote_anonymous(format!("origin/{}", self.branch).as_str())?
             }
         };
-        println!("Pushing changes to {}", remote.name().unwrap());
+        println!("Pushing changes to {:?}", remote.name());
         // remote.connect(git2::Direction::Push)?;
         remote.push(&[""], None)?;
 
