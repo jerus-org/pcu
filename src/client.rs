@@ -1,6 +1,6 @@
 use std::{env, ffi::OsString, path::Path, str::FromStr};
 
-use git2::{Cred, RemoteCallbacks, Repository};
+use git2::{Cred, PushOptions, RemoteCallbacks, Repository};
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
@@ -154,8 +154,12 @@ impl Client {
                 None,
             )
         });
+
+        let mut options = PushOptions::new();
+        options.remote_callbacks(callbacks);
+
         remote.connect(git2::Direction::Push)?;
-        remote.push(&[""], None)?;
+        remote.push(&[""], Some(&mut options))?;
 
         Ok(())
     }
