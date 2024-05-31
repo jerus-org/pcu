@@ -154,11 +154,13 @@ impl Client {
                 None,
             )
         });
+        remote.connect(git2::Direction::Push)?;
+        println!("Connected to remote {:?}", remote.name());
 
         let mut options = PushOptions::new();
         options.remote_callbacks(callbacks);
+        println!("Push options set");
 
-        remote.connect(git2::Direction::Push)?;
         remote.push(&[""], Some(&mut options))?;
 
         Ok(())
