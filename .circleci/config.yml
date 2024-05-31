@@ -99,6 +99,7 @@ jobs:
           command: |
             ssh-add -l
             ls -lah /root/.ssh/
+            ssh-add -d ~/.ssh/id_rsa.pub
       - run:
           name: Install pcu
           command: |
