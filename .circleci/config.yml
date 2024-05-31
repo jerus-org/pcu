@@ -88,7 +88,7 @@ jobs:
       - git-config
       - add_ssh_keys:
           fingerprints: 
-            - SHA256:yrnv77xTPJdJDpRr4JNavsNj7B//666A/WBFuc91KM0
+            - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
       - run:
           name: Install pcu
           command: |
