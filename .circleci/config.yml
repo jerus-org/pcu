@@ -86,12 +86,11 @@ jobs:
       - checkout
       - gpg-key
       - git-config
-      - run:
-          name: clear SSH key
-          command: |
-            ssh-add -l
-            ssh-add -D
-            ssh-add -l
+      # - run:
+      #     name: clear SSH key
+      #     command: |
+      #       ssh-add -D
+      #       ssh-add -l
       - add_ssh_keys:
           fingerprints: 
             - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
@@ -99,6 +98,7 @@ jobs:
           name: Manage SSH keys 
           command: |
             ssh-add -l
+            ls -lah /root/.ssh/
       - run:
           name: Install pcu
           command: |
