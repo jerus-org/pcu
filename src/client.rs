@@ -147,13 +147,8 @@ impl Client {
         println!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
         println!("Remote callbacks set");
-        callbacks.credentials(|_url, username_from_url, _allowed_types| {
-            Cred::ssh_key(
-                username_from_url.unwrap(),
-                None,
-                std::path::Path::new("/root/.ssh/id_rsa"),
-                None,
-            )
+        callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+            Cred::ssh_key_from_agent("jrussell-pcubot@jerus.ie")
         });
         println!("Credentials set");
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
