@@ -1,6 +1,6 @@
 use std::{env, ffi::OsString, path::Path, str::FromStr};
 
-use git2::Repository;
+use git2::{Cred, RemoteCallbacks, Repository};
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
@@ -145,6 +145,15 @@ impl Client {
         println!("{}", self.branch_list()?);
         let mut remote = self.git_repo.find_remote("origin")?;
         println!("Pushing changes to {:?}", remote.name());
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            Cred::ssh_key(
+                username_from_url.unwrap(),
+                None,
+                std::path::Path::new(&format!("{}/.ssh/id_rsa", env::var("HOME").unwrap())),
+                None,
+            )
+        });
         remote.connect(git2::Direction::Push)?;
         remote.push(&[""], None)?;
 
