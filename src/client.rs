@@ -146,6 +146,7 @@ impl Client {
         let mut remote = self.git_repo.find_remote("origin")?;
         println!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
+        println!("Remote callbacks set");
         callbacks.credentials(|_url, username_from_url, _allowed_types| {
             Cred::ssh_key(
                 username_from_url.unwrap(),
@@ -154,6 +155,7 @@ impl Client {
                 None,
             )
         });
+        println!("Credentials set");
         remote.connect(git2::Direction::Push)?;
         println!("Connected to remote {:?}", remote.name());
 
