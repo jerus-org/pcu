@@ -1,6 +1,6 @@
 use std::{env, ffi::OsString, path::Path, str::FromStr};
 
-use git2::{Cred, PushOptions, RemoteCallbacks, Repository};
+use git2::{Cred, Direction, RemoteCallbacks, Repository};
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
@@ -156,14 +156,17 @@ impl Client {
             )
         });
         println!("Credentials set");
-        remote.connect(git2::Direction::Push)?;
-        println!("Connected to remote {:?}", remote.name());
+        let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
+        println!("Connection established.");
+        let remote = connection.remote();
+        // remote.connect(Direction::Push)?;
+        // println!("Connected to remote confirmed {:?}", remote.name());
 
-        let mut options = PushOptions::new();
-        options.remote_callbacks(callbacks);
-        println!("Push options set");
+        // let mut options = PushOptions::new();
+        // options.remote_callbacks(callbacks);
+        // println!("Push options set");
 
-        remote.push(&[""], Some(&mut options))?;
+        remote.push(&[""], None)?;
 
         Ok(())
     }
