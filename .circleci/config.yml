@@ -86,6 +86,9 @@ jobs:
       - checkout
       - gpg-key
       - git-config
+      - add_ssh_keys:
+          fingerprints: 
+            - SHA256:yrnv77xTPJdJDpRr4JNavsNj7B//666A/WBFuc91KM0
       - run:
           name: Install pcu
           command: |
