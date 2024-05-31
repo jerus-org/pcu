@@ -151,7 +151,7 @@ impl Client {
             Cred::ssh_key(
                 username_from_url.unwrap(),
                 None,
-                std::path::Path::new(&format!("{}/.ssh/id_rsa", env::var("HOME").unwrap())),
+                std::path::Path::new("/root/.ssh/id_rsa"),
                 None,
             )
         });
