@@ -86,6 +86,10 @@ jobs:
       - checkout
       - gpg-key
       - git-config
+      - run:
+          name: clear SSH key
+          command: |
+            ssh-add -D
       - add_ssh_keys:
           fingerprints: 
             - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
