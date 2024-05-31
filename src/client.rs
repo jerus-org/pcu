@@ -147,10 +147,10 @@ impl Client {
         println!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
         println!("Remote callbacks set");
-        callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-            Cred::ssh_key_from_agent("git")
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            Cred::ssh_key_from_agent(username_from_url.unwrap())
         });
-        println!("Credentials set");
+        println!("Credentials set based on the ssh key agent");
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         println!("Connection established.");
         let remote = connection.remote();
