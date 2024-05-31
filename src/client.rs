@@ -145,7 +145,7 @@ impl Client {
         println!("{}", self.branch_list()?);
         let mut remote = self.git_repo.find_remote("origin")?;
         println!("Pushing changes to {:?}", remote.name());
-        // remote.connect(git2::Direction::Push)?;
+        remote.connect(git2::Direction::Push)?;
         remote.push(&[""], None)?;
 
         Ok(())
