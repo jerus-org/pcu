@@ -90,6 +90,10 @@ jobs:
           fingerprints: 
             - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
       - run:
+          name: Manage SSH keys 
+          command: |
+            ssh-add -l
+      - run:
           name: Install pcu
           command: |
             cargo install --git https://github.com/jerus-org/pcu.git  
