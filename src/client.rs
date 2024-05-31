@@ -148,7 +148,7 @@ impl Client {
         let mut callbacks = RemoteCallbacks::new();
         println!("Remote callbacks set");
         callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-            Cred::ssh_key_from_agent("jrussell-pcubot@jerus.ie")
+            Cred::ssh_key_from_agent("git")
         });
         println!("Credentials set");
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
