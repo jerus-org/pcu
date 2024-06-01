@@ -154,6 +154,23 @@ impl Client {
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         println!("Connection established.");
         let remote = connection.remote();
+
+        let refsepecs = remote.refspecs();
+        println!("Refspecs:\n");
+        for refspec in refsepecs {
+            println!(
+                "#\trefspec: {}\t{}\t{}\t{}",
+                refspec.str().unwrap(),
+                refspec.src().unwrap(),
+                refspec.dst().unwrap(),
+                if refspec.direction() == Direction::Push {
+                    "push"
+                } else {
+                    "fetch"
+                }
+            );
+        }
+
         // remote.connect(Direction::Push)?;
         // println!("Connected to remote confirmed {:?}", remote.name());
 
@@ -161,7 +178,7 @@ impl Client {
         // options.remote_callbacks(callbacks);
         // println!("Push options set");
 
-        remote.push(&[""], None)?;
+        remote.push(&[&format!("{}:{}", self.branch, self.branch)], None)?;
 
         Ok(())
     }
