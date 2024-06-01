@@ -1,6 +1,6 @@
 use std::{env, ffi::OsString, path::Path, str::FromStr};
 
-use git2::{Cred, Direction, RemoteCallbacks, Repository};
+use git2::{BranchType, Cred, Direction, RemoteCallbacks, Repository};
 use keep_a_changelog::ChangeKind;
 use url::Url;
 
@@ -155,9 +155,6 @@ impl Client {
         println!("Connection established.");
         let remote = connection.remote();
 
-        self.git_repo
-            .remote_add_push("origin", &format!("refs/heads/{}", self.branch))?;
-
         let refsepecs = remote.refspecs();
         println!("Refspecs:\n");
         for refspec in refsepecs {
@@ -174,6 +171,11 @@ impl Client {
             );
         }
 
+        let branch = self.git_repo.find_branch(&self.branch, BranchType::Local)?;
+        println!("Found branch: {}", branch.name()?.unwrap());
+        let push_refs = branch.into_reference();
+        println!("Push refs: {}", push_refs.name().unwrap());
+
         // remote.connect(Direction::Push)?;
         // println!("Connected to remote confirmed {:?}", remote.name());
 
@@ -181,13 +183,7 @@ impl Client {
         // options.remote_callbacks(callbacks);
         // println!("Push options set");
 
-        remote.push(
-            &[&format!(
-                "refs/heads/{}:refs/remotes/origin/heads/{}",
-                self.branch, self.branch
-            )],
-            None,
-        )?;
+        remote.push(&[push_refs.name().unwrap()], None)?;
 
         Ok(())
     }
