@@ -155,6 +155,9 @@ impl Client {
         println!("Connection established.");
         let remote = connection.remote();
 
+        self.git_repo
+            .remote_add_push("origin", &format!("refs/heads/{}", self.branch))?;
+
         let refsepecs = remote.refspecs();
         println!("Refspecs:\n");
         for refspec in refsepecs {
@@ -178,7 +181,13 @@ impl Client {
         // options.remote_callbacks(callbacks);
         // println!("Push options set");
 
-        remote.push(&[&format!("{}:{}", self.branch, self.branch)], None)?;
+        remote.push(
+            &[&format!(
+                "refs/heads/{}:refs/remotes/origin/heads/{}",
+                self.branch, self.branch
+            )],
+            None,
+        )?;
 
         Ok(())
     }
