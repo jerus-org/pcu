@@ -266,6 +266,8 @@ impl Client {
     pub fn repo_status(&self) -> Result<String, Error> {
         let statuses = self.git_repo.statuses(None)?;
 
+        println!("Repo status length: {:?}", statuses.len());
+
         let report = print_long(&statuses);
         Ok(report)
     }
