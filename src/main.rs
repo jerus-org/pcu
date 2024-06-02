@@ -1,6 +1,7 @@
 use std::{fs, path::Path};
 
 use git2::Repository;
+use keep_a_changelog::ChangeKind;
 use pcu_lib::{Client, Error};
 
 use eyre::Result;
@@ -45,14 +46,22 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     client.create_entry()?;
 
-    let section = client.section().unwrap_or("none");
-    let entry = client.entry().unwrap_or("none");
-
-    println!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
+    if let Some((section, entry)) = client.update_changelog()? {
+        let section = match section {
+            ChangeKind::Added => "Added",
+            ChangeKind::Changed => "Changed",
+            ChangeKind::Deprecated => "Deprecated",
+            ChangeKind::Fixed => "Fixed",
+            ChangeKind::Removed => "Removed",
+            ChangeKind::Security => "Security",
+        };
+        println!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
+    } else {
+        println!("No update required");
+        return Ok(());
+    };
 
     println!("Changelog file name: {}", client.changelog());
-
-    client.update_changelog()?;
 
     print_changelog(client.changelog());
 

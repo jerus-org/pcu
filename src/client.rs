@@ -110,15 +110,15 @@ impl Client {
         Ok(())
     }
 
-    pub fn update_changelog(&mut self) -> Result<(), Error> {
+    pub fn update_changelog(&mut self) -> Result<Option<(ChangeKind, String)>, Error> {
         if self.changelog_update.is_none() {
             return Err(Error::NoChangeLogFileFound);
         }
 
         if let Some(update) = &mut self.changelog_update {
-            update.update_changelog(&self.changelog);
+            return Ok(update.update_changelog(&self.changelog));
         }
-        Ok(())
+        Ok(None)
     }
 
     pub fn commit_changelog(&self) -> Result<String, Error> {

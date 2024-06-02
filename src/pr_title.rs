@@ -156,7 +156,7 @@ impl PrTitle {
         }
     }
 
-    pub fn update_changelog(&mut self, log_file: &OsStr) {
+    pub fn update_changelog(&mut self, log_file: &OsStr) -> Option<(ChangeKind, String)> {
         let log_file = log_file.to_str().unwrap();
         self.calculate_section_and_entry();
 
@@ -167,7 +167,7 @@ impl PrTitle {
             println!("file contents:\n---\n{}\n---\n\n", file_contents);
             if file_contents.contains(&self.entry) {
                 println!("The changelog already contains the entry!");
-                return;
+                return None;
             } else {
                 println!("The changelog does not contain the entry!");
             }
@@ -209,8 +209,9 @@ impl PrTitle {
                 unreleased.changed(self.entry());
             }
         }
-
         change_log.save_to_file(log_file).unwrap();
+
+        Some((self.section(), self.entry()))
     }
 }
 
