@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, path};
+use std::{ffi::OsStr, fs, path};
 
 use keep_a_changelog::{changelog::ChangelogBuilder, ChangeKind, Changelog, Release};
 use log::debug;
@@ -160,7 +160,17 @@ impl PrTitle {
         let log_file = log_file.to_str().unwrap();
         self.calculate_section_and_entry();
 
+        println!("Changelog entry:\n\n---\n{}\n---\n\n", self.entry());
+
         let mut change_log = if path::Path::new(log_file).exists() {
+            let file_contents = fs::read_to_string(path::Path::new(log_file)).unwrap();
+            println!("file contents:\n---\n{}\n---\n\n", file_contents);
+            if file_contents.contains(&self.entry) {
+                println!("The changelog already contains the entry!");
+                return;
+            } else {
+                println!("The changelog does not contain the entry!");
+            }
             println!("The changelog exists!");
             Changelog::parse_from_file(log_file, None).unwrap()
         } else {

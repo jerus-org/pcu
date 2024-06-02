@@ -142,34 +142,14 @@ impl Client {
     }
 
     pub fn push_changelog(&self) -> Result<(), Error> {
-        println!("{}", self.branch_list()?);
         let mut remote = self.git_repo.find_remote("origin")?;
         println!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
-        println!("Remote callbacks set");
         callbacks.credentials(|_url, username_from_url, _allowed_types| {
             Cred::ssh_key_from_agent(username_from_url.unwrap())
         });
-        println!("Credentials set based on the ssh key agent");
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
-        println!("Connection established.");
         let remote = connection.remote();
-
-        let refsepecs = remote.refspecs();
-        println!("Refspecs:\n");
-        for refspec in refsepecs {
-            println!(
-                "#\trefspec: {}\t{}\t{}\t{}",
-                refspec.str().unwrap(),
-                refspec.src().unwrap(),
-                refspec.dst().unwrap(),
-                if refspec.direction() == Direction::Push {
-                    "push"
-                } else {
-                    "fetch"
-                }
-            );
-        }
 
         let branch = self.git_repo.find_branch(&self.branch, BranchType::Local)?;
         println!("Found branch: {}", branch.name()?.unwrap());
