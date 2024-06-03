@@ -11,7 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Return early if the changlog has been updated already(pr [#93](https://github.com/jerus-org/pcu/pull/93))
 
+
 ### Changed
 
 - ci-tidy up and clarify removal of original ssh key(pr [#92](https://github.com/jerus-org/pcu/pull/92))
 - chore-add debug print statement to repo_status method(pr [#94](https://github.com/jerus-org/pcu/pull/94))
+
+
+### Security
+
+- Security: adopt new ci bot signature(pr [#95](https://github.com/jerus-org/pcu/pull/95))
