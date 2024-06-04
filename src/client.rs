@@ -8,6 +8,8 @@ use crate::Error;
 use crate::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
+const GIT_CONFIG_SIGNATURE_KEY: &str = "user.signingkey";
+const DEFAULT_CHANGELOG_COMMIT_MSG: &str = "chore: update changelog";
 
 pub struct Client {
     git_repo: Repository,
@@ -129,14 +131,24 @@ impl Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-        let commit_id = self.git_repo.commit(
-            Some("HEAD"),
+        let msg = DEFAULT_CHANGELOG_COMMIT_MSG;
+        let commit_buffer = self.git_repo.commit_create_buffer(
             &sig,
             &sig,
-            "Update changelog",
+            msg,
             &self.git_repo.find_tree(tree_id)?,
             &[&parent],
         )?;
+        let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
+        let signature = self
+            .git_repo
+            .config()?
+            .get_string(GIT_CONFIG_SIGNATURE_KEY)?;
+
+        let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
+
+        // manually advance to the new commit id
+        self.git_repo.head()?.set_target(commit_id, msg)?;
 
         Ok(commit_id.to_string())
     }
