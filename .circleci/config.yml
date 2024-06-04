@@ -36,9 +36,8 @@ commands:
       - run:
           name: Configure git for user and signing
           command: |
-            git config user.email "$BOT_USER_EMAIL"
-            git config user.name "$BOT_USER_NAME"
-            git config --global --unset gpg.format
+            git config --global user.email "$BOT_USER_EMAIL"
+            git config --global user.name "$BOT_USER_NAME"
             git config --global gpg.program gpg
             git config --global user.signingkey "$BOT_SIGN_KEY"
             git config --global commit.gpgsign true
