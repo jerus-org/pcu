@@ -131,6 +131,7 @@ impl Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
+        println!("Sig: {}, {}", sig.name().unwrap(), sig.email().unwrap());
         let msg = DEFAULT_CHANGELOG_COMMIT_MSG;
         let commit_buffer = self.git_repo.commit_create_buffer(
             &sig,
@@ -144,8 +145,10 @@ impl Client {
             .git_repo
             .config()?
             .get_string(GIT_CONFIG_SIGNATURE_KEY)?;
-
-        let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
+        println!("Signature key: {signature}");
+        let commit_id = self
+            .git_repo
+            .commit_signed(commit_str, &signature, Some("gpgsig"))?;
 
         // manually advance to the new commit id
         self.git_repo.head()?.set_target(commit_id, msg)?;
