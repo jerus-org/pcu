@@ -38,8 +38,8 @@ commands:
           command: |
             git config user.email "$BOT_USER_EMAIL"
             git config user.name "$BOT_USER_NAME"
-            git config --global gpg.program gpg
             git config --global user.signingkey "$BOT_SIGN_KEY"
+            git config --global commit.gpgsign true
 
 jobs:
   required-builds:
