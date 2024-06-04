@@ -29,7 +29,9 @@ commands:
             echo -e $BOT_GPG_KEY \
               | base64 --decode --ignore-garbage \
               | gpg --batch --allow-secret-key-import --import 
-            gpg --keyid-format  LONG --list-secret-keys
+            gpg --fingerprint
+            echo $BOT_TRUST | gpg --import-ownertrust
+            gpg --fingerprint
 
   git-config:
     steps:
@@ -39,7 +41,7 @@ commands:
             git config --global user.email "$BOT_USER_EMAIL"
             git config --global user.name "$BOT_USER_NAME"
             git config --global gpg.program gpg
-            git config --global user.signingkey "$BOT_SIGN_KEY"
+            git config --global user.signingkey "$BOT_SIGN_KEY!"
             git config --global commit.gpgsign true
 
 jobs:

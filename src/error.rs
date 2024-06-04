@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::{env, num::ParseIntError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -25,4 +25,6 @@ pub enum Error {
     UrlParse(#[from] url::ParseError),
     #[error("Git2 says: {0:?}")]
     Git2(#[from] git2::Error),
+    #[error("env var says: {0:?}")]
+    EnvVar(#[from] env::VarError),
 }

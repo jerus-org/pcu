@@ -8,7 +8,7 @@ use crate::Error;
 use crate::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
-const GIT_CONFIG_SIGNATURE_KEY: &str = "user.signingkey";
+const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
 const DEFAULT_CHANGELOG_COMMIT_MSG: &str = "chore: update changelog";
 
 pub struct Client {
@@ -149,10 +149,10 @@ impl Client {
             &[&parent],
         )?;
         let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
-        let signature = self
-            .git_repo
-            .config()?
-            .get_string(GIT_CONFIG_SIGNATURE_KEY)?;
+
+        let signature = env::var(SIGNATURE_KEY)?;
+
+        // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
         let short_sign = signature[12..].to_string();
         println!("Signature short: {short_sign}");
         let commit_id = self
@@ -179,13 +179,6 @@ impl Client {
         println!("Found branch: {}", branch.name()?.unwrap());
         let push_refs = branch.into_reference();
         println!("Push refs: {}", push_refs.name().unwrap());
-
-        // remote.connect(Direction::Push)?;
-        // println!("Connected to remote confirmed {:?}", remote.name());
-
-        // let mut options = PushOptions::new();
-        // options.remote_callbacks(callbacks);
-        // println!("Push options set");
 
         remote.push(&[push_refs.name().unwrap()], None)?;
 
