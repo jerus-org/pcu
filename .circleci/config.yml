@@ -36,8 +36,8 @@ commands:
       - run:
           name: Configure git for user and signing
           command: |
-            git config user.email "$BOT_USER_EMAIL"
-            git config user.name "$BOT_USER_NAME"
+            git config --global user.email "$BOT_USER_EMAIL"
+            git config --global user.name "$BOT_USER_NAME"
             git config --global gpg.program gpg
             git config --global user.signingkey "$BOT_SIGN_KEY"
             git config --global commit.gpgsign true
@@ -84,8 +84,6 @@ jobs:
     executor: rust-env
     steps:
       - checkout
-      - gpg-key
-      - git-config
       - add_ssh_keys:
           fingerprints: 
             - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
@@ -95,6 +93,8 @@ jobs:
             ssh-add -l
             ssh-add -d ~/.ssh/id_rsa.pub
             ssh-add -l
+      - gpg-key
+      - git-config
       - run:
           name: Install pcu
           command: |
