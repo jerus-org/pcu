@@ -180,13 +180,6 @@ impl Client {
         let push_refs = branch.into_reference();
         println!("Push refs: {}", push_refs.name().unwrap());
 
-        // remote.connect(Direction::Push)?;
-        // println!("Connected to remote confirmed {:?}", remote.name());
-
-        // let mut options = PushOptions::new();
-        // options.remote_callbacks(callbacks);
-        // println!("Push options set");
-
         remote.push(&[push_refs.name().unwrap()], None)?;
 
         Ok(())
