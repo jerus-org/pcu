@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     };
 
     println!(
-        "I am on the `{}` branch, so time to get to work!",
+        "On the `{}` branch, so time to get to work!",
         client.branch()
     );
 
