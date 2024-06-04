@@ -26,14 +26,12 @@ commands:
       - run:
           name: import GPG key
           command: |
-            GNUPGHOME="$PWD/pcu-gpg"
-            export GNUPGHOME
-            mkdir -p "$GNUPGHOME"
-            chmod 0700 "$GNUPGHOME"
             echo -e $BOT_GPG_KEY \
               | base64 --decode --ignore-garbage \
               | gpg --batch --allow-secret-key-import --import 
-            gpg --keyid-format  LONG --list-secret-keys
+            gpg --fingerprint
+            echo $BOT_TRUST | gpg --import-ownertrust
+            gpg --fingerprint
 
   git-config:
     steps:
