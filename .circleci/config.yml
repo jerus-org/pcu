@@ -40,8 +40,6 @@ commands:
             git config user.name "$BOT_USER_NAME"
             git config --global gpg.program gpg
             git config --global user.signingkey "$BOT_SIGN_KEY"
-            git config -l 
-
 
 jobs:
   required-builds:
