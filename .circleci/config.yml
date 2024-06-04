@@ -26,7 +26,7 @@ commands:
       - run:
           name: import GPG key
           command: |
-            echo -e $GPGKEY \
+            echo -e $BOT_GPG_KEY \
               | base64 --decode --ignore-garbage \
               | gpg --batch --allow-secret-key-import --import 
             gpg --keyid-format  LONG --list-secret-keys
@@ -36,11 +36,11 @@ commands:
       - run:
           name: Configure git for user and signing
           command: |
-            git config user.email "$USER_EMAIL"
-            git config user.name "$USER_NAME"
+            git config user.email "$BOT_USER_EMAIL"
+            git config user.name "$BOT_USER_NAME"
             git config --global gpg.program gpg
-            git config --global user.signingkey "$SIGNKEY"
-
+            git config --global user.signingkey "$BOT_SIGN_KEY"
+            git config --global commit.gpgsign true
 
 jobs:
   required-builds:
