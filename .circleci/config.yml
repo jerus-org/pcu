@@ -29,7 +29,7 @@ commands:
             echo -e $BOT_GPG_KEY \
               | base64 --decode --ignore-garbage \
               | gpg --batch --allow-secret-key-import --import 
-            echo -e gpg --keyid-format  LONG --list-secret-keys
+            gpg --keyid-format  LONG --list-secret-keys
 
   git-config:
     steps:
@@ -40,7 +40,7 @@ commands:
             git config user.name "$BOT_USER_NAME"
             git config --global gpg.program gpg
             git config --global user.signingkey "$BOT_SIGN_KEY"
-            echo -e git config -l 
+            git config -l 
 
 
 jobs:
