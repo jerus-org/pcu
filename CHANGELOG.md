@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ci-tidy up and clarify removal of original ssh key(pr [#92](https://github.com/jerus-org/pcu/pull/92))
 - chore-add debug print statement to repo_status method(pr [#94](https://github.com/jerus-org/pcu/pull/94))
+- chore-remove redundant code in main(pr [#96](https://github.com/jerus-org/pcu/pull/96))
 
 
 ### Security
