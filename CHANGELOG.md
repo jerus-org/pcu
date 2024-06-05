@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-replace printlns with log macros(pr [#104](https://github.com/jerus-org/pcu/pull/104))
 
 
+### Fixed
+
+- trim exclamation point from end of subkey(pr [#105](https://github.com/jerus-org/pcu/pull/105))
+
+
 ### Security
 
 - Security: adopt new ci bot signature(pr [#95](https://github.com/jerus-org/pcu/pull/95))
