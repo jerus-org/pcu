@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
 }
 
 async fn changelog_update(mut client: Client) -> Result<()> {
-    println!(
+    log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
         client.owner(),
@@ -43,7 +43,7 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     let title = client.title();
 
-    println!("Pull Request Title: {title}");
+    log::debug!("Pull Request Title: {title}");
 
     client.create_entry()?;
 
@@ -56,15 +56,17 @@ async fn changelog_update(mut client: Client) -> Result<()> {
             ChangeKind::Removed => "Removed",
             ChangeKind::Security => "Security",
         };
-        println!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
+        log::info!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
     } else {
-        println!("No update required");
+        log::info!("No update required");
         return Ok(());
     };
 
-    println!("Changelog file name: {}", client.changelog());
+    log::debug!("Changelog file name: {}", client.changelog());
 
-    print_changelog(client.changelog());
+    if log::log_enabled!(log::Level::Debug) {
+        print_changelog(client.changelog());
+    };
 
     let report = client.repo_status()?;
     println!("Repo state:\n{report}");
