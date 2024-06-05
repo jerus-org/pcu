@@ -8,7 +8,7 @@ use crate::Error;
 use crate::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
-// const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
+const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
 const DEFAULT_CHANGELOG_COMMIT_MSG: &str = "chore: update changelog";
 
 pub struct Client {
@@ -123,6 +123,7 @@ impl Client {
         Ok(None)
     }
 
+    #[allow(dead_code)]
     pub fn commit_changelog(&self) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
@@ -142,24 +143,40 @@ impl Client {
             &[&parent],
         )?;
 
-        // let commit_buffer = self.git_repo.commit_create_buffer(
-        //     &sig,
-        //     &sig,
-        //     msg,
-        //     &self.git_repo.find_tree(tree_id)?,
-        //     &[&parent],
-        // )?;
-        // let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
+        Ok(commit_id.to_string())
+    }
 
-        // let signature = env::var(SIGNATURE_KEY)?;
+    #[allow(dead_code)]
+    pub fn commit_changelog_signed(&self) -> Result<String, Error> {
+        let mut index = self.git_repo.index()?;
+        index.add_path(Path::new(self.changelog()))?;
+        index.write()?;
+        let tree_id = index.write_tree()?;
+        let head = self.git_repo.head()?;
+        let parent = self.git_repo.find_commit(head.target().unwrap())?;
+        let sig = self.git_repo.signature()?;
+        let msg = DEFAULT_CHANGELOG_COMMIT_MSG;
 
-        // // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
-        // let short_sign = signature[12..].to_string();
-        // println!("Signature short: {short_sign}");
-        // let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
+        let commit_buffer = self.git_repo.commit_create_buffer(
+            &sig,
+            &sig,
+            msg,
+            &self.git_repo.find_tree(tree_id)?,
+            &[&parent],
+        )?;
+        let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
 
-        // // manually advance to the new commit id
-        // self.git_repo.head()?.set_target(commit_id, msg)?;
+        let signature = env::var(SIGNATURE_KEY)?;
+
+        println!("Signature: `{signature}`");
+
+        // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
+        let short_sign = signature[12..].to_string();
+        println!("Signature short: {short_sign}");
+        let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
+
+        // manually advance to the new commit id
+        self.git_repo.head()?.set_target(commit_id, msg)?;
 
         Ok(commit_id.to_string())
     }
