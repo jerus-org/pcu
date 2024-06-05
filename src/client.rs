@@ -167,13 +167,14 @@ impl Client {
         let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
 
         let signature = env::var(SIGNATURE_KEY)?;
+        let signature = signature.trim_end_matches('!');
 
         println!("Signature: `{:?}` ", signature.as_bytes());
 
         // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
         let short_sign = signature[12..].to_string();
         println!("Signature short: {short_sign}");
-        let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
+        let commit_id = self.git_repo.commit_signed(commit_str, signature, None)?;
 
         // manually advance to the new commit id
         self.git_repo.head()?.set_target(commit_id, msg)?;
