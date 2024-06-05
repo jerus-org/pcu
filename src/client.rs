@@ -8,7 +8,7 @@ use crate::Error;
 use crate::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
-const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
+// const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
 const DEFAULT_CHANGELOG_COMMIT_MSG: &str = "chore: update changelog";
 
 pub struct Client {
@@ -131,34 +131,35 @@ impl Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-
-        let email = sig.email().unwrap();
-        let email = email[..4].to_string();
-        println!("Email: {email}");
-
-        let name = sig.name().unwrap();
-        let name = name[..4].to_string();
-        println!("Name: {name}");
-
         let msg = DEFAULT_CHANGELOG_COMMIT_MSG;
-        let commit_buffer = self.git_repo.commit_create_buffer(
+
+        let commit_id = self.git_repo.commit(
+            Some("HEAD"),
             &sig,
             &sig,
             msg,
             &self.git_repo.find_tree(tree_id)?,
             &[&parent],
         )?;
-        let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
 
-        let signature = env::var(SIGNATURE_KEY)?;
+        // let commit_buffer = self.git_repo.commit_create_buffer(
+        //     &sig,
+        //     &sig,
+        //     msg,
+        //     &self.git_repo.find_tree(tree_id)?,
+        //     &[&parent],
+        // )?;
+        // let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
 
-        // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
-        let short_sign = signature[12..].to_string();
-        println!("Signature short: {short_sign}");
-        let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
+        // let signature = env::var(SIGNATURE_KEY)?;
 
-        // manually advance to the new commit id
-        self.git_repo.head()?.set_target(commit_id, msg)?;
+        // // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
+        // let short_sign = signature[12..].to_string();
+        // println!("Signature short: {short_sign}");
+        // let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
+
+        // // manually advance to the new commit id
+        // self.git_repo.head()?.set_target(commit_id, msg)?;
 
         Ok(commit_id.to_string())
     }
