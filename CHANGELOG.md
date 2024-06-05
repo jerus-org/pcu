@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Return early if the changelog has been updated already(pr [#93](https://github.com/jerus-org/pcu/pull/93))
+- logger and logging (pr [#102](https://github.com/jerus-org/pcu/pull/102))
 
 
 ### Changed
