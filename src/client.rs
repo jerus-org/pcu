@@ -168,7 +168,7 @@ impl Client {
 
         let signature = env::var(SIGNATURE_KEY)?;
 
-        println!("Signature: `{signature}`");
+        println!("Signature: `{:?}` ", signature.as_bytes());
 
         // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
         let short_sign = signature[12..].to_string();
