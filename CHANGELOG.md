@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Return early if the changelog has been updated already(pr [#93](https://github.com/jerus-org/pcu/pull/93))
 - logger and logging (pr [#102](https://github.com/jerus-org/pcu/pull/102))
 
+
 ### Changed
 
 - ci-tidy up and clarify removal of original ssh key(pr [#92](https://github.com/jerus-org/pcu/pull/92))
@@ -22,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor-remove commented out code(pr [#99](https://github.com/jerus-org/pcu/pull/99))
 - chore-return to using none in commit_signed(pr [#100](https://github.com/jerus-org/pcu/pull/100))
 - refactor-align var and restore simple commit without signing(pr [#101](https://github.com/jerus-org/pcu/pull/101))
+- refactor-remove redundant imports and functions(pr [#103](https://github.com/jerus-org/pcu/pull/103))
+
 
 ### Security
 
