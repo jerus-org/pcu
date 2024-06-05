@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor-remove commented out code(pr [#99](https://github.com/jerus-org/pcu/pull/99))
 - chore-return to using none in commit_signed(pr [#100](https://github.com/jerus-org/pcu/pull/100))
 - refactor-align var and restore simple commit without signing(pr [#101](https://github.com/jerus-org/pcu/pull/101))
+- refactor-remove redundant imports and functions(pr [#103](https://github.com/jerus-org/pcu/pull/103))
 
 
 ### Security
