@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor-align var and restore simple commit without signing(pr [#101](https://github.com/jerus-org/pcu/pull/101))
 - refactor-remove redundant imports and functions(pr [#103](https://github.com/jerus-org/pcu/pull/103))
 - chore-replace printlns with log macros(pr [#104](https://github.com/jerus-org/pcu/pull/104))
+- refactor-main update to use logs instead of println(pr [#106](https://github.com/jerus-org/pcu/pull/106))
 
 
 ### Fixed
