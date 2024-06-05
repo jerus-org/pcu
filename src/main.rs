@@ -71,7 +71,7 @@ async fn changelog_update(mut client: Client) -> Result<()> {
     println!("Repo state:\n{report}");
     println!("Branch status: {}", client.branch_status()?);
 
-    client.commit_changelog()?;
+    client.commit_changelog_signed()?;
     println!("Repo state (after commit):\n{}", client.repo_status()?);
     println!("Branch status: {}", client.branch_status()?);
 
