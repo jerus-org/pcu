@@ -8,25 +8,27 @@ use eyre::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::init();
+
     let client = match Client::new().await {
         Ok(client) => client,
         Err(e) => match e {
             Error::EnvVarPullRequestNotFound => {
-                println!("I am on the main branch, so nothing more to do!");
+                log::info!("I am on the main branch, so nothing more to do!");
                 return Ok(());
             }
             _ => return Err(e.into()),
         },
     };
 
-    println!(
+    log::info!(
         "On the `{}` branch, so time to get to work!",
         client.branch()
     );
 
     match changelog_update(client).await {
-        Ok(_) => println!("Changelog updated!"),
-        Err(e) => println!("Error updating changelog: {e}"),
+        Ok(_) => log::info!("Changelog updated!"),
+        Err(e) => log::error!("Error updating changelog: {e}"),
     };
 
     Ok(())
@@ -69,7 +71,7 @@ async fn changelog_update(mut client: Client) -> Result<()> {
     println!("Repo state:\n{report}");
     println!("Branch status: {}", client.branch_status()?);
 
-    client.commit_changelog()?;
+    client.commit_changelog_signed()?;
     println!("Repo state (after commit):\n{}", client.repo_status()?);
     println!("Branch status: {}", client.branch_status()?);
 
