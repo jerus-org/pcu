@@ -69,15 +69,15 @@ async fn changelog_update(mut client: Client) -> Result<()> {
     };
 
     let report = client.repo_status()?;
-    println!("Repo state:\n{report}");
-    println!("Branch status: {}", client.branch_status()?);
+    log::debug!("Before commit:Repo state: {report}");
+    log::debug!("before commit:Branch status: {}", client.branch_status()?);
 
     client.commit_changelog_signed()?;
-    println!("Repo state (after commit):\n{}", client.repo_status()?);
-    println!("Branch status: {}", client.branch_status()?);
+    log::debug!("After commit: Repo state: {}", client.repo_status()?);
+    log::debug!("After commit: Branch status: {}", client.branch_status()?);
 
     client.push_changelog()?;
-    println!("Branch status: {}", client.branch_status()?);
+    log::debug!("After push: Branch status: {}", client.branch_status()?);
 
     Ok(())
 }
