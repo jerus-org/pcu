@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-return to using none in commit_signed(pr [#100](https://github.com/jerus-org/pcu/pull/100))
 
 
+### Fixed
+
+- align with data in the env var(pr [#101](https://github.com/jerus-org/pcu/pull/101))
+
+
 ### Security
 
 - Security: adopt new ci bot signature(pr [#95](https://github.com/jerus-org/pcu/pull/95))
