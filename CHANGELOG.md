@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Return early if the changelog has been updated already(pr [#93](https://github.com/jerus-org/pcu/pull/93))
 
-
 ### Changed
 
 - ci-tidy up and clarify removal of original ssh key(pr [#92](https://github.com/jerus-org/pcu/pull/92))
@@ -20,8 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci-reorder ssh and gpg and git steps(pr [#97](https://github.com/jerus-org/pcu/pull/97))
 - chore-update branch message to remove personal pronoun(pr [#98](https://github.com/jerus-org/pcu/pull/98))
 - refactor-remove commented out code(pr [#99](https://github.com/jerus-org/pcu/pull/99))
-- chore-return to using none in commit_signed(pr [#100](https://github.com/jerus-org/pcu/pull/100))
-
 
 ### Security
 
