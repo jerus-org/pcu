@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
         Ok(client) => client,
         Err(e) => match e {
             Error::EnvVarPullRequestNotFound => {
-                println!("I am on the main branch, so nothing more to do!");
+                log::info!("I am on the main branch, so nothing more to do!");
                 return Ok(());
             }
             _ => return Err(e.into()),
