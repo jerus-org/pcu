@@ -155,9 +155,7 @@ impl Client {
         // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
         let short_sign = signature[12..].to_string();
         println!("Signature short: {short_sign}");
-        let commit_id = self
-            .git_repo
-            .commit_signed(commit_str, &signature, Some("gpgsig"))?;
+        let commit_id = self.git_repo.commit_signed(commit_str, &signature, None)?;
 
         // manually advance to the new commit id
         self.git_repo.head()?.set_target(commit_id, msg)?;
