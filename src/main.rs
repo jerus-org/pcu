@@ -8,6 +8,8 @@ use eyre::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::init();
+
     let client = match Client::new().await {
         Ok(client) => client,
         Err(e) => match e {
@@ -19,14 +21,14 @@ async fn main() -> Result<()> {
         },
     };
 
-    println!(
+    log::info!(
         "On the `{}` branch, so time to get to work!",
         client.branch()
     );
 
     match changelog_update(client).await {
-        Ok(_) => println!("Changelog updated!"),
-        Err(e) => println!("Error updating changelog: {e}"),
+        Ok(_) => log::info!("Changelog updated!"),
+        Err(e) => log::error!("Error updating changelog: {e}"),
     };
 
     Ok(())
