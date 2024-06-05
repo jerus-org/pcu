@@ -1,6 +1,5 @@
-use std::{fs, path::Path};
+use std::fs;
 
-use git2::Repository;
 use keep_a_changelog::ChangeKind;
 use pcu_lib::{Client, Error};
 
@@ -77,47 +76,6 @@ async fn changelog_update(mut client: Client) -> Result<()> {
 
     client.push_changelog()?;
     println!("Branch status: {}", client.branch_status()?);
-
-    Ok(())
-}
-
-#[allow(dead_code)]
-fn commit_changelog(changelog_path: &str) -> Result<(), git2::Error> {
-    println!("Committing changelog: {changelog_path}");
-    let files = std::fs::read_dir(".").unwrap();
-    println!("Files: ");
-    for file in files.into_iter().flatten() {
-        println!("\t{:?}", file.path());
-    }
-
-    let repo = Repository::open(".")?;
-
-    println!("Repo state (before commit): {:?}", repo.state());
-
-    let mut index = repo.index()?;
-    index.add_path(Path::new(changelog_path))?;
-    index.write()?;
-    let tree_id = index.write_tree()?;
-    let head = repo.head()?;
-    let parent = repo.find_commit(head.target().unwrap())?;
-    let sig = repo.signature()?;
-
-    println!("Ready to commit with tree id: {tree_id}, sig: {sig}");
-
-    let _commit_id = repo.commit(
-        Some("HEAD"),
-        &sig,
-        &sig,
-        "Update changelog",
-        &repo.find_tree(tree_id)?,
-        &[&parent],
-    )?;
-
-    println!("Repo state (after commit): {:?}", repo.state());
-
-    // let mut remote = repo.remote("origin", "https://github.com/jerus-org/pcu.git")?;
-    // remote.push(&["master"], None)?;
-    // println!("Pushed to remote origin");
 
     Ok(())
 }
