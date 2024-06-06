@@ -196,7 +196,7 @@ impl Client {
         let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
         print!("Secured access to stdin");
 
-        println!("Input for signing: {}", commit_str);
+        println!("Input for signing:\n{}", commit_str);
 
         stdin.write_all(commit_str.as_bytes())?;
         println!("writing complete");
@@ -224,14 +224,17 @@ impl Client {
 
         let signed_commit = std::str::from_utf8(&output.stdout)?;
 
-        println!("secured signed commit: {}", signed_commit);
+        println!("secured signed commit:\n{}", signed_commit);
 
         let commit_id = self
             .git_repo
             .commit_signed(signed_commit, &signature, Some("gpgsig"))?;
 
+        println!("commit id: {}", commit_id);
         // manually advance to the new commit id
         self.git_repo.head()?.set_target(commit_id, msg)?;
+
+        println!("head updated");
 
         Ok(commit_id.to_string())
     }
