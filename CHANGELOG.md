@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-add logging for input before writing to stdin(pr [#110](https://github.com/jerus-org/pcu/pull/110))
 - docs-tidy up changelog(pr [#111](https://github.com/jerus-org/pcu/pull/111))
 - chore-catch up the changelog(pr [#112](https://github.com/jerus-org/pcu/pull/112))
+- chore-remove blank lines(pr [#113](https://github.com/jerus-org/pcu/pull/113))
 
 
 ### Fixed
