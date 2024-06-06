@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs-tidy up changelog(pr [#111](https://github.com/jerus-org/pcu/pull/111))
 - chore-catch up the changelog(pr [#112](https://github.com/jerus-org/pcu/pull/112))
 - chore-remove blank lines(pr [#113](https://github.com/jerus-org/pcu/pull/113))
+- chore-remove blanks(pr [#114](https://github.com/jerus-org/pcu/pull/114))
 
 
 ### Fixed
