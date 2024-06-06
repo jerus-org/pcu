@@ -222,7 +222,7 @@ impl Client {
 
         let signed_commit = std::str::from_utf8(&output.stdout)?;
 
-        println!("secured signed commit");
+        println!("secured signed commit: {}", signed_commit);
 
         let commit_id = self
             .git_repo
