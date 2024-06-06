@@ -1,4 +1,11 @@
-use std::{env, ffi::OsString, path::Path, str::FromStr};
+use std::{
+    env,
+    ffi::OsString,
+    io::Write,
+    path::Path,
+    process::{Command, Stdio},
+    str::FromStr,
+};
 
 use git2::{BranchType, Cred, Direction, RemoteCallbacks, Repository};
 use keep_a_changelog::ChangeKind;
@@ -8,8 +15,10 @@ use crate::Error;
 use crate::PrTitle;
 
 const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
+#[allow(dead_code)]
 const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
 const DEFAULT_CHANGELOG_COMMIT_MSG: &str = "chore: update changelog";
+const GIT_USER_SIGNATURE: &str = "user.signingkey";
 
 pub struct Client {
     git_repo: Repository,
@@ -166,15 +175,50 @@ impl Client {
         )?;
         let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
 
-        let signature = env::var(SIGNATURE_KEY)?;
-        let signature = signature.trim_end_matches('!');
+        // let signature = env::var(SIGNATURE_KEY)?;
+        let signature = self.git_repo.config()?.get_string(GIT_USER_SIGNATURE)?;
 
         println!("Signature: `{:?}` ", signature.as_bytes());
 
         // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
         let short_sign = signature[12..].to_string();
         println!("Signature short: {short_sign}");
-        let commit_id = self.git_repo.commit_signed(commit_str, signature, None)?;
+
+        let gpg_args = vec!["--status-fd", "2", "-bsau", signature.as_str()];
+        let mut cmd = Command::new("gpg");
+        cmd.args(gpg_args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        let mut child = cmd.spawn()?;
+
+        let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
+
+        stdin.write_all(commit_str.as_bytes())?;
+
+        let output = child.wait_with_output()?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            println!("stderr: {}", stderr);
+            return Err(Error::Stdout(stderr.to_string()));
+        }
+
+        let stderr = std::str::from_utf8(&output.stderr)?;
+
+        if !stderr.contains("\n[GNUPG:] SIG_CREATED ") {
+            return Err(Error::GpgError(
+                "failed to sign data, program gpg failed, SIG_CREATED not seen in stderr"
+                    .to_string(),
+            ));
+        }
+
+        let signed_commit = std::str::from_utf8(&output.stdout)?;
+
+        let commit_id = self
+            .git_repo
+            .commit_signed(signed_commit, &signature, Some("gpgsig"))?;
 
         // manually advance to the new commit id
         self.git_repo.head()?.set_target(commit_id, msg)?;
