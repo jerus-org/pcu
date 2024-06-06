@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Return early if the changelog has been updated already(pr [#93](https://github.com/jerus-org/pcu/pull/93))
 - logger and logging (pr [#102](https://github.com/jerus-org/pcu/pull/102))
 - sign the commit using gpg(pr [#107](https://github.com/jerus-org/pcu/pull/107))
+- add CLI flag to set verbosity of logs(pr [#117](https://github.com/jerus-org/pcu/pull/117))
 
 ### Changed
 
