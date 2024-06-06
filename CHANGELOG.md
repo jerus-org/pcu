@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - logger and logging (pr [#102](https://github.com/jerus-org/pcu/pull/102))
 - sign the commit using gpg(pr [#107](https://github.com/jerus-org/pcu/pull/107))
 
-
 ### Changed
 
 - ci-tidy up and clarify removal of original ssh key(pr [#92](https://github.com/jerus-org/pcu/pull/92))
@@ -28,11 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-replace printlns with log macros(pr [#104](https://github.com/jerus-org/pcu/pull/104))
 - refactor-main update to use logs instead of println(pr [#106](https://github.com/jerus-org/pcu/pull/106))
 
-
 ### Fixed
 
 - trim exclamation point from end of subkey(pr [#105](https://github.com/jerus-org/pcu/pull/105))
-
 
 ### Security
 
