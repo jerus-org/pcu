@@ -196,6 +196,7 @@ impl Client {
         let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
 
         stdin.write_all(commit_str.as_bytes())?;
+        drop(stdin); // close stdin to not block indefinitely
 
         let output = child.wait_with_output()?;
 
