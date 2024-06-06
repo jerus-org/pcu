@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - logger and logging (pr [#102](https://github.com/jerus-org/pcu/pull/102))
 - sign the commit using gpg(pr [#107](https://github.com/jerus-org/pcu/pull/107))
 
+
 ### Changed
 
 - ci-tidy up and clarify removal of original ssh key(pr [#92](https://github.com/jerus-org/pcu/pull/92))
@@ -32,10 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs-tidy up changelog(pr [#111](https://github.com/jerus-org/pcu/pull/111))
 - chore-catch up the changelog(pr [#112](https://github.com/jerus-org/pcu/pull/112))
 - chore-remove blank lines(pr [#113](https://github.com/jerus-org/pcu/pull/113))
+- chore-remove blanks(pr [#114](https://github.com/jerus-org/pcu/pull/114))
+
 
 ### Fixed
 
 - trim exclamation point from end of subkey(pr [#105](https://github.com/jerus-org/pcu/pull/105))
+
 
 ### Security
 
