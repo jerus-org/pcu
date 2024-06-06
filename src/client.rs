@@ -67,7 +67,7 @@ impl Client {
         let mut changelog = OsString::from(CHANGELOG_FILENAME);
         if let Ok(files) = std::fs::read_dir(".") {
             for file in files.into_iter().flatten() {
-                println!("File: {:?}", file.path());
+                log::trace!("File: {:?}", file.path());
 
                 if file.file_name().to_string_lossy().contains("change")
                     && file.file_type().unwrap().is_file()
@@ -228,7 +228,7 @@ impl Client {
 
     pub fn push_changelog(&self) -> Result<(), Error> {
         let mut remote = self.git_repo.find_remote("origin")?;
-        println!("Pushing changes to {:?}", remote.name());
+        log::trace!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
         callbacks.credentials(|_url, username_from_url, _allowed_types| {
             Cred::ssh_key_from_agent(username_from_url.unwrap())
@@ -237,9 +237,9 @@ impl Client {
         let remote = connection.remote();
 
         let branch = self.git_repo.find_branch(&self.branch, BranchType::Local)?;
-        println!("Found branch: {}", branch.name()?.unwrap());
+        log::trace!("Found branch: {}", branch.name()?.unwrap());
         let push_refs = branch.into_reference();
-        println!("Push refs: {}", push_refs.name().unwrap());
+        log::trace!("Push refs: {}", push_refs.name().unwrap());
 
         remote.push(&[push_refs.name().unwrap()], None)?;
 
@@ -513,7 +513,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
     if header {
         changed_in_workdir = true;
-        println!("#");
+        output = format!("{}\n#\n", output);
     }
     header = false;
 
