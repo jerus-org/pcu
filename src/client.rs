@@ -180,10 +180,10 @@ impl Client {
 
         // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
         let short_sign = signature[12..].to_string();
-        println!("Signature short: {short_sign}");
+        log::trace!("Signature short: {short_sign}");
 
         let gpg_args = vec!["--status-fd", "2", "-bsau", signature.as_str()];
-        println!("gpg args: {:?}", gpg_args);
+        log::trace!("gpg args: {:?}", gpg_args);
 
         let mut cmd = Command::new("gpg");
         cmd.args(gpg_args)
@@ -194,21 +194,21 @@ impl Client {
         let mut child = cmd.spawn()?;
 
         let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
-        println!("Secured access to stdin");
+        log::trace!("Secured access to stdin");
 
-        println!("Input for signing:\n-----\n{}\n-----", commit_str);
+        log::trace!("Input for signing:\n-----\n{}\n-----", commit_str);
 
         stdin.write_all(commit_str.as_bytes())?;
-        println!("writing complete");
+        log::trace!("writing complete");
         drop(stdin); // close stdin to not block indefinitely
-        println!("stdin closed");
+        log::trace!("stdin closed");
 
         let output = child.wait_with_output()?;
-        println!("secured output");
+        log::trace!("secured output");
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            println!("stderr: {}", stderr);
+            log::trace!("stderr: {}", stderr);
             return Err(Error::Stdout(stderr.to_string()));
         }
 
@@ -220,21 +220,21 @@ impl Client {
                     .to_string(),
             ));
         }
-        println!("Error checking completed without error");
+        log::trace!("Error checking completed without error");
 
         let commit_signature = std::str::from_utf8(&output.stdout)?;
 
-        println!("secured signed commit:\n{}", commit_signature);
+        log::trace!("secured signed commit:\n{}", commit_signature);
 
         let commit_id =
             self.git_repo
                 .commit_signed(commit_str, commit_signature, Some("gpgsig"))?;
 
-        println!("commit id: {}", commit_id);
+        log::trace!("commit id: {}", commit_id);
         // manually advance to the new commit id
         self.git_repo.head()?.set_target(commit_id, msg)?;
 
-        println!("head updated");
+        log::trace!("head updated");
 
         Ok(commit_id.to_string())
     }
@@ -357,7 +357,7 @@ impl Client {
     pub fn repo_status(&self) -> Result<String, Error> {
         let statuses = self.git_repo.statuses(None)?;
 
-        println!("Repo status length: {:?}", statuses.len());
+        log::trace!("Repo status length: {:?}", statuses.len());
 
         let report = print_long(&statuses);
         Ok(report)
