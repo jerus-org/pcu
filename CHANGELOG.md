@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - logger and logging (pr [#102](https://github.com/jerus-org/pcu/pull/102))
 - sign the commit using gpg(pr [#107](https://github.com/jerus-org/pcu/pull/107))
 
+
 ### Changed
 
 - ci-tidy up and clarify removal of original ssh key(pr [#92](https://github.com/jerus-org/pcu/pull/92))
@@ -26,10 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor-remove redundant imports and functions(pr [#103](https://github.com/jerus-org/pcu/pull/103))
 - chore-replace printlns with log macros(pr [#104](https://github.com/jerus-org/pcu/pull/104))
 - refactor-main update to use logs instead of println(pr [#106](https://github.com/jerus-org/pcu/pull/106))
+- chore-move all but current println to logging(pr [#108](https://github.com/jerus-org/pcu/pull/108))
+- chore-decorate signing with log messages(pr [#109](https://github.com/jerus-org/pcu/pull/109))
+- chore-add logging for input before writing to stdin(pr [#110](https://github.com/jerus-org/pcu/pull/110))
+- docs-tidy up changelog(pr [#111](https://github.com/jerus-org/pcu/pull/111))
+- chore-catch up the changelog(pr [#112](https://github.com/jerus-org/pcu/pull/112))
+
 
 ### Fixed
 
 - trim exclamation point from end of subkey(pr [#105](https://github.com/jerus-org/pcu/pull/105))
+
 
 ### Security
 
