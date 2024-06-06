@@ -196,6 +196,8 @@ impl Client {
         let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
         print!("Secured access to stdin");
 
+        println!("Input for signing: {}", commit_str);
+
         stdin.write_all(commit_str.as_bytes())?;
         println!("writing complete");
         drop(stdin); // close stdin to not block indefinitely
