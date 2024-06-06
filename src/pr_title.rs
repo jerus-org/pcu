@@ -160,21 +160,21 @@ impl PrTitle {
         let log_file = log_file.to_str().unwrap();
         self.calculate_section_and_entry();
 
-        println!("Changelog entry:\n\n---\n{}\n---\n\n", self.entry());
+        log::trace!("Changelog entry:\n\n---\n{}\n---\n\n", self.entry());
 
         let mut change_log = if path::Path::new(log_file).exists() {
             let file_contents = fs::read_to_string(path::Path::new(log_file)).unwrap();
-            println!("file contents:\n---\n{}\n---\n\n", file_contents);
+            log::trace!("file contents:\n---\n{}\n---\n\n", file_contents);
             if file_contents.contains(&self.entry) {
-                println!("The changelog already contains the entry!");
+                log::trace!("The changelog already contains the entry!");
                 return None;
             } else {
-                println!("The changelog does not contain the entry!");
+                log::trace!("The changelog does not contain the entry!");
             }
-            println!("The changelog exists!");
+            log::trace!("The changelog exists!");
             Changelog::parse_from_file(log_file, None).unwrap()
         } else {
-            println!("The changelog does not exist!");
+            log::trace!("The changelog does not exist!");
             let mut changelog = ChangelogBuilder::default().build().unwrap();
             log::debug!("Changelog: {:#?}", changelog);
             let release = Release::builder().build().unwrap();
