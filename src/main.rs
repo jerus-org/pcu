@@ -12,9 +12,9 @@ const LOG_STYLE_ENV_VAR: &str = "PCU_LOG_STYLE";
 
 #[derive(ValueEnum, Debug, Default, Clone)]
 enum Sign {
-    None,
     #[default]
     Gpg,
+    None,
 }
 
 #[derive(Parser, Debug)]
