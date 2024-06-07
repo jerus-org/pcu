@@ -1,11 +1,14 @@
-use std::fs;
+use std::{env, fs};
 
 use clap::Parser;
-use env_logger::WriteStyle;
+use env_logger::Env;
 use keep_a_changelog::ChangeKind;
 use pcu_lib::{Client, Error};
 
 use eyre::Result;
+
+const LOG_ENV_VAR: &str = "PCU_LOG";
+const LOG_STYLE_ENV_VAR: &str = "PCU_LOG_STYLE";
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -37,7 +40,7 @@ async fn main() -> Result<()> {
         client.branch()
     );
 
-    match changelog_update(client).await {
+    match run_update(client).await {
         Ok(_) => log::info!("Changelog updated!"),
         Err(e) => log::error!("Error updating changelog: {e}"),
     };
@@ -45,7 +48,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn changelog_update(mut client: Client) -> Result<()> {
+async fn run_update(mut client: Client) -> Result<()> {
     log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
@@ -107,13 +110,17 @@ fn print_changelog(changelog_path: &str) {
 
 fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     println!("Making builder with Log level: {level}");
-    let mut builder = env_logger::Builder::new();
 
-    builder.filter(None, level);
+    let env = Env::new()
+        .filter_or(LOG_ENV_VAR, level.to_string())
+        .write_style_or(LOG_STYLE_ENV_VAR, "auto");
+
+    let mut builder = env_logger::Builder::from_env(env);
+
+    if env::var(LOG_ENV_VAR).is_err() {
+        builder.filter_module("pcu;pcu_lib", level);
+    }
     builder.format_timestamp_secs();
-    builder.write_style(WriteStyle::Auto);
-
-    builder.format_timestamp_secs().format_module_path(false);
 
     builder
 }
