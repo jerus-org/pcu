@@ -135,13 +135,14 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     println!("Making builder with Log level: {level}");
 
     let env = Env::new()
-        .filter_or(LOG_ENV_VAR, "level.to_string()")
+        .filter_or(LOG_ENV_VAR, "off")
         .write_style_or(LOG_STYLE_ENV_VAR, "auto");
 
     let mut builder = env_logger::Builder::from_env(env);
 
     if env::var(LOG_ENV_VAR).is_err() {
-        builder.filter_module("pcu;pcu_lib", level);
+        builder.filter_module("pcu", level);
+        builder.filter_module("pcu_lib", level);
     }
     builder.format_timestamp_secs();
 
