@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - logger and logging (pr [#102](https://github.com/jerus-org/pcu/pull/102))
 - sign the commit using gpg(pr [#107](https://github.com/jerus-org/pcu/pull/107))
 - add CLI flag to set verbosity of logs(pr [#117](https://github.com/jerus-org/pcu/pull/117))
-- add constants for log environment variables(pr [#118](https://github.com/jerus-org/pcu/pull/118))
 
 ### Changed
 
