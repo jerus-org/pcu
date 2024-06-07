@@ -1,6 +1,7 @@
 use std::fs;
 
 use clap::Parser;
+use env_logger::WriteStyle;
 use keep_a_changelog::ChangeKind;
 use pcu_lib::{Client, Error};
 
@@ -16,6 +17,7 @@ struct Cli {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
+    println!("args: {args:?}");
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
 
@@ -104,9 +106,12 @@ fn print_changelog(changelog_path: &str) {
 }
 
 fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
+    println!("Making builder with Log level: {level}");
     let mut builder = env_logger::Builder::new();
 
     builder.filter(None, level);
+    builder.format_timestamp_secs();
+    builder.write_style(WriteStyle::Auto);
 
     builder.format_timestamp_secs().format_module_path(false);
 
