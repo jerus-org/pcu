@@ -77,20 +77,22 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
 
     client.create_entry()?;
 
-    if let Some((section, entry)) = client.update_changelog()? {
-        let section = match section {
-            ChangeKind::Added => "Added",
-            ChangeKind::Changed => "Changed",
-            ChangeKind::Deprecated => "Deprecated",
-            ChangeKind::Fixed => "Fixed",
-            ChangeKind::Removed => "Removed",
-            ChangeKind::Security => "Security",
+    if log::log_enabled!(log::Level::Info) {
+        if let Some((section, entry)) = client.update_changelog()? {
+            let section = match section {
+                ChangeKind::Added => "Added",
+                ChangeKind::Changed => "Changed",
+                ChangeKind::Deprecated => "Deprecated",
+                ChangeKind::Fixed => "Fixed",
+                ChangeKind::Removed => "Removed",
+                ChangeKind::Security => "Security",
+            };
+            log::info!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
+        } else {
+            log::info!("No update required");
+            return Ok(());
         };
-        log::info!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
-    } else {
-        log::info!("No update required");
-        return Ok(());
-    };
+    }
 
     log::debug!("Changelog file name: {}", client.changelog());
 
