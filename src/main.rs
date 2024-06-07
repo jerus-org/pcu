@@ -131,5 +131,6 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     }
     builder.format_timestamp_secs();
 
+    println!("Builder: {builder:#?}");
     builder
 }
