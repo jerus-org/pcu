@@ -94,7 +94,7 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
 
     log::debug!("Changelog file name: {}", client.changelog());
 
-    if log::log_enabled!(log::Level::Debug) {
+    if log::log_enabled!(log::Level::Trace) {
         print_changelog(client.changelog());
     };
 
