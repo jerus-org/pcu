@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
         client.branch()
     );
 
-    match run_update(client).await {
+    match run_update(client, args.sign).await {
         Ok(_) => log::info!("Changelog updated!"),
         Err(e) => log::error!("Error updating changelog: {e}"),
     };
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_update(mut client: Client) -> Result<()> {
+async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
     log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
@@ -96,7 +96,15 @@ async fn run_update(mut client: Client) -> Result<()> {
     log::debug!("Before commit:Repo state: {report}");
     log::debug!("before commit:Branch status: {}", client.branch_status()?);
 
-    client.commit_changelog_signed()?;
+    match sign {
+        Sign::Gpg => {
+            client.commit_changelog_gpg()?;
+        }
+        Sign::None => {
+            client.commit_changelog()?;
+        }
+    }
+
     log::debug!("After commit: Repo state: {}", client.repo_status()?);
     log::debug!("After commit: Branch status: {}", client.branch_status()?);
 
