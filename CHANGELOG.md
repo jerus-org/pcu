@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add CLI flag to set verbosity of logs(pr [#117](https://github.com/jerus-org/pcu/pull/117))
 - allow log environment variables to override command line(pr [#118](https://github.com/jerus-org/pcu/pull/118))
 - add Sign enum and sign field to Cli struct(pr [#121](https://github.com/jerus-org/pcu/pull/121))
+- add match for sign types in run_update function(pr [#122](https://github.com/jerus-org/pcu/pull/122))
 
 ### Changed
 
