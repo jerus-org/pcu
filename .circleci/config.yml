@@ -105,7 +105,7 @@ jobs:
           name: Update changelog
           command: |
             pcu -h
-            pcu -vv
+            pcu -vvv
   make-release:
     executor: rust-env
     steps:
