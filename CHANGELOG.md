@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - trim exclamation point from end of subkey(pr [#105](https://github.com/jerus-org/pcu/pull/105))
+- change log level from Debug to Trace in run_update function(pr [#123](https://github.com/jerus-org/pcu/pull/123))
 
 ### Security
 
