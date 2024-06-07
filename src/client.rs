@@ -156,7 +156,7 @@ impl Client {
     }
 
     #[allow(dead_code)]
-    pub fn commit_changelog_signed(&self) -> Result<String, Error> {
+    pub fn commit_changelog_gpg(&self) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
         index.write()?;

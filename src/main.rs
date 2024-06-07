@@ -23,7 +23,7 @@ struct Cli {
     #[clap(flatten)]
     logging: clap_verbosity_flag::Verbosity,
     #[clap(short, long)]
-    sign: Sign,
+    sign: Option<Sign>,
 }
 
 #[tokio::main]
@@ -49,7 +49,13 @@ async fn main() -> Result<()> {
         client.branch()
     );
 
-    match run_update(client).await {
+    let sign = if let Some(sign) = args.sign {
+        sign
+    } else {
+        Sign::default()
+    };
+
+    match run_update(client, sign).await {
         Ok(_) => log::info!("Changelog updated!"),
         Err(e) => log::error!("Error updating changelog: {e}"),
     };
@@ -57,7 +63,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_update(mut client: Client) -> Result<()> {
+async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
     log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
@@ -96,7 +102,15 @@ async fn run_update(mut client: Client) -> Result<()> {
     log::debug!("Before commit:Repo state: {report}");
     log::debug!("before commit:Branch status: {}", client.branch_status()?);
 
-    client.commit_changelog_signed()?;
+    match sign {
+        Sign::Gpg => {
+            client.commit_changelog_gpg()?;
+        }
+        Sign::None => {
+            client.commit_changelog()?;
+        }
+    }
+
     log::debug!("After commit: Repo state: {}", client.repo_status()?);
     log::debug!("After commit: Branch status: {}", client.branch_status()?);
 
@@ -121,7 +135,7 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     println!("Making builder with Log level: {level}");
 
     let env = Env::new()
-        .filter_or(LOG_ENV_VAR, level.to_string())
+        .filter_or(LOG_ENV_VAR, "level.to_string()")
         .write_style_or(LOG_STYLE_ENV_VAR, "auto");
 
     let mut builder = env_logger::Builder::from_env(env);
