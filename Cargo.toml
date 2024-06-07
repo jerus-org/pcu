@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["jerusdp <jrussell@jerus.ie>"]
 description = "A CI tool to update change log in a PR"
-rust-version = "1.73"
+rust-version = "1.74"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/jerus-org/pcu"
@@ -22,6 +22,8 @@ git2 = "0.18.3"
 eyre = "0.6.12"
 thiserror = "1.0.61"
 env_logger = "0.11.3"
+clap = "4.5.4"
+clap-verbosity-flag = "2.2.0"
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"

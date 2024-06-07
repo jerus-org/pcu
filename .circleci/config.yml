@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   min-rust-version:
     type: string
-    default: "1.73"
+    default: "1.74"
 
 executors:
   rust-env:
@@ -104,8 +104,8 @@ jobs:
       - run:
           name: Update changelog
           command: |
-            pcu 
-
+            pcu -h
+            pcu -vv
   make-release:
     executor: rust-env
     steps:
