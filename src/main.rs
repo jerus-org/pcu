@@ -1,6 +1,6 @@
 use std::{env, fs};
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
 use pcu_lib::{Client, Error};
@@ -10,11 +10,20 @@ use eyre::Result;
 const LOG_ENV_VAR: &str = "PCU_LOG";
 const LOG_STYLE_ENV_VAR: &str = "PCU_LOG_STYLE";
 
+#[derive(ValueEnum, Debug, Default, Clone)]
+enum Sign {
+    None,
+    #[default]
+    Gpg,
+}
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     #[clap(flatten)]
     logging: clap_verbosity_flag::Verbosity,
+    #[clap(short, long)]
+    sign: Sign,
 }
 
 #[tokio::main]
