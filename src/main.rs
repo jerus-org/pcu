@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
         client.branch()
     );
 
-    match changelog_update(client).await {
+    match run_update(client).await {
         Ok(_) => log::info!("Changelog updated!"),
         Err(e) => log::error!("Error updating changelog: {e}"),
     };
@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn changelog_update(mut client: Client) -> Result<()> {
+async fn run_update(mut client: Client) -> Result<()> {
     log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
