@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-remove blanks(pr [#114](https://github.com/jerus-org/pcu/pull/114))
 - chore-display messages using logging(pr [#115](https://github.com/jerus-org/pcu/pull/115))
 - refactor-replace println with logging(pr [#116](https://github.com/jerus-org/pcu/pull/116))
+- refactor-rename changelog_update function to run_update(pr [#118](https://github.com/jerus-org/pcu/pull/118))
 
 ### Fixed
 
