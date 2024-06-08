@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
         Ok(client) => client,
         Err(e) => match e {
             Error::EnvVarPullRequestNotFound => {
-                log::info!("I am on the main branch, so nothing more to do!");
+                log::info!("On the main branch, so nothing more to do!");
                 return Ok(());
             }
             _ => return Err(e.into()),
@@ -88,7 +88,7 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
                 ChangeKind::Removed => "Removed",
                 ChangeKind::Security => "Security",
             };
-            log::info!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
+            log::info!("Amendment: In section `{section}`, adding `{entry}`");
         } else {
             log::info!("No update required");
             return Ok(());
@@ -149,20 +149,34 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
 }
 
 fn get_settings() {
-    let settings = Config::builder()
+    let mut settings = Config::builder()
         // Add in `./Settings.toml`
-        .add_source(config::File::with_name("examples/simple/Settings"))
+        .add_source(config::File::with_name("pcu.toml"))
         // Add in settings from the environment (with a prefix of APP)
         // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
         .add_source(config::Environment::with_prefix("PCU"))
-        .build()
-        .unwrap();
+        .build();
 
-    // Print out our settings (as a HashMap)
-    println!(
-        "{:?}",
+    settings = if let Err(e) = &settings {
+        println!("Error: {e}");
+        Config::builder()
+            // Add in `./Settings.toml`
+            .add_source(config::File::with_name("pcu.toml"))
+            // Add in settings from the environment (with a prefix of APP)
+            // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+            .add_source(config::Environment::with_prefix("PCU"))
+            .build()
+    } else {
         settings
-            .try_deserialize::<HashMap<String, String>>()
-            .unwrap()
-    );
+    };
+
+    if let Ok(settings) = settings {
+        // Print out our settings (as a HashMap)
+        println!(
+            "{:?}",
+            settings
+                .try_deserialize::<HashMap<String, String>>()
+                .unwrap()
+        );
+    }
 }
