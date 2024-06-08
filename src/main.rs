@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
         Ok(client) => client,
         Err(e) => match e {
             Error::EnvVarPullRequestNotFound => {
-                log::info!("I am on the main branch, so nothing more to do!");
+                log::info!("On the main branch, so nothing more to do!");
                 return Ok(());
             }
             _ => return Err(e.into()),
@@ -88,7 +88,7 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
                 ChangeKind::Removed => "Removed",
                 ChangeKind::Security => "Security",
             };
-            log::info!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
+            log::info!("Amendment: In section `{section}`, adding `{entry}`");
         } else {
             log::info!("No update required");
             return Ok(());
