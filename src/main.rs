@@ -1,6 +1,7 @@
-use std::fs;
+use std::{collections::HashMap, fs};
 
 use clap::{Parser, ValueEnum};
+use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
 use pcu_lib::{Client, Error};
@@ -28,6 +29,7 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    get_settings();
     let args = Cli::parse();
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
@@ -144,4 +146,23 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     builder.format_timestamp_secs();
 
     builder
+}
+
+fn get_settings() {
+    let settings = Config::builder()
+        // Add in `./Settings.toml`
+        .add_source(config::File::with_name("examples/simple/Settings"))
+        // Add in settings from the environment (with a prefix of APP)
+        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+        .add_source(config::Environment::with_prefix("PCU"))
+        .build()
+        .unwrap();
+
+    // Print out our settings (as a HashMap)
+    println!(
+        "{:?}",
+        settings
+            .try_deserialize::<HashMap<String, String>>()
+            .unwrap()
+    );
 }
