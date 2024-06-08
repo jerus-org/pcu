@@ -7,8 +7,8 @@ use pcu_lib::{Client, Error};
 
 use eyre::Result;
 
-const LOG_ENV_VAR: &str = "PCU_LOG";
-const LOG_STYLE_ENV_VAR: &str = "PCU_LOG_STYLE";
+const LOG_ENV_VAR: &str = "RUST_LOG";
+const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 
 #[derive(ValueEnum, Debug, Default, Clone)]
 enum Sign {
