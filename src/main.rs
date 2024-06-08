@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::fs;
 
 use clap::{Parser, ValueEnum};
 use env_logger::Env;
@@ -7,14 +7,14 @@ use pcu_lib::{Client, Error};
 
 use eyre::Result;
 
-const LOG_ENV_VAR: &str = "PCU_LOG";
-const LOG_STYLE_ENV_VAR: &str = "PCU_LOG_STYLE";
+const LOG_ENV_VAR: &str = "RUST_LOG";
+const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 
 #[derive(ValueEnum, Debug, Default, Clone)]
 enum Sign {
-    None,
     #[default]
     Gpg,
+    None,
 }
 
 #[derive(Parser, Debug)]
@@ -29,7 +29,6 @@ struct Cli {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
-    println!("args: {args:?}");
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
 
@@ -77,20 +76,22 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
 
     client.create_entry()?;
 
-    if let Some((section, entry)) = client.update_changelog()? {
-        let section = match section {
-            ChangeKind::Added => "Added",
-            ChangeKind::Changed => "Changed",
-            ChangeKind::Deprecated => "Deprecated",
-            ChangeKind::Fixed => "Fixed",
-            ChangeKind::Removed => "Removed",
-            ChangeKind::Security => "Security",
+    if log::log_enabled!(log::Level::Info) {
+        if let Some((section, entry)) = client.update_changelog()? {
+            let section = match section {
+                ChangeKind::Added => "Added",
+                ChangeKind::Changed => "Changed",
+                ChangeKind::Deprecated => "Deprecated",
+                ChangeKind::Fixed => "Fixed",
+                ChangeKind::Removed => "Removed",
+                ChangeKind::Security => "Security",
+            };
+            log::info!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
+        } else {
+            log::info!("No update required");
+            return Ok(());
         };
-        log::info!("Proposed addition to change log unreleased changes: In Section: `{section}` add the following entry: `{entry}`");
-    } else {
-        log::info!("No update required");
-        return Ok(());
-    };
+    }
 
     log::debug!("Changelog file name: {}", client.changelog());
 
@@ -132,20 +133,15 @@ fn print_changelog(changelog_path: &str) {
 }
 
 fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
-    println!("Making builder with Log level: {level}");
-
     let env = Env::new()
         .filter_or(LOG_ENV_VAR, "off")
         .write_style_or(LOG_STYLE_ENV_VAR, "auto");
 
     let mut builder = env_logger::Builder::from_env(env);
 
-    if env::var(LOG_ENV_VAR).is_err() {
-        builder.filter_module("pcu", level);
-        builder.filter_module("pcu_lib", level);
-    }
+    builder.filter_module("pcu", level);
+    builder.filter_module("pcu_lib", level);
     builder.format_timestamp_secs();
 
-    println!("Builder: {builder:#?}");
     builder
 }
