@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::fs;
 
 use clap::{Parser, ValueEnum};
 use env_logger::Env;
