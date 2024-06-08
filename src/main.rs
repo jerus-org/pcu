@@ -29,7 +29,6 @@ struct Cli {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
-    println!("args: {args:?}");
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
 
@@ -134,8 +133,6 @@ fn print_changelog(changelog_path: &str) {
 }
 
 fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
-    println!("Making builder with Log level: {level}");
-
     let env = Env::new()
         .filter_or(LOG_ENV_VAR, "off")
         .write_style_or(LOG_STYLE_ENV_VAR, "auto");
@@ -148,6 +145,5 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     }
     builder.format_timestamp_secs();
 
-    println!("Builder: {builder:#?}");
     builder
 }
