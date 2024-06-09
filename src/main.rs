@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::fs;
 
 use clap::{Parser, ValueEnum};
 use config::Config;
@@ -172,10 +172,9 @@ fn get_settings() {
         Ok(settings) => {
             // Print out our settings (as a HashMap)
             println!(
-                "{:?}",
-                settings
-                    .try_deserialize::<HashMap<String, String>>()
-                    .unwrap()
+                "{:#?}",
+                settings // .try_deserialize::<HashMap<String, String>>()
+                         // .unwrap()
             );
         }
         Err(e) => {
