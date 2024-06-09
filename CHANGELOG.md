@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add Sign enum and sign field to Cli struct(pr [#121](https://github.com/jerus-org/pcu/pull/121))
 - add match for sign types in run_update function(pr [#122](https://github.com/jerus-org/pcu/pull/122))
 - add config crate to Cargo.toml and implement get_settings function in main.rs(pr [#127](https://github.com/jerus-org/pcu/pull/127))
+- add error handling for settings(pr [#129](https://github.com/jerus-org/pcu/pull/129))
 
 ### Changed
 
