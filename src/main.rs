@@ -160,8 +160,6 @@ fn get_settings() {
     settings = if let Err(e) = &settings {
         println!("Error: {e}");
         Config::builder()
-            // Add in `./Settings.toml`
-            .add_source(config::File::with_name("pcu.toml"))
             // Add in settings from the environment (with a prefix of APP)
             // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
             .add_source(config::Environment::with_prefix("PCU"))
@@ -170,13 +168,18 @@ fn get_settings() {
         settings
     };
 
-    if let Ok(settings) = settings {
-        // Print out our settings (as a HashMap)
-        println!(
-            "{:?}",
-            settings
-                .try_deserialize::<HashMap<String, String>>()
-                .unwrap()
-        );
+    match settings {
+        Ok(settings) => {
+            // Print out our settings (as a HashMap)
+            println!(
+                "{:?}",
+                settings
+                    .try_deserialize::<HashMap<String, String>>()
+                    .unwrap()
+            );
+        }
+        Err(e) => {
+            println!("Error: {e}");
+        }
     }
 }
