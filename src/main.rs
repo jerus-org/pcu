@@ -156,7 +156,7 @@ fn get_settings() -> Result<Config, Error> {
         .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
         .set_default("username", "CIRCLE_PROJECT_USERNAME")?
         .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
-        .set_default("commit_messsage", "chore: update changelog")?
+        .set_default("commit_message", "chore: update changelog")?
         // Add in settings from pcu.toml if it exists
         .add_source(config::File::with_name("pcu.toml").required(false))
         // Add in settings from the environment (with a prefix of PCU)
