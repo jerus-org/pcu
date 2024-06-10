@@ -155,7 +155,7 @@ fn get_settings() -> Result<Config, Error> {
         .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
         .set_default("username", "CIRCLE_PROJECT_USERNAME")?
         .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
-        .add_source(config::File::with_name("pcu.toml"))
+        .add_source(config::File::with_name("pcu.toml").required(false))
         // Add in settings from the environment (with a prefix of APP)
         // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
         .add_source(config::Environment::with_prefix("PCU"));
