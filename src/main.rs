@@ -29,12 +29,12 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let _settings = get_settings()?;
+    let settings = get_settings()?;
     let args = Cli::parse();
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
 
-    let client = match Client::new().await {
+    let client = match Client::new_with(settings).await {
         Ok(client) => client,
         Err(e) => match e {
             Error::EnvVarPullRequestNotFound => {
