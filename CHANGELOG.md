@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - change log level from Debug to Trace in run_update function(pr [#123](https://github.com/jerus-org/pcu/pull/123))
 - setup of logging for environment or cli(pr [#124](https://github.com/jerus-org/pcu/pull/124))
 - correct typo in setting key for commit_message(pr [#136](https://github.com/jerus-org/pcu/pull/136))
+- fix type annotation for msg variable to String(pr [#138](https://github.com/jerus-org/pcu/pull/138))
 
 ### Security
 
