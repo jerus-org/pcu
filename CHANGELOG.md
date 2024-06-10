@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-add default values required by client module(pr [#133](https://github.com/jerus-org/pcu/pull/133))
 - refactor-migrate const to  settings(pr [#135](https://github.com/jerus-org/pcu/pull/135))
 - ci-customise release to make the first release v0.1.0(pr [#137](https://github.com/jerus-org/pcu/pull/137))
+- chore-manual update of changelog waiting on fix to message(pr [#139](https://github.com/jerus-org/pcu/pull/139))
 
 ### Fixed
 
@@ -56,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - change log level from Debug to Trace in run_update function(pr [#123](https://github.com/jerus-org/pcu/pull/123))
 - setup of logging for environment or cli(pr [#124](https://github.com/jerus-org/pcu/pull/124))
 - correct typo in setting key for commit_message(pr [#136](https://github.com/jerus-org/pcu/pull/136))
+- fix type annotation for msg variable to String(pr [#138](https://github.com/jerus-org/pcu/pull/138))
 
 ### Security
 
