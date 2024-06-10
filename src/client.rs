@@ -15,9 +15,6 @@ use url::Url;
 use crate::Error;
 use crate::PrTitle;
 
-#[allow(dead_code)]
-const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
-const DEFAULT_CHANGELOG_COMMIT_MSG: &str = "chore: update changelog";
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 
 pub struct Client {
@@ -154,7 +151,7 @@ impl Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-        let msg = DEFAULT_CHANGELOG_COMMIT_MSG;
+        let msg = self.settings.get("commit_message")?;
 
         let commit_id = self.git_repo.commit(
             Some("HEAD"),
@@ -177,7 +174,7 @@ impl Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-        let msg = DEFAULT_CHANGELOG_COMMIT_MSG;
+        let msg = self.settings.get("commit_message")?;
 
         let commit_buffer = self.git_repo.commit_create_buffer(
             &sig,
@@ -188,10 +185,8 @@ impl Client {
         )?;
         let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
 
-        // let signature = env::var(SIGNATURE_KEY)?;
         let signature = self.git_repo.config()?.get_string(GIT_USER_SIGNATURE)?;
 
-        // let signature = self.git_repo.config()?.get_string(SIGNATURE_KEY)?;
         let short_sign = signature[12..].to_string();
         log::trace!("Signature short: {short_sign}");
 
