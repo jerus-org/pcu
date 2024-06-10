@@ -151,13 +151,13 @@ impl Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-        let msg = self.settings.get("commit_message")?;
+        let msg: String = self.settings.get("commit_message")?;
 
         let commit_id = self.git_repo.commit(
             Some("HEAD"),
             &sig,
             &sig,
-            msg,
+            &msg,
             &self.git_repo.find_tree(tree_id)?,
             &[&parent],
         )?;
@@ -174,12 +174,12 @@ impl Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-        let msg = self.settings.get("commit_message")?;
+        let msg: String = self.settings.get("commit_message")?;
 
         let commit_buffer = self.git_repo.commit_create_buffer(
             &sig,
             &sig,
-            msg,
+            &msg,
             &self.git_repo.find_tree(tree_id)?,
             &[&parent],
         )?;
@@ -240,7 +240,7 @@ impl Client {
 
         log::trace!("commit id: {}", commit_id);
         // manually advance to the new commit id
-        self.git_repo.head()?.set_target(commit_id, msg)?;
+        self.git_repo.head()?.set_target(commit_id, &msg)?;
 
         log::trace!("head updated");
 
