@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add config crate to Cargo.toml and implement get_settings function in main.rs(pr [#127](https://github.com/jerus-org/pcu/pull/127))
 - add error handling for settings(pr [#129](https://github.com/jerus-org/pcu/pull/129))
 - set defaults for settings(pr [#131](https://github.com/jerus-org/pcu/pull/131))
+- add support for using settings to configure client(pr [#134](https://github.com/jerus-org/pcu/pull/134))
 
 ### Changed
 
