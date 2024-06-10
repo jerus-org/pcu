@@ -115,13 +115,14 @@ jobs:
           name: Publish update
           command: |
             set -exo pipefail
-            export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGES.md -f CHANGELOG.md feature)
-            if [ $NEXTSV_LEVEL != "none" ] ; then 
+            # export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGELOG.md feature)
+            # if [ $NEXTSV_LEVEL != "none" ] ; then 
               cargo release changes
-              cargo release -vvv --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
-            else 
-              echo "Not ready to release yet."
-            fi
+              # cargo release -vvv --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
+              cargo release -vvv --execute --no-confirm --sign-tag "0.1.0"
+            # else 
+            #   echo "Not ready to release yet."
+            # fi
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
