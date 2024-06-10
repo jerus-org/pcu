@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor-migrate const to  settings(pr [#135](https://github.com/jerus-org/pcu/pull/135))
 - ci-customise release to make the first release v0.1.0(pr [#137](https://github.com/jerus-org/pcu/pull/137))
 - chore-manual update of changelog waiting on fix to message(pr [#139](https://github.com/jerus-org/pcu/pull/139))
+- chore-prepare for release by committing lock file (pr [#140](https://github.com/jerus-org/pcu/pull/140))
 
 ### Fixed
 
