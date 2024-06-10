@@ -7,6 +7,7 @@ use std::{
     str::FromStr,
 };
 
+use config::Config;
 use git2::{BranchType, Cred, Direction, RemoteCallbacks, Repository};
 use keep_a_changelog::ChangeKind;
 use url::Url;
@@ -14,13 +15,14 @@ use url::Url;
 use crate::Error;
 use crate::PrTitle;
 
-const CHANGELOG_FILENAME: &str = "CHANGELOG.md";
 #[allow(dead_code)]
 const SIGNATURE_KEY: &str = "BOT_SIGN_KEY";
 const DEFAULT_CHANGELOG_COMMIT_MSG: &str = "chore: update changelog";
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 
 pub struct Client {
+    #[allow(dead_code)]
+    settings: Config,
     git_repo: Repository,
     branch: String,
     pull_request: String,
@@ -37,18 +39,24 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new() -> Result<Self, Error> {
-        // Use the PCU_BRANCH env variable to direct to the appropriate CI environment variable to find the branch data
-        let pcu_branch = env::var("PCU_BRANCH").map_err(|_| Error::EnvVarBranchNotSet)?;
-
+    pub async fn new_with(settings: Config) -> Result<Self, Error> {
+        // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
+        let pcu_branch: String = settings
+            .get("branch")
+            .map_err(|_| Error::EnvVarBranchNotSet)?;
         let branch = env::var(pcu_branch).map_err(|_| Error::EnvVarBranchNotFound)?;
 
-        // Use the PCU_PULL_REQUEST env variable to direct to the appropriate CI environment variable to find the PR data
-        let pcu_pull_request =
-            env::var("PCU_PULL_REQUEST").map_err(|_| Error::EnvVarPullRequestNotSet)?;
-
+        // Use the pull_request config setting to direct to the appropriate CI environment variable to find the PR data
+        let pcu_pull_request: String = settings
+            .get("pull_request")
+            .map_err(|_| Error::EnvVarPullRequestNotSet)?;
         let pull_request =
             env::var(pcu_pull_request).map_err(|_| Error::EnvVarPullRequestNotFound)?;
+
+        // Use the log config setting to set the default change log file name
+        let default_change_log: String = settings
+            .get("log")
+            .map_err(|_| Error::DefaultChangeLogNotSet)?;
 
         let (owner, repo, pr_number, repo_url) = get_keys(&pull_request)?;
 
@@ -64,12 +72,16 @@ impl Client {
         let title = pr.title.unwrap_or("".to_owned());
 
         // Get the name of the changelog file
-        let mut changelog = OsString::from(CHANGELOG_FILENAME);
+        let mut changelog = OsString::from(default_change_log);
         if let Ok(files) = std::fs::read_dir(".") {
             for file in files.into_iter().flatten() {
                 log::trace!("File: {:?}", file.path());
 
-                if file.file_name().to_string_lossy().contains("change")
+                if file
+                    .file_name()
+                    .to_string_lossy()
+                    .to_lowercase()
+                    .contains("change")
                     && file.file_type().unwrap().is_file()
                 {
                     changelog = file.file_name();
@@ -81,6 +93,7 @@ impl Client {
         let git_repo = git2::Repository::open(".")?;
 
         Ok(Self {
+            settings,
             git_repo,
             branch,
             pull_request,

@@ -19,8 +19,10 @@ pub enum Error {
     EnvVarBranchNotFound,
     #[error("Environment variable PCU_PULL_REQUEST not set")]
     EnvVarPullRequestNotSet,
-    #[error("Environment specified in PCU_PULL_REQUEST not set")]
+    #[error("Environment specified in PCU_PULL_REQUEST not found")]
     EnvVarPullRequestNotFound,
+    #[error("Default change log file name not set")]
+    DefaultChangeLogNotSet,
     #[error("On default branch")]
     OnDefaultBranch,
     #[error("Unknown format for pull request: {0}")]
