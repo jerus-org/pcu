@@ -29,7 +29,7 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    get_settings();
+    let _settings = get_settings()?;
     let args = Cli::parse();
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
@@ -148,27 +148,30 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     builder
 }
 
-fn get_settings() {
-    let mut settings = Config::builder()
-        // Add in `./Settings.toml`
+fn get_settings() -> Result<Config, Error> {
+    let settings = Config::builder()
+        .set_default("log", "CHANGELOG.md")?
+        .set_default("branch", "CIRCLE_BRANCH")?
+        .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
+        .set_default("username", "CIRCLE_PROJECT_USERNAME")?
+        .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
         .add_source(config::File::with_name("pcu.toml"))
         // Add in settings from the environment (with a prefix of APP)
         // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
-        .add_source(config::Environment::with_prefix("PCU"))
-        .build();
+        .add_source(config::Environment::with_prefix("PCU"));
 
-    settings = if let Err(e) = &settings {
-        println!("Error: {e}");
-        Config::builder()
-            // Add in settings from the environment (with a prefix of APP)
-            // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
-            .add_source(config::Environment::with_prefix("PCU"))
-            .build()
-    } else {
-        settings
-    };
+    // settings = if let Err(e) = &settings {
+    //     println!("Error: {e}");
+    //     Config::builder()
+    //         // Add in settings from the environment (with a prefix of APP)
+    //         // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+    //         .add_source(config::Environment::with_prefix("PCU"))
+    //         .build()
+    // } else {
+    //     settings
+    // };
 
-    match settings {
+    match settings.build() {
         Ok(settings) => {
             // Print out our settings (as a HashMap)
             println!(
@@ -176,9 +179,11 @@ fn get_settings() {
                 settings // .try_deserialize::<HashMap<String, String>>()
                          // .unwrap()
             );
+            Ok(settings)
         }
         Err(e) => {
             println!("Error: {e}");
+            Err(e.into())
         }
     }
 }

@@ -38,7 +38,9 @@ pub enum Error {
     #[error("env var says: {0:?}")]
     EnvVar(#[from] env::VarError),
     #[error("io error says: {0:?}")]
-    IOError(#[from] std::io::Error),
+    IO(#[from] std::io::Error),
     #[error("utf8 error says: {0:?}")]
-    Utf8Error(#[from] std::str::Utf8Error),
+    Utf8(#[from] std::str::Utf8Error),
+    #[error("config error says: {0:?}")]
+    Config(#[from] config::ConfigError),
 }
