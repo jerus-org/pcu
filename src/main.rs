@@ -1,4 +1,4 @@
-use std::fs;
+use std::{collections::HashMap, fs};
 
 use clap::{Parser, ValueEnum};
 use config::Config;
@@ -150,34 +150,28 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
 
 fn get_settings() -> Result<Config, Error> {
     let settings = Config::builder()
+        // Set defaults for CircleCI
         .set_default("log", "CHANGELOG.md")?
         .set_default("branch", "CIRCLE_BRANCH")?
         .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
         .set_default("username", "CIRCLE_PROJECT_USERNAME")?
         .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
+        .set_default("signature_key", "BOT_SIGN_KEY")?
+        .set_default("commit_msg", "chore: update changelog")?
+        // Add in settings from pcu.toml if it exists
         .add_source(config::File::with_name("pcu.toml").required(false))
-        // Add in settings from the environment (with a prefix of APP)
-        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+        // Add in settings from the environment (with a prefix of PCU)
         .add_source(config::Environment::with_prefix("PCU"));
-
-    // settings = if let Err(e) = &settings {
-    //     println!("Error: {e}");
-    //     Config::builder()
-    //         // Add in settings from the environment (with a prefix of APP)
-    //         // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
-    //         .add_source(config::Environment::with_prefix("PCU"))
-    //         .build()
-    // } else {
-    //     settings
-    // };
 
     match settings.build() {
         Ok(settings) => {
             // Print out our settings (as a HashMap)
-            println!(
-                "{:#?}",
-                settings // .try_deserialize::<HashMap<String, String>>()
-                         // .unwrap()
+            log::trace!(
+                "{:?}",
+                settings
+                    .clone()
+                    .try_deserialize::<HashMap<String, String>>()
+                    .unwrap()
             );
             Ok(settings)
         }

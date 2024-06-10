@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update issue templates(pr [#119](https://github.com/jerus-org/pcu/pull/119))
 - chore-add pull request template to .github directory(pr [#120](https://github.com/jerus-org/pcu/pull/120))
 - chore-add log level check before updating changelog(pr [#125](https://github.com/jerus-org/pcu/pull/125))
+- chore-add default values required by client module(pr [#133](https://github.com/jerus-org/pcu/pull/133))
 
 ### Fixed
 
