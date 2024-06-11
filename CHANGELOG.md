@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-manual update of changelog waiting on fix to message(pr [#139](https://github.com/jerus-org/pcu/pull/139))
 - chore-prepare for release by committing lock file (pr [#140](https://github.com/jerus-org/pcu/pull/140))
 - docs-update readme for first release(pr [#141](https://github.com/jerus-org/pcu/pull/141))
+- ci: add step to remove original SSH key from agent(pr [#142](https://github.com/jerus-org/pcu/pull/142))
 
 ### Fixed
 
