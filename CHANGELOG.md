@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci: add step to remove original SSH key from agent(pr [#142](https://github.com/jerus-org/pcu/pull/142))
 - chore-add pre-release configuration for versioning and changelog updates(pr [#143](https://github.com/jerus-org/pcu/pull/143))
 - docs-update changelog with new unreleased changes(pr [#145](https://github.com/jerus-org/pcu/pull/145))
+- chore-remove  cargo release  comment replacements(pr [#147](https://github.com/jerus-org/pcu/pull/147))
 
 ## [0.1.0] - 2024-06-10
 
