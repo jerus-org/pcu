@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs-update changelog with new unreleased changes(pr [#145](https://github.com/jerus-org/pcu/pull/145))
 - chore-remove  cargo release  comment replacements(pr [#147](https://github.com/jerus-org/pcu/pull/147))
 - chore-update unreleased with version and date(pr [#148](https://github.com/jerus-org/pcu/pull/148))
+- chore-remove failing replacements(pr [#149](https://github.com/jerus-org/pcu/pull/149))
 
 ## [0.1.0] - 2024-06-10
 
