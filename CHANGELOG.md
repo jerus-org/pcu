@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - chore-add exactly 1 to replace(pr [#150](https://github.com/jerus-org/pcu/pull/150))
+- chore-add search that yields only one response(pr [#151](https://github.com/jerus-org/pcu/pull/151))
 
 ## [0.1.1] - 2024-06-12
 
