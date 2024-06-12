@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- chore-add exactly 1 to replace(pr [#150](https://github.com/jerus-org/pcu/pull/150))
+
 ## [0.1.1] - 2024-06-12
 
 ### Added
@@ -82,5 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Security: adopt new ci bot signature(pr [#95](https://github.com/jerus-org/pcu/pull/95))
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.1...HEAD
+[0.1.1]: https://github.com/jerus-org/pcu/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/jerus-org/pcu/releases/tag/0.1.0
