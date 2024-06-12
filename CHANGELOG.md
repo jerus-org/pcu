@@ -5,12 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - ReleaseDate
+## [Unreleased]
 
 ### Changed
 
 - ci: add step to remove original SSH key from agent(pr [#142](https://github.com/jerus-org/pcu/pull/142))
 - chore-add pre-release configuration for versioning and changelog updates(pr [#143](https://github.com/jerus-org/pcu/pull/143))
+- docs-update changelog with new unreleased changes(pr [#145](https://github.com/jerus-org/pcu/pull/145))
 
 ## [0.1.0] - 2024-06-10
 
@@ -72,5 +73,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Security: adopt new ci bot signature(pr [#95](https://github.com/jerus-org/pcu/pull/95))
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/jerus-org/pcu/compare/v0.1.0
+[Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.0...HEAD
+[0.1.0]: https://github.com/jerus-org/pcu/releases/tag/0.1.0
