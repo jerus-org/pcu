@@ -166,15 +166,14 @@ impl PrTitle {
             let file_contents = fs::read_to_string(path::Path::new(log_file)).unwrap();
             log::trace!("file contents:\n---\n{}\n---\n\n", file_contents);
             if file_contents.contains(&self.entry) {
-                log::trace!("The changelog already contains the entry!");
+                log::trace!("The changelog exists and already contains the entry!");
                 return None;
             } else {
-                log::trace!("The changelog does not contain the entry!");
+                log::trace!("The changelog exists but does not contain the entry!");
             }
-            log::trace!("The changelog exists!");
             Changelog::parse_from_file(log_file, None).unwrap()
         } else {
-            log::trace!("The changelog does not exist!");
+            log::trace!("The changelog does not exist! Create a default changelog.");
             let mut changelog = ChangelogBuilder::default().build().unwrap();
             log::debug!("Changelog: {:#?}", changelog);
             let release = Release::builder().build().unwrap();
@@ -185,9 +184,16 @@ impl PrTitle {
             changelog
         };
 
-        //          Changelog::parse_from_file(log_file, None).unwrap();
-
-        let unreleased = change_log.get_unreleased_mut().unwrap();
+        // Get the unreleased section from the Changelog.
+        // If there is no unreleased section create it and add it to the changelog
+        let unreleased = if let Some(unreleased) = change_log.get_unreleased_mut() {
+            unreleased
+        } else {
+            let release = Release::builder().build().unwrap();
+            change_log.add_release(release);
+            let unreleased = change_log.get_unreleased_mut().unwrap();
+            unreleased
+        };
 
         match self.section() {
             ChangeKind::Added => {
