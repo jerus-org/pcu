@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- create unreleased section if it does not exist(pr [#146](https://github.com/jerus-org/pcu/pull/146))
+
 ### Changed
 
 - ci: add step to remove original SSH key from agent(pr [#142](https://github.com/jerus-org/pcu/pull/142))
