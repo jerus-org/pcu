@@ -58,7 +58,10 @@ async fn main() -> Result<()> {
 
     match run_update(client, sign).await {
         Ok(_) => log::info!("Changelog updated!"),
-        Err(e) => log::error!("Error updating changelog: {e}"),
+        Err(e) => {
+            log::error!("Error updating changelog: {e}");
+            return Err(e);
+        }
     };
 
     Ok(())
