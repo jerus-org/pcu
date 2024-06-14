@@ -402,7 +402,7 @@ mod tests {
         Ok(())
     }
 
-    use eyre::Result;
+    use color_eyre::Result;
 
     #[rstest]
     fn test_update_change_log_added() -> Result<()> {

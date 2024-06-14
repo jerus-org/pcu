@@ -6,7 +6,7 @@ use env_logger::Env;
 use keep_a_changelog::ChangeKind;
 use pcu_lib::{Client, Error};
 
-use eyre::Result;
+use color_eyre::Result;
 
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
