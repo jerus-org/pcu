@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - chore-test for value of CARGO_HOME(pr [#152](https://github.com/jerus-org/pcu/pull/152))
 - chore-user cargo home bin version of pcu(pr [#153](https://github.com/jerus-org/pcu/pull/153))
+- chore-update eyre to color-eyre(pr [#158](https://github.com/jerus-org/pcu/pull/158))
 
 ### Fixed
 
