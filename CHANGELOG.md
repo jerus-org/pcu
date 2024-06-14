@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Dependencies: update rust crate git2 to 0.19.0(pr [#155](https://github.com/jerus-org/pcu/pull/155))
+- Dependencies: update rust crate rstest to 0.21.0(pr [#154](https://github.com/jerus-org/pcu/pull/154))
 
 ## [0.1.2] - 2024-06-12
 
