@@ -137,7 +137,8 @@ impl Client {
         }
 
         if let Some(update) = &mut self.changelog_update {
-            return Ok(update.update_changelog(&self.changelog));
+            #[allow(clippy::needless_question_mark)]
+            return Ok(update.update_changelog(&self.changelog)?);
         }
         Ok(None)
     }

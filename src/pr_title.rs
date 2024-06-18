@@ -4,6 +4,8 @@ use keep_a_changelog::{changelog::ChangelogBuilder, ChangeKind, Changelog, Relea
 use log::debug;
 use url::Url;
 
+use crate::Error;
+
 #[derive(Debug)]
 pub struct PrTitle {
     pub title: String,
@@ -156,8 +158,14 @@ impl PrTitle {
         }
     }
 
-    pub fn update_changelog(&mut self, log_file: &OsStr) -> Option<(ChangeKind, String)> {
-        let log_file = log_file.to_str().unwrap();
+    pub fn update_changelog(
+        &mut self,
+        log_file: &OsStr,
+    ) -> Result<Option<(ChangeKind, String)>, Error> {
+        let Some(log_file) = log_file.to_str() else {
+            return Err(Error::InvalidPath(log_file.to_owned()));
+        };
+
         self.calculate_section_and_entry();
 
         log::trace!("Changelog entry:\n\n---\n{}\n---\n\n", self.entry());
@@ -167,7 +175,7 @@ impl PrTitle {
             log::trace!("file contents:\n---\n{}\n---\n\n", file_contents);
             if file_contents.contains(&self.entry) {
                 log::trace!("The changelog exists and already contains the entry!");
-                return None;
+                return Ok(None);
             } else {
                 log::trace!("The changelog exists but does not contain the entry!");
             }
@@ -217,7 +225,7 @@ impl PrTitle {
         }
         change_log.save_to_file(log_file).unwrap();
 
-        Some((self.section(), self.entry()))
+        Ok(Some((self.section(), self.entry())))
     }
 }
 
@@ -433,7 +441,7 @@ mod tests {
         };
 
         let file_name = &file_name.into_os_string();
-        pr_title.update_changelog(file_name);
+        pr_title.update_changelog(file_name)?;
 
         let actual_content = fs::read_to_string(file_name).unwrap();
 

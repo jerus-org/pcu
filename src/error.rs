@@ -1,4 +1,4 @@
-use std::{env, num::ParseIntError};
+use std::{env, ffi::OsString, num::ParseIntError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -23,6 +23,8 @@ pub enum Error {
     EnvVarPullRequestNotFound,
     #[error("Default change log file name not set")]
     DefaultChangeLogNotSet,
+    #[error("Invalid path for changelog file {0:?}")]
+    InvalidPath(OsString),
     #[error("On default branch")]
     OnDefaultBranch,
     #[error("Unknown format for pull request: {0}")]
