@@ -57,6 +57,14 @@ impl Client {
 
         let (owner, repo, pr_number, repo_url) = get_keys(&pull_request)?;
 
+        log::debug!(
+            "Owner: {}, repo: {}, pr_number: {}, repo_url: {}",
+            owner,
+            repo,
+            pr_number,
+            repo_url
+        );
+
         let pr_number = pr_number.parse::<u64>()?;
 
         // Get the github pull release and store the title in the client struct
