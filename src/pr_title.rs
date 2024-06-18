@@ -19,11 +19,10 @@ pub struct PrTitle {
 }
 
 impl PrTitle {
-    pub fn parse(title: &str) -> Self {
+    pub fn parse(title: &str) -> Result<Self, Error> {
         let re = regex::Regex::new(
             r"^(?P<type>[a-z]+)(?:\((?P<scope>.+)\))?(?P<breaking>!)?: (?P<description>.*)$",
-        )
-        .unwrap();
+        )?;
 
         debug!("String to parse: `{}`", title);
 
@@ -61,7 +60,7 @@ impl PrTitle {
 
         debug!("Parsed title: {:?}", pr_title);
 
-        pr_title
+        Ok(pr_title)
     }
 
     pub fn set_pr_id(&mut self, id: u64) {
@@ -171,7 +170,7 @@ impl PrTitle {
         log::trace!("Changelog entry:\n\n---\n{}\n---\n\n", self.entry());
 
         let mut change_log = if path::Path::new(log_file).exists() {
-            let file_contents = fs::read_to_string(path::Path::new(log_file)).unwrap();
+            let file_contents = fs::read_to_string(path::Path::new(log_file))?;
             log::trace!("file contents:\n---\n{}\n---\n\n", file_contents);
             if file_contents.contains(&self.entry) {
                 log::trace!("The changelog exists and already contains the entry!");
@@ -179,16 +178,23 @@ impl PrTitle {
             } else {
                 log::trace!("The changelog exists but does not contain the entry!");
             }
-            Changelog::parse_from_file(log_file, None).unwrap()
+            Changelog::parse_from_file(log_file, None)
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?
         } else {
             log::trace!("The changelog does not exist! Create a default changelog.");
-            let mut changelog = ChangelogBuilder::default().build().unwrap();
+            let mut changelog = ChangelogBuilder::default()
+                .build()
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
             log::debug!("Changelog: {:#?}", changelog);
-            let release = Release::builder().build().unwrap();
+            let release = Release::builder()
+                .build()
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
             changelog.add_release(release);
             log::debug!("Changelog: {:#?}", changelog);
 
-            changelog.save_to_file(log_file).unwrap();
+            changelog
+                .save_to_file(log_file)
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
             changelog
         };
 
@@ -197,7 +203,9 @@ impl PrTitle {
         let unreleased = if let Some(unreleased) = change_log.get_unreleased_mut() {
             unreleased
         } else {
-            let release = Release::builder().build().unwrap();
+            let release = Release::builder()
+                .build()
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
             change_log.add_release(release);
             let unreleased = change_log.get_unreleased_mut().unwrap();
             unreleased
@@ -223,7 +231,9 @@ impl PrTitle {
                 unreleased.changed(self.entry());
             }
         }
-        change_log.save_to_file(log_file).unwrap();
+        change_log
+            .save_to_file(log_file)
+            .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
 
         Ok(Some((self.section(), self.entry())))
     }
@@ -246,19 +256,20 @@ mod tests {
 
     #[test]
     fn test_pr_title_parse() {
-        let pr_title = PrTitle::parse("feat: add new feature");
+        let pr_title = PrTitle::parse("feat: add new feature").unwrap();
+
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, None);
         assert!(!pr_title.commit_breaking);
 
-        let pr_title = PrTitle::parse("feat(core): add new feature");
+        let pr_title = PrTitle::parse("feat(core): add new feature").unwrap();
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, Some("core".to_string()));
         assert!(!pr_title.commit_breaking);
 
-        let pr_title = PrTitle::parse("feat(core)!: add new feature");
+        let pr_title = PrTitle::parse("feat(core)!: add new feature").unwrap();
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, Some("core".to_string()));
@@ -267,7 +278,7 @@ mod tests {
 
     #[test]
     fn test_pr_title_parse_with_breaking_scope() {
-        let pr_title = PrTitle::parse("feat(core)!: add new feature");
+        let pr_title = PrTitle::parse("feat(core)!: add new feature").unwrap();
         assert_eq!(pr_title.title, "add new feature");
         assert_eq!(pr_title.commit_type, Some("feat".to_string()));
         assert_eq!(pr_title.commit_scope, Some("core".to_string()));
@@ -276,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_pr_title_parse_with_security_scope() {
-        let pr_title = PrTitle::parse("fix(security): fix security vulnerability");
+        let pr_title = PrTitle::parse("fix(security): fix security vulnerability").unwrap();
         assert_eq!(pr_title.title, "fix security vulnerability");
         assert_eq!(pr_title.commit_type, Some("fix".to_string()));
         assert_eq!(pr_title.commit_scope, Some("security".to_string()));
@@ -285,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_pr_title_parse_with_deprecate_scope() {
-        let pr_title = PrTitle::parse("chore(deprecate): deprecate old feature");
+        let pr_title = PrTitle::parse("chore(deprecate): deprecate old feature").unwrap();
         assert_eq!(pr_title.title, "deprecate old feature");
         assert_eq!(pr_title.commit_type, Some("chore".to_string()));
         assert_eq!(pr_title.commit_scope, Some("deprecate".to_string()));
@@ -294,7 +305,7 @@ mod tests {
 
     #[test]
     fn test_pr_title_parse_without_scope() {
-        let pr_title = PrTitle::parse("docs: update documentation");
+        let pr_title = PrTitle::parse("docs: update documentation").unwrap();
         assert_eq!(pr_title.title, "update documentation");
         assert_eq!(pr_title.commit_type, Some("docs".to_string()));
         assert_eq!(pr_title.commit_scope, None);
@@ -395,7 +406,7 @@ mod tests {
     ) -> Result<()> {
         test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
 
-        let mut pr_title = PrTitle::parse(title);
+        let mut pr_title = PrTitle::parse(title).unwrap();
         if let Some(id) = pr_id {
             pr_title.set_pr_id(id);
         }
@@ -426,8 +437,8 @@ mod tests {
         let file_name = temp_dir.join("CHANGELOG.md");
         debug!("filename : {:?}", file_name);
 
-        let mut file = File::create(&file_name).unwrap();
-        file.write_all(initial_content.as_bytes()).unwrap();
+        let mut file = File::create(&file_name)?;
+        file.write_all(initial_content.as_bytes())?;
 
         let mut pr_title = PrTitle {
             title: "add new feature".to_string(),
@@ -443,7 +454,7 @@ mod tests {
         let file_name = &file_name.into_os_string();
         pr_title.update_changelog(file_name)?;
 
-        let actual_content = fs::read_to_string(file_name).unwrap();
+        let actual_content = fs::read_to_string(file_name)?;
 
         assert_eq!(actual_content, expected_content);
 

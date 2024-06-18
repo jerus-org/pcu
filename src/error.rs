@@ -1,3 +1,4 @@
+use regex::Error as RegexError;
 use std::{env, ffi::OsString, num::ParseIntError};
 use thiserror::Error;
 
@@ -25,6 +26,10 @@ pub enum Error {
     DefaultChangeLogNotSet,
     #[error("Invalid path for changelog file {0:?}")]
     InvalidPath(OsString),
+    #[error("Regex string is not valid.")]
+    InvalidRegex,
+    #[error("Keep a changelog says: {0}")]
+    KeepAChangelog(String),
     #[error("On default branch")]
     OnDefaultBranch,
     #[error("Unknown format for pull request: {0}")]
@@ -47,4 +52,6 @@ pub enum Error {
     Utf8(#[from] std::str::Utf8Error),
     #[error("config error says: {0:?}")]
     Config(#[from] config::ConfigError),
+    #[error("regex error says: {0:?}")]
+    Regex(#[from] RegexError),
 }
