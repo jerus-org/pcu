@@ -50,11 +50,7 @@ async fn main() -> Result<()> {
         client.branch()
     );
 
-    let sign = if let Some(sign) = args.sign {
-        sign
-    } else {
-        Sign::default()
-    };
+    let sign = args.sign.unwrap_or_default();
 
     match run_update(client, sign).await {
         Ok(_) => log::info!("Changelog updated!"),

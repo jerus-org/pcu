@@ -121,7 +121,7 @@ impl Client {
     }
 
     pub fn create_entry(&mut self) -> Result<(), Error> {
-        let mut pr_title = PrTitle::parse(&self.title);
+        let mut pr_title = PrTitle::parse(&self.title)?;
         pr_title.pr_id = Some(self.pr_number);
         pr_title.pr_url = Some(Url::from_str(&self.pull_request)?);
         pr_title.calculate_section_and_entry();
@@ -137,7 +137,8 @@ impl Client {
         }
 
         if let Some(update) = &mut self.changelog_update {
-            return Ok(update.update_changelog(&self.changelog));
+            #[allow(clippy::needless_question_mark)]
+            return Ok(update.update_changelog(&self.changelog)?);
         }
         Ok(None)
     }
