@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add octocrab authentication by personal access token(pr [#162](https://github.com/jerus-org/pcu/pull/162))
 
+### Security
+
+- Dependencies: update rust crate url to v2.5.2(pr [#161](https://github.com/jerus-org/pcu/pull/161))
+
 ## [0.1.5] - 2024-06-18
 
 ### Changed
