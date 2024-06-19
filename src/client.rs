@@ -5,11 +5,13 @@ use std::{
     path::Path,
     process::{Command, Stdio},
     str::FromStr,
+    sync::Arc,
 };
 
 use config::Config;
 use git2::{BranchType, Cred, Direction, RemoteCallbacks, Repository};
 use keep_a_changelog::ChangeKind;
+use octocrab::Octocrab;
 use url::Url;
 
 use crate::Error;
@@ -69,10 +71,21 @@ impl Client {
 
         // Get the github pull release and store the title in the client struct
         // The title can be edited by the calling programme if desired before creating the prtitle
-        let pr = octocrab::instance()
-            .pulls(&owner, &repo)
-            .get(pr_number)
-            .await?;
+
+        let octocrab = match settings.get::<String>("pat") {
+            Ok(pat) => Arc::new(
+                Octocrab::builder()
+                    .base_uri("https://api.github.com")?
+                    .personal_token(pat)
+                    .build()?,
+            ),
+            // base_uri: https://api.github.com
+            // auth: None
+            // client: http client with the octocrab user agent.
+            Err(_) => octocrab::instance(),
+        };
+
+        let pr = octocrab.pulls(&owner, &repo).get(pr_number).await?;
 
         let title = pr.title.unwrap_or("".to_owned());
 
