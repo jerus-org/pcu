@@ -90,8 +90,10 @@ impl Client {
                 octocrab::instance()
             }
         };
-
-        let pr = octocrab.pulls(&owner, &repo).get(pr_number).await?;
+        log::debug!("Using Octocrab instance: {octocrab:#?}");
+        let pr_handler = octocrab.pulls(&owner, &repo);
+        log::debug!("Pull handler acquired");
+        let pr = pr_handler.get(pr_number).await?;
 
         let title = pr.title.unwrap_or("".to_owned());
 
