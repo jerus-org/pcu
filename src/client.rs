@@ -73,16 +73,22 @@ impl Client {
         // The title can be edited by the calling programme if desired before creating the prtitle
 
         let octocrab = match settings.get::<String>("pat") {
-            Ok(pat) => Arc::new(
-                Octocrab::builder()
-                    .base_uri("https://api.github.com")?
-                    .personal_token(pat)
-                    .build()?,
-            ),
+            Ok(pat) => {
+                log::debug!("Using personal access token for authentication");
+                Arc::new(
+                    Octocrab::builder()
+                        .base_uri("https://api.github.com")?
+                        .personal_token(pat)
+                        .build()?,
+                )
+            }
             // base_uri: https://api.github.com
             // auth: None
             // client: http client with the octocrab user agent.
-            Err(_) => octocrab::instance(),
+            Err(_) => {
+                log::debug!("Creating un-authenticated instance");
+                octocrab::instance()
+            }
         };
 
         let pr = octocrab.pulls(&owner, &repo).get(pr_number).await?;
