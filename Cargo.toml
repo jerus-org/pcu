@@ -1,6 +1,6 @@
 [package]
 name = "pcu"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 authors = ["jerusdp <jrussell@jerus.ie>"]
 description = "A CI tool to update change log in a PR"
