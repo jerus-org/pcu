@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- add categories field with development-tools::build-utils and command-line-utilities values(pr [#165](https://github.com/jerus-org/pcu/pull/165))
+
 ## [0.1.8] - 2024-06-19
 
 ### Changed
@@ -138,7 +144,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Security: adopt new ci bot signature(pr [#95](https://github.com/jerus-org/pcu/pull/95))
 
-[0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...v0.1.8
+[Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
+[0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7
 [0.1.6]: https://github.com/jerus-org/pcu/compare/0.1.5...0.1.6
 [0.1.5]: https://github.com/jerus-org/pcu/compare/0.1.4...0.1.5
