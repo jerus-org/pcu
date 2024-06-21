@@ -9,4 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- add new feature(pr [#5](https://github.com/jerus-org/pcu/pull/5))
+- add new feature(pr [#5])
+
+[#5]: https://github.com/jerus-org/pcu/pull/5

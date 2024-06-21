@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - add categories field with development-tools::build-utils and command-line-utilities values(pr [#165](https://github.com/jerus-org/pcu/pull/165))
+- add reference link for PR in title(pr [#166](https://github.com/jerus-org/pcu/pull/166))
 
 ## [0.1.8] - 2024-06-19
 

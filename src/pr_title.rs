@@ -128,14 +128,14 @@ impl PrTitle {
         }
 
         if let Some(id) = self.pr_id {
-            entry = format!("{}(pr #{})", entry, id);
+            if self.pr_url.is_some() {
+                let split_description = entry.splitn(2, '(').collect::<Vec<&str>>();
+                entry = format!("{}(pr [#{}])", split_description[0], id);
+            } else {
+                entry = format!("{}(pr #{})", entry, id);
+            }
 
             debug!("After checking pr id `{}`", entry);
-
-            if let Some(url) = &self.pr_url {
-                let split_description = entry.splitn(2, '(').collect::<Vec<&str>>();
-                entry = format!("{}(pr [#{}]({}))", split_description[0], id, url);
-            }
         };
 
         self.section = Some(section);
@@ -231,6 +231,16 @@ impl PrTitle {
                 unreleased.changed(self.entry());
             }
         }
+
+        // add link to the url if it exists
+        if self.pr_url.is_some() {
+            change_log.add_link(&format!(
+                "[#{}]: {}",
+                self.pr_id.unwrap(),
+                self.pr_url.clone().unwrap(),
+            )); // TODO: Add the PR link to the changelog.
+        }
+
         change_log
             .save_to_file(log_file)
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
@@ -318,7 +328,7 @@ mod tests {
         Some(5),
         Some("https://github.com/jerus-org/pcu/pull/5"),
         ChangeKind::Added,
-        "add new feature(pr [#5](https://github.com/jerus-org/pcu/pull/5))"
+        "add new feature(pr [#5])"
     )]
     #[case(
         "feat: add new feature",
