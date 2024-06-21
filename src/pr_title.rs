@@ -1,6 +1,8 @@
 use std::{ffi::OsStr, fs, path};
 
-use keep_a_changelog::{changelog::ChangelogBuilder, ChangeKind, Changelog, Release};
+use keep_a_changelog::{
+    changelog::ChangelogBuilder, ChangeKind, Changelog, ChangelogParseOptions, Release,
+};
 use log::debug;
 use url::Url;
 
@@ -188,7 +190,16 @@ impl PrTitle {
             } else {
                 log::trace!("The changelog exists but does not contain the entry!");
             }
-            Changelog::parse_from_file(log_file, None)
+            let options = if repo_url.is_some() {
+                Some(ChangelogParseOptions {
+                    url: repo_url.clone(),
+                    ..Default::default()
+                })
+            } else {
+                None
+            };
+
+            Changelog::parse_from_file(log_file, options)
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?
         } else {
             log::trace!("The changelog does not exist! Create a default changelog.");
