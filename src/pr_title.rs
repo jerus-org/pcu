@@ -165,6 +165,16 @@ impl PrTitle {
             return Err(Error::InvalidPath(log_file.to_owned()));
         };
 
+        let repo_url = match &self.pr_url {
+            Some(pr_url) => {
+                let url_string = pr_url.to_string();
+                let components = url_string.split('/').collect::<Vec<&str>>();
+                let url = format!("https://github.com/{}/{}", components[3], components[4]);
+                Some(url)
+            }
+            None => None,
+        };
+
         self.calculate_section_and_entry();
 
         log::trace!("Changelog entry:\n\n---\n{}\n---\n\n", self.entry());
@@ -183,6 +193,7 @@ impl PrTitle {
         } else {
             log::trace!("The changelog does not exist! Create a default changelog.");
             let mut changelog = ChangelogBuilder::default()
+                .url(repo_url)
                 .build()
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
             log::debug!("Changelog: {:#?}", changelog);
