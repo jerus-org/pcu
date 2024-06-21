@@ -10,6 +10,7 @@ readme = "README.md"
 repository = "https://github.com/jerus-org/pcu"
 keywords = ["ci", "github", "changelog"]
 include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
+categories = ["development-tools::build-utils", "command-line-utilities"]
 
 [dependencies]
 # keep-a-changelog = "0.1.3"
