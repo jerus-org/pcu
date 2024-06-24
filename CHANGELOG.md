@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add support for generating repository URL from PR URL(pr [#167])
 - add support for parsing changelog with repository URL in ChangelogParseOptions(pr [#168])
 
+### Security
+
+- Dependencies: update rust crate uuid to v1.9.0(pr [#169])
+
 ## [0.1.8] - 2024-06-19
 
 ### Changed
@@ -149,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#167]: https://github.com/jerus-org/pcu/pull/167
 [#168]: https://github.com/jerus-org/pcu/pull/168
+[#169]: https://github.com/jerus-org/pcu/pull/169
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7
