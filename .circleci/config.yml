@@ -22,7 +22,7 @@ commands:
           command: |
             cargo +<<parameters.rust-version>> check --all-features
   gpg-key:
-    steps:    
+    steps:
       - run:
           name: import GPG key
           command: |
@@ -87,20 +87,20 @@ jobs:
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: 
+          fingerprints:
             - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
       - run:
-          name: Remove original SSH key from agent 
+          name: Remove original SSH key from agent
           command: |
             ssh-add -l
             ssh-add -d ~/.ssh/id_rsa.pub
             ssh-add -l
       - gpg-key
       - git-config
-      - run:
-          name: Install pcu
-          command: |
-            cargo install --force --git https://github.com/jerus-org/pcu.git  
+      # - run:
+      #     name: Install pcu
+      #     command: |
+      #       cargo install --force --git https://github.com/jerus-org/pcu.git
       - run:
           name: Update changelog
           command: |
@@ -110,10 +110,10 @@ jobs:
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: 
+          fingerprints:
             - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
       - run:
-          name: Remove original SSH key from agent 
+          name: Remove original SSH key from agent
           command: |
             ssh-add -l
             ssh-add -d ~/.ssh/id_rsa.pub
