@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add support for generating repository URL from PR URL(pr [#167])
 - add support for parsing changelog with repository URL in ChangelogParseOptions(pr [#168])
 
+### Fixed
+
+- fix method signature requirements(pr [#170](https://github.com/jerus-org/pcu/pull/170))
+
 ## [0.1.8] - 2024-06-19
 
 ### Changed
