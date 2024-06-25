@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add support for generating repository URL from PR URL(pr [#167])
 - add support for parsing changelog with repository URL in ChangelogParseOptions(pr [#168])
 
+### Changed
+
+- ci-restore build of pcu package from main branch(pr [#171])
+
 ### Fixed
 
 - fix method signature requirements(pr [#170](https://github.com/jerus-org/pcu/pull/170))
@@ -153,6 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#167]: https://github.com/jerus-org/pcu/pull/167
 [#168]: https://github.com/jerus-org/pcu/pull/168
+[#171]: https://github.com/jerus-org/pcu/pull/171
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7

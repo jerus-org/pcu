@@ -97,10 +97,10 @@ jobs:
             ssh-add -l
       - gpg-key
       - git-config
-      # - run:
-      #     name: Install pcu
-      #     command: |
-      #       cargo install --force --git https://github.com/jerus-org/pcu.git
+      - run:
+          name: Install pcu
+          command: |
+            cargo install --force --git https://github.com/jerus-org/pcu.git
       - run:
           name: Update changelog
           command: |
