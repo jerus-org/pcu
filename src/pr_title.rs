@@ -256,11 +256,10 @@ impl PrTitle {
 
         // add link to the url if it exists
         if self.pr_url.is_some() {
-            change_log.add_link(&format!(
-                "[#{}]: {}",
-                self.pr_id.unwrap(),
-                self.pr_url.clone().unwrap(),
-            )); // TODO: Add the PR link to the changelog.
+            change_log.add_link(
+                &format!("[#{}]:", self.pr_id.unwrap()),
+                &self.pr_url.clone().unwrap().to_string(),
+            ); // TODO: Add the PR link to the changelog.
         }
 
         change_log
