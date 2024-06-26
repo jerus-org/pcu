@@ -131,8 +131,7 @@ impl PrTitle {
 
         if let Some(id) = self.pr_id {
             if self.pr_url.is_some() {
-                let split_description = entry.splitn(2, '(').collect::<Vec<&str>>();
-                entry = format!("{}(pr [#{}])", split_description[0], id);
+                entry = format!("{}(pr [#{}])", entry, id);
             } else {
                 entry = format!("{}(pr #{})", entry, id);
             }
@@ -140,6 +139,7 @@ impl PrTitle {
             debug!("After checking pr id `{}`", entry);
         };
 
+        debug!("Final entry `{}`", entry);
         self.section = Some(section);
         self.entry = entry;
     }
@@ -343,6 +343,21 @@ mod tests {
         assert!(!pr_title.commit_breaking);
     }
 
+    #[test]
+    fn test_pr_title_parse_issue_172() {
+        let pr_title = PrTitle::parse(
+            "chore(config.yml): update jerus-org/circleci-toolkit orb version to 0.4.0",
+        )
+        .unwrap();
+        assert_eq!(
+            pr_title.title,
+            "update jerus-org/circleci-toolkit orb version to 0.4.0"
+        );
+        assert_eq!(pr_title.commit_type, Some("chore".to_string()));
+        assert_eq!(pr_title.commit_scope, Some("config.yml".to_string()));
+        assert!(!pr_title.commit_breaking);
+    }
+
     #[rstest]
     #[case(
         "feat: add new feature",
@@ -428,6 +443,13 @@ mod tests {
         ChangeKind::Changed,
         "BREAKING: test-Update test cases"
     )]
+    #[case::issue_172(
+        "chore(config.yml): update jerus-org/circleci-toolkit orb version to 0.4.0",
+        Some(6),
+        Some("https://github.com/jerus-org/pcu/pull/6"),
+        ChangeKind::Changed,
+        "chore(config.yml)-update jerus-org/circleci-toolkit orb version to 0.4.0(pr [#6])"
+    )]
     fn test_calculate_kind_and_description(
         #[case] title: &str,
         #[case] pr_id: Option<u64>,
@@ -483,6 +505,57 @@ mod tests {
         };
 
         let file_name = &file_name.into_os_string();
+        pr_title.update_changelog(file_name)?;
+
+        let actual_content = fs::read_to_string(file_name)?;
+
+        assert_eq!(actual_content, expected_content);
+
+        // tidy up the test environment
+        std::fs::remove_dir_all(temp_dir)?;
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_update_change_log_added_issue_172() -> Result<()> {
+        test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
+
+        let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
+        let expected_content = fs::read_to_string("tests/data/expected_changelog_issue_172.md")?;
+
+        let temp_dir_string = format!("tests/tmp/test-{}", Uuid::new_v4());
+        let temp_dir = Path::new(&temp_dir_string);
+        fs::create_dir_all(temp_dir)?;
+
+        let file_name = temp_dir.join("CHANGELOG.md");
+        debug!("filename : {:?}", file_name);
+
+        let mut file = File::create(&file_name)?;
+        file.write_all(initial_content.as_bytes())?;
+
+        let mut pr_title = PrTitle {
+            title: "add new feature".to_string(),
+            pr_id: Some(5),
+            pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
+            commit_type: Some("feat".to_string()),
+            commit_scope: None,
+            commit_breaking: false,
+            section: Some(ChangeKind::Added),
+            entry: "add new feature".to_string(),
+        };
+
+        let file_name = &file_name.into_os_string();
+        pr_title.update_changelog(file_name)?;
+
+        let mut pr_title = PrTitle::parse(
+            "chore(config.yml): update jerus-org/circleci-toolkit orb version to 0.4.0",
+        )?;
+        pr_title.set_pr_id(6);
+        pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/6")?);
+        pr_title.calculate_section_and_entry();
+
+        let file_name = &file_name.to_os_string();
         pr_title.update_changelog(file_name)?;
 
         let actual_content = fs::read_to_string(file_name)?;
