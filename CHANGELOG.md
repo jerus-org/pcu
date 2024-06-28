@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix method signature requirements(pr [#170](https://github.com/jerus-org/pcu/pull/170))
 - pr title elided (pr [#173])
 
+### Security
+
+- Dependencies: update rust crate log to v0.4.22(pr [#174])
+
 ## [0.1.8] - 2024-06-19
 
 ### Changed
@@ -160,6 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#168]: https://github.com/jerus-org/pcu/pull/168
 [#171]: https://github.com/jerus-org/pcu/pull/171
 [#173]: https://github.com/jerus-org/pcu/pull/173
+[#174]: https://github.com/jerus-org/pcu/pull/174
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7
