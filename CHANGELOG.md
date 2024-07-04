@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add reference link for PR in title(pr [#166](https://github.com/jerus-org/pcu/pull/166))
 - add support for generating repository URL from PR URL(pr [#167])
 - add support for parsing changelog with repository URL in ChangelogParseOptions(pr [#168])
+- print message when changelog updated(pr [#176])
 
 ### Changed
 
@@ -167,6 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#173]: https://github.com/jerus-org/pcu/pull/173
 [#174]: https://github.com/jerus-org/pcu/pull/174
 [#175]: https://github.com/jerus-org/pcu/pull/175
+[#176]: https://github.com/jerus-org/pcu/pull/176
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7
