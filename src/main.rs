@@ -10,6 +10,8 @@ use color_eyre::Result;
 
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
+const UPDATED: &str = "updates";
+const NOT_UPDATED: &str = "none";
 
 #[derive(ValueEnum, Debug, Default, Clone)]
 enum Sign {
@@ -54,17 +56,20 @@ async fn main() -> Result<()> {
     let sign = args.sign.unwrap_or_default();
 
     match run_update(client, sign).await {
-        Ok(_) => log::info!("Changelog updated!"),
+        Ok(result) => {
+            log::info!("Changelog updated!");
+            println!("{result}");
+        }
         Err(e) => {
             log::error!("Error updating changelog: {e}");
             return Err(e);
         }
-    };
+    }
 
     Ok(())
 }
 
-async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
+async fn run_update(mut client: Client, sign: Sign) -> Result<String> {
     log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
@@ -91,7 +96,7 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
             log::info!("Amendment: In section `{section}`, adding `{entry}`");
         } else {
             log::info!("No update required");
-            return Ok(());
+            return Ok(NOT_UPDATED.to_string());
         };
     }
 
@@ -120,7 +125,7 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<()> {
     client.push_changelog()?;
     log::debug!("After push: Branch status: {}", client.branch_status()?);
 
-    Ok(())
+    Ok(UPDATED.to_string())
 }
 
 fn print_changelog(changelog_path: &str) {
