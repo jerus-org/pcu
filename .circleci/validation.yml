@@ -39,7 +39,7 @@ commands:
 
     steps:
       - run:
-          name: Update change or redirect to success
+          name: Update change or redirect
           command: |
             set -ex
             result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
