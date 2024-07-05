@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
 
-    log::debug!("Settings for github client: {settings:#?}");
+    log::trace!("Settings for github client: {settings:?}");
     let client = match Client::new_with(settings).await {
         Ok(client) => client,
         Err(e) => match e {
