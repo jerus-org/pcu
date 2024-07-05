@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci-restore build of pcu package from main branch(pr [#171])
 - chore-update pcu installation command description(pr [#178])
 - ci-add --early-exit flag to pcu command in Update changelog job(pr [#179])
+- ci-rename update changelog step and add early exit flag to pcu command(pr [#180])
 
 ### Fixed
 
@@ -175,6 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#177]: https://github.com/jerus-org/pcu/pull/177
 [#178]: https://github.com/jerus-org/pcu/pull/178
 [#179]: https://github.com/jerus-org/pcu/pull/179
+[#180]: https://github.com/jerus-org/pcu/pull/180
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7
