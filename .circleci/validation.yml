@@ -34,7 +34,7 @@ commands:
         description: "The verbosity of the pcu command"
       api_token_key:
         type: env_var_name
-        default: CIRCLE_TOKEN
+        default: CIRCLECI_TOKEN
         description: "The api token to use"
 
     steps:
@@ -47,6 +47,7 @@ commands:
               curl --request POST \
                 --url https://circleci.com/api/v2/project/gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline \
                 --header 'content-type: application/json' \
+                --header "Circle-Token: ${<< parameters.api_token_key >>}" \
                 --data '{"branch":"$CIRCLE_BRANCH","parameters":{"success":true}}'
             fi
 
