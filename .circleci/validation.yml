@@ -47,7 +47,6 @@ commands:
               curl --request POST \
                 --url https://circleci.com/api/v2/project/gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline \
                 --header 'content-type: application/json' \
-                --header 'Circle-Token: ${<< parameters.api_token_key >>}' \
                 --data '{"branch":"$CIRCLE_BRANCH","parameters":{"success":true}}'
             fi
 
@@ -161,7 +160,6 @@ workflows:
             - toolkit/idiomatic_rust
           context:
             - release
-            - bot-check
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           install_from_github: true
