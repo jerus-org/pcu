@@ -45,7 +45,6 @@ commands:
                 --header 'content-type: application/json' \
                 --header 'Circle-Token: $CIRCLE_TOKEN' \
                 --data '{"branch":"$CIRCLE_BRANCH","parameters":{"success":true}}'
-            els echo "committed"
             fi
 
 jobs:
