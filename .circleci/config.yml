@@ -102,7 +102,7 @@ jobs:
           command: |
             cargo install --force --git https://github.com/jerus-org/pcu.git
       - run:
-          name: Update changelog
+          name: Update changelog with early exit flag
           command: |
             $CARGO_HOME/bin/pcu --early-exit -vvv
   make-release:
