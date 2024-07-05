@@ -39,7 +39,7 @@ commands:
 
     steps:
       - run:
-          name: Check if last commit made by bot
+          name: Update change or redirect to success
           command: |
             set -ex
             result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
