@@ -1,160 +1,41 @@
 version: 2.1
 
+setup: true
+
 parameters:
   min-rust-version:
     type: string
     default: "1.74"
+  fingerprint:
+    type: string
+    default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
+
+orbs:
+  toolkit: jerus-org/circleci-toolkit@0.15.0
 
 executors:
   rust-env:
     docker:
       - image: jerusdp/ci-rust:<<pipeline.parameters.min-rust-version>>
 
-commands:
-  cargo-build:
-    parameters:
-      rust-version:
-        default: "stable"
-        type: string
-    steps:
-      - run:
-          name: Update Rust and check build <<parameters.rust-version>>
-          command: |
-            cargo +<<parameters.rust-version>> check --all-features
-  gpg-key:
-    steps:
-      - run:
-          name: import GPG key
-          command: |
-            echo -e $BOT_GPG_KEY \
-              | base64 --decode --ignore-garbage \
-              | gpg --batch --allow-secret-key-import --import 
-            gpg --fingerprint
-            echo $BOT_TRUST | gpg --import-ownertrust
-            gpg --fingerprint
-
-  git-config:
-    steps:
-      - run:
-          name: Configure git for user and signing
-          command: |
-            git config --global user.email "$BOT_USER_EMAIL"
-            git config --global user.name "$BOT_USER_NAME"
-            git config --global gpg.program gpg
-            git config --global user.signingkey "$BOT_SIGN_KEY"
-            git config --global commit.gpgsign true
-
-jobs:
-  required-builds:
-    executor: rust-env
-    steps:
-      - checkout
-      - run: cargo --version
-      - cargo-build:
-          rust-version: "stable"
-      - cargo-build:
-          rust-version: "<<pipeline.parameters.min-rust-version>>"
-
-  optional-builds:
-    executor: rust-env
-    steps:
-      - checkout
-      - run: cargo --version
-      - cargo-build:
-          rust-version: "nightly"
-      - cargo-build:
-          rust-version: "beta"
-
-  basic-test:
-    executor: rust-env
-    steps:
-      - checkout
-      - run: cargo --version
-      - run:
-          name: Check formatting for code
-          command: |
-            rustfmt --version
-            cargo fmt --all -- --check
-      - run:
-          name: Check idiomatic code use with Clippy
-          command: "cargo clippy --all --tests --all-features -- -D warnings"
-      - run:
-          name: Test crate with no features specified
-          command: "cargo test"
-
-  pr-changelog-update:
-    executor: rust-env
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - gpg-key
-      - git-config
-      - run:
-          name: Install pcu from code on main branch of on github
-          command: |
-            cargo install --force --git https://github.com/jerus-org/pcu.git
-      - run:
-          name: Update changelog with early exit flag
-          command: |
-            $CARGO_HOME/bin/pcu --early-exit -vvv
-  make-release:
-    executor: rust-env
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - SHA256:60dCfVZPD+o5zhG697wFQzG7KwR6PXip8kqM3Cn7Arc
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - gpg-key
-      - git-config
-      - run:
-          name: Publish update
-          command: |
-            set -exo pipefail
-            export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGELOG.md feature)
-            if [ $NEXTSV_LEVEL != "none" ] ; then 
-              cargo release changes
-              cargo release -vvv --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
-            else 
-              echo "Not ready to release yet."
-            fi
-
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  validation:
+  check_last_commit:
     when:
       not:
         equal: [scheduled_pipeline, << pipeline.trigger_source >>]
     jobs:
-      - required-builds
-      - basic-test
-      - optional-builds
-      - pr-changelog-update:
-          requires:
-            - required-builds
-            - basic-test
-          context:
-            - release
+      - toolkit/check_for_bot
+
   release:
     when:
       and:
         - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
         - equal: ["release check", << pipeline.schedule.name >>]
     jobs:
-      - make-release:
+      - toolkit/make_release:
           context:
             - release
+          ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          min_rust_version: << pipeline.parameters.min-rust-version >>

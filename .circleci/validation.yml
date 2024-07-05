@@ -1,0 +1,78 @@
+---
+version: 2.1
+
+orbs:
+  toolkit: jerus-org/circleci-toolkit@0.15.0
+
+parameters:
+  min-rust-version:
+    type: string
+    default: "1.74"
+  fingerprint:
+    type: string
+    default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
+
+executors:
+  rust_env:
+    docker:
+      - image: jerusdp/ci-rust:<<pipeline.parameters.min-rust-version>>
+
+jobs:
+  show_success:
+    executor: rust_env
+    steps:
+      - run: |
+          echo "Completed successfully!"
+
+  pr-changelog-update:
+    executor: rust_env
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - << pipeline.parameters.fingerprint >>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Install pcu from code on main branch of on github
+          command: |
+            cargo install --force --git https://github.com/jerus-org/pcu.git
+      - run:
+          name: Update changelog with early exit flag
+          command: |
+            $CARGO_HOME/bin/pcu --early-exit -vvv
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  validation:
+    jobs:
+      - toolkit/required_builds:
+          name: required-builds
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/optional_builds:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/test_doc_build:
+          name: docs
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/common_tests:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/idiomatic_rust:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - pr-changelog-update:
+          requires:
+            - toolkit/common_tests
+            - required-builds
+            - docs
+            - toolkit/idiomatic_rust
+          context:
+            - release
+      - show_success:
+          requires:
+            - pr-changelog-update
