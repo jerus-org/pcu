@@ -10,8 +10,7 @@ use color_eyre::Result;
 
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
-const UPDATED: &str = "updates";
-const NOT_UPDATED: &str = "none";
+const SIGNAL_HALT: &str = "halt";
 
 #[derive(ValueEnum, Debug, Default, Clone)]
 enum Sign {
@@ -26,7 +25,16 @@ struct Cli {
     #[clap(flatten)]
     logging: clap_verbosity_flag::Verbosity,
     #[clap(short, long)]
+    /// Require the user to sign the update commit with their GPG key
     sign: Option<Sign>,
+    /// Signal an early exit as the changelog is already updated
+    #[clap(short, long, default_value_t = false)]
+    early_exit: bool,
+}
+
+enum ClState {
+    Updated,
+    UnChanged,
 }
 
 #[tokio::main]
@@ -36,12 +44,15 @@ async fn main() -> Result<()> {
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
 
-    log::debug!("Settings for github client: {settings:#?}");
+    log::trace!("Settings for github client: {settings:?}");
     let client = match Client::new_with(settings).await {
         Ok(client) => client,
         Err(e) => match e {
             Error::EnvVarPullRequestNotFound => {
                 log::info!("On the main branch, so nothing more to do!");
+                if args.early_exit {
+                    println!("{SIGNAL_HALT}");
+                }
                 return Ok(());
             }
             _ => return Err(e.into()),
@@ -56,9 +67,13 @@ async fn main() -> Result<()> {
     let sign = args.sign.unwrap_or_default();
 
     match run_update(client, sign).await {
-        Ok(result) => {
+        Ok(state) => {
             log::info!("Changelog updated!");
-            println!("{result}");
+            if let ClState::Updated = state {
+                if args.early_exit {
+                    println!("{SIGNAL_HALT}");
+                }
+            }
         }
         Err(e) => {
             log::error!("Error updating changelog: {e}");
@@ -69,7 +84,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_update(mut client: Client, sign: Sign) -> Result<String> {
+async fn run_update(mut client: Client, sign: Sign) -> Result<ClState> {
     log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
         client.pr_number(),
@@ -82,6 +97,8 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<String> {
     log::debug!("Pull Request Title: {title}");
 
     client.create_entry()?;
+
+    log::debug!("Proposed entry: {:?}", client.entry());
 
     if log::log_enabled!(log::Level::Info) {
         if let Some((section, entry)) = client.update_changelog()? {
@@ -96,8 +113,10 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<String> {
             log::info!("Amendment: In section `{section}`, adding `{entry}`");
         } else {
             log::info!("No update required");
-            return Ok(NOT_UPDATED.to_string());
+            return Ok(ClState::UnChanged);
         };
+    } else if client.update_changelog()?.is_none() {
+        return Ok(ClState::UnChanged);
     }
 
     log::debug!("Changelog file name: {}", client.changelog());
@@ -125,7 +144,7 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<String> {
     client.push_changelog()?;
     log::debug!("After push: Branch status: {}", client.branch_status()?);
 
-    Ok(UPDATED.to_string())
+    Ok(ClState::Updated)
 }
 
 fn print_changelog(changelog_path: &str) {

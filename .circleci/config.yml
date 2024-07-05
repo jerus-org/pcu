@@ -104,7 +104,7 @@ jobs:
       - run:
           name: Update changelog
           command: |
-            $CARGO_HOME/bin/pcu -vv
+            $CARGO_HOME/bin/pcu -vvv
   make-release:
     executor: rust-env
     steps:
