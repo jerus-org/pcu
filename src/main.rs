@@ -41,6 +41,7 @@ enum ClState {
 async fn main() -> Result<()> {
     let settings = get_settings()?;
     let args = Cli::parse();
+    log::debug!("Args: {args:?}");
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
 
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
     match run_update(client, sign).await {
         Ok(state) => {
             log::info!("Changelog updated!");
-            if let ClState::Updated = state {
+            if let ClState::UnChanged = state {
                 if args.early_exit {
                     println!("{SIGNAL_HALT}");
                 }
