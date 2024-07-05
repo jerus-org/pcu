@@ -98,7 +98,7 @@ jobs:
       - gpg-key
       - git-config
       - run:
-          name: Install pcu
+          name: Install pcu from code on main branch of on github
           command: |
             cargo install --force --git https://github.com/jerus-org/pcu.git
       - run:
