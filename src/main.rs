@@ -41,9 +41,9 @@ enum ClState {
 async fn main() -> Result<()> {
     let settings = get_settings()?;
     let args = Cli::parse();
-    log::debug!("Args: {args:?}");
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
+    log::debug!("Args: {args:?}");
 
     log::trace!("Settings for github client: {settings:?}");
     let client = match Client::new_with(settings).await {
