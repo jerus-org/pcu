@@ -98,6 +98,8 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<ClState> {
 
     client.create_entry()?;
 
+    log::debug!("Proposed entry: {:?}", client.entry());
+
     if log::log_enabled!(log::Level::Info) {
         if let Some((section, entry)) = client.update_changelog()? {
             let section = match section {
