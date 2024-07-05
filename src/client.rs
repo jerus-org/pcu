@@ -161,7 +161,13 @@ impl Client {
     }
 
     pub fn update_changelog(&mut self) -> Result<Option<(ChangeKind, String)>, Error> {
-        if self.changelog_update.is_none() {
+        log::debug!(
+            "Updating changelog: {:?} with entry {:?}",
+            self.changelog,
+            self.changelog_update
+        );
+
+        if self.changelog.is_empty() {
             return Err(Error::NoChangeLogFileFound);
         }
 

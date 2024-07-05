@@ -113,6 +113,8 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<ClState> {
             log::info!("No update required");
             return Ok(ClState::UnChanged);
         };
+    } else if client.update_changelog()?.is_none() {
+        return Ok(ClState::UnChanged);
     }
 
     log::debug!("Changelog file name: {}", client.changelog());
