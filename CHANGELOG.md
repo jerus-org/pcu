@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - ci-restore build of pcu package from main branch(pr [#171])
+- chore-update pcu installation command description(pr [#178])
 
 ### Fixed
 
@@ -171,6 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#175]: https://github.com/jerus-org/pcu/pull/175
 [#176]: https://github.com/jerus-org/pcu/pull/176
 [#177]: https://github.com/jerus-org/pcu/pull/177
+[#178]: https://github.com/jerus-org/pcu/pull/178
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7
