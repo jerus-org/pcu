@@ -34,7 +34,7 @@ commands:
         description: "The verbosity of the pcu command"
       api_token_key:
         type: env_var_name
-        default: CIRCLECI_TOKEN
+        default: TOKEN
         description: "The api token to use"
 
     steps:
