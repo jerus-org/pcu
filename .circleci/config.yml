@@ -9,6 +9,10 @@ parameters:
   fingerprint:
     type: string
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
+  success-flag:
+    type: boolean
+    default: false
+    description: "If true, the success pipeline will be executed."
 
 orbs:
   toolkit: jerus-org/circleci-toolkit@0.15.0
@@ -18,13 +22,28 @@ executors:
     docker:
       - image: jerusdp/ci-rust:<<pipeline.parameters.min-rust-version>>
 
+jobs:
+  show_success:
+    executor: rust-env
+    steps:
+      - run: |
+          echo "Completed most successfully!"
+
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
+  on_success:
+    when: << pipeline.parameters.success-flag >>
+    jobs:
+      - show_success
+
   check_last_commit:
     when:
-      not:
-        equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+      and:
+        - not:
+            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+        - not: << pipeline.parameters.success-flag >>
+
     jobs:
       - toolkit/check_for_bot
 
@@ -33,6 +52,7 @@ workflows:
       and:
         - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
         - equal: ["release check", << pipeline.schedule.name >>]
+        - not: << pipeline.parameters.success-flag >>
     jobs:
       - toolkit/make_release:
           context:
