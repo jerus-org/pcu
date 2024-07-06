@@ -47,14 +47,15 @@ commands:
           command: |
             set -ex
             result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
+            project_slug = "gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
               jsonbody='{"branch":"use-toolkit","parameters":{"success-flag": false}}'
               # jsonbody='{"branch":"<< parameters.branch >>","parameters":{"success":false}}'
-              curl --request POST \
-                --url https://circleci.com/api/v2/project/gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline \
+              curl -u ${CIRCLE_TOKEN}: \
+                -X POST
                 --header 'content-type: application/json' \
-                --header "Circle-Token: ${<< parameters.api_token_key >>}" \
-                --data $jsonbody
+                -d $jsonbody \
+                https://circleci.com/api/v2/project/${project_slug}/pipeline
             fi
 
 jobs:
@@ -167,6 +168,7 @@ workflows:
             - toolkit/idiomatic_rust
           context:
             - release
+            - bot-check
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           install_from_github: true
