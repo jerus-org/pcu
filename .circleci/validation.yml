@@ -49,7 +49,7 @@ commands:
             result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-              export BODY='{\"branch\":\"use-toolkit\",\"parameters\":{\"success-flag\": false}}'
+              export BODY=`{"branch":"use-toolkit","parameters":{"success-flag":false}}`
               # jsonbody='{"branch":"<< parameters.branch >>","parameters":{"success":false}}'
               curl -u ${CIRCLE_TOKEN}: \
                 -X POST \
