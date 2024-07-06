@@ -48,14 +48,14 @@ commands:
             set -ex
             result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
-              project_slug = "gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               jsonbody='{"branch":"use-toolkit","parameters":{"success-flag": false}}'
               # jsonbody='{"branch":"<< parameters.branch >>","parameters":{"success":false}}'
               curl -u ${CIRCLE_TOKEN}: \
                 -X POST
                 --header 'content-type: application/json' \
                 -d $jsonbody \
-                https://circleci.com/api/v2/project/$project_slug/pipeline
+                https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
             fi
 
 jobs:
