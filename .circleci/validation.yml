@@ -52,7 +52,7 @@ commands:
               jsonbody='{"branch":"use-toolkit","parameters":{"success-flag": false}}'
               # jsonbody='{"branch":"<< parameters.branch >>","parameters":{"success":false}}'
               curl -u ${CIRCLE_TOKEN}: \
-                -X POST
+                -X POST \
                 --header 'content-type: application/json' \
                 -d $jsonbody \
                 https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
