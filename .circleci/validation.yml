@@ -55,7 +55,7 @@ commands:
                 -X POST
                 --header 'content-type: application/json' \
                 -d $jsonbody \
-                https://circleci.com/api/v2/project/${project_slug}/pipeline
+                https://circleci.com/api/v2/project/$project_slug/pipeline
             fi
 
 jobs:
