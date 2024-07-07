@@ -50,14 +50,14 @@ commands:
             if [[ "$committer" == "<< parameters.bot_name >>" ]]; then
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
-              BODY+="${parameters.branch}"
+              BODY+="$CIRCLE_BRANCH"
               BODY+='","parameters":{"validation-flag":true}}'
               echo $BODY
               # export BODY='{"branch":"${parameters.branch}","parameters":{"success-flag":true}}'
             else
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
-              BODY+="${parameters.branch}"
+              BODY+="$CIRCLE_BRANCH"
               BODY+='","parameters":{"validation-flag":true}}'
               echo $BODY
             fi
