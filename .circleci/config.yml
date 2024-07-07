@@ -64,11 +64,13 @@ commands:
               echo $BODY
             fi
 
-            curl -u ${CIRCLE_TOKEN}: \
+            response = curl -u ${CIRCLE_TOKEN}: \
               -X POST \
               --header 'content-type: application/json' \
               -d $BODY \
               https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
+
+            echo $response
 
   test_update_log:
     parameters:
@@ -97,7 +99,9 @@ commands:
             result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-              export BODY='{"branch":"${parameters.branch}","parameters":{"success-flag":true}}'
+              BODY='{"branch":"'
+              BODY+="$CIRCLE_BRANCH"
+              BODY+='","parameters":{"validation-flag":true}}'
               echo $BODY
               curl -u ${CIRCLE_TOKEN}: \
                 -X POST \
