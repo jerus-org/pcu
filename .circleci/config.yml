@@ -64,7 +64,7 @@ commands:
               echo $BODY
             fi
 
-            response = curl -u ${CIRCLE_TOKEN}: \
+            response=curl -u ${CIRCLE_TOKEN}: \
               -X POST \
               --header 'content-type: application/json' \
               -d $BODY \
