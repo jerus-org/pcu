@@ -99,7 +99,7 @@ commands:
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
               BODY+="$CIRCLE_BRANCH"
-              BODY+='","parameters":{"validation-flag":true}}'
+              BODY+='","parameters":{"success-flag":true}}'
               echo $BODY
               curl -u ${CIRCLE_TOKEN}: \
                 -X POST \
