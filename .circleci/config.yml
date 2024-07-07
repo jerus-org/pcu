@@ -48,6 +48,7 @@ commands:
             echo $committer
             next_config="<< parameters.if_not_found >>"
             if [[ "$committer" == "<< parameters.bot_name >>" ]]; then
+              echo "Last committer is the bot"
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
               BODY+="$CIRCLE_BRANCH"
@@ -55,6 +56,7 @@ commands:
               echo $BODY
               # export BODY='{"branch":"${parameters.branch}","parameters":{"success-flag":true}}'
             else
+              echo "Last committer is not the bot"
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
               BODY+="$CIRCLE_BRANCH"
@@ -219,7 +221,9 @@ workflows:
         - not: << pipeline.parameters.validation-flag >>
 
     jobs:
-      - test_check_for_bot
+      - test_check_for_bot:
+          name: check-bot
+          context: bot-check
 
   validation:
     when:
