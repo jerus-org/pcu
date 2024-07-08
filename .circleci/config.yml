@@ -114,7 +114,7 @@ commands:
             fi
 
 jobs:
-  test_check_for_bot:
+  choose_pipeline_on_committer:
     executor: base-env
 
     parameters:
@@ -122,11 +122,11 @@ jobs:
         type: string
         default: "Jerus Bot"
         description: The name of the bot to check for
-      pipeline_flag_if_not_found:
+      pipeline_flag_if_not_bot:
         type: string
         default: "validation-flag"
         description: The pipeline flag to set if the last committer was not the bot
-      pipeline_flag_if_found:
+      pipeline_flag_if_bot:
         type: string
         default: "success-flag"
         description: The pipeline flag to set if the last committer was not the bot
@@ -228,7 +228,7 @@ workflows:
         - not: << pipeline.parameters.validation-flag >>
 
     jobs:
-      - test_check_for_bot:
+      - choose_pipeline_on_committer:
           name: check-bot
           context: bot-check
 
