@@ -18,7 +18,7 @@ keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git",
 octocrab = "0.38.0"
 regex = "1.10.4"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
-log = "0.4.21"
+log = "0.4.22"
 url = "2.5.0"
 git2 = "0.19.0"
 color-eyre = "0.6.3"
