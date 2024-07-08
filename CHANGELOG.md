@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependencies: update rust crate clap to 4.5.8(pr [#185])
 - Dependencies: update rust crate tokio to 1.38.0(pr [#190])
 - Dependencies: update rust crate regex to 1.10.5(pr [#189])
+- Dependencies: update rust crate url to 2.5.2(pr [#192])
 
 ## [0.1.9] - 2024-07-06
 
@@ -213,6 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#190]: https://github.com/jerus-org/pcu/pull/190
 [#189]: https://github.com/jerus-org/pcu/pull/189
 [#191]: https://github.com/jerus-org/pcu/pull/191
+[#192]: https://github.com/jerus-org/pcu/pull/192
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.9...HEAD
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
