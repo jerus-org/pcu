@@ -67,12 +67,6 @@ commands:
             fi
 
 jobs:
-  end_success:
-    executor: rust-env
-    steps:
-      - run: |
-          echo "Completed successfully!"
-
   test_update_changelog:
     executor:
       name: rust-env
