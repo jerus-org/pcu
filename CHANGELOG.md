@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.9] - 2024-07-06
 
 ### Added
 
@@ -23,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci-add --early-exit flag to pcu command in Update changelog job(pr [#179])
 - ci-rename update changelog step and add early exit flag to pcu command(pr [#180])
 - ci-adopt toolkit and configure to use setup config with validation and success(pr [#181])
-- ci-adopt updated toolkit and set install_from_github flag(pr [#182])
 
 ### Fixed
 
@@ -180,8 +179,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#179]: https://github.com/jerus-org/pcu/pull/179
 [#180]: https://github.com/jerus-org/pcu/pull/180
 [#181]: https://github.com/jerus-org/pcu/pull/181
-[#182]: https://github.com/jerus-org/pcu/pull/182
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.8...HEAD
+[0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...v0.1.9
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/jerus-org/pcu/compare/0.1.6...0.1.7
 [0.1.6]: https://github.com/jerus-org/pcu/compare/0.1.5...0.1.6
