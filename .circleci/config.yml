@@ -1,7 +1,5 @@
 version: 2.1
 
-setup: true
-
 parameters:
   min-rust-version:
     type: string
@@ -9,6 +7,14 @@ parameters:
   fingerprint:
     type: string
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
+  validation-flag:
+    type: boolean
+    default: false
+    description: "If true, the validation pipeline will be executed."
+  success-flag:
+    type: boolean
+    default: false
+    description: "If true, the success pipeline will be executed."
 
 orbs:
   toolkit: jerus-org/circleci-toolkit@0.15.0
@@ -17,22 +23,261 @@ executors:
   rust-env:
     docker:
       - image: jerusdp/ci-rust:<<pipeline.parameters.min-rust-version>>
+  base-env:
+    docker:
+      - image: jerusdp/ci-rust:base
+
+commands:
+  test_last_committer:
+    parameters:
+      bot_name:
+        type: string
+        description: The name of the bot to check for
+      if_not_found:
+        type: string
+        description: The script to continue with if the last committer was not matched to bot_name
+      if_found:
+        type: string
+        description: The script to continue with if the last committer was matched to bot_name
+
+    steps:
+      - run:
+          name: Check if last commit made by bot
+          command: |
+            committer=$(git log -1 HEAD --pretty=format:%cn)
+            echo $committer
+            next_config="<< parameters.if_not_found >>"
+            if [[ "$committer" == "<< parameters.bot_name >>" ]]; then
+              echo "Last committer is the bot"
+              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+              BODY='{"branch":"'
+              BODY+="$CIRCLE_BRANCH"
+              BODY+='","parameters":{"validation-flag":true}}'
+              echo $BODY
+              # export BODY='{"branch":"${parameters.branch}","parameters":{"success-flag":true}}'
+            else
+              echo "Last committer is not the bot"
+              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+              BODY='{"branch":"'
+              BODY+="$CIRCLE_BRANCH"
+              BODY+='","parameters":{"validation-flag":true}}'
+              echo $BODY
+            fi
+
+            curl -u ${CIRCLE_TOKEN}: \
+              -X POST \
+              --header 'content-type: application/json' \
+              -d $BODY \
+              https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
+
+  test_update_log:
+    parameters:
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      pcu_halt_signal:
+        type: string
+        default: "halt"
+        description: "The verbosity of the pcu command"
+      api_token_key:
+        type: env_var_name
+        default: TOKEN
+        description: "The api token to use"
+      branch:
+        type: env_var_name
+        default: CIRCLE_BRANCH
+        description: "The branch for the pipeline"
+
+    steps:
+      - run:
+          name: Update change or redirect
+          command: |
+            set -ex
+            result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
+            if [ "$result" == << parameters.pcu_halt_signal >> ]; then
+              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+              BODY='{"branch":"'
+              BODY+="$CIRCLE_BRANCH"
+              BODY+='","parameters":{"success-flag":true}}'
+              echo $BODY
+              curl -u ${CIRCLE_TOKEN}: \
+                -X POST \
+                --header 'content-type: application/json' \
+                -d $BODY \
+                https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
+            fi
+
+jobs:
+  test_check_for_bot:
+    executor: base-env
+
+    parameters:
+      bot_name:
+        type: string
+        default: "Jerus Bot"
+        description: The name of the bot to check for
+      if_not_found:
+        type: string
+        default: ".circleci/validation.yml"
+        description: The script to continue with if the last committer was not matched to bot_name
+      if_found:
+        type: string
+        default: ".circleci/success.yml"
+        description: The script to continue with if the last committer was matched to bot_name
+
+    steps:
+      - checkout
+      - test_last_committer:
+          bot_name: "<< parameters.bot_name >>"
+          if_not_found: "<< parameters.if_not_found >>"
+          if_found: "<< parameters.if_found >>"
+
+  show_success:
+    executor: rust-env
+    steps:
+      - run: |
+          echo "Completed most successfully!"
+
+  test_update_changelog:
+    executor:
+      name: rust-env
+
+    parameters:
+      min_rust_version:
+        type: string
+        description: "The minimum version of the rust compiler to use"
+      ssh_fingerprint:
+        type: string
+        description: |
+          The fingerprint of the ssh key to use
+      gpg_key:
+        type: env_var_name
+        default: BOT_GPG_KEY
+        description: "The base64 encoded GPG key"
+      gpg_trust:
+        type: env_var_name
+        default: BOT_TRUST
+        description: "The trust associated with the GPG key"
+      user_email:
+        type: env_var_name
+        default: BOT_USER_EMAIL
+        description: "The user email associated with the GPG key"
+      user_name:
+        type: env_var_name
+        default: BOT_USER_NAME
+        description: "The user name associated with the GPG key"
+      sign_key:
+        type: env_var_name
+        default: BOT_SIGN_KEY
+        description: "The GPG key id associated with the GPG key"
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      pcu_halt_signal:
+        type: string
+        default: "halt"
+        description: "The verbosity of the pcu command"
+      install_from_github:
+        type: boolean
+        default: false
+        description: "Install pcu from github"
+
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Install pcu from code on main branch of on github
+          command: |
+            if [ "<< parameters.install_from_github >>" == "true"  ] ; then
+              cargo install --force --git https://github.com/jerus-org/pcu.git
+            fi
+      - run:
+          name: pcu version
+          command: |
+            pcu --version
+      - test_update_log:
+          pcu_verbosity: <<parameters.pcu_verbosity>>
+          pcu_halt_signal: <<parameters.pcu_halt_signal>>
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
   check_last_commit:
     when:
-      not:
-        equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+      and:
+        - not:
+            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+        - not: << pipeline.parameters.success-flag >>
+        - not: << pipeline.parameters.validation-flag >>
+
     jobs:
-      - toolkit/check_for_bot
+      - test_check_for_bot:
+          name: check-bot
+          context: bot-check
+
+  validation:
+    when:
+      and:
+        - not:
+            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+        - not: << pipeline.parameters.success-flag >>
+        - << pipeline.parameters.validation-flag >>
+    jobs:
+      - toolkit/required_builds:
+          name: required-builds
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/optional_builds:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/test_doc_build:
+          name: docs
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/common_tests:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - toolkit/idiomatic_rust:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+      - test_update_changelog:
+          requires:
+            - toolkit/common_tests
+            - required-builds
+            - docs
+            - toolkit/idiomatic_rust
+          context:
+            - release
+            - bot-check
+          ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+          install_from_github: true
+
+  on_success:
+    when:
+      and:
+        - not:
+            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+        - << pipeline.parameters.success-flag >>
+        - not: << pipeline.parameters.validation-flag >>
+
+    jobs:
+      - show_success
 
   release:
     when:
       and:
         - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
         - equal: ["release check", << pipeline.schedule.name >>]
+        - not: << pipeline.parameters.success-flag >>
+        - not: << pipeline.parameters.validation-flag >>
     jobs:
       - toolkit/make_release:
           context:
