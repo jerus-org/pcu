@@ -31,7 +31,7 @@ config = "0.14.0"
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"
 rstest = "0.21.0"
-uuid = { version = "1.8.0", features = ["v4"] }
+uuid = { version = "1.9.1", features = ["v4"] }
 
 [lib]
 name = "pcu_lib"
