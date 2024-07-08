@@ -17,7 +17,7 @@ parameters:
     description: "If true, the success pipeline will be executed."
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@0.18.1
+  toolkit: jerus-org/circleci-toolkit@0.19.0
 
 executors:
   rust-env:
@@ -26,118 +26,6 @@ executors:
   base-env:
     docker:
       - image: jerusdp/ci-rust:base
-
-commands:
-  test_update_log:
-    parameters:
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-      pcu_halt_signal:
-        type: string
-        default: "halt"
-        description: "The verbosity of the pcu command"
-      api_token_key:
-        type: env_var_name
-        default: TOKEN
-        description: "The api token to use"
-      branch:
-        type: env_var_name
-        default: CIRCLE_BRANCH
-        description: "The branch for the pipeline"
-
-    steps:
-      - run:
-          name: Update change or redirect
-          command: |
-            set -ex
-            result=$(pcu --early-exit <<parameters.pcu_verbosity>>)
-            if [ "$result" == << parameters.pcu_halt_signal >> ]; then
-              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-              BODY='{"branch":"'
-              BODY+="$CIRCLE_BRANCH"
-              BODY+='","parameters":{"success-flag":true}}'
-              echo $BODY
-              curl -u ${CIRCLE_TOKEN}: \
-                -X POST \
-                --header 'content-type: application/json' \
-                -d $BODY \
-                https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
-            fi
-
-jobs:
-  test_update_changelog:
-    executor:
-      name: rust-env
-
-    parameters:
-      min_rust_version:
-        type: string
-        description: "The minimum version of the rust compiler to use"
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
-      gpg_key:
-        type: env_var_name
-        default: BOT_GPG_KEY
-        description: "The base64 encoded GPG key"
-      gpg_trust:
-        type: env_var_name
-        default: BOT_TRUST
-        description: "The trust associated with the GPG key"
-      user_email:
-        type: env_var_name
-        default: BOT_USER_EMAIL
-        description: "The user email associated with the GPG key"
-      user_name:
-        type: env_var_name
-        default: BOT_USER_NAME
-        description: "The user name associated with the GPG key"
-      sign_key:
-        type: env_var_name
-        default: BOT_SIGN_KEY
-        description: "The GPG key id associated with the GPG key"
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-      pcu_halt_signal:
-        type: string
-        default: "halt"
-        description: "The verbosity of the pcu command"
-      install_from_github:
-        type: boolean
-        default: false
-        description: "Install pcu from github"
-
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - run:
-          name: Install pcu from code on main branch of on github
-          command: |
-            if [ "<< parameters.install_from_github >>" == "true"  ] ; then
-              cargo install --force --git https://github.com/jerus-org/pcu.git
-            fi
-      - run:
-          name: pcu version
-          command: |
-            pcu --version
-      - test_update_log:
-          pcu_verbosity: <<parameters.pcu_verbosity>>
-          pcu_halt_signal: <<parameters.pcu_halt_signal>>
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -175,7 +63,7 @@ workflows:
           min_rust_version: << pipeline.parameters.min-rust-version >>
       - toolkit/idiomatic_rust:
           min_rust_version: << pipeline.parameters.min-rust-version >>
-      - test_update_changelog:
+      - toolkit/update_changelog:
           requires:
             - toolkit/common_tests
             - required-builds
