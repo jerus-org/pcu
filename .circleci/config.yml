@@ -33,36 +33,35 @@ commands:
       bot_name:
         type: string
         description: The name of the bot to check for
-      if_not_found:
+      branch:
+        type: env_var_name
+        default: CIRCLE_BRANCH
+        description: The branch for the pipeline
+      pipeline_flag_if_not_bot:
         type: string
-        description: The script to continue with if the last committer was not matched to bot_name
-      if_found:
+        description: The pipeline flag to set if the last committer was not the bot
+      pipeline_flag_if_bot:
         type: string
-        description: The script to continue with if the last committer was matched to bot_name
+        description: The pipeline flag to set if the last committer was the bot
 
     steps:
       - run:
           name: Check if last commit made by bot
           command: |
             committer=$(git log -1 HEAD --pretty=format:%cn)
-            echo $committer
-            next_config="<< parameters.if_not_found >>"
+            PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+            BODY='{"branch":"'
+            BODY+=${<< parameters.branch >>}
+
             if [[ "$committer" == "<< parameters.bot_name >>" ]]; then
               echo "Last committer is the bot"
-              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-              BODY='{"branch":"'
-              BODY+="$CIRCLE_BRANCH"
-              BODY+='","parameters":{"validation-flag":true}}'
-              echo $BODY
-              # export BODY='{"branch":"${parameters.branch}","parameters":{"success-flag":true}}'
+              BODY+='","parameters":{"<< parameters.pipeline_flag_if_bot >>":true}}'
             else
               echo "Last committer is not the bot"
-              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-              BODY='{"branch":"'
-              BODY+="$CIRCLE_BRANCH"
-              BODY+='","parameters":{"validation-flag":true}}'
-              echo $BODY
+              BODY+='","parameters":{"<< parameters.pipeline_flag_if_not_bot >>":true}}'
             fi
+
+            echo $BODY
 
             curl -u ${CIRCLE_TOKEN}: \
               -X POST \
@@ -109,7 +108,7 @@ commands:
             fi
 
 jobs:
-  test_check_for_bot:
+  choose_pipeline_on_committer:
     executor: base-env
 
     parameters:
@@ -117,21 +116,21 @@ jobs:
         type: string
         default: "Jerus Bot"
         description: The name of the bot to check for
-      if_not_found:
+      pipeline_flag_if_not_bot:
         type: string
-        default: ".circleci/validation.yml"
-        description: The script to continue with if the last committer was not matched to bot_name
-      if_found:
+        default: "validation-flag"
+        description: The pipeline flag to set if the last committer was not the bot
+      pipeline_flag_if_bot:
         type: string
-        default: ".circleci/success.yml"
-        description: The script to continue with if the last committer was matched to bot_name
+        default: "success-flag"
+        description: The pipeline flag to set if the last committer was not the bot
 
     steps:
       - checkout
       - test_last_committer:
           bot_name: "<< parameters.bot_name >>"
-          if_not_found: "<< parameters.if_not_found >>"
-          if_found: "<< parameters.if_found >>"
+          pipeline_flag_if_not_bot: "<< parameters.pipeline_flag_if_not_bot >>"
+          pipeline_flag_if_bot: "<< parameters.pipeline_flag_if_bot >>"
 
   show_success:
     executor: rust-env
@@ -223,8 +222,8 @@ workflows:
         - not: << pipeline.parameters.validation-flag >>
 
     jobs:
-      - test_check_for_bot:
-          name: check-bot
+      - choose_pipeline_on_committer:
+          name: choose pipeline based on committer
           context: bot-check
 
   validation:
