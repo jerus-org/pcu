@@ -17,7 +17,7 @@ parameters:
     description: "If true, the success pipeline will be executed."
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@0.17.0
+  toolkit: jerus-org/circleci-toolkit@0.18.1
 
 executors:
   rust-env:
@@ -67,12 +67,6 @@ commands:
             fi
 
 jobs:
-  end_success:
-    executor: rust-env
-    steps:
-      - run: |
-          echo "Completed successfully!"
-
   test_update_changelog:
     executor:
       name: rust-env
@@ -203,7 +197,7 @@ workflows:
         - not: << pipeline.parameters.validation-flag >>
 
     jobs:
-      - end_success
+      - toolkit/end_success
 
   release:
     when:
