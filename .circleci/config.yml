@@ -50,7 +50,9 @@ commands:
           command: |
             committer=$(git log -1 HEAD --pretty=format:%cn)
             echo $committer
-            export BODY2='{"branch":"${<< parameters.branch >>}","parameters":{"success-flag":true}}'
+            BODY2='{"branch":"'
+            BODY2=${<< parameters.branch >>}
+            BODY2+='","parameters":{"<< parameters.pipeline_flag_if_bot >>":true}}'
             echo $BODY2
             next_config="<< parameters.pipeline_flag_if_not_bot >>"
             if [[ "$committer" == "<< parameters.bot_name >>" ]]; then
@@ -58,14 +60,14 @@ commands:
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
               BODY+="$CIRCLE_BRANCH"
-              BODY+='","parameters":{"${<< parameters.pipeline_flag_if_bot >>}":true}}'
+              BODY+='","parameters":{"<< parameters.pipeline_flag_if_bot >>":true}}'
               echo $BODY
             else
               echo "Last committer is not the bot"
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
               BODY+="$CIRCLE_BRANCH"
-              BODY+='","parameters":{"${<< parameters.pipeline_flag_if_not_bot >>}":true}}'
+              BODY+='","parameters":{"<< parameters.pipeline_flag_if_not_bot >>":true}}'
               echo $BODY
             fi
 
