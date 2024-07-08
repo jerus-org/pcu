@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - ci-adopt updated toolkit and set install_from_github flag(pr [#182])
+- chore-update renovate configuration with new rules and settings(pr [#184])
 
 ### Fixed
 
@@ -191,6 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#181]: https://github.com/jerus-org/pcu/pull/181
 [#182]: https://github.com/jerus-org/pcu/pull/182
 [#183]: https://github.com/jerus-org/pcu/pull/183
+[#184]: https://github.com/jerus-org/pcu/pull/184
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.9...HEAD
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
