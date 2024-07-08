@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - parameterise pipeline flags(pr [#183])
 
+### Security
+
+- Dependencies: update rust crate log to 0.4.22(pr [#186])
+
 ## [0.1.9] - 2024-07-06
 
 ### Added
@@ -195,6 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#183]: https://github.com/jerus-org/pcu/pull/183
 [#184]: https://github.com/jerus-org/pcu/pull/184
 [#187]: https://github.com/jerus-org/pcu/pull/187
+[#186]: https://github.com/jerus-org/pcu/pull/186
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.9...HEAD
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
