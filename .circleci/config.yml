@@ -49,23 +49,19 @@ commands:
           name: Check if last commit made by bot
           command: |
             committer=$(git log -1 HEAD --pretty=format:%cn)
-            echo $committer
-            BODY2='{"branch":"'
-            BODY2+=${<< parameters.branch >>}
-            BODY2+='","parameters":{"<< parameters.pipeline_flag_if_bot >>":true}}'
-            echo $BODY2
-            export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+            PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
             BODY='{"branch":"'
-            BODY+="$CIRCLE_BRANCH"
+            BODY+=${<< parameters.branch >>}
+
             if [[ "$committer" == "<< parameters.bot_name >>" ]]; then
               echo "Last committer is the bot"
               BODY+='","parameters":{"<< parameters.pipeline_flag_if_bot >>":true}}'
-              echo $BODY
             else
               echo "Last committer is not the bot"
               BODY+='","parameters":{"<< parameters.pipeline_flag_if_not_bot >>":true}}'
-              echo $BODY
             fi
+
+            echo $BODY
 
             curl -u ${CIRCLE_TOKEN}: \
               -X POST \
@@ -227,7 +223,7 @@ workflows:
 
     jobs:
       - choose_pipeline_on_committer:
-          name: check-bot
+          name: choose pipeline based on committer
           context: bot-check
 
   validation:
