@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-update renovate configuration with new rules and settings(pr [#184])
 - ci-update toolkit version and adopt choose_pipeline for bot commit check(pr [#187])
 - ci-adopt end_success from toolkit(pr [#188])
+- chore-restore crates.io version of keep-a-changelog and update toolkit version(pr [#195])
 
 ### Fixed
 
@@ -219,6 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#192]: https://github.com/jerus-org/pcu/pull/192
 [#193]: https://github.com/jerus-org/pcu/pull/193
 [#194]: https://github.com/jerus-org/pcu/pull/194
+[#195]: https://github.com/jerus-org/pcu/pull/195
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.9...HEAD
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
