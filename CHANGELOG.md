@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependencies: update rust crate url to 2.5.2(pr [#192])
 - Dependencies: update rust crate uuid to 1.9.1(pr [#193])
 - Dependencies: update rust crate uuid to 1.10.0(pr [#194])
+- Dependencies: update rust crate keep-a-changelog to 0.1.4(pr [#196])
 
 ## [0.1.9] - 2024-07-06
 
@@ -221,6 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#193]: https://github.com/jerus-org/pcu/pull/193
 [#194]: https://github.com/jerus-org/pcu/pull/194
 [#195]: https://github.com/jerus-org/pcu/pull/195
+[#196]: https://github.com/jerus-org/pcu/pull/196
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.9...HEAD
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
