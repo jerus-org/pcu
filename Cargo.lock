@@ -978,8 +978,9 @@ dependencies = [
 
 [[package]]
 name = "keep-a-changelog"
-version = "0.1.3"
-source = "git+https://github.com/jerusdp/keep-a-changelog-rs.git?branch=feat-add-link#4f5966ca5d03868947941605187de3d524c909e9"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "154a24ccde8f0778a086abaabaf2acd1a177a15be5a4076e74491d0d2687e896"
 dependencies = [
  "chrono",
  "derive-getters",
