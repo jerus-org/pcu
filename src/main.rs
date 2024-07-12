@@ -44,8 +44,6 @@ async fn main() -> Result<()> {
     builder.init();
     log::debug!("Args: {args:?}");
     let settings = get_settings()?;
-
-    log::trace!("Settings for github client: {settings:?}");
     let client = match Client::new_with(settings).await {
         Ok(client) => client,
         Err(e) => match e {
@@ -191,7 +189,7 @@ fn get_settings() -> Result<Config, Error> {
         Ok(settings) => {
             // Print out our settings (as a HashMap)
             log::trace!(
-                "{:?}",
+                "{:#?}",
                 settings
                     .clone()
                     .try_deserialize::<HashMap<String, String>>()
