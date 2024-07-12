@@ -39,13 +39,16 @@ pub struct Client {
 
 impl Client {
     pub async fn new_with(settings: Config) -> Result<Self, Error> {
+        log::trace!("new_with settings: {settings:?}");
         // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
+        log::trace!("branch: {:?}", settings.get::<&str>("branch"));
         let pcu_branch: String = settings
             .get("branch")
             .map_err(|_| Error::EnvVarBranchNotSet)?;
         let branch = env::var(pcu_branch).map_err(|_| Error::EnvVarBranchNotFound)?;
 
         // Use the pull_request config setting to direct to the appropriate CI environment variable to find the PR data
+        log::trace!("pull_request: {:?}", settings.get::<&str>("pull_request"));
         let pcu_pull_request: String = settings
             .get("pull_request")
             .map_err(|_| Error::EnvVarPullRequestNotSet)?;
@@ -53,6 +56,7 @@ impl Client {
             env::var(pcu_pull_request).map_err(|_| Error::EnvVarPullRequestNotFound)?;
 
         // Use the log config setting to set the default change log file name
+        log::trace!("log: {:?}", settings.get::<&str>("log"));
         let default_change_log: String = settings
             .get("log")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
