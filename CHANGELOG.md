@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - parameterise pipeline flags(pr [#183])
+- move settings initialization after logging initialization(pr [#197])
 
 ### Security
 
@@ -223,6 +224,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#194]: https://github.com/jerus-org/pcu/pull/194
 [#195]: https://github.com/jerus-org/pcu/pull/195
 [#196]: https://github.com/jerus-org/pcu/pull/196
+[#197]: https://github.com/jerus-org/pcu/pull/197
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.9...HEAD
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
 [0.1.8]: https://github.com/jerus-org/pcu/compare/0.1.7...0.1.8
