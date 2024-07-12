@@ -52,6 +52,7 @@ impl Client {
         let pcu_pull_request: String = settings
             .get("pull_request")
             .map_err(|_| Error::EnvVarPullRequestNotSet)?;
+        log::trace!("pcu_pull_request: {:?}", pcu_pull_request);
         let pull_request =
             env::var(pcu_pull_request).map_err(|_| Error::EnvVarPullRequestNotFound)?;
 
