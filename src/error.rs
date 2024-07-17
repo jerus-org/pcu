@@ -20,6 +20,8 @@ pub enum Error {
     EnvVarBranchNotFound,
     #[error("Environment variable PCU_PULL_REQUEST not set")]
     EnvVarPullRequestNotSet,
+    #[error("Environment variable PCU_PULL_REQUEST not set")]
+    InvalidVersion(String),
     #[error("Environment specified in PCU_PULL_REQUEST not found")]
     EnvVarPullRequestNotFound,
     #[error("Default change log file name not set")]

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs};
 
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
@@ -30,6 +30,22 @@ struct Cli {
     /// Signal an early exit as the changelog is already updated
     #[clap(short, long, default_value_t = false)]
     early_exit: bool,
+    /// Command to execute
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    Update,
+    Release(Release),
+}
+
+#[derive(Debug, Parser)]
+struct Release {
+    #[clap(short, long)]
+    /// Require the user to sign the update commit with their GPG key
+    release: String,
 }
 
 enum ClState {
@@ -65,19 +81,30 @@ async fn main() -> Result<()> {
 
     let sign = args.sign.unwrap_or_default();
 
-    match run_update(client, sign).await {
-        Ok(state) => {
-            log::info!("Changelog updated!");
-            if let ClState::UnChanged = state {
-                if args.early_exit {
-                    println!("{SIGNAL_HALT}");
+    match args.command {
+        Commands::Update => match run_update(client, sign).await {
+            Ok(state) => {
+                log::info!("Changelog updated!");
+                if let ClState::UnChanged = state {
+                    if args.early_exit {
+                        println!("{SIGNAL_HALT}");
+                    }
                 }
             }
-        }
-        Err(e) => {
-            log::error!("Error updating changelog: {e}");
-            return Err(e);
-        }
+            Err(e) => {
+                log::error!("Error updating changelog: {e}");
+                return Err(e);
+            }
+        },
+        Commands::Release(args) => match run_release(client, sign, args.release).await {
+            Ok(_) => {
+                log::info!("Changelog updated!");
+            }
+            Err(e) => {
+                log::error!("Error updating changelog: {e}");
+                return Err(e);
+            }
+        },
     }
 
     Ok(())
@@ -142,6 +169,21 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<ClState> {
 
     client.push_changelog()?;
     log::debug!("After push: Branch status: {}", client.branch_status()?);
+
+    Ok(ClState::Updated)
+}
+
+async fn run_release(client: Client, sign: Sign, version: String) -> Result<ClState> {
+    log::trace!("Running release {version}");
+    log::trace!(
+        "PR ID: {} - Owner: {} - Repo: {}",
+        client.pr_number(),
+        client.owner(),
+        client.repo()
+    );
+    log::trace!("Signing: {:?}", sign);
+
+    client.update_unreleased(&version)?;
 
     Ok(ClState::Updated)
 }
