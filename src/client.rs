@@ -1,16 +1,21 @@
 use std::{
     env,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
+    fs,
     io::Write,
+    path,
     path::Path,
     process::{Command, Stdio},
     str::FromStr,
     sync::Arc,
 };
 
+use chrono::{Datelike, NaiveDate, Utc};
 use config::Config;
 use git2::{BranchType, Cred, Direction, RemoteCallbacks, Repository};
-use keep_a_changelog::ChangeKind;
+use keep_a_changelog::{
+    changelog::ChangelogBuilder, ChangeKind, Changelog, ChangelogParseOptions, Release, Version,
+};
 use octocrab::Octocrab;
 use url::Url;
 
@@ -304,6 +309,106 @@ impl Client {
         log::trace!("Push refs: {}", push_refs.name().unwrap());
 
         remote.push(&[push_refs.name().unwrap()], None)?;
+
+        Ok(())
+    }
+
+    /// Update the unreleased section to the changelog to `version`
+    pub fn update_unreleased(&self, version: &str) -> Result<(), Error> {
+        log::debug!(
+            "Updating changelog: {:?} with version {:?}",
+            self.changelog,
+            version,
+        );
+
+        if self.changelog.is_empty() {
+            return Err(Error::NoChangeLogFileFound);
+        }
+
+        if !version.is_empty() {
+            #[allow(clippy::needless_question_mark)]
+            return Ok(self.release_unreleased(&self.changelog, version)?);
+        }
+
+        Ok(())
+    }
+
+    pub fn release_unreleased(&self, log_file: &OsStr, version: &str) -> Result<(), Error> {
+        let Some(log_file) = log_file.to_str() else {
+            return Err(Error::InvalidPath(log_file.to_owned()));
+        };
+
+        let repo_url =
+        //  match &self.pr_url {
+        //     Some(pr_url) => {
+        //         let url_string = pr_url.to_string();
+        //         let components = url_string.split('/').collect::<Vec<&str>>();
+        //         let url = format!("https://github.com/{}/{}", components[3], components[4]);
+        //         Some(url)
+        //     }
+        //     None => 
+        None
+        // }
+        ;
+
+        let mut change_log = if path::Path::new(log_file).exists() {
+            let file_contents = fs::read_to_string(path::Path::new(log_file))?;
+            log::trace!("file contents:\n---\n{}\n---\n\n", file_contents);
+            let options = if repo_url.is_some() {
+                Some(ChangelogParseOptions {
+                    url: repo_url.clone(),
+                    ..Default::default()
+                })
+            } else {
+                None
+            };
+
+            Changelog::parse_from_file(log_file, options)
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?
+        } else {
+            log::trace!("The changelog does not exist! Create a default changelog.");
+            let mut changelog = ChangelogBuilder::default()
+                .url(repo_url)
+                .build()
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
+            log::debug!("Changelog: {:#?}", changelog);
+            let release = Release::builder()
+                .build()
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
+            changelog.add_release(release);
+            log::debug!("Changelog: {:#?}", changelog);
+
+            changelog
+                .save_to_file(log_file)
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
+            changelog
+        };
+
+        // Get the unreleased section from the Changelog.
+        // If there is no unreleased section create it and add it to the changelog
+        let unreleased = if let Some(unreleased) = change_log.get_unreleased_mut() {
+            unreleased
+        } else {
+            let release = Release::builder()
+                .build()
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
+            change_log.add_release(release);
+            let unreleased = change_log.get_unreleased_mut().unwrap();
+            unreleased
+        };
+
+        let version = Version::parse(version).map_err(|e| Error::InvalidVersion(e.to_string()))?;
+        unreleased.set_version(version);
+
+        let today =
+            NaiveDate::from_ymd_opt(Utc::now().year(), Utc::now().month(), Utc::now().day());
+        if let Some(today) = today {
+            unreleased.set_date(today);
+        };
+
+        change_log
+            .save_to_file(log_file)
+            .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
 
         Ok(())
     }
