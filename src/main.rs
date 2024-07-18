@@ -27,9 +27,6 @@ struct Cli {
     #[clap(short, long)]
     /// Require the user to sign the update commit with their GPG key
     sign: Option<Sign>,
-    /// Signal an early exit as the changelog is already updated
-    #[clap(short, long, default_value_t = false)]
-    early_exit: bool,
     /// Command to execute
     #[command(subcommand)]
     command: Commands,
@@ -37,14 +34,21 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    Update,
+    PullRequest(PullRequest),
     Release(Release),
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
+struct PullRequest {
+    /// Signal an early exit as the changelog is already updated
+    #[clap(short, long, default_value_t = false)]
+    early_exit: bool,
+}
+
+#[derive(Debug, Parser, Clone)]
 struct Release {
-    #[arg(short, long)]
     /// Require the user to sign the update commit with their GPG key
+    #[arg(short, long)]
     release: String,
 }
 
@@ -59,65 +63,40 @@ async fn main() -> Result<()> {
     let mut builder = get_logging(args.logging.log_level_filter());
     builder.init();
     log::debug!("Args: {args:?}");
-    let settings = get_settings()?;
-    let client = match Client::new_with(settings).await {
-        Ok(client) => client,
-        Err(e) => match e {
-            Error::EnvVarPullRequestNotFound => {
-                log::info!("On the main branch, so nothing more to do!");
-                if args.early_exit {
-                    println!("{SIGNAL_HALT}");
-                }
-                return Ok(());
-            }
-            _ => return Err(e.into()),
-        },
-    };
-
-    log::info!(
-        "On the `{}` branch, so time to get to work!",
-        client.branch()
-    );
-
     let sign = args.sign.unwrap_or_default();
 
-    match args.command {
-        Commands::Update => match run_update(client, sign).await {
-            Ok(state) => {
-                log::info!("Changelog updated!");
-                if let ClState::UnChanged = state {
-                    if args.early_exit {
-                        println!("{SIGNAL_HALT}");
-                    }
-                }
-            }
-            Err(e) => {
-                log::error!("Error updating changelog: {e}");
-                return Err(e);
-            }
-        },
-        Commands::Release(args) => match run_release(client, sign, args.release).await {
-            Ok(_) => {
-                log::info!("Changelog updated!");
-            }
-            Err(e) => {
-                log::error!("Error updating changelog: {e}");
-                return Err(e);
-            }
-        },
-    }
+    let res = match args.command {
+        Commands::PullRequest(pr_args) => run_update(sign, pr_args).await,
+        Commands::Release(rel_args) => run_release(sign, rel_args).await,
+    };
+
+    match res {
+        Ok(state) => {
+            match state {
+                ClState::Updated => log::info!("Changelog updated!"),
+                ClState::UnChanged => log::info!("Changelog not changed!"),
+            };
+        }
+        Err(e) => {
+            log::error!("Error updating changelog: {e}");
+            return Err(e);
+        }
+    };
 
     Ok(())
 }
 
-async fn run_update(mut client: Client, sign: Sign) -> Result<ClState> {
-    log::debug!(
-        "PR ID: {} - Owner: {} - Repo: {}",
-        client.pr_number(),
-        client.owner(),
-        client.repo()
-    );
+async fn run_update(sign: Sign, args: PullRequest) -> Result<ClState> {
+    let mut client = get_client(Commands::PullRequest(args.clone())).await?;
 
+    if client.is_default_branch() {
+        log::info!("On the default branch, nothing to do here!");
+        if args.early_exit {
+            println!("{SIGNAL_HALT}");
+        }
+
+        return Ok(ClState::UnChanged);
+    }
     let title = client.title();
 
     log::debug!("Pull Request Title: {title}");
@@ -173,7 +152,11 @@ async fn run_update(mut client: Client, sign: Sign) -> Result<ClState> {
     Ok(ClState::Updated)
 }
 
-async fn run_release(client: Client, sign: Sign, version: String) -> Result<ClState> {
+async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
+    let client = get_client(Commands::Release(args.clone())).await?;
+
+    let version = args.release;
+
     log::trace!("Running release {version}");
     log::trace!(
         "PR ID: {} - Owner: {} - Repo: {}",
@@ -213,11 +196,29 @@ fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
     builder
 }
 
-fn get_settings() -> Result<Config, Error> {
-    let settings = Config::builder()
+async fn get_client(cmd: Commands) -> Result<Client, Error> {
+    let settings = get_settings(cmd)?;
+    let client = Client::new_with(settings).await?;
+
+    log::info!(
+        "On the `{}` branch, so time to get to work!",
+        client.branch()
+    );
+    log::debug!(
+        "PR ID: {} - Owner: {} - Repo: {}",
+        client.pr_number(),
+        client.owner(),
+        client.repo()
+    );
+    Ok(client)
+}
+
+fn get_settings(cmd: Commands) -> Result<Config, Error> {
+    let mut settings = Config::builder()
         // Set defaults for CircleCI
         .set_default("log", "CHANGELOG.md")?
         .set_default("branch", "CIRCLE_BRANCH")?
+        .set_default("default_branch", "main")?
         .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
         .set_default("username", "CIRCLE_PROJECT_USERNAME")?
         .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
@@ -226,6 +227,15 @@ fn get_settings() -> Result<Config, Error> {
         .add_source(config::File::with_name("pcu.toml").required(false))
         // Add in settings from the environment (with a prefix of PCU)
         .add_source(config::Environment::with_prefix("PCU"));
+
+    settings = match cmd {
+        Commands::PullRequest(_) => {
+            settings.set_override("commit_message", "chore: update changelog for pr")?
+        }
+        Commands::Release(_) => {
+            settings.set_override("commit_message", "chore: update changelog for release")?
+        }
+    };
 
     match settings.build() {
         Ok(settings) => {

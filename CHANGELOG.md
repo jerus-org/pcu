@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - ci-upgrade jerus-org/circleci-toolkit orb from 0.20.0 to 0.23.0(pr [#200])
+- refactor-into PullRequest and Release commands and structure app accordingly(pr [#206])
 
 ### Security
 
@@ -250,6 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#202]: https://github.com/jerus-org/pcu/pull/202
 [#203]: https://github.com/jerus-org/pcu/pull/203
 [#204]: https://github.com/jerus-org/pcu/pull/204
+[#206]: https://github.com/jerus-org/pcu/pull/206
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.10...HEAD
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
