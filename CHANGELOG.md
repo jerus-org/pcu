@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ci-upgrade jerus-org/circleci-toolkit orb from 0.20.0 to 0.23.0(pr [#200])
 
+### Security
+
+- Dependencies: update rust crate clap to 4.5.9(pr [#203])
+
 ## [0.1.10] - 2024-07-13
 
 ### Added
@@ -243,6 +247,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#200]: https://github.com/jerus-org/pcu/pull/200
 [#201]: https://github.com/jerus-org/pcu/pull/201
 [#202]: https://github.com/jerus-org/pcu/pull/202
+[#203]: https://github.com/jerus-org/pcu/pull/203
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.10...HEAD
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
