@@ -406,6 +406,10 @@ impl Client {
             unreleased.set_date(today);
         };
 
+        let string = unreleased.to_string();
+        log::trace!("Release notes:\n\n---\n{}\n---\n\n", string);
+        let _ = fs::write("release_notes.md", string);
+
         change_log
             .save_to_file(log_file)
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
