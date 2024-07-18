@@ -43,7 +43,7 @@ enum Commands {
 
 #[derive(Debug, Parser)]
 struct Release {
-    #[clap(short, long)]
+    #[arg(short, long)]
     /// Require the user to sign the update commit with their GPG key
     release: String,
 }

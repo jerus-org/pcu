@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - add release function to move changelog unreleased section to new version(pr [#201])
+- write release notes(pr [#202])
 
 ### Changed
 
@@ -241,6 +242,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#199]: https://github.com/jerus-org/pcu/pull/199
 [#200]: https://github.com/jerus-org/pcu/pull/200
 [#201]: https://github.com/jerus-org/pcu/pull/201
+[#202]: https://github.com/jerus-org/pcu/pull/202
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.10...HEAD
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
