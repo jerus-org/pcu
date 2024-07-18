@@ -44,7 +44,7 @@ commands:
           name: Update changelog or halt step
           command: |
             set -ex
-            result=$(pcu update --early-exit <<parameters.pcu_verbosity>>)
+            result=$(pcu --early-exit <<parameters.pcu_verbosity>> update)
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
               circleci-agent step halt
             fi
@@ -72,7 +72,7 @@ commands:
           name: Update change or redirect to success pipeline
           command: |
             set -ex
-            result=$(pcu update --early-exit <<parameters.pcu_verbosity>>)
+            result=$(pcu --early-exit <<parameters.pcu_verbosity>> update)
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
