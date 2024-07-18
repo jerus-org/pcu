@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Dependencies: update rust crate clap to 4.5.9(pr [#203])
+- Dependencies: update rust crate thiserror to 1.0.63(pr [#204])
 
 ## [0.1.10] - 2024-07-13
 
@@ -248,6 +249,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#201]: https://github.com/jerus-org/pcu/pull/201
 [#202]: https://github.com/jerus-org/pcu/pull/202
 [#203]: https://github.com/jerus-org/pcu/pull/203
+[#204]: https://github.com/jerus-org/pcu/pull/204
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.10...HEAD
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
