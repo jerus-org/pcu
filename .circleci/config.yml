@@ -125,7 +125,7 @@ jobs:
       pcu_halt_signal:
         type: string
         default: "halt"
-        description: "The verbosity of the pcu command"
+        description: "Word expected to signal an early exit"
       install_from_github:
         type: boolean
         default: false

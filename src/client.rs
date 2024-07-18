@@ -159,6 +159,11 @@ impl Client {
         self.title = title.to_string();
     }
 
+    pub fn is_default_branch(&self) -> bool {
+        let default_branch = self.settings.get::<&str>("default_branch").unwrap();
+        self.branch == default_branch
+    }
+
     pub fn create_entry(&mut self) -> Result<(), Error> {
         let mut pr_title = PrTitle::parse(&self.title)?;
         pr_title.pr_id = Some(self.pr_number);
