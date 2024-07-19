@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::fs;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
     let sign = args.sign.unwrap_or_default();
 
     let res = match args.command {
-        Commands::PullRequest(pr_args) => run_update(sign, pr_args).await,
+        Commands::PullRequest(pr_args) => run_pull_request(sign, pr_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
 
@@ -86,7 +86,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_update(sign: Sign, args: PullRequest) -> Result<ClState> {
+async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
     let mut client = get_client(Commands::PullRequest(args.clone())).await?;
 
     if client.is_default_branch() {
@@ -241,19 +241,9 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
     };
 
     match settings.build() {
-        Ok(settings) => {
-            // Print out our settings (as a HashMap)
-            log::trace!(
-                "{:#?}",
-                settings
-                    .clone()
-                    .try_deserialize::<HashMap<String, String>>()
-                    .unwrap()
-            );
-            Ok(settings)
-        }
+        Ok(settings) => Ok(settings),
         Err(e) => {
-            println!("Error: {e}");
+            log::error!("Error: {e}");
             Err(e.into())
         }
     }
