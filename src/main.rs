@@ -118,6 +118,9 @@ async fn run_update(sign: Sign, args: PullRequest) -> Result<ClState> {
             log::info!("Amendment: In section `{section}`, adding `{entry}`");
         } else {
             log::info!("No update required");
+            if args.early_exit {
+                println!("{SIGNAL_HALT}");
+            }
             return Ok(ClState::UnChanged);
         };
     } else if client.update_changelog()?.is_none() {

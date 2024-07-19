@@ -152,7 +152,7 @@ jobs:
           name: Install pcu from code on main branch of on github
           command: |
             if [ "<< parameters.install_from_github >>" == "true"  ] ; then
-              cargo install --force --git https://github.com/jerus-org/pcu.git
+              cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
             fi
       - run:
           name: pcu version
@@ -219,6 +219,7 @@ workflows:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           install_from_github: true
+          pcu_verbosity: "-vvvv"
 
   on_success:
     when:
