@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add release function to move changelog unreleased section to new version(pr [#201])
 - write release notes(pr [#202])
+- add branch check to prevent actions on main or master branches(pr [#210])
 
 ### Changed
 
@@ -260,6 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#205]: https://github.com/jerus-org/pcu/pull/205
 [#208]: https://github.com/jerus-org/pcu/pull/208
 [#209]: https://github.com/jerus-org/pcu/pull/209
+[#210]: https://github.com/jerus-org/pcu/pull/210
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.10...HEAD
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9
