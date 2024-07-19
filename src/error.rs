@@ -21,6 +21,8 @@ pub enum Error {
     #[error("Environment variable PCU_PULL_REQUEST not set")]
     EnvVarPullRequestNotSet,
     #[error("Environment variable PCU_PULL_REQUEST not set")]
+    CommandNotSet,
+    #[error("Environment variable PCU_PULL_REQUEST not set")]
     InvalidVersion(String),
     #[error("Environment specified in PCU_PULL_REQUEST not found")]
     EnvVarPullRequestNotFound,

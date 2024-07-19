@@ -229,12 +229,12 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         .add_source(config::Environment::with_prefix("PCU"));
 
     settings = match cmd {
-        Commands::PullRequest(_) => {
-            settings.set_override("commit_message", "chore: update changelog for pr")?
-        }
-        Commands::Release(_) => {
-            settings.set_override("commit_message", "chore: update changelog for release")?
-        }
+        Commands::PullRequest(_) => settings
+            .set_override("commit_message", "chore: update changelog for pr")?
+            .set_override("command", "pull-request")?,
+        Commands::Release(_) => settings
+            .set_override("commit_message", "chore: update changelog for release")?
+            .set_override("command", "release")?,
     };
 
     match settings.build() {
