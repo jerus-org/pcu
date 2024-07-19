@@ -1,10 +1,10 @@
 use std::{
+    collections::HashMap,
     env,
     ffi::{OsStr, OsString},
     fs,
     io::Write,
-    path,
-    path::Path,
+    path::{self, Path},
     process::{Command, Stdio},
     str::FromStr,
 };
@@ -38,9 +38,14 @@ pub struct Client {
 
 impl Client {
     pub async fn new_with(settings: Config) -> Result<Self, Error> {
-        log::trace!("new_with settings: {settings:?}");
+        log::trace!(
+            "new_with settings: {:?}",
+            settings
+                .clone()
+                .try_deserialize::<HashMap<String, String>>()?,
+        );
         // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
-        log::trace!("branch: {:?}", settings.get::<&str>("branch"));
+        log::trace!("branch: {:?}", settings.get::<String>("branch"));
         let pcu_branch: String = settings
             .get("branch")
             .map_err(|_| Error::EnvVarBranchNotSet)?;

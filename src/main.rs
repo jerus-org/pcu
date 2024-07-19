@@ -244,7 +244,7 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         Ok(settings) => {
             // Print out our settings (as a HashMap)
             log::trace!(
-                "{:#?}",
+                "Settings:\n{:#?}",
                 settings
                     .clone()
                     .try_deserialize::<HashMap<String, String>>()
