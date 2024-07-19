@@ -7,8 +7,11 @@ use std::{
     path::Path,
     process::{Command, Stdio},
     str::FromStr,
-    sync::Arc,
 };
+
+mod pull_request;
+
+use self::pull_request::PullRequest;
 
 use chrono::{Datelike, NaiveDate, Utc};
 use config::Config;
@@ -16,7 +19,6 @@ use git2::{BranchType, Cred, Direction, RemoteCallbacks, Repository};
 use keep_a_changelog::{
     changelog::ChangelogBuilder, ChangeKind, Changelog, ChangelogParseOptions, Release, Version,
 };
-use octocrab::Octocrab;
 use url::Url;
 
 use crate::Error;
@@ -29,15 +31,7 @@ pub struct Client {
     settings: Config,
     git_repo: Repository,
     branch: String,
-    pull_request: String,
-    title: String,
-    #[allow(dead_code)]
-    owner: String,
-    #[allow(dead_code)]
-    repo: String,
-    #[allow(dead_code)]
-    repo_url: String,
-    pr_number: u64,
+    pull_request: Option<PullRequest>,
     changelog: OsString,
     changelog_update: Option<PrTitle>,
 }
@@ -52,60 +46,13 @@ impl Client {
             .map_err(|_| Error::EnvVarBranchNotSet)?;
         let branch = env::var(pcu_branch).map_err(|_| Error::EnvVarBranchNotFound)?;
 
-        // Use the pull_request config setting to direct to the appropriate CI environment variable to find the PR data
-        log::trace!("pull_request: {:?}", settings.get::<&str>("pull_request"));
-        let pcu_pull_request: String = settings
-            .get("pull_request")
-            .map_err(|_| Error::EnvVarPullRequestNotSet)?;
-        log::trace!("pcu_pull_request: {:?}", pcu_pull_request);
-        let pull_request =
-            env::var(pcu_pull_request).map_err(|_| Error::EnvVarPullRequestNotFound)?;
-
         // Use the log config setting to set the default change log file name
         log::trace!("log: {:?}", settings.get::<&str>("log"));
         let default_change_log: String = settings
             .get("log")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
 
-        let (owner, repo, pr_number, repo_url) = get_keys(&pull_request)?;
-
-        log::debug!(
-            "Owner: {}, repo: {}, pr_number: {}, repo_url: {}",
-            owner,
-            repo,
-            pr_number,
-            repo_url
-        );
-
-        let pr_number = pr_number.parse::<u64>()?;
-
-        // Get the github pull release and store the title in the client struct
-        // The title can be edited by the calling programme if desired before creating the prtitle
-
-        let octocrab = match settings.get::<String>("pat") {
-            Ok(pat) => {
-                log::debug!("Using personal access token for authentication");
-                Arc::new(
-                    Octocrab::builder()
-                        .base_uri("https://api.github.com")?
-                        .personal_token(pat)
-                        .build()?,
-                )
-            }
-            // base_uri: https://api.github.com
-            // auth: None
-            // client: http client with the octocrab user agent.
-            Err(_) => {
-                log::debug!("Creating un-authenticated instance");
-                octocrab::instance()
-            }
-        };
-        log::debug!("Using Octocrab instance: {octocrab:#?}");
-        let pr_handler = octocrab.pulls(&owner, &repo);
-        log::debug!("Pull handler acquired");
-        let pr = pr_handler.get(pr_number).await?;
-
-        let title = pr.title.unwrap_or("".to_owned());
+        let pull_request = PullRequest::new_pull_request_opt(&settings).await?;
 
         // Get the name of the changelog file
         let mut changelog = OsString::from(default_change_log);
@@ -133,11 +80,6 @@ impl Client {
             git_repo,
             branch,
             pull_request,
-            title,
-            owner,
-            repo,
-            repo_url,
-            pr_number,
             changelog,
             changelog_update: None,
         })
@@ -147,16 +89,50 @@ impl Client {
         &self.branch
     }
 
-    pub fn pull_release(&self) -> &str {
-        &self.pull_request
+    pub fn pull_request(&self) -> &str {
+        if let Some(pr) = self.pull_request.as_ref() {
+            &pr.pull_request
+        } else {
+            ""
+        }
     }
 
     pub fn title(&self) -> &str {
-        &self.title
+        if let Some(pr) = self.pull_request.as_ref() {
+            &pr.title
+        } else {
+            ""
+        }
+    }
+
+    pub fn pr_number(&self) -> u64 {
+        if let Some(pr) = self.pull_request.as_ref() {
+            pr.pr_number
+        } else {
+            0
+        }
+    }
+
+    pub fn owner(&self) -> &str {
+        if let Some(pr) = self.pull_request.as_ref() {
+            &pr.owner
+        } else {
+            ""
+        }
+    }
+
+    pub fn repo(&self) -> &str {
+        if let Some(pr) = self.pull_request.as_ref() {
+            &pr.repo
+        } else {
+            ""
+        }
     }
 
     pub fn set_title(&mut self, title: &str) {
-        self.title = title.to_string();
+        if self.pull_request.is_some() {
+            self.pull_request.as_mut().unwrap().title = title.to_string();
+        }
     }
 
     pub fn is_default_branch(&self) -> bool {
@@ -168,9 +144,9 @@ impl Client {
     }
 
     pub fn create_entry(&mut self) -> Result<(), Error> {
-        let mut pr_title = PrTitle::parse(&self.title)?;
-        pr_title.pr_id = Some(self.pr_number);
-        pr_title.pr_url = Some(Url::from_str(&self.pull_request)?);
+        let mut pr_title = PrTitle::parse(self.title())?;
+        pr_title.pr_id = Some(self.pr_number());
+        pr_title.pr_url = Some(Url::from_str(self.pull_request())?);
         pr_title.calculate_section_and_entry();
 
         self.changelog_update = Some(pr_title);
@@ -426,20 +402,6 @@ impl Client {
     }
 }
 
-fn get_keys(pull_request: &str) -> Result<(String, String, String, String), Error> {
-    if pull_request.contains("github.com") {
-        let parts = pull_request.splitn(7, '/').collect::<Vec<&str>>();
-        Ok((
-            parts[3].to_string(),
-            parts[4].to_string(),
-            parts[6].to_string(),
-            format!("https://github.com/{}/{}", parts[3], parts[4]),
-        ))
-    } else {
-        Err(Error::UknownPullRequestFormat(pull_request.to_string()))
-    }
-}
-
 impl Client {
     pub fn section(&self) -> Option<&str> {
         if let Some(update) = &self.changelog_update {
@@ -465,46 +427,6 @@ impl Client {
             Some(&update.entry)
         } else {
             None
-        }
-    }
-    pub fn pr_number(&self) -> &str {
-        if self.pull_request.contains("github.com") {
-            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
-            parts[6]
-        } else {
-            ""
-        }
-    }
-
-    pub fn pr_number_as_u64(&self) -> u64 {
-        if self.pull_request.contains("github.com") {
-            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
-
-            if let Ok(pr_number) = parts[6].parse::<u64>() {
-                pr_number
-            } else {
-                0
-            }
-        } else {
-            0
-        }
-    }
-
-    pub fn owner(&self) -> &str {
-        if self.pull_request.contains("github.com") {
-            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
-            parts[3]
-        } else {
-            ""
-        }
-    }
-
-    pub fn repo(&self) -> &str {
-        if self.pull_request.contains("github.com") {
-            let parts = self.pull_request.splitn(7, '/').collect::<Vec<&str>>();
-            parts[4]
-        } else {
-            ""
         }
     }
 
