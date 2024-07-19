@@ -20,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci-change order of pcu command parameters to correctly apply --early-exit flag(pr [#207])
 - refactor-extract pull request handling from client to separate struct(pr [#208])
 - ci-add branch specification to cargo install command in CircleCI config(pr [#209])
-- chore:tidy up logging(pr [#211])
 
 ### Security
 
@@ -263,7 +262,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#208]: https://github.com/jerus-org/pcu/pull/208
 [#209]: https://github.com/jerus-org/pcu/pull/209
 [#210]: https://github.com/jerus-org/pcu/pull/210
-[#211]: https://github.com/jerus-org/pcu/pull/211
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.10...HEAD
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
 [0.1.9]: https://github.com/jerus-org/pcu/compare/0.1.8...0.1.9

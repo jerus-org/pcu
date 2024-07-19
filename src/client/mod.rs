@@ -39,7 +39,7 @@ pub struct Client {
 impl Client {
     pub async fn new_with(settings: Config) -> Result<Self, Error> {
         log::trace!(
-            "new_with settings: {:?}",
+            "new_with settings: {:#?}",
             settings
                 .clone()
                 .try_deserialize::<HashMap<String, String>>()?,
@@ -52,7 +52,7 @@ impl Client {
         let branch = env::var(pcu_branch).map_err(|_| Error::EnvVarBranchNotFound)?;
 
         // Use the log config setting to set the default change log file name
-        log::trace!("log: {:?}", settings.get::<&str>("log"));
+        log::trace!("log: {:?}", settings.get::<String>("log"));
         let default_change_log: String = settings
             .get("log")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
