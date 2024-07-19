@@ -28,22 +28,6 @@ impl PullRequest {
             return Ok(None);
         }
 
-        // Use the command config to check the command client is run for
-        log::trace!("branch: {:?}", settings.get::<String>("branch"));
-        let branch: String = settings
-            .get("branch")
-            .map_err(|_| Error::EnvVarBranchNotSet)?;
-        log::trace!("branch: {:?}", branch);
-
-        let default_branch = settings
-            .get::<String>("default_branch")
-            .unwrap_or("main".to_string());
-
-        // If the branch is "main" or "master" then return None
-        if branch == default_branch {
-            return Ok(None);
-        }
-
         // Use the pull_request config setting to direct to the appropriate CI environment variable to find the PR data
         log::trace!("pull_request: {:?}", settings.get::<String>("pull_request"));
         let pcu_pull_request: String = settings

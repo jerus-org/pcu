@@ -1,4 +1,4 @@
-use std::fs;
+use std::{env, fs};
 
 use clap::{Parser, Subcommand, ValueEnum};
 use config::Config;
@@ -87,9 +87,13 @@ async fn main() -> Result<()> {
 }
 
 async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
-    let mut client = get_client(Commands::PullRequest(args.clone())).await?;
+    let branch = env::var("CIRCLE_BRANCH");
+    log::trace!("Branch: {branch:?}");
 
-    if client.is_default_branch() {
+    let branch = branch.unwrap_or("main".to_string());
+    log::trace!("Branch: {branch:?}");
+
+    if branch == "main" {
         log::info!("On the default branch, nothing to do here!");
         if args.early_exit {
             println!("{SIGNAL_HALT}");
@@ -97,6 +101,9 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 
         return Ok(ClState::UnChanged);
     }
+
+    let mut client = get_client(Commands::PullRequest(args.clone())).await?;
+
     let title = client.title();
 
     log::debug!("Pull Request Title: {title}");
