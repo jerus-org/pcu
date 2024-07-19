@@ -143,8 +143,8 @@ impl Client {
     pub fn is_default_branch(&self) -> bool {
         let default_branch = self
             .settings
-            .get::<&str>("default_branch")
-            .unwrap_or("main");
+            .get::<String>("default_branch")
+            .unwrap_or("main".to_string());
         self.branch == default_branch
     }
 

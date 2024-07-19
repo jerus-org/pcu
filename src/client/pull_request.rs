@@ -33,9 +33,14 @@ impl PullRequest {
         let branch: String = settings
             .get("branch")
             .map_err(|_| Error::EnvVarBranchNotSet)?;
+        log::trace!("branch: {:?}", branch);
+
+        let default_branch = settings
+            .get::<String>("default_branch")
+            .unwrap_or("main".to_string());
 
         // If the branch is "main" or "master" then return None
-        if branch == "main" || branch == "master" {
+        if branch == default_branch {
             return Ok(None);
         }
 
