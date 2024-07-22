@@ -422,9 +422,9 @@ impl Client {
         let release_id = latest_release.id;
 
         let body = if let Some(unreleased) = &self.unreleased {
-            unreleased
+            unreleased.clone()
         } else {
-            &String::from("Latest release")
+            String::from("Latest release")
         };
 
         let release = octocrab
