@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     env,
-    ffi::{OsStr, OsString},
+    ffi::OsString,
     fs,
     io::Write,
     path::{self, Path},
@@ -19,6 +19,7 @@ use git2::{BranchType, Cred, Direction, RemoteCallbacks, Repository};
 use keep_a_changelog::{
     changelog::ChangelogBuilder, ChangeKind, Changelog, ChangelogParseOptions, Release, Version,
 };
+use octocrab::Octocrab;
 use url::Url;
 
 use crate::Error;
@@ -34,6 +35,7 @@ pub struct Client {
     pull_request: Option<PullRequest>,
     changelog: OsString,
     changelog_update: Option<PrTitle>,
+    unreleased: Option<String>,
 }
 
 impl Client {
@@ -87,6 +89,7 @@ impl Client {
             pull_request,
             changelog,
             changelog_update: None,
+            unreleased: None,
         })
     }
 
@@ -303,7 +306,7 @@ impl Client {
     }
 
     /// Update the unreleased section to the changelog to `version`
-    pub fn update_unreleased(&self, version: &str) -> Result<(), Error> {
+    pub fn update_unreleased(&mut self, version: &str) -> Result<(), Error> {
         log::debug!(
             "Updating changelog: {:?} with version {:?}",
             self.changelog,
@@ -316,15 +319,15 @@ impl Client {
 
         if !version.is_empty() {
             #[allow(clippy::needless_question_mark)]
-            return Ok(self.release_unreleased(&self.changelog, version)?);
+            return Ok(self.release_unreleased(version)?);
         }
 
         Ok(())
     }
 
-    pub fn release_unreleased(&self, log_file: &OsStr, version: &str) -> Result<(), Error> {
-        let Some(log_file) = log_file.to_str() else {
-            return Err(Error::InvalidPath(log_file.to_owned()));
+    pub fn release_unreleased(&mut self, version: &str) -> Result<(), Error> {
+        let Some(log_file) = self.changelog.to_str() else {
+            return Err(Error::InvalidPath(self.changelog.to_owned()));
         };
 
         let repo_url =
@@ -395,13 +398,46 @@ impl Client {
             unreleased.set_date(today);
         };
 
-        let string = unreleased.to_string();
-        log::trace!("Release notes:\n\n---\n{}\n---\n\n", string);
-        let _ = fs::write("release_notes.md", string);
+        let unreleased_string = unreleased.to_string();
+        log::trace!("Release notes:\n\n---\n{}\n---\n\n", unreleased_string);
+        let _ = fs::write("release_notes.md", unreleased_string.clone());
+
+        self.unreleased = Some(unreleased_string);
 
         change_log
             .save_to_file(log_file)
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
+
+        Ok(())
+    }
+
+    pub async fn make_release(&self, version: &str) -> Result<(), Error> {
+        let octocrab = Octocrab::default();
+
+        let latest_release = octocrab
+            .repos(self.owner(), self.repo())
+            .releases()
+            .get_latest()
+            .await?;
+        let release_id = latest_release.id;
+
+        let body = if let Some(unreleased) = &self.unreleased {
+            unreleased.clone()
+        } else {
+            String::from("Latest release")
+        };
+
+        let release = octocrab
+            .repos(self.owner(), self.repo())
+            .releases()
+            .update(release_id.into_inner() + 1)
+            .tag_name(format!("v{version}").as_str())
+            .name(format!("Version {version}").as_str())
+            .body(body.as_str())
+            .send()
+            .await?;
+
+        log::trace!("Release: {:#?}", release);
 
         Ok(())
     }

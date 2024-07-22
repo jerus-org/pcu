@@ -163,7 +163,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 }
 
 async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
-    let client = get_client(Commands::Release(args.clone())).await?;
+    let mut client = get_client(Commands::Release(args.clone())).await?;
 
     let version = args.release;
 
@@ -177,6 +177,33 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
     log::trace!("Signing: {:?}", sign);
 
     client.update_unreleased(&version)?;
+
+    log::debug!("Changelog file name: {}", client.changelog());
+
+    if log::log_enabled!(log::Level::Trace) {
+        print_changelog(client.changelog());
+    };
+
+    let report = client.repo_status()?;
+    log::debug!("Before commit:Repo state: {report}");
+    log::debug!("before commit:Branch status: {}", client.branch_status()?);
+
+    match sign {
+        Sign::Gpg => {
+            client.commit_changelog_gpg()?;
+        }
+        Sign::None => {
+            client.commit_changelog()?;
+        }
+    }
+
+    log::debug!("After commit: Repo state: {}", client.repo_status()?);
+    log::debug!("After commit: Branch status: {}", client.branch_status()?);
+
+    client.make_release(&version).await?;
+
+    client.push_changelog()?;
+    log::debug!("After push: Branch status: {}", client.branch_status()?);
 
     Ok(ClState::Updated)
 }
