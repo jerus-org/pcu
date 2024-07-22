@@ -169,6 +169,69 @@ jobs:
                 pcu_verbosity: <<parameters.pcu_verbosity>>
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
 
+  make_release:
+    executor: rust-env
+    parameters:
+      ssh_fingerprint:
+        type: string
+      min_rust_version:
+        type: string
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - << parameters.ssh_fingerprint >>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Update to latest pcu
+          command: |
+            cargo install --force --git https://github.com/jerus-org/pcu --branch $CIRCLE_BRANCH
+      # - run:
+      #     name: Install gh
+      #     command: |
+      #       (type -p wget >/dev/null || (apt update && apt-get install wget -y)) \
+      #       && mkdir -p -m 755 /etc/apt/keyrings \
+      #       && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+      #       && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+      #       && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+      #       && apt update \
+      #       && apt install gh -y
+      - run:
+          name: Check gh authentication
+          command: |
+            gh auth status
+            gh config set git_protocol ssh --host github.com
+            gh auth status
+            # echo $GITHUB_TOKEN | gh auth login --with-token
+            # gh auth status
+      - run:
+          name: Create Github release
+          command: |
+            set -exo pipefail
+            version=$(nextsv -bn calculate)
+            pcu <<parameters.pcu_verbosity>> release --release ${version}
+            ls -l
+            cat release_notes.md
+            head -n 20 CHANGELOG.md
+            # git status
+            # git add CHANGELOG.md
+            # git status
+            # git commit -m "chore(release): ${version}"  
+            # git status
+            # gh release create v${version} -F release_notes.md
+            # git push --tags
+
 workflows:
   check_last_commit:
     when:
@@ -236,7 +299,7 @@ workflows:
         - not: << pipeline.parameters.success-flag >>
         - not: << pipeline.parameters.validation-flag >>
     jobs:
-      - toolkit/make_release:
+      - make_release:
           context:
             - release
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
