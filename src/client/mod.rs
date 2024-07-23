@@ -438,32 +438,40 @@ impl Client {
     pub async fn make_release(&self, version: &str) -> Result<(), Error> {
         let octocrab = Octocrab::default();
 
-        let latest_release = octocrab
-            .repos(self.owner(), self.repo())
-            .releases()
-            .get_latest()
-            .await?;
-        let release_id = latest_release.id;
-
-        let body = if let Some(unreleased) = &self.unreleased {
-            unreleased.clone()
-        } else {
-            String::from("Latest release")
-        };
+        let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
+        log::trace!("Commit: {:#?}", commit);
 
         let release = octocrab
             .repos(self.owner(), self.repo())
             .releases()
-            .update(release_id.into_inner() + 1)
-            .tag_name(format!("v{version}").as_str())
+            .create(format!("v{version}").as_str())
             .name(format!("Version {version}").as_str())
-            .body(body.as_str())
+            .body(self.unreleased.clone().unwrap().as_str())
             .send()
             .await?;
 
         log::trace!("Release: {:#?}", release);
 
         Ok(())
+    }
+
+    pub async fn get_commitish_for_tag(
+        &self,
+        octocrab: &Octocrab,
+        version: &str,
+    ) -> Result<String, Error> {
+        for tag in octocrab
+            .repos(self.owner(), self.repo())
+            .list_tags()
+            .send()
+            .await?
+        {
+            if tag.name == format!("v{version}").as_str() {
+                return Ok(tag.commit.sha);
+            }
+        }
+
+        Err(Error::TagNotFound(version.to_string()))
     }
 }
 
