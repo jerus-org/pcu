@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - add condition to update changelog in run_release function and refactor cli to module(pr [#215])
+- add get_commitish_for_tag and refactor make_release function(pr [#217])
 
 ### Security
 
@@ -282,6 +283,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#214]: https://github.com/jerus-org/pcu/pull/214
 [#215]: https://github.com/jerus-org/pcu/pull/215
 [#216]: https://github.com/jerus-org/pcu/pull/216
+[#217]: https://github.com/jerus-org/pcu/pull/217
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.11...HEAD
 [0.1.11]: https://github.com/jerus-org/pcu/compare/0.1.10...0.1.11
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
