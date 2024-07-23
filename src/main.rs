@@ -1,6 +1,6 @@
 use std::{env, fs};
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::Parser;
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
@@ -12,50 +12,9 @@ const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 const SIGNAL_HALT: &str = "halt";
 
-#[derive(ValueEnum, Debug, Default, Clone)]
-enum Sign {
-    #[default]
-    Gpg,
-    None,
-}
+mod cli;
 
-#[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
-struct Cli {
-    #[clap(flatten)]
-    logging: clap_verbosity_flag::Verbosity,
-    #[clap(short, long)]
-    /// Require the user to sign the update commit with their GPG key
-    sign: Option<Sign>,
-    /// Command to execute
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Debug, Subcommand)]
-enum Commands {
-    PullRequest(PullRequest),
-    Release(Release),
-}
-
-#[derive(Debug, Parser, Clone)]
-struct PullRequest {
-    /// Signal an early exit as the changelog is already updated
-    #[clap(short, long, default_value_t = false)]
-    early_exit: bool,
-}
-
-#[derive(Debug, Parser, Clone)]
-struct Release {
-    /// Require the user to sign the update commit with their GPG key
-    #[arg(short, long)]
-    release: String,
-}
-
-enum ClState {
-    Updated,
-    UnChanged,
-}
+use cli::{ClState, Cli, Commands, PullRequest, Release, Sign};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -165,7 +124,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
     let mut client = get_client(Commands::Release(args.clone())).await?;
 
-    let version = args.release;
+    let version = args.semver;
 
     log::trace!("Running release {version}");
     log::trace!(
@@ -178,30 +137,32 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
     client.update_unreleased(&version)?;
 
-    log::debug!("Changelog file name: {}", client.changelog());
+    if args.update_changelog {
+        log::debug!("Changelog file name: {}", client.changelog());
 
-    if log::log_enabled!(log::Level::Trace) {
-        print_changelog(client.changelog());
-    };
+        if log::log_enabled!(log::Level::Trace) {
+            print_changelog(client.changelog());
+        };
 
-    let report = client.repo_status()?;
-    log::debug!("Before commit:Repo state: {report}");
-    log::debug!("before commit:Branch status: {}", client.branch_status()?);
+        let report = client.repo_status()?;
+        log::debug!("Before commit:Repo state: {report}");
+        log::debug!("before commit:Branch status: {}", client.branch_status()?);
 
-    match sign {
-        Sign::Gpg => {
-            client.commit_changelog_gpg()?;
+        match sign {
+            Sign::Gpg => {
+                client.commit_changelog_gpg()?;
+            }
+            Sign::None => {
+                client.commit_changelog()?;
+            }
         }
-        Sign::None => {
-            client.commit_changelog()?;
-        }
+
+        log::debug!("After commit: Repo state: {}", client.repo_status()?);
+        log::debug!("After commit: Branch status: {}", client.branch_status()?);
+
+        client.push_changelog()?;
+        log::debug!("After push: Branch status: {}", client.branch_status()?);
     }
-
-    log::debug!("After commit: Repo state: {}", client.repo_status()?);
-    log::debug!("After commit: Branch status: {}", client.branch_status()?);
-
-    client.push_changelog()?;
-    log::debug!("After push: Branch status: {}", client.branch_status()?);
 
     client.make_release(&version).await?;
 
