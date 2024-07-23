@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add condition to update changelog in run_release function and refactor cli to module(pr [#215])
 
+### Security
+
+- Dependencies: update rust crate tokio to 1.39.0(pr [#216])
+
 ## [0.1.11] - 2024-07-22
 
 ### Added
@@ -277,6 +281,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#213]: https://github.com/jerus-org/pcu/pull/213
 [#214]: https://github.com/jerus-org/pcu/pull/214
 [#215]: https://github.com/jerus-org/pcu/pull/215
+[#216]: https://github.com/jerus-org/pcu/pull/216
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.11...HEAD
 [0.1.11]: https://github.com/jerus-org/pcu/compare/0.1.10...0.1.11
 [0.1.10]: https://github.com/jerus-org/pcu/compare/0.1.9...0.1.10
