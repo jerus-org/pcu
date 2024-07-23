@@ -16,16 +16,16 @@ pub enum Error {
     GpgError(String),
     #[error("Environment variable PCU_BRANCH not set")]
     EnvVarBranchNotSet,
-    #[error("Environment specified in PCU_BRANCH not set")]
+    #[error("Environment variable specified in PCU_BRANCH not found")]
     EnvVarBranchNotFound,
     #[error("Environment variable PCU_PULL_REQUEST not set")]
     EnvVarPullRequestNotSet,
-    #[error("Environment variable PCU_PULL_REQUEST not set")]
-    CommandNotSet,
-    #[error("Environment variable PCU_PULL_REQUEST not set")]
-    InvalidVersion(String),
-    #[error("Environment specified in PCU_PULL_REQUEST not found")]
+    #[error("Environment variable specified in PCU_PULL_REQUEST not found")]
     EnvVarPullRequestNotFound,
+    #[error("Command not set")]
+    CommandNotSet,
+    #[error("Invalid version string")]
+    InvalidVersion(String),
     #[error("Default change log file name not set")]
     DefaultChangeLogNotSet,
     #[error("Invalid path for changelog file {0:?}")]
