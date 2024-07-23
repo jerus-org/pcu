@@ -24,6 +24,8 @@ pub enum Error {
     EnvVarPullRequestNotFound,
     #[error("Command not set")]
     CommandNotSet,
+    #[error("Tag not found {0:?}")]
+    TagNotFound(String),
     #[error("Invalid version string")]
     InvalidVersion(String),
     #[error("Default change log file name not set")]
