@@ -31,7 +31,7 @@ pub struct Client {
     #[allow(dead_code)]
     settings: Config,
     git_repo: Repository,
-    branch: String,
+    branch: Option<String>,
     pull_request: Option<PullRequest>,
     changelog: OsString,
     changelog_update: Option<PrTitle>,
@@ -46,20 +46,38 @@ impl Client {
                 .clone()
                 .try_deserialize::<HashMap<String, String>>()?,
         );
-        // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
-        log::trace!("branch: {:?}", settings.get::<String>("branch"));
-        let pcu_branch: String = settings
-            .get("branch")
-            .map_err(|_| Error::EnvVarBranchNotSet)?;
-        let branch = env::var(pcu_branch).map_err(|_| Error::EnvVarBranchNotFound)?;
+
+        let cmd = settings
+            .get::<String>("command")
+            .map_err(|_| Error::CommandNotSet)?;
+        log::trace!("cmd: {:?}", cmd);
+
+        let (branch, pull_request) = if &cmd == "pull-request" {
+            // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
+            log::trace!("branch: {:?}", settings.get::<String>("branch"));
+            let pcu_branch: String = settings
+                .get("branch")
+                .map_err(|_| Error::EnvVarBranchNotSet)?;
+            let branch = env::var(pcu_branch).map_err(|_| Error::EnvVarBranchNotFound)?;
+            let branch = if branch.is_empty() {
+                None
+            } else {
+                Some(branch)
+            };
+
+            let pull_request = PullRequest::new_pull_request_opt(&settings).await?;
+            (branch, pull_request)
+        } else {
+            let branch = None;
+            let pull_request = None;
+            (branch, pull_request)
+        };
 
         // Use the log config setting to set the default change log file name
         log::trace!("log: {:?}", settings.get::<String>("log"));
         let default_change_log: String = settings
             .get("log")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
-
-        let pull_request = PullRequest::new_pull_request_opt(&settings).await?;
 
         // Get the name of the changelog file
         let mut changelog = OsString::from(default_change_log);
@@ -94,7 +112,11 @@ impl Client {
     }
 
     pub fn branch(&self) -> &str {
-        &self.branch
+        if let Some(branch) = self.branch.as_ref() {
+            branch
+        } else {
+            ""
+        }
     }
 
     pub fn pull_request(&self) -> &str {
@@ -148,7 +170,7 @@ impl Client {
             .settings
             .get::<String>("default_branch")
             .unwrap_or("main".to_string());
-        self.branch == default_branch
+        self.branch == Some(default_branch)
     }
 
     pub fn create_entry(&mut self) -> Result<(), Error> {
@@ -295,7 +317,9 @@ impl Client {
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
 
-        let branch = self.git_repo.find_branch(&self.branch, BranchType::Local)?;
+        let branch = self
+            .git_repo
+            .find_branch(self.branch(), BranchType::Local)?;
         log::trace!("Found branch: {}", branch.name()?.unwrap());
         let push_refs = branch.into_reference();
         log::trace!("Push refs: {}", push_refs.name().unwrap());
@@ -512,14 +536,14 @@ impl Client {
 
     pub fn branch_status(&self) -> Result<String, Error> {
         let branch_remote = self.git_repo.find_branch(
-            format!("origin/{}", self.branch).as_str(),
+            format!("origin/{}", self.branch()).as_str(),
             git2::BranchType::Remote,
         )?;
 
         if branch_remote.get().target() == self.git_repo.head()?.target() {
             return Ok(format!(
                 "\n\nOn branch {}\nYour branch is up to date with `{}`\n",
-                self.branch,
+                self.branch(),
                 branch_remote.name()?.unwrap()
             ));
         }
