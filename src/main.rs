@@ -148,12 +148,12 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
     );
     log::trace!("Signing: {:?}", sign);
 
-    client.update_unreleased(&version)?;
-
     log::trace!("Update changelog flag: {}", args.update_changelog);
 
     if args.update_changelog {
         log::debug!("Changelog file name: {}", client.changelog());
+
+        client.update_unreleased(&version)?;
 
         if log::log_enabled!(log::Level::Trace) {
             print_changelog(client.changelog());

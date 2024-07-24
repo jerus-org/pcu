@@ -333,7 +333,7 @@ impl Client {
     /// Update the unreleased section to the changelog to `version`
     pub fn update_unreleased(&mut self, version: &str) -> Result<(), Error> {
         log::debug!(
-            "Updating changelog: {:?} with version {:?}",
+            "Updating unreleased section: {:?} with version {:?}",
             self.changelog,
             version,
         );
@@ -463,6 +463,12 @@ impl Client {
 
         let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
         log::trace!("Commit: {:#?}", commit);
+
+        log::trace!(
+            "Creating octocrab for owner: {} and repo: {}",
+            self.owner(),
+            self.repo()
+        );
 
         let release = octocrab
             .repos(self.owner(), self.repo())
