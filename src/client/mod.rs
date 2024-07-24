@@ -474,17 +474,24 @@ impl Client {
             }
         };
 
-        log::trace!("Current user: {:?}", octocrab.current().user().await);
-
         let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
         log::trace!("Commit: {:#?}", commit);
+
+        let release_notes = octocrab::instance()
+            .repos(self.owner(), self.repo())
+            .releases()
+            .generate_release_notes(version)
+            .send()
+            .await?;
+
+        log::trace!("Release notes: {:#?}", release_notes);
 
         let release = octocrab
             .repos(self.owner(), self.repo())
             .releases()
             .create(format!("v{version}").as_str())
-            .name(format!("Version {version}").as_str())
-            .body(self.unreleased.clone().unwrap().as_str())
+            .name(&release_notes.name)
+            .body(&release_notes.body)
             .send()
             .await?;
 
