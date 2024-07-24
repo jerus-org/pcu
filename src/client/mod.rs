@@ -32,6 +32,8 @@ pub struct Client {
     #[allow(dead_code)]
     settings: Config,
     git_repo: Repository,
+    owner: String,
+    repo: String,
     branch: Option<String>,
     pull_request: Option<PullRequest>,
     changelog: OsString,
@@ -52,6 +54,20 @@ impl Client {
             .get::<String>("command")
             .map_err(|_| Error::CommandNotSet)?;
         log::trace!("cmd: {:?}", cmd);
+
+        // Use the username config settings to direct to the appropriate CI environment variable to find the owner
+        log::trace!("owner: {:?}", settings.get::<String>("username"));
+        let pcu_owner: String = settings
+            .get("username")
+            .map_err(|_| Error::EnvVarBranchNotSet)?;
+        let owner = env::var(pcu_owner).map_err(|_| Error::EnvVarBranchNotFound)?;
+
+        // Use the reponame config settings to direct to the appropriate CI environment variable to find the repo
+        log::trace!("repo: {:?}", settings.get::<String>("reponame"));
+        let pcu_owner: String = settings
+            .get("reponame")
+            .map_err(|_| Error::EnvVarBranchNotSet)?;
+        let repo = env::var(pcu_owner).map_err(|_| Error::EnvVarBranchNotFound)?;
 
         let (branch, pull_request) = if &cmd == "pull-request" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
@@ -105,6 +121,8 @@ impl Client {
             settings,
             git_repo,
             branch,
+            owner,
+            repo,
             pull_request,
             changelog,
             changelog_update: None,
@@ -145,19 +163,11 @@ impl Client {
     }
 
     pub fn owner(&self) -> &str {
-        if let Some(pr) = self.pull_request.as_ref() {
-            &pr.owner
-        } else {
-            ""
-        }
+        &self.owner
     }
 
     pub fn repo(&self) -> &str {
-        if let Some(pr) = self.pull_request.as_ref() {
-            &pr.repo
-        } else {
-            ""
-        }
+        &self.repo
     }
 
     pub fn set_title(&mut self, title: &str) {
@@ -440,6 +450,11 @@ impl Client {
         log::debug!("Making release {version}");
 
         log::debug!("Creating octocrab instance {:?}", self.settings);
+        log::trace!(
+            "Creating octocrab for owner: {} and repo: {}",
+            self.owner(),
+            self.repo()
+        );
         let octocrab = match self.settings.get::<String>("pat") {
             Ok(pat) => {
                 log::debug!("Using personal access token for authentication");
@@ -463,12 +478,6 @@ impl Client {
 
         let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
         log::trace!("Commit: {:#?}", commit);
-
-        log::trace!(
-            "Creating octocrab for owner: {} and repo: {}",
-            self.owner(),
-            self.repo()
-        );
 
         let release = octocrab
             .repos(self.owner(), self.repo())
