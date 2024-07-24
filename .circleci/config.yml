@@ -219,7 +219,7 @@ jobs:
           command: |
             cargo install --force --git https://github.com/jerus-org/pcu --branch $CIRCLE_BRANCH
       - run:
-          name: Create Github release
+          name: Get next semantic version
           command: |
             set -exo pipefail
             version=$(nextsv -bn calculate)
