@@ -477,7 +477,7 @@ impl Client {
         let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
         log::trace!("Commit: {:#?}", commit);
 
-        let release_notes = octocrab::instance()
+        let release_notes = octocrab
             .repos(self.owner(), self.repo())
             .releases()
             .generate_release_notes(version)
