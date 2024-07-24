@@ -480,7 +480,7 @@ impl Client {
         let release_notes = octocrab
             .repos(self.owner(), self.repo())
             .releases()
-            .generate_release_notes(version)
+            .generate_release_notes(format!("v{version}").as_str())
             .send()
             .await?;
 
