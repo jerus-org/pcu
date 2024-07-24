@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(ValueEnum, Debug, Default, Clone)]
@@ -20,10 +22,19 @@ pub struct Cli {
     pub command: Commands,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Subcommand, Clone)]
 pub enum Commands {
     PullRequest(PullRequest),
     Release(Release),
+}
+
+impl Display for Commands {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Commands::PullRequest(_) => write!(f, "pull-request"),
+            Commands::Release(_) => write!(f, "release"),
+        }
+    }
 }
 
 #[derive(Debug, Parser, Clone)]

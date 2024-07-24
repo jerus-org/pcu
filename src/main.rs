@@ -24,7 +24,9 @@ async fn main() -> Result<()> {
     log::debug!("Args: {args:?}");
     let sign = args.sign.unwrap_or_default();
 
-    let res = match args.command {
+    let cmd = args.command.clone();
+
+    let res = match cmd {
         Commands::PullRequest(pr_args) => run_pull_request(sign, pr_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
@@ -37,7 +39,7 @@ async fn main() -> Result<()> {
             };
         }
         Err(e) => {
-            log::error!("Error updating changelog: {e}");
+            log::error!("Error running command {}: {e}", args.command);
             return Err(e);
         }
     };
@@ -62,6 +64,17 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
     }
 
     let mut client = get_client(Commands::PullRequest(args.clone())).await?;
+
+    log::info!(
+        "On the `{}` branch, so time to get to work!",
+        client.branch()
+    );
+    log::debug!(
+        "PR ID: {} - Owner: {} - Repo: {}",
+        client.pr_number(),
+        client.owner(),
+        client.repo()
+    );
 
     let title = client.title();
 
@@ -137,6 +150,8 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
     client.update_unreleased(&version)?;
 
+    log::trace!("Update changelog flag: {}", args.update_changelog);
+
     if args.update_changelog {
         log::debug!("Changelog file name: {}", client.changelog());
 
@@ -198,16 +213,6 @@ async fn get_client(cmd: Commands) -> Result<Client, Error> {
     let settings = get_settings(cmd)?;
     let client = Client::new_with(settings).await?;
 
-    log::info!(
-        "On the `{}` branch, so time to get to work!",
-        client.branch()
-    );
-    log::debug!(
-        "PR ID: {} - Owner: {} - Repo: {}",
-        client.pr_number(),
-        client.owner(),
-        client.repo()
-    );
     Ok(client)
 }
 
