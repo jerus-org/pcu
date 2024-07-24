@@ -7,6 +7,7 @@ use std::{
     path::{self, Path},
     process::{Command, Stdio},
     str::FromStr,
+    sync::Arc,
 };
 
 mod pull_request;
@@ -436,7 +437,29 @@ impl Client {
     }
 
     pub async fn make_release(&self, version: &str) -> Result<(), Error> {
-        let octocrab = Octocrab::default();
+        log::debug!("Making release {version}");
+
+        log::debug!("Creating octocrab instance {:?}", self.settings);
+        let octocrab = match self.settings.get::<String>("pat") {
+            Ok(pat) => {
+                log::debug!("Using personal access token for authentication");
+                Arc::new(
+                    Octocrab::builder()
+                        .base_uri("https://api.github.com")?
+                        .personal_token(pat)
+                        .build()?,
+                )
+            }
+            // base_uri: https://api.github.com
+            // auth: None
+            // client: http client with the octocrab user agent.
+            Err(_) => {
+                log::debug!("Creating un-authenticated instance");
+                octocrab::instance()
+            }
+        };
+
+        log::trace!("Current user: {:?}", octocrab.current().user().await);
 
         let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
         log::trace!("Commit: {:#?}", commit);

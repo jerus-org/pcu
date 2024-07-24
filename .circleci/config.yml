@@ -218,24 +218,6 @@ jobs:
           name: Update to latest pcu
           command: |
             cargo install --force --git https://github.com/jerus-org/pcu --branch $CIRCLE_BRANCH
-      # - run:
-      #     name: Install gh
-      #     command: |
-      #       (type -p wget >/dev/null || (apt update && apt-get install wget -y)) \
-      #       && mkdir -p -m 755 /etc/apt/keyrings \
-      #       && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
-      #       && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
-      #       && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-      #       && apt update \
-      #       && apt install gh -y
-      # - run:
-      #     name: Check gh authentication
-      #     command: |
-      #       gh auth status
-      #       gh config set git_protocol ssh --host github.com
-      #       gh auth status
-      #       # echo $GITHUB_TOKEN | gh auth login --with-token
-      #       # gh auth status
       - run:
           name: Create Github release
           command: |
@@ -281,13 +263,6 @@ jobs:
             ls -l
             cat release_notes.md
             head -n 20 CHANGELOG.md
-            # git status
-            # git add CHANGELOG.md
-            # git status
-            # git commit -m "chore(release): ${version}"  
-            # git status
-            # gh release create v${version} -F release_notes.md
-            # git push --tags
 
 workflows:
   check_last_commit:
@@ -361,3 +336,4 @@ workflows:
             - release
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
+          pcu_verbosity: "-vvvv"
