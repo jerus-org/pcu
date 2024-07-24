@@ -171,6 +171,7 @@ jobs:
 
   make_release:
     executor: rust-env
+
     parameters:
       ssh_fingerprint:
         type: string
@@ -180,6 +181,26 @@ jobs:
         type: string
         default: "-vv"
         description: "The verbosity of the pcu command"
+      version:
+        type: string
+        default: ""
+        description: |
+          Specific version number to release
+      specific_version:
+        type: boolean
+        default: false
+        description: |
+          Make a specific release, if true version must be set to the specific version number
+      publish:
+        type: boolean
+        default: true
+        description: |
+          Publish the release
+      first_release:
+        type: boolean
+        default: false
+        description: |
+          Request that a first release (v0.1.0) be created
     steps:
       - checkout
       - add_ssh_keys:
@@ -207,20 +228,56 @@ jobs:
       #       && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
       #       && apt update \
       #       && apt install gh -y
-      - run:
-          name: Check gh authentication
-          command: |
-            gh auth status
-            gh config set git_protocol ssh --host github.com
-            gh auth status
-            # echo $GITHUB_TOKEN | gh auth login --with-token
-            # gh auth status
+      # - run:
+      #     name: Check gh authentication
+      #     command: |
+      #       gh auth status
+      #       gh config set git_protocol ssh --host github.com
+      #       gh auth status
+      #       # echo $GITHUB_TOKEN | gh auth login --with-token
+      #       # gh auth status
       - run:
           name: Create Github release
           command: |
             set -exo pipefail
             version=$(nextsv -bn calculate)
-            pcu <<parameters.pcu_verbosity>> release --release ${version}
+            echo $"export SEMVER='$version'" >> $BASH_ENV
+      - run:
+          name: Find next level and publish update
+          command: |
+            set -exo pipefail
+
+            if [ "<< parameters.publish >>" == "true" ] ; then
+              publish="--publish"
+            else
+              publish="--no-publish"
+            fi
+
+            cargo release changes
+
+            if [ "<< parameters.first_release >>" == "true" ] ; then
+              cargo release $publish --execute --no-confirm --sign-tag -c first-release.toml 0.1.0
+            else
+              if [ "<< parameters.specific_version >>" == "true" ] && [ "<< parameters.version >>" != "" ] ; then
+                export NEXTSV_LEVEL=<< parameters.version >>
+              else
+                export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGELOG.md feature)
+              fi
+
+              echo $NEXTSV_LEVEL
+
+              if [ $NEXTSV_LEVEL != "none" ] ; then
+                cargo release changes
+                cargo release "$publish" --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
+              else
+                echo "Not ready to release yet."
+              fi
+            fi
+      - run:
+          name: Create Github release
+          command: |
+            set -exo pipefail
+            pcu <<parameters.pcu_verbosity>> release --semver ${SEMVER}
             ls -l
             cat release_notes.md
             head -n 20 CHANGELOG.md
