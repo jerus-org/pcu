@@ -9,7 +9,7 @@ pub trait ReleaseNotesProvider {
 
 impl ReleaseNotesProvider for Changelog {
     fn release_notes(&self, release: &str) -> Result<ReleaseNotes, Error> {
-        let name = release.to_string();
+        let name = format!("v{release}");
 
         let version = match Version::parse(release) {
             Ok(version) => version,
