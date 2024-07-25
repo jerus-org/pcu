@@ -1,3 +1,4 @@
+mod change_log;
 mod client;
 mod error;
 mod pr_title;
