@@ -11,6 +11,7 @@ use color_eyre::Result;
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 const SIGNAL_HALT: &str = "halt";
+const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
@@ -238,6 +239,12 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         Commands::Release(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "release")?,
+    };
+
+    settings = if let Ok(pat) = env::var(GITHUB_PAT) {
+        settings.set_override("pat", pat.to_string())?
+    } else {
+        settings
     };
 
     match settings.build() {
