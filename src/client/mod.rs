@@ -23,8 +23,8 @@ use keep_a_changelog::{
 use octocrab::Octocrab;
 use url::Url;
 
-use crate::Error;
 use crate::PrTitle;
+use crate::{change_log::ReleaseNotesProvider, Error};
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 
@@ -455,6 +455,21 @@ impl Client {
             self.owner(),
             self.repo()
         );
+
+        let opts = ChangelogParseOptions::default();
+        let changelog = match Changelog::parse_from_file(self.changelog(), Some(opts)) {
+            Ok(changelog) => changelog,
+            Err(e) => {
+                log::error!("Error parsing changelog: {e}");
+                return Err(Error::InvalidPath(self.changelog.clone()));
+            }
+        };
+
+        log::trace!("Changelog: {:#?}", changelog);
+
+        let release_notes = changelog.release_notes(version)?;
+        log::trace!("Release notes: {:#?}", release_notes);
+
         let octocrab = match self.settings.get::<String>("pat") {
             Ok(pat) => {
                 log::debug!("Using personal access token for authentication");
@@ -476,15 +491,6 @@ impl Client {
 
         let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
         log::trace!("Commit: {:#?}", commit);
-
-        let release_notes = octocrab
-            .repos(self.owner(), self.repo())
-            .releases()
-            .generate_release_notes(format!("v{version}").as_str())
-            .send()
-            .await?;
-
-        log::trace!("Release notes: {:#?}", release_notes);
 
         let release = octocrab
             .repos(self.owner(), self.repo())
