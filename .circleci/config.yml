@@ -17,7 +17,7 @@ parameters:
     description: "If true, the success pipeline will be executed."
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@0.23.0
+  toolkit: jerus-org/circleci-toolkit@0.24.0
 
 executors:
   rust-env:
@@ -80,81 +80,6 @@ commands:
                 --header 'content-type: application/json' \
                 -d $BODY \
                 https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
-            fi
-
-  set_senmver:
-    steps:
-      - run:
-          name: Set env var with the next semantic version
-          command: |
-            set -exo pipefail
-            version=$(nextsv -bn calculate)
-            echo $"export SEMVER='$version'" >> $BASH_ENV
-
-  make_cargo_release:
-    parameters:
-      publish:
-        type: boolean
-        default: true
-        description: "If true, the release will be published."
-      first_release:
-        type: boolean
-        default: false
-        description: "If true, the release will be published as first release."
-      specific_version:
-        type: boolean
-        default: false
-        description: "If true, the release will be published with a specific version."
-      version:
-        type: string
-        default: ""
-        description: "Specific version number to release"
-    steps:
-      - run:
-          name: Find next level and publish update
-          command: |
-            set -exo pipefail
-
-            if [ "<< parameters.publish >>" == "true" ] ; then
-              publish="--publish"
-            else
-              publish="--no-publish"
-            fi
-
-            cargo release changes
-
-            if [ "<< parameters.first_release >>" == "true" ] ; then
-              cargo release $publish --execute --no-confirm --sign-tag -c first-release.toml 0.1.0
-            else
-              if [ "<< parameters.specific_version >>" == "true" ] && [ "<< parameters.version >>" != "" ] ; then
-                export NEXTSV_LEVEL=<< parameters.version >>
-              else
-                export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGELOG.md feature)
-              fi
-
-              echo $NEXTSV_LEVEL
-
-              if [ $NEXTSV_LEVEL != "none" ] ; then
-                cargo release changes
-                cargo release "$publish" --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
-              else
-                echo "Not ready to release yet."
-              fi
-            fi
-
-  make_github_release:
-    parameters:
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-    steps:
-      - run:
-          name: Create Github release
-          command: |
-            set -exo pipefail
-            if [ "" != "${SEMVER}" ] ; then
-              pcu <<parameters.pcu_verbosity>> release --semver ${SEMVER}
             fi
 
 jobs:
@@ -244,59 +169,6 @@ jobs:
                 pcu_verbosity: <<parameters.pcu_verbosity>>
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
 
-  make_release:
-    executor: rust-env
-
-    parameters:
-      ssh_fingerprint:
-        type: string
-      min_rust_version:
-        type: string
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-      version:
-        type: string
-        default: ""
-        description: |
-          Specific version number to release
-      specific_version:
-        type: boolean
-        default: false
-        description: |
-          Make a specific release, if true version must be set to the specific version number
-      publish:
-        type: boolean
-        default: true
-        description: |
-          Publish the release
-      first_release:
-        type: boolean
-        default: false
-        description: |
-          Request that a first release (v0.1.0) be created
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - << parameters.ssh_fingerprint >>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - run:
-          name: Update to latest pcu
-          command: |
-            cargo install --force --git https://github.com/jerus-org/pcu --branch $CIRCLE_BRANCH
-      - set_senmver
-      - make_cargo_release
-      - make_github_release
-
 workflows:
   check_last_commit:
     when:
@@ -364,10 +236,11 @@ workflows:
         - not: << pipeline.parameters.success-flag >>
         - not: << pipeline.parameters.validation-flag >>
     jobs:
-      - make_release:
+      - toolkit/make_release:
           context:
             - release
             - bot-check
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           pcu_verbosity: "-vvvv"
+          update_pcu: true
