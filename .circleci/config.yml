@@ -82,6 +82,81 @@ commands:
                 https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
             fi
 
+  set_senmver:
+    steps:
+      - run:
+          name: Set env var with the next semantic version
+          command: |
+            set -exo pipefail
+            version=$(nextsv -bn calculate)
+            echo $"export SEMVER='$version'" >> $BASH_ENV
+
+  make_cargo_release:
+    parameters:
+      publish:
+        type: boolean
+        default: true
+        description: "If true, the release will be published."
+      first_release:
+        type: boolean
+        default: false
+        description: "If true, the release will be published as first release."
+      specific_version:
+        type: boolean
+        default: false
+        description: "If true, the release will be published with a specific version."
+      version:
+        type: string
+        default: ""
+        description: "Specific version number to release"
+    steps:
+      - run:
+          name: Find next level and publish update
+          command: |
+            set -exo pipefail
+
+            if [ "<< parameters.publish >>" == "true" ] ; then
+              publish="--publish"
+            else
+              publish="--no-publish"
+            fi
+
+            cargo release changes
+
+            if [ "<< parameters.first_release >>" == "true" ] ; then
+              cargo release $publish --execute --no-confirm --sign-tag -c first-release.toml 0.1.0
+            else
+              if [ "<< parameters.specific_version >>" == "true" ] && [ "<< parameters.version >>" != "" ] ; then
+                export NEXTSV_LEVEL=<< parameters.version >>
+              else
+                export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGELOG.md feature)
+              fi
+
+              echo $NEXTSV_LEVEL
+
+              if [ $NEXTSV_LEVEL != "none" ] ; then
+                cargo release changes
+                cargo release "$publish" --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
+              else
+                echo "Not ready to release yet."
+              fi
+            fi
+
+  make_github_release:
+    parameters:
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+    steps:
+      - run:
+          name: Create Github release
+          command: |
+            set -exo pipefail
+            if [ "" != "${SEMVER}" ] ; then
+              pcu <<parameters.pcu_verbosity>> release --semver ${SEMVER}
+            fi
+
 jobs:
   update_changelog:
     executor: rust-env
@@ -218,52 +293,9 @@ jobs:
           name: Update to latest pcu
           command: |
             cargo install --force --git https://github.com/jerus-org/pcu --branch $CIRCLE_BRANCH
-      - run:
-          name: Get next semantic version
-          command: |
-            set -exo pipefail
-            version=$(nextsv -bn calculate)
-            echo $"export SEMVER='$version'" >> $BASH_ENV
-      - run:
-          name: Find next level and publish update
-          command: |
-            set -exo pipefail
-
-            if [ "<< parameters.publish >>" == "true" ] ; then
-              publish="--publish"
-            else
-              publish="--no-publish"
-            fi
-
-            cargo release changes
-
-            if [ "<< parameters.first_release >>" == "true" ] ; then
-              cargo release $publish --execute --no-confirm --sign-tag -c first-release.toml 0.1.0
-            else
-              if [ "<< parameters.specific_version >>" == "true" ] && [ "<< parameters.version >>" != "" ] ; then
-                export NEXTSV_LEVEL=<< parameters.version >>
-              else
-                export NEXTSV_LEVEL=$(nextsv -q -c other require -f CHANGELOG.md feature)
-              fi
-
-              echo $NEXTSV_LEVEL
-
-              if [ $NEXTSV_LEVEL != "none" ] ; then
-                cargo release changes
-                cargo release "$publish" --execute --no-confirm --sign-tag "$NEXTSV_LEVEL"
-              else
-                echo "Not ready to release yet."
-              fi
-            fi
-      - run:
-          name: Create Github release
-          command: |
-            set -exo pipefail
-              if [ "" != "${SEMVER}" ] ; then
-                pcu <<parameters.pcu_verbosity>> release --semver ${SEMVER}
-                ls -l
-                head -n 20 CHANGELOG.md
-            fi
+      - set_senmver
+      - make_cargo_release
+      - make_github_release
 
 workflows:
   check_last_commit:
