@@ -262,7 +262,6 @@ jobs:
               if [ "" != "${SEMVER}" ] ; then
                 pcu <<parameters.pcu_verbosity>> release --semver ${SEMVER}
                 ls -l
-                cat release_notes.md
                 head -n 20 CHANGELOG.md
             fi
 
