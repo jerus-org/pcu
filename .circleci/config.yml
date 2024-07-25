@@ -259,10 +259,12 @@ jobs:
           name: Create Github release
           command: |
             set -exo pipefail
-            pcu <<parameters.pcu_verbosity>> release --semver ${SEMVER}
-            ls -l
-            cat release_notes.md
-            head -n 20 CHANGELOG.md
+              if [ "" != "${SEMVER}" ] ; then
+                pcu <<parameters.pcu_verbosity>> release --semver ${SEMVER}
+                ls -l
+                cat release_notes.md
+                head -n 20 CHANGELOG.md
+            fi
 
 workflows:
   check_last_commit:

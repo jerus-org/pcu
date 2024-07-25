@@ -19,10 +19,25 @@ impl ReleaseNotesProvider for Changelog {
             }
         };
 
-        let mut body = String::from("");
-        if let Some(d) = self.description() {
-            body.push_str(&format!("{d}\n\n"));
-        };
+        let mut body = String::from("## What's Changed\n\n");
+
+        body.push_str(
+            &self
+                .releases()
+                .iter()
+                .find_map(|r| {
+                    if let Some(rv) = r.version() {
+                        if *rv == version {
+                            r.description().clone()
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or("".to_string()),
+        );
 
         body.push_str(
             &self
