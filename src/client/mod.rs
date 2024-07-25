@@ -24,7 +24,7 @@ use octocrab::Octocrab;
 use url::Url;
 
 use crate::PrTitle;
-use crate::{change_log::ReleaseNotesProvider, Error};
+use crate::{release_notes_provider::ReleaseNotesProvider, Error};
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 
@@ -464,8 +464,6 @@ impl Client {
                 return Err(Error::InvalidPath(self.changelog.clone()));
             }
         };
-
-        log::trace!("Changelog: {:#?}", changelog);
 
         let release_notes = changelog.release_notes(version)?;
         log::trace!("Release notes: {:#?}", release_notes);
