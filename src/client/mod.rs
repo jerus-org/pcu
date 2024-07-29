@@ -328,9 +328,14 @@ impl Client {
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
 
-        let branch = self
-            .git_repo
-            .find_branch(self.branch(), BranchType::Local)?;
+        log::trace!("Branch: {:?} or {}", self.branch, self.branch());
+
+        let branch = match self.branch {
+            Some(ref branch) => branch,
+            None => "main",
+        };
+
+        let branch = self.git_repo.find_branch(branch, BranchType::Local)?;
         log::trace!("Found branch: {}", branch.name()?.unwrap());
         let push_refs = branch.into_reference();
         log::trace!("Push refs: {}", push_refs.name().unwrap());
