@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - handle case were we are pushing from the main branch(pr [#231])
+- default branch name to 'main' if branch is not specified(pr [#232])
 
 ## [0.1.24] - 2024-07-25
 
@@ -377,6 +378,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#229]: https://github.com/jerus-org/pcu/pull/229
 [#230]: https://github.com/jerus-org/pcu/pull/230
 [#231]: https://github.com/jerus-org/pcu/pull/231
+[#232]: https://github.com/jerus-org/pcu/pull/232
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
