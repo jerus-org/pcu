@@ -134,7 +134,7 @@ impl Client {
         if let Some(branch) = self.branch.as_ref() {
             branch
         } else {
-            ""
+            "main"
         }
     }
 
