@@ -360,7 +360,7 @@ impl Client {
         let branch_ref = local_branch.into_reference();
         let mut push_refs = vec![branch_ref.name().unwrap()];
         let tag_ref = if let Some(version_tag) = version {
-            let tag_ref = self.git_repo.find_reference(version_tag)?;
+            let tag_ref = self.git_repo.find_reference(&format!("v{version_tag}"))?;
             log::trace!("Found tag: {:?}", tag_ref.name().unwrap());
             tag_ref.name().unwrap().to_string()
         } else {
