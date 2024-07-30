@@ -214,7 +214,7 @@ impl Client {
     }
 
     #[allow(dead_code)]
-    pub fn commit_changelog(&self) -> Result<String, Error> {
+    pub fn commit_changelog(&self, tag: Option<&str>) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
         index.write()?;
@@ -233,11 +233,17 @@ impl Client {
             &[&parent],
         )?;
 
+        if let Some(version_tag) = tag {
+            let object = self.git_repo.find_object(commit_id, None)?;
+            self.git_repo
+                .tag(version_tag, &object, &sig, version_tag, true)?;
+        };
+
         Ok(commit_id.to_string())
     }
 
     #[allow(dead_code)]
-    pub fn commit_changelog_gpg(&self) -> Result<String, Error> {
+    pub fn commit_changelog_gpg(&self, tag: Option<&str>) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
         index.write()?;
@@ -310,6 +316,13 @@ impl Client {
                 .commit_signed(commit_str, commit_signature, Some("gpgsig"))?;
 
         log::trace!("commit id: {}", commit_id);
+
+        if let Some(version_tag) = tag {
+            let object = self.git_repo.find_object(commit_id, None)?;
+            self.git_repo
+                .tag(version_tag, &object, &sig, version_tag, true)?;
+        };
+
         // manually advance to the new commit id
         self.git_repo.head()?.set_target(commit_id, &msg)?;
 
