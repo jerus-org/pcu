@@ -357,6 +357,8 @@ impl Client {
         let local_branch = self.git_repo.find_branch(branch, BranchType::Local)?;
         log::trace!("Found branch: {}", local_branch.name()?.unwrap());
 
+        log::trace!("Got these refs: {:?}", Command::new("ls -lR .git/refs"));
+
         let branch_ref = local_branch.into_reference();
         let mut push_refs = vec![branch_ref.name().unwrap()];
         let tag_ref = if let Some(version_tag) = version {
