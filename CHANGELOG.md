@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - default branch name to 'main' if branch is not specified(pr [#232])
 - push the version tag to the repo(pr [#234])
 - add optional tag parameter to commit_changelog and commit_changelog_gpg functions(pr [#235])
+- change commit_changelog_gpg method to mutable(pr [#236])
 
 ## [0.1.24] - 2024-07-25
 
@@ -388,6 +389,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#233]: https://github.com/jerus-org/pcu/pull/233
 [#234]: https://github.com/jerus-org/pcu/pull/234
 [#235]: https://github.com/jerus-org/pcu/pull/235
+[#236]: https://github.com/jerus-org/pcu/pull/236
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
