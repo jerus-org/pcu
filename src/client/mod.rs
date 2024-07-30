@@ -4,7 +4,6 @@ use std::{
     ffi::OsString,
     fs,
     io::Write,
-    os::unix::process::CommandExt,
     path::{self, Path},
     process::{Command, Stdio},
     str::FromStr,
