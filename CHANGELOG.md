@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - chore-add logging for tag retrieval in get_commitish_for_tag function(pr [#233])
+- refactor-simplify version tag reference formatting and logging(pr [#238])
 
 ### Fixed
 
@@ -392,6 +393,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#235]: https://github.com/jerus-org/pcu/pull/235
 [#236]: https://github.com/jerus-org/pcu/pull/236
 [#237]: https://github.com/jerus-org/pcu/pull/237
+[#238]: https://github.com/jerus-org/pcu/pull/238
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
