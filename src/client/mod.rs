@@ -4,6 +4,7 @@ use std::{
     ffi::OsString,
     fs,
     io::Write,
+    os::unix::process::CommandExt,
     path::{self, Path},
     process::{Command, Stdio},
     str::FromStr,
@@ -357,7 +358,7 @@ impl Client {
         let local_branch = self.git_repo.find_branch(branch, BranchType::Local)?;
         log::trace!("Found branch: {}", local_branch.name()?.unwrap());
 
-        log::trace!("Got these refs: {:?}", Command::new("ls -lR .git/refs"));
+        log::trace!("Got these refs: {:?}", Client::list_tags());
 
         let branch_ref = local_branch.into_reference();
         let mut push_refs = vec![branch_ref.name().unwrap()];
@@ -375,6 +376,19 @@ impl Client {
         remote.push(&push_refs, None)?;
 
         Ok(())
+    }
+
+    fn list_tags() -> String {
+        let output = Command::new("ls")
+            .arg("-lR")
+            .arg(".git/refs")
+            .output()
+            .expect("ls of the git refs");
+        let stdout = output.stdout;
+
+        let string = String::from_utf8_lossy(&stdout);
+
+        string.to_string()
     }
 
     /// Update the unreleased section to the changelog to `version`
