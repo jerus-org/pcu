@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- chore-add logging for tag retrieval in get_commitish_for_tag function(pr [#233])
+
 ### Fixed
 
 - handle case were we are pushing from the main branch(pr [#231])
@@ -379,6 +383,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#230]: https://github.com/jerus-org/pcu/pull/230
 [#231]: https://github.com/jerus-org/pcu/pull/231
 [#232]: https://github.com/jerus-org/pcu/pull/232
+[#233]: https://github.com/jerus-org/pcu/pull/233
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23

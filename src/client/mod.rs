@@ -514,12 +514,14 @@ impl Client {
         octocrab: &Octocrab,
         version: &str,
     ) -> Result<String, Error> {
+        log::trace!("Get commitish for tag: {version}");
         for tag in octocrab
             .repos(self.owner(), self.repo())
             .list_tags()
             .send()
             .await?
         {
+            log::trace!("Tag: {:#?}", tag);
             if tag.name == format!("v{version}").as_str() {
                 return Ok(tag.commit.sha);
             }
