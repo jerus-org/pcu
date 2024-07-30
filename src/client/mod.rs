@@ -318,7 +318,7 @@ impl Client {
         Ok(commit_id.to_string())
     }
 
-    pub fn push_changelog(&self) -> Result<(), Error> {
+    pub fn push_changelog(&self, version: Option<&str>) -> Result<(), Error> {
         let mut remote = self.git_repo.find_remote("origin")?;
         log::trace!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
@@ -331,16 +331,32 @@ impl Client {
         log::trace!("Branch: {:?} or {}", self.branch, self.branch());
 
         let branch = match self.branch {
-            Some(ref branch) => branch,
-            None => "main",
+            Some(ref branch) => {
+                log::trace!("*** found a branch: {}", branch);
+                branch
+            }
+            None => {
+                log::trace!("*** no branch found, defaulting to main");
+                "main"
+            }
         };
 
-        let branch = self.git_repo.find_branch(branch, BranchType::Local)?;
-        log::trace!("Found branch: {}", branch.name()?.unwrap());
-        let push_refs = branch.into_reference();
-        log::trace!("Push refs: {}", push_refs.name().unwrap());
+        let local_branch = self.git_repo.find_branch(branch, BranchType::Local)?;
+        log::trace!("Found branch: {}", local_branch.name()?.unwrap());
 
-        remote.push(&[push_refs.name().unwrap()], None)?;
+        let branch_ref = local_branch.into_reference();
+        let mut push_refs = vec![branch_ref.name().unwrap()];
+        let tag_ref = if let Some(version) = version {
+            format!("refs/tags/v{version}")
+        } else {
+            String::from("")
+        };
+        if !tag_ref.is_empty() {
+            push_refs.push(&tag_ref);
+        }
+        log::trace!("Push refs: {:?}", push_refs);
+
+        remote.push(&push_refs, None)?;
 
         Ok(())
     }
