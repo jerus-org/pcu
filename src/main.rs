@@ -129,7 +129,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
     log::debug!("After commit: Repo state: {}", client.repo_status()?);
     log::debug!("After commit: Branch status: {}", client.branch_status()?);
 
-    client.push_changelog()?;
+    client.push_changelog(None)?;
     log::debug!("After push: Branch status: {}", client.branch_status()?);
 
     Ok(ClState::Updated)
@@ -176,7 +176,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
         log::debug!("After commit: Repo state: {}", client.repo_status()?);
         log::debug!("After commit: Branch status: {}", client.branch_status()?);
 
-        client.push_changelog()?;
+        client.push_changelog(Some(&version))?;
         log::debug!("After push: Branch status: {}", client.branch_status()?);
     }
 
