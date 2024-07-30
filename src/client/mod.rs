@@ -235,8 +235,9 @@ impl Client {
 
         if let Some(version_tag) = tag {
             let object = self.git_repo.find_object(commit_id, None)?;
+            let version_tag = format!("v{}", version_tag);
             self.git_repo
-                .tag(version_tag, &object, &sig, version_tag, true)?;
+                .tag(&version_tag, &object, &sig, &version_tag, true)?;
         };
 
         Ok(commit_id.to_string())
@@ -319,8 +320,9 @@ impl Client {
 
         if let Some(version_tag) = tag {
             let object = self.git_repo.find_object(commit_id, None)?;
+            let version_tag = format!("v{}", version_tag);
             self.git_repo
-                .tag(version_tag, &object, &sig, version_tag, true)?;
+                .tag(&version_tag, &object, &sig, &version_tag, true)?;
         };
 
         // manually advance to the new commit id
