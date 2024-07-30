@@ -243,7 +243,7 @@ impl Client {
     }
 
     #[allow(dead_code)]
-    pub fn commit_changelog_gpg(&self, tag: Option<&str>) -> Result<String, Error> {
+    pub fn commit_changelog_gpg(&mut self, tag: Option<&str>) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
         index.add_path(Path::new(self.changelog()))?;
         index.write()?;
@@ -359,8 +359,10 @@ impl Client {
 
         let branch_ref = local_branch.into_reference();
         let mut push_refs = vec![branch_ref.name().unwrap()];
-        let tag_ref = if let Some(version) = version {
-            format!("refs/tags/v{version}")
+        let tag_ref = if let Some(version_tag) = version {
+            let tag_ref = self.git_repo.find_reference(version_tag)?;
+            log::trace!("Found tag: {:?}", tag_ref.name().unwrap());
+            tag_ref.name().unwrap().to_string()
         } else {
             String::from("")
         };
