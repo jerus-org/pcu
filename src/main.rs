@@ -119,10 +119,10 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 
     match sign {
         Sign::Gpg => {
-            client.commit_changelog_gpg()?;
+            client.commit_changelog_gpg(None)?;
         }
         Sign::None => {
-            client.commit_changelog()?;
+            client.commit_changelog(None)?;
         }
     }
 
@@ -166,10 +166,10 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
         match sign {
             Sign::Gpg => {
-                client.commit_changelog_gpg()?;
+                client.commit_changelog_gpg(Some(&version))?;
             }
             Sign::None => {
-                client.commit_changelog()?;
+                client.commit_changelog(Some(&version))?;
             }
         }
 
