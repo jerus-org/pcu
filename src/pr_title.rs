@@ -118,9 +118,7 @@ impl PrTitle {
                     log::trace!("Split description: {:#?}", split_description);
                     entry = format!(
                         "{}({})-{}",
-                        split_description[0],
-                        self.commit_scope.as_ref().unwrap(),
-                        split_description[1]
+                        split_description[0], commit_scope, split_description[1]
                     );
                 }
             }
