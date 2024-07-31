@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- extract git operations to a separate module(pr [#243])
+
 ### Changed
 
 - chore-add logging for tag retrieval in get_commitish_for_tag function(pr [#233])
@@ -405,6 +409,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#240]: https://github.com/jerus-org/pcu/pull/240
 [#241]: https://github.com/jerus-org/pcu/pull/241
 [#242]: https://github.com/jerus-org/pcu/pull/242
+[#243]: https://github.com/jerus-org/pcu/pull/243
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
