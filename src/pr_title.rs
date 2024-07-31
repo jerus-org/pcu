@@ -93,6 +93,7 @@ impl PrTitle {
         debug!("After checking type `{}`", entry);
 
         if let Some(commit_scope) = &self.commit_scope {
+            log::trace!("Checking scope `{}`", commit_scope);
             match commit_scope.as_str() {
                 "security" => {
                     section = ChangeKind::Security;
@@ -113,6 +114,7 @@ impl PrTitle {
                 _ => {
                     section = ChangeKind::Changed;
                     let split_description = entry.splitn(2, '-').collect::<Vec<&str>>();
+                    log::trace!("Split description: {:#?}", split_description);
                     entry = format!(
                         "{}({})-{}",
                         split_description[0],
