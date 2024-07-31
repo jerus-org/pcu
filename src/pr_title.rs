@@ -83,7 +83,13 @@ impl PrTitle {
         if let Some(commit_type) = &self.commit_type {
             match commit_type.as_str() {
                 "feat" => section = ChangeKind::Added,
-                "fix" => section = ChangeKind::Fixed,
+                "fix" => {
+                    section = ChangeKind::Fixed;
+                    if let Some(commit_scope) = &self.commit_scope {
+                        log::trace!("Found scope `{}`", commit_scope);
+                        entry = format!("{}: {}", commit_scope, self.title);
+                    }
+                }
                 _ => {
                     section = ChangeKind::Changed;
                     entry = format!("{}-{}", self.commit_type.as_ref().unwrap(), entry);
@@ -405,8 +411,8 @@ mod tests {
         "fix(security): Fix security vulnerability",
         None,
         None,
-        ChangeKind::Security,
-        "Security: Fix security vulnerability"
+        ChangeKind::Fixed,
+        "security: Fix security vulnerability"
     )]
     #[case(
         "chore(deps): Update dependencies",
