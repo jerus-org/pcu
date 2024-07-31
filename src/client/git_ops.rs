@@ -154,7 +154,7 @@ impl GitOps for Client {
         Ok(())
     }
 
-    fn push_changelog(&self, _version: Option<&str>) -> Result<(), Error> {
+    fn push_changelog(&self, version: Option<&str>) -> Result<(), Error> {
         let mut remote = self.git_repo.find_remote("origin")?;
         log::trace!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
@@ -183,16 +183,18 @@ impl GitOps for Client {
         log::trace!("Got these refs: {:#?}", list_tags());
 
         let branch_ref = local_branch.into_reference();
-        let push_refs = vec![branch_ref.name().unwrap()];
-        // let tag_ref = if let Some(version_tag) = version {
-        //     log::trace!("Found version tag: {}", version_tag);
-        //     format!("/refs/tags/v{version_tag}")
-        // } else {
-        //     String::from("")
-        // };
-        // if !tag_ref.is_empty() {
-        //     push_refs.push(&tag_ref);
-        // }
+
+        let mut push_refs = vec![branch_ref.name().unwrap()];
+
+        let tag_ref = if let Some(version_tag) = version {
+            log::trace!("Found version tag: {}", version_tag);
+            format!("/refs/tags/v{version_tag}")
+        } else {
+            String::from("")
+        };
+        if !tag_ref.is_empty() {
+            push_refs.push(&tag_ref);
+        }
         log::trace!("Push refs: {:?}", push_refs);
 
         remote.push(&push_refs, None)?;
@@ -208,7 +210,7 @@ impl GitOps for Client {
             .send()
             .await?
         {
-            log::trace!("Tag: {:#?}", t);
+            log::trace!("Tag: {}", t.name);
             if t.name == tag {
                 return Ok(t.commit.sha);
             }
