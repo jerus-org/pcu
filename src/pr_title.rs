@@ -87,43 +87,42 @@ impl PrTitle {
                 _ => {
                     section = ChangeKind::Changed;
                     entry = format!("{}-{}", self.commit_type.as_ref().unwrap(), entry);
+
+                    debug!("After checking for `feat` or `fix` type: `{}`", entry);
+
+                    if let Some(commit_scope) = &self.commit_scope {
+                        log::trace!("Checking scope `{}`", commit_scope);
+                        match commit_scope.as_str() {
+                            "security" => {
+                                section = ChangeKind::Security;
+                                entry = format!("Security: {}", self.title);
+                            }
+                            "deps" => {
+                                section = ChangeKind::Security;
+                                entry = format!("Dependencies: {}", self.title);
+                            }
+                            "remove" => {
+                                section = ChangeKind::Removed;
+                                entry = format!("Removed: {}", self.title);
+                            }
+                            "deprecate" => {
+                                section = ChangeKind::Deprecated;
+                                entry = format!("Deprecated: {}", self.title);
+                            }
+                            _ => {
+                                section = ChangeKind::Changed;
+                                let split_description = entry.splitn(2, '-').collect::<Vec<&str>>();
+                                log::trace!("Split description: {:#?}", split_description);
+                                entry = format!(
+                                    "{}({})-{}",
+                                    split_description[0], commit_scope, split_description[1]
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
-
-        debug!("After checking type `{}`", entry);
-
-        if let Some(commit_scope) = &self.commit_scope {
-            log::trace!("Checking scope `{}`", commit_scope);
-            match commit_scope.as_str() {
-                "security" => {
-                    section = ChangeKind::Security;
-                    entry = format!("Security: {}", self.title);
-                }
-                "deps" => {
-                    section = ChangeKind::Security;
-                    entry = format!("Dependencies: {}", self.title);
-                }
-                "remove" => {
-                    section = ChangeKind::Removed;
-                    entry = format!("Removed: {}", self.title);
-                }
-                "deprecate" => {
-                    section = ChangeKind::Deprecated;
-                    entry = format!("Deprecated: {}", self.title);
-                }
-                _ => {
-                    section = ChangeKind::Changed;
-                    let split_description = entry.splitn(2, '-').collect::<Vec<&str>>();
-                    log::trace!("Split description: {:#?}", split_description);
-                    entry = format!(
-                        "{}({})-{}",
-                        split_description[0], commit_scope, split_description[1]
-                    );
-                }
-            }
-        }
-
         debug!("After checking scope `{}`", entry);
 
         if self.commit_breaking {
