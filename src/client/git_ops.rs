@@ -226,15 +226,19 @@ fn list_tags() -> String {
         .output()
         .expect("ls of the git refs");
     let stdout = output.stdout;
+    log::trace!("ls: {}", String::from_utf8_lossy(&stdout));
 
     let out_string = String::from_utf8_lossy(&stdout);
 
     let files = out_string.split_terminator(" ").collect::<Vec<&str>>();
+    log::trace!("Files: {:#?}", files);
 
     if let Some(last_file) = files.last() {
         let filename = last_file.to_string();
         let filename = format!(".git/refs/tags/{filename}");
+        log::trace!("Filename: {filename}");
         let file_contents = read_to_string(&filename).unwrap_or("".to_string());
+        log::trace!("File contents: {file_contents}");
         format!("{}\n{}", filename, file_contents)
     } else {
         "".to_string()
