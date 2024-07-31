@@ -222,7 +222,8 @@ impl GitOps for Client {
 
 fn list_tags() -> String {
     let output = Command::new("ls")
-        .arg(".git/refs/tags")
+        .arg("-R")
+        .arg(".git/refs")
         .output()
         .expect("ls of the git refs");
     let stdout = output.stdout;
@@ -235,6 +236,8 @@ fn list_tags() -> String {
 
     if let Some(last_file) = files.last() {
         let filename = last_file.to_string();
+
+        log::trace!("Filename: {filename}");
         let filename = format!(".git/refs/tags/{filename}");
         log::trace!("Filename: {filename}");
         let file_contents_res = read_to_string(&filename);
