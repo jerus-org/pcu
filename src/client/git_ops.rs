@@ -237,9 +237,9 @@ fn list_tags() -> String {
         let filename = last_file.to_string();
         let filename = format!(".git/refs/tags/{filename}");
         log::trace!("Filename: {filename}");
-        let file_contents = read_to_string(&filename).unwrap_or("".to_string());
+        let file_contents = read_to_string(&filename).unwrap_or("nothing read".to_string());
         log::trace!("File contents: {file_contents}");
-        format!("{}\n{}", filename, file_contents)
+        format!("{}\n`{}`", filename, file_contents)
     } else {
         "".to_string()
     }
