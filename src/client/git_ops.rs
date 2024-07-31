@@ -1,4 +1,5 @@
 use std::{
+    fs::read_to_string,
     io::Write,
     path::Path,
     process::{Command, Stdio},
@@ -153,7 +154,7 @@ impl GitOps for Client {
         Ok(())
     }
 
-    fn push_changelog(&self, version: Option<&str>) -> Result<(), Error> {
+    fn push_changelog(&self, _version: Option<&str>) -> Result<(), Error> {
         let mut remote = self.git_repo.find_remote("origin")?;
         log::trace!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
@@ -179,19 +180,19 @@ impl GitOps for Client {
         let local_branch = self.git_repo.find_branch(branch, BranchType::Local)?;
         log::trace!("Found branch: {}", local_branch.name()?.unwrap());
 
-        log::trace!("Got these refs: {:?}", list_tags());
+        log::trace!("Got these refs: {:#?}", list_tags());
 
         let branch_ref = local_branch.into_reference();
-        let mut push_refs = vec![branch_ref.name().unwrap()];
-        let tag_ref = if let Some(version_tag) = version {
-            log::trace!("Found version tag: {}", version_tag);
-            format!("/refs/tags/v{version_tag}")
-        } else {
-            String::from("")
-        };
-        if !tag_ref.is_empty() {
-            push_refs.push(&tag_ref);
-        }
+        let push_refs = vec![branch_ref.name().unwrap()];
+        // let tag_ref = if let Some(version_tag) = version {
+        //     log::trace!("Found version tag: {}", version_tag);
+        //     format!("/refs/tags/v{version_tag}")
+        // } else {
+        //     String::from("")
+        // };
+        // if !tag_ref.is_empty() {
+        //     push_refs.push(&tag_ref);
+        // }
         log::trace!("Push refs: {:?}", push_refs);
 
         remote.push(&push_refs, None)?;
@@ -223,13 +224,21 @@ impl GitOps for Client {
 
 fn list_tags() -> String {
     let output = Command::new("ls")
-        .arg("-lR")
-        .arg(".git/refs")
+        .arg(".git/refs/tags")
         .output()
         .expect("ls of the git refs");
     let stdout = output.stdout;
 
-    let string = String::from_utf8_lossy(&stdout);
+    let out_string = String::from_utf8_lossy(&stdout);
 
-    string.to_string()
+    let files = out_string.split_terminator(" ").collect::<Vec<&str>>();
+
+    if let Some(last_file) = files.last() {
+        let filename = last_file.to_string();
+        let filename = format!(".git/refs/tags/{filename}");
+        let file_contents = read_to_string(&filename).unwrap_or("".to_string());
+        format!("{}\n{}", filename, file_contents)
+    } else {
+        "".to_string()
+    }
 }
