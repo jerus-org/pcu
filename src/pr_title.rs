@@ -29,6 +29,7 @@ impl PrTitle {
         debug!("String to parse: `{}`", title);
 
         let pr_title = if let Some(captures) = re.captures(title) {
+            log::trace!("Captures: {:#?}", captures);
             let commit_type = captures.name("type").map(|m| m.as_str().to_string());
             let commit_scope = captures.name("scope").map(|m| m.as_str().to_string());
             let commit_breaking = captures.name("breaking").is_some();
