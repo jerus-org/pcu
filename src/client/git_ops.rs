@@ -188,7 +188,7 @@ impl GitOps for Client {
 
         let tag_ref = if let Some(version_tag) = version {
             log::trace!("Found version tag: {}", version_tag);
-            format!("/refs/tags/v{version_tag}")
+            format!("refs/tags/v{version_tag}")
         } else {
             String::from("")
         };

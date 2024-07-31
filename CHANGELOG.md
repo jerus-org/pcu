@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - modify version_tag reference format in git_repo.find_reference method(pr [#237])
 - prepend 'v' to version_tag before tagging commit(pr [#241])
 - replace version parameter with tag in get_commitish_for_tag method(pr [#245])
+- correct format of version_tag in tag_ref string(pr [#252])
 
 ### Security
 
@@ -426,6 +427,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#249]: https://github.com/jerus-org/pcu/pull/249
 [#250]: https://github.com/jerus-org/pcu/pull/250
 [#251]: https://github.com/jerus-org/pcu/pull/251
+[#252]: https://github.com/jerus-org/pcu/pull/252
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
