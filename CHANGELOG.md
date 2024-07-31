@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-add trace logs for debugging in list_tags function(pr [#247])
 - chore-check if file is empty or error in read(pr [#248])
 - chore-handle file read errors gracefully in list_tags function(pr [#249])
+- chore-correct filename logging in list_tags function(pr [#250])
 
 ### Fixed
 
@@ -422,6 +423,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#247]: https://github.com/jerus-org/pcu/pull/247
 [#248]: https://github.com/jerus-org/pcu/pull/248
 [#249]: https://github.com/jerus-org/pcu/pull/249
+[#250]: https://github.com/jerus-org/pcu/pull/250
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
