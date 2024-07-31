@@ -4,7 +4,7 @@ use clap::Parser;
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
-use pcu_lib::{Client, Error};
+use pcu_lib::{Client, Error, GitOps};
 
 use color_eyre::Result;
 
