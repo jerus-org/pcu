@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - modify version_tag reference format in git_repo.find_reference method(pr [#237])
 - prepend 'v' to version_tag before tagging commit(pr [#241])
 
+### Security
+
+- Dependencies: update rust crate octocrab to 0.39.0(pr [#242])
+
 ## [0.1.24] - 2024-07-25
 
 ### Changed
@@ -400,6 +404,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#239]: https://github.com/jerus-org/pcu/pull/239
 [#240]: https://github.com/jerus-org/pcu/pull/240
 [#241]: https://github.com/jerus-org/pcu/pull/241
+[#242]: https://github.com/jerus-org/pcu/pull/242
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
