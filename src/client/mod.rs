@@ -358,7 +358,8 @@ impl Client {
             }
         };
 
-        let commit = Client::get_commitish_for_tag(self, &octocrab, version).await?;
+        let tag = format!("v{version}");
+        let commit = Client::get_commitish_for_tag(self, &octocrab, &tag).await?;
         log::trace!("Commit: {:#?}", commit);
 
         let release = octocrab
@@ -373,27 +374,6 @@ impl Client {
         log::trace!("Release: {:#?}", release);
 
         Ok(())
-    }
-
-    pub async fn get_commitish_for_tag(
-        &self,
-        octocrab: &Octocrab,
-        version: &str,
-    ) -> Result<String, Error> {
-        log::trace!("Get commitish for tag: {version}");
-        for tag in octocrab
-            .repos(self.owner(), self.repo())
-            .list_tags()
-            .send()
-            .await?
-        {
-            log::trace!("Tag: {:#?}", tag);
-            if tag.name == format!("v{version}").as_str() {
-                return Ok(tag.commit.sha);
-            }
-        }
-
-        Err(Error::TagNotFound(version.to_string()))
     }
 }
 

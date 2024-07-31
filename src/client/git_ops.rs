@@ -200,25 +200,21 @@ impl GitOps for Client {
         Ok(())
     }
 
-    async fn get_commitish_for_tag(
-        &self,
-        octocrab: &Octocrab,
-        version: &str,
-    ) -> Result<String, Error> {
-        log::trace!("Get commitish for tag: {version}");
-        for tag in octocrab
+    async fn get_commitish_for_tag(&self, octocrab: &Octocrab, tag: &str) -> Result<String, Error> {
+        log::trace!("Get commitish for tag: {tag}");
+        for t in octocrab
             .repos(self.owner(), self.repo())
             .list_tags()
             .send()
             .await?
         {
-            log::trace!("Tag: {:#?}", tag);
-            if tag.name == format!("v{version}").as_str() {
-                return Ok(tag.commit.sha);
+            log::trace!("Tag: {:#?}", t);
+            if t.name == tag {
+                return Ok(t.commit.sha);
             }
         }
 
-        Err(Error::TagNotFound(version.to_string()))
+        Err(Error::TagNotFound(tag.to_string()))
     }
 }
 
