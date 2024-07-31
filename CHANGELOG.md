@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-add trace log for .git/refs directory content(pr [#239])
 - chore-list the tags in the git repo(pr [#240])
 - chore-more precise look at ref and remove from check(pr [#244])
+- chore-restore tag push(pr [#246])
 
 ### Fixed
 
@@ -414,6 +415,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#243]: https://github.com/jerus-org/pcu/pull/243
 [#244]: https://github.com/jerus-org/pcu/pull/244
 [#245]: https://github.com/jerus-org/pcu/pull/245
+[#246]: https://github.com/jerus-org/pcu/pull/246
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
