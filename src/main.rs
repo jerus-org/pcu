@@ -4,7 +4,7 @@ use clap::Parser;
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
-use pcu_lib::{Client, Error, GitOps};
+use pcu_lib::{Client, Error, GitOps, MakeRelease, UpdateFromPr};
 
 use color_eyre::Result;
 
@@ -107,10 +107,10 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
         return Ok(ClState::UnChanged);
     }
 
-    log::debug!("Changelog file name: {}", client.changelog());
+    log::debug!("Changelog file name: {}", client.changelog_as_str());
 
     if log::log_enabled!(log::Level::Trace) {
-        print_changelog(client.changelog());
+        print_changelog(client.changelog_as_str());
     };
 
     let report = client.repo_status()?;
@@ -152,12 +152,12 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
     log::trace!("Update changelog flag: {}", args.update_changelog);
 
     if args.update_changelog {
-        log::debug!("Changelog file name: {}", client.changelog());
+        log::debug!("Changelog file name: {}", client.changelog_as_str());
 
         client.update_unreleased(&version)?;
 
         if log::log_enabled!(log::Level::Trace) {
-            print_changelog(client.changelog());
+            print_changelog(client.changelog_as_str());
         };
 
         let report = client.repo_status()?;

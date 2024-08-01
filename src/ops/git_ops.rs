@@ -8,13 +8,15 @@ use std::{
 use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature};
 use octocrab::Octocrab;
 
+use crate::Client;
 use crate::Error;
-
-use super::Client;
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 
 pub trait GitOps {
+    fn branch_status(&self) -> Result<String, Error>;
+    fn branch_list(&self) -> Result<String, Error>;
+    fn repo_status(&self) -> Result<String, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(
@@ -31,7 +33,7 @@ impl GitOps for Client {
     #[allow(dead_code)]
     fn commit_changelog(&self, tag: Option<&str>) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
-        index.add_path(Path::new(self.changelog()))?;
+        index.add_path(Path::new(self.changelog_as_str()))?;
         index.write()?;
         let tree_id = index.write_tree()?;
         let head = self.git_repo.head()?;
@@ -59,7 +61,7 @@ impl GitOps for Client {
     #[allow(dead_code)]
     fn commit_changelog_gpg(&mut self, tag: Option<&str>) -> Result<String, Error> {
         let mut index = self.git_repo.index()?;
-        index.add_path(Path::new(self.changelog()))?;
+        index.add_path(Path::new(self.changelog_as_str()))?;
         index.write()?;
         let tree_id = index.write_tree()?;
         let head = self.git_repo.head()?;
@@ -218,6 +220,60 @@ impl GitOps for Client {
 
         Err(Error::TagNotFound(tag.to_string()))
     }
+
+    fn repo_status(&self) -> Result<String, Error> {
+        let statuses = self.git_repo.statuses(None)?;
+
+        log::trace!("Repo status length: {:?}", statuses.len());
+
+        let report = print_long(&statuses);
+        Ok(report)
+    }
+
+    fn branch_list(&self) -> Result<String, Error> {
+        let branches = self.git_repo.branches(None)?;
+
+        let mut output = String::from("\nList of branches:\n");
+        for item in branches {
+            let (branch, branch_type) = item?;
+            output = format!(
+                "{}\n# Branch and type: {:?}\t{:?}",
+                output,
+                branch.name(),
+                branch_type
+            );
+        }
+        output = format!("{}\n", output);
+
+        Ok(output)
+    }
+
+    fn branch_status(&self) -> Result<String, Error> {
+        let branch_remote = self.git_repo.find_branch(
+            format!("origin/{}", self.branch()).as_str(),
+            git2::BranchType::Remote,
+        )?;
+
+        if branch_remote.get().target() == self.git_repo.head()?.target() {
+            return Ok(format!(
+                "\n\nOn branch {}\nYour branch is up to date with `{}`\n",
+                self.branch(),
+                branch_remote.name()?.unwrap()
+            ));
+        }
+
+        let local = self.git_repo.head()?.target().unwrap();
+        let remote = branch_remote.get().target().unwrap();
+
+        let (ahead, behind) = self.git_repo.graph_ahead_behind(local, remote)?;
+
+        let output = format!(
+            "Your branch is {} commits ahead and {} commits behind\n",
+            ahead, behind
+        );
+
+        Ok(output)
+    }
 }
 
 fn list_tags() -> String {
@@ -251,4 +307,170 @@ fn list_tags() -> String {
     } else {
         "".to_string()
     }
+}
+
+// This function print out an output similar to git's status command in long
+// form, including the command-line hints.
+fn print_long(statuses: &git2::Statuses) -> String {
+    let mut header = false;
+    let mut rm_in_workdir = false;
+    let mut changes_in_index = false;
+    let mut changed_in_workdir = false;
+
+    let mut output = String::new();
+
+    // Print index changes
+    for entry in statuses
+        .iter()
+        .filter(|e| e.status() != git2::Status::CURRENT)
+    {
+        if entry.status().contains(git2::Status::WT_DELETED) {
+            rm_in_workdir = true;
+        }
+        let istatus = match entry.status() {
+            s if s.contains(git2::Status::INDEX_NEW) => "new file: ",
+            s if s.contains(git2::Status::INDEX_MODIFIED) => "modified: ",
+            s if s.contains(git2::Status::INDEX_DELETED) => "deleted: ",
+            s if s.contains(git2::Status::INDEX_RENAMED) => "renamed: ",
+            s if s.contains(git2::Status::INDEX_TYPECHANGE) => "typechange:",
+            _ => continue,
+        };
+        if !header {
+            output = format!(
+                "{}\n\
+                # Changes to be committed:
+                #   (use \"git reset HEAD <file>...\" to unstage)
+                #",
+                output
+            );
+            header = true;
+        }
+
+        let old_path = entry.head_to_index().unwrap().old_file().path();
+        let new_path = entry.head_to_index().unwrap().new_file().path();
+        match (old_path, new_path) {
+            (Some(old), Some(new)) if old != new => {
+                output = format!(
+                    "{}\n#\t{}  {} -> {}",
+                    output,
+                    istatus,
+                    old.display(),
+                    new.display()
+                );
+            }
+            (old, new) => {
+                output = format!(
+                    "{}\n#\t{}  {}",
+                    output,
+                    istatus,
+                    old.or(new).unwrap().display()
+                );
+            }
+        }
+    }
+
+    if header {
+        changes_in_index = true;
+        output = format!("{}\n", output);
+    }
+    header = false;
+
+    // Print workdir changes to tracked files
+    for entry in statuses.iter() {
+        // With `Status::OPT_INCLUDE_UNMODIFIED` (not used in this example)
+        // `index_to_workdir` may not be `None` even if there are no differences,
+        // in which case it will be a `Delta::Unmodified`.
+        if entry.status() == git2::Status::CURRENT || entry.index_to_workdir().is_none() {
+            continue;
+        }
+
+        let istatus = match entry.status() {
+            s if s.contains(git2::Status::WT_MODIFIED) => "modified: ",
+            s if s.contains(git2::Status::WT_DELETED) => "deleted: ",
+            s if s.contains(git2::Status::WT_RENAMED) => "renamed: ",
+            s if s.contains(git2::Status::WT_TYPECHANGE) => "typechange:",
+            _ => continue,
+        };
+
+        if !header {
+            output = format!(
+                "{}\n# Changes not staged for commit:\n#   (use \"git add{} <file>...\" to update what will be committed)\n#   (use \"git checkout -- <file>...\" to discard changes in working directory)\n#               ",
+                output,
+                if rm_in_workdir { "/rm" } else { "" }
+            );
+            header = true;
+        }
+
+        let old_path = entry.index_to_workdir().unwrap().old_file().path();
+        let new_path = entry.index_to_workdir().unwrap().new_file().path();
+        match (old_path, new_path) {
+            (Some(old), Some(new)) if old != new => {
+                output = format!(
+                    "{}\n#\t{}  {} -> {}",
+                    output,
+                    istatus,
+                    old.display(),
+                    new.display()
+                );
+            }
+            (old, new) => {
+                output = format!(
+                    "{}\n#\t{}  {}",
+                    output,
+                    istatus,
+                    old.or(new).unwrap().display()
+                );
+            }
+        }
+    }
+
+    if header {
+        changed_in_workdir = true;
+        output = format!("{}\n#\n", output);
+    }
+    header = false;
+
+    // Print untracked files
+    for entry in statuses
+        .iter()
+        .filter(|e| e.status() == git2::Status::WT_NEW)
+    {
+        if !header {
+            output = format!(
+                "{}# Untracked files\n#   (use \"git add <file>...\" to include in what will be committed)\n#",
+                output
+            );
+            header = true;
+        }
+        let file = entry.index_to_workdir().unwrap().old_file().path().unwrap();
+        output = format!("{}\n#\t{}", output, file.display());
+    }
+    header = false;
+
+    // Print ignored files
+    for entry in statuses
+        .iter()
+        .filter(|e| e.status() == git2::Status::IGNORED)
+    {
+        if !header {
+            output = format!(
+                "{}\n# Ignored files\n#   (use \"git add -f <file>...\" to include in what will be committed)\n#",
+                output
+            );
+            header = true;
+        }
+        let file = entry.index_to_workdir().unwrap().old_file().path().unwrap();
+        output = format!("{}\n#\t{}", output, file.display());
+    }
+
+    if !changes_in_index && changed_in_workdir {
+        output = format!(
+            "{}\n
+            no changes added to commit (use \"git add\" and/or \
+            \"git commit -a\")",
+            output
+        );
+    }
+
+    output
 }
