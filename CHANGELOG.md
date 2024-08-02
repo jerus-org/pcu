@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - replace version parameter with tag in get_commitish_for_tag method(pr [#245])
 - correct format of version_tag in tag_ref string(pr [#252])
 - pass version to commit_changelog_gpg and commit_changelog methods(pr [#257])
+- pass version to push_changelog function instead of None(pr [#259])
 
 ### Security
 
@@ -440,6 +441,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#256]: https://github.com/jerus-org/pcu/pull/256
 [#257]: https://github.com/jerus-org/pcu/pull/257
 [#258]: https://github.com/jerus-org/pcu/pull/258
+[#259]: https://github.com/jerus-org/pcu/pull/259
 [Unreleased]: https://github.comjerus-org/pcu/compare/v0.1.24...main
 [0.1.24]: https://github.comjerus-org/pcu/compare/v0.1.23...v0.1.24
 [0.1.23]: https://github.comjerus-org/pcu/compare/v0.1.22...v0.1.23
