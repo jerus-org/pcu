@@ -22,7 +22,6 @@ pub struct Client {
     pub(crate) changelog: OsString,
     pub(crate) changelog_parse_options: ChangelogParseOptions,
     pub(crate) changelog_update: Option<PrTitle>,
-    pub(crate) unreleased: Option<String>,
 }
 
 impl Client {
@@ -124,7 +123,6 @@ impl Client {
             changelog,
             changelog_parse_options,
             changelog_update: None,
-            unreleased: None,
         })
     }
 
