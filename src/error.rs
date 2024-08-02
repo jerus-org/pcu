@@ -22,6 +22,8 @@ pub enum Error {
     EnvVarPullRequestNotSet,
     #[error("Environment variable specified in PCU_PULL_REQUEST not found")]
     EnvVarPullRequestNotFound,
+    #[error("Unreleased section not found in change log")]
+    NoUnreleasedSection,
     #[error("Command not set")]
     CommandNotSet,
     #[error("Tag not found {0:?}")]

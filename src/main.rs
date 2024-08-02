@@ -136,7 +136,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 }
 
 async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
-    let mut client = get_client(Commands::Release(args.clone())).await?;
+    let client = get_client(Commands::Release(args.clone())).await?;
 
     let version = args.semver;
 
@@ -151,36 +151,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
     log::trace!("Update changelog flag: {}", args.update_changelog);
 
-    if args.update_changelog {
-        log::debug!("Changelog file name: {}", client.changelog_as_str());
-
-        client.update_unreleased(&version)?;
-
-        if log::log_enabled!(log::Level::Trace) {
-            print_changelog(client.changelog_as_str());
-        };
-
-        let report = client.repo_status()?;
-        log::debug!("Before commit:Repo state: {report}");
-        log::debug!("before commit:Branch status: {}", client.branch_status()?);
-
-        match sign {
-            Sign::Gpg => {
-                client.commit_changelog_gpg(Some(&version))?;
-            }
-            Sign::None => {
-                client.commit_changelog(Some(&version))?;
-            }
-        }
-
-        log::debug!("After commit: Repo state: {}", client.repo_status()?);
-        log::debug!("After commit: Branch status: {}", client.branch_status()?);
-
-        client.push_changelog(Some(&version))?;
-        log::debug!("After push: Branch status: {}", client.branch_status()?);
-    }
-
-    client.make_release(&version).await?;
+    client.make_release(&version, args.update_changelog).await?;
 
     Ok(ClState::Updated)
 }
@@ -227,6 +198,7 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         .set_default("username", "CIRCLE_PROJECT_USERNAME")?
         .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
         .set_default("commit_message", "chore: update changelog")?
+        .set_default("scs_root", "https://github.com/")?
         // Add in settings from pcu.toml if it exists
         .add_source(config::File::with_name("pcu.toml").required(false))
         // Add in settings from the environment (with a prefix of PCU)

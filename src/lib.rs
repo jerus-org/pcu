@@ -2,7 +2,7 @@ mod client;
 mod error;
 mod ops;
 mod pr_title;
-mod release_notes_provider;
+mod utilities;
 
 pub use client::Client;
 pub use error::Error;
