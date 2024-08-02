@@ -168,6 +168,7 @@ impl PrTitle {
     pub fn update_changelog(
         &mut self,
         log_file: &OsStr,
+        opts: ChangelogParseOptions,
     ) -> Result<Option<(ChangeKind, String)>, Error> {
         let Some(log_file) = log_file.to_str() else {
             return Err(Error::InvalidPath(log_file.to_owned()));
@@ -196,16 +197,8 @@ impl PrTitle {
             } else {
                 log::trace!("The changelog exists but does not contain the entry!");
             }
-            let options = if repo_url.is_some() {
-                Some(ChangelogParseOptions {
-                    url: repo_url.clone(),
-                    ..Default::default()
-                })
-            } else {
-                None
-            };
 
-            Changelog::parse_from_file(log_file, options)
+            Changelog::parse_from_file(log_file, Some(opts))
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?
         } else {
             log::trace!("The changelog does not exist! Create a default changelog.");
@@ -511,7 +504,10 @@ mod tests {
         };
 
         let file_name = &file_name.into_os_string();
-        pr_title.update_changelog(file_name)?;
+
+        let opts = ChangelogParseOptions::default();
+
+        pr_title.update_changelog(file_name, opts)?;
 
         let actual_content = fs::read_to_string(file_name)?;
 
@@ -552,7 +548,9 @@ mod tests {
         };
 
         let file_name = &file_name.into_os_string();
-        pr_title.update_changelog(file_name)?;
+        let opts = ChangelogParseOptions::default();
+
+        pr_title.update_changelog(file_name, opts)?;
 
         let mut pr_title = PrTitle::parse(
             "chore(config.yml): update jerus-org/circleci-toolkit orb version to 0.4.0",
@@ -562,7 +560,9 @@ mod tests {
         pr_title.calculate_section_and_entry();
 
         let file_name = &file_name.to_os_string();
-        pr_title.update_changelog(file_name)?;
+        let opts = ChangelogParseOptions::default();
+
+        pr_title.update_changelog(file_name, opts)?;
 
         let actual_content = fs::read_to_string(file_name)?;
 

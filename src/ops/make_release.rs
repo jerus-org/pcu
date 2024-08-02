@@ -125,16 +125,7 @@ impl MakeRelease for Client {
         log::debug!("Making release {version}");
 
         if update_changelog {
-            let svs_root = self
-                .settings
-                .get("svs_root")
-                .unwrap_or_else(|_| "https://github.com".to_string());
-            let repo_url = Some(format!("{}{}/{}", svs_root, self.owner, self.repo));
-            let opts = ChangelogParseOptions {
-                url: repo_url,
-                head: Some("main".to_string()),
-                tag_prefix: Some("v".to_string()),
-            };
+            let opts = self.changelog_parse_options.clone();
 
             let mut change_log = Changelog::parse_from_file(self.changelog_as_str(), Some(opts))
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
