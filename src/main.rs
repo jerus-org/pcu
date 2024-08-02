@@ -165,10 +165,12 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
         match sign {
             Sign::Gpg => {
-                client.commit_changelog_gpg(None)?;
+                log::trace!("Signing with GPG");
+                client.commit_changelog_gpg(Some(&version))?;
             }
             Sign::None => {
-                client.commit_changelog(None)?;
+                log::trace!("Without signing");
+                client.commit_changelog(Some(&version))?;
             }
         }
 
