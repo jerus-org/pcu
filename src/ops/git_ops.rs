@@ -1,5 +1,4 @@
 use std::{
-    fs::read_to_string,
     io::Write,
     path::Path,
     process::{Command, Stdio},
@@ -182,21 +181,22 @@ impl GitOps for Client {
         let local_branch = self.git_repo.find_branch(branch, BranchType::Local)?;
         log::trace!("Found branch: {}", local_branch.name()?.unwrap());
 
-        log::trace!("Got these refs: {:#?}", list_tags());
+        list_tags();
 
         let branch_ref = local_branch.into_reference();
 
         let mut push_refs = vec![branch_ref.name().unwrap()];
 
-        let tag_ref = if let Some(version_tag) = version {
+        #[allow(unused_assignments)]
+        let mut tag_ref = String::from("");
+
+        if let Some(version_tag) = version {
             log::trace!("Found version tag: {}", version_tag);
-            format!("refs/tags/v{version_tag}")
-        } else {
-            String::from("")
-        };
-        if !tag_ref.is_empty() {
+            tag_ref = format!("refs/tags/v{version_tag}");
+            log::trace!("Tag ref: {tag_ref}");
             push_refs.push(&tag_ref);
-        }
+        };
+
         log::trace!("Push refs: {:?}", push_refs);
 
         remote.push(&push_refs, None)?;
@@ -276,7 +276,7 @@ impl GitOps for Client {
     }
 }
 
-fn list_tags() -> String {
+fn list_tags() {
     let output = Command::new("ls")
         .arg("-R")
         .arg(".git/refs")
@@ -287,26 +287,26 @@ fn list_tags() -> String {
 
     let out_string = String::from_utf8_lossy(&stdout);
 
-    let files = out_string.split_terminator(" ").collect::<Vec<&str>>();
+    let files = out_string.split_terminator("\n").collect::<Vec<&str>>();
     log::trace!("Files: {:#?}", files);
 
-    if let Some(last_file) = files.last() {
-        let filename = last_file.to_string();
+    // if let Some(last_file) = files.last() {
+    //     let filename = last_file.to_string();
 
-        log::trace!("Filename: {filename}");
-        let filename = ".git/refs/tags/v0.1.2";
-        log::trace!("Filename: {filename}");
-        let file_contents_res = read_to_string(filename);
-        log::trace!("File contents: {file_contents_res:?}");
-        if let Ok(file_contents) = file_contents_res {
-            log::trace!("File contents: {file_contents}");
-            format!("{}\n`{}`", filename, file_contents)
-        } else {
-            format!("filename only: {}", filename)
-        }
-    } else {
-        "".to_string()
-    }
+    //     log::trace!("Filename: {filename}");
+    //     let filename = ".git/refs/tags/v0.1.2";
+    //     log::trace!("Filename: {filename}");
+    //     let file_contents_res = read_to_string(filename);
+    //     log::trace!("File contents: {file_contents_res:?}");
+    //     if let Ok(file_contents) = file_contents_res {
+    //         log::trace!("File contents: {file_contents}");
+    //         format!("{}\n`{}`", filename, file_contents)
+    //     } else {
+    //         format!("filename only: {}", filename)
+    //     }
+    // } else {
+    //     "".to_string()
+    // }
 }
 
 // This function print out an output similar to git's status command in long
