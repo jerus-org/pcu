@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - extract git operations to a separate module(pr [#243])
 - add new module ops(pr [#253])
+- add new module and ReleaseUnreleased trait and implementation(pr [#254])
 
 ### Changed
 
@@ -430,6 +431,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#251]: https://github.com/jerus-org/pcu/pull/251
 [#252]: https://github.com/jerus-org/pcu/pull/252
 [#253]: https://github.com/jerus-org/pcu/pull/253
+[#254]: https://github.com/jerus-org/pcu/pull/254
 [Unreleased]: https://github.com/jerus-org/pcu/compare/0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/0.1.23...0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/0.1.22...0.1.23
