@@ -6,11 +6,14 @@ use keep_a_changelog::{
 };
 use octocrab::Octocrab;
 
-use crate::{release_notes_provider::ReleaseNotesProvider, Client, Error, GitOps};
+use crate::{
+    utilities::{ReleaseNotesProvider, ReleaseUnreleased},
+    Client, Error, GitOps,
+};
 
 pub trait MakeRelease {
     #[allow(async_fn_in_trait)]
-    async fn make_release(&self, version: &str) -> Result<(), Error>;
+    async fn make_release(&self, version: &str, update_changelog: bool) -> Result<(), Error>;
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error>;
     fn update_unreleased(&mut self, version: &str) -> Result<(), Error>;
 }
@@ -118,8 +121,33 @@ impl MakeRelease for Client {
         Ok(())
     }
 
-    async fn make_release(&self, version: &str) -> Result<(), Error> {
+    async fn make_release(&self, version: &str, update_changelog: bool) -> Result<(), Error> {
         log::debug!("Making release {version}");
+
+        if update_changelog {
+            let svs_root = self
+                .settings
+                .get("svs_root")
+                .unwrap_or_else(|_| "https://github.com".to_string());
+            let repo_url = Some(format!("{}{}/{}", svs_root, self.owner, self.repo));
+            let opts = ChangelogParseOptions {
+                url: repo_url,
+                head: Some("main".to_string()),
+                tag_prefix: Some("v".to_string()),
+            };
+
+            let mut change_log = Changelog::parse_from_file(self.changelog_as_str(), Some(opts))
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
+
+            let total_releases = change_log.releases().len();
+            log::debug!("total_releases: {:?}", total_releases);
+
+            change_log.release_unreleased(version).unwrap();
+
+            change_log
+                .save_to_file(self.changelog_as_str())
+                .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
+        };
 
         log::debug!("Creating octocrab instance {:?}", self.settings);
         log::trace!(
