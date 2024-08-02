@@ -6,7 +6,7 @@ use self::pull_request::PullRequest;
 
 use config::Config;
 use git2::Repository;
-use keep_a_changelog::ChangeKind;
+use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
 
 use crate::Error;
 use crate::PrTitle;
@@ -20,6 +20,7 @@ pub struct Client {
     pub(crate) branch: Option<String>,
     pull_request: Option<PullRequest>,
     pub(crate) changelog: OsString,
+    pub(crate) changelog_parse_options: ChangelogParseOptions,
     pub(crate) changelog_update: Option<PrTitle>,
     pub(crate) unreleased: Option<String>,
 }
@@ -100,6 +101,19 @@ impl Client {
 
         let git_repo = git2::Repository::open(".")?;
 
+        let svs_root = settings
+            .get("svs_root")
+            .unwrap_or_else(|_| "https://github.com".to_string());
+        let prefix = settings
+            .get("version_prefix")
+            .unwrap_or_else(|_| "v".to_string());
+        let repo_url = Some(format!("{}{}/{}", svs_root, owner, repo));
+        let changelog_parse_options = ChangelogParseOptions {
+            url: repo_url,
+            head: Some("main".to_string()),
+            tag_prefix: Some(prefix),
+        };
+
         Ok(Self {
             settings,
             git_repo,
@@ -108,6 +122,7 @@ impl Client {
             repo,
             pull_request,
             changelog,
+            changelog_parse_options,
             changelog_update: None,
             unreleased: None,
         })

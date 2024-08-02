@@ -33,9 +33,11 @@ impl UpdateFromPr for Client {
             return Err(Error::NoChangeLogFileFound);
         }
 
+        let opts = self.changelog_parse_options.clone();
+
         if let Some(update) = &mut self.changelog_update {
             #[allow(clippy::needless_question_mark)]
-            return Ok(update.update_changelog(&self.changelog)?);
+            return Ok(update.update_changelog(&self.changelog, opts)?);
         }
         Ok(None)
     }
