@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-handle file read errors gracefully in list_tags function(pr [#249])
 - chore-correct filename logging in list_tags function(pr [#250])
 - chore-replace dynamic filename generation with static filename in list_tags function(pr [#251])
+- refactor-run_release function in main.rs and simplify make_release function(pr [#256])
 
 ### Fixed
 
@@ -434,6 +435,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#253]: https://github.com/jerus-org/pcu/pull/253
 [#254]: https://github.com/jerus-org/pcu/pull/254
 [#255]: https://github.com/jerus-org/pcu/pull/255
+[#256]: https://github.com/jerus-org/pcu/pull/256
 [Unreleased]: https://github.comjerus-org/pcu/compare/v0.1.24...main
 [0.1.24]: https://github.comjerus-org/pcu/compare/v0.1.23...v0.1.24
 [0.1.23]: https://github.comjerus-org/pcu/compare/v0.1.22...v0.1.23
