@@ -101,8 +101,8 @@ impl Client {
         let git_repo = git2::Repository::open(".")?;
 
         let svs_root = settings
-            .get("svs_root")
-            .unwrap_or_else(|_| "https://github.com".to_string());
+            .get("dev_platform")
+            .unwrap_or_else(|_| "https://github.com/".to_string());
         let prefix = settings
             .get("version_prefix")
             .unwrap_or_else(|_| "v".to_string());
