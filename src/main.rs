@@ -228,7 +228,7 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         .set_default("username", "CIRCLE_PROJECT_USERNAME")?
         .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
         .set_default("commit_message", "chore: update changelog")?
-        .set_default("scs_root", "https://github.com/")?
+        .set_default("dev_platform", "https://github.com/")?
         .set_default("version_prefix", "v")?
         // Add in settings from pcu.toml if it exists
         .add_source(config::File::with_name("pcu.toml").required(false))

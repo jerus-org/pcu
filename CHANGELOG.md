@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - correct format of version_tag in tag_ref string(pr [#252])
 - pass version to commit_changelog_gpg and commit_changelog methods(pr [#257])
 - pass version to push_changelog function instead of None(pr [#259])
+- replace 'svs_root' and 'scs_root' with 'dev_platform' in client/mod.rs and main.rs(pr [#260])
 
 ### Security
 
@@ -442,29 +443,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#257]: https://github.com/jerus-org/pcu/pull/257
 [#258]: https://github.com/jerus-org/pcu/pull/258
 [#259]: https://github.com/jerus-org/pcu/pull/259
-[Unreleased]: https://github.comjerus-org/pcu/compare/v0.1.24...main
-[0.1.24]: https://github.comjerus-org/pcu/compare/v0.1.23...v0.1.24
-[0.1.23]: https://github.comjerus-org/pcu/compare/v0.1.22...v0.1.23
-[0.1.22]: https://github.comjerus-org/pcu/compare/v0.1.21...v0.1.22
-[0.1.21]: https://github.comjerus-org/pcu/compare/v0.1.20...v0.1.21
-[0.1.20]: https://github.comjerus-org/pcu/compare/v0.1.19...v0.1.20
-[0.1.19]: https://github.comjerus-org/pcu/compare/v0.1.18...v0.1.19
-[0.1.18]: https://github.comjerus-org/pcu/compare/v0.1.17...v0.1.18
-[0.1.17]: https://github.comjerus-org/pcu/compare/v0.1.16...v0.1.17
-[0.1.16]: https://github.comjerus-org/pcu/compare/v0.1.15...v0.1.16
-[0.1.15]: https://github.comjerus-org/pcu/compare/v0.1.14...v0.1.15
-[0.1.14]: https://github.comjerus-org/pcu/compare/v0.1.13...v0.1.14
-[0.1.13]: https://github.comjerus-org/pcu/compare/v0.1.12...v0.1.13
-[0.1.12]: https://github.comjerus-org/pcu/compare/v0.1.11...v0.1.12
-[0.1.11]: https://github.comjerus-org/pcu/compare/v0.1.10...v0.1.11
-[0.1.10]: https://github.comjerus-org/pcu/compare/v0.1.9...v0.1.10
-[0.1.9]: https://github.comjerus-org/pcu/compare/v0.1.8...v0.1.9
-[0.1.8]: https://github.comjerus-org/pcu/compare/v0.1.7...v0.1.8
-[0.1.7]: https://github.comjerus-org/pcu/compare/v0.1.6...v0.1.7
-[0.1.6]: https://github.comjerus-org/pcu/compare/v0.1.5...v0.1.6
-[0.1.5]: https://github.comjerus-org/pcu/compare/v0.1.4...v0.1.5
-[0.1.4]: https://github.comjerus-org/pcu/compare/v0.1.3...v0.1.4
-[0.1.3]: https://github.comjerus-org/pcu/compare/v0.1.2...v0.1.3
-[0.1.2]: https://github.comjerus-org/pcu/compare/v0.1.1...v0.1.2
-[0.1.1]: https://github.comjerus-org/pcu/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.comjerus-org/pcu/releases/tag/v0.1.0
+[#260]: https://github.com/jerus-org/pcu/pull/260
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.24...main
+[0.1.24]: https://github.com/jerus-org/pcu/compare/v0.1.23...v0.1.24
+[0.1.23]: https://github.com/jerus-org/pcu/compare/v0.1.22...v0.1.23
+[0.1.22]: https://github.com/jerus-org/pcu/compare/v0.1.21...v0.1.22
+[0.1.21]: https://github.com/jerus-org/pcu/compare/v0.1.20...v0.1.21
+[0.1.20]: https://github.com/jerus-org/pcu/compare/v0.1.19...v0.1.20
+[0.1.19]: https://github.com/jerus-org/pcu/compare/v0.1.18...v0.1.19
+[0.1.18]: https://github.com/jerus-org/pcu/compare/v0.1.17...v0.1.18
+[0.1.17]: https://github.com/jerus-org/pcu/compare/v0.1.16...v0.1.17
+[0.1.16]: https://github.com/jerus-org/pcu/compare/v0.1.15...v0.1.16
+[0.1.15]: https://github.com/jerus-org/pcu/compare/v0.1.14...v0.1.15
+[0.1.14]: https://github.com/jerus-org/pcu/compare/v0.1.13...v0.1.14
+[0.1.13]: https://github.com/jerus-org/pcu/compare/v0.1.12...v0.1.13
+[0.1.12]: https://github.com/jerus-org/pcu/compare/v0.1.11...v0.1.12
+[0.1.11]: https://github.com/jerus-org/pcu/compare/v0.1.10...v0.1.11
+[0.1.10]: https://github.com/jerus-org/pcu/compare/v0.1.9...v0.1.10
+[0.1.9]: https://github.com/jerus-org/pcu/compare/v0.1.8...v0.1.9
+[0.1.8]: https://github.com/jerus-org/pcu/compare/v0.1.7...v0.1.8
+[0.1.7]: https://github.com/jerus-org/pcu/compare/v0.1.6...v0.1.7
+[0.1.6]: https://github.com/jerus-org/pcu/compare/v0.1.5...v0.1.6
+[0.1.5]: https://github.com/jerus-org/pcu/compare/v0.1.4...v0.1.5
+[0.1.4]: https://github.com/jerus-org/pcu/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/jerus-org/pcu/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/jerus-org/pcu/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/jerus-org/pcu/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/jerus-org/pcu/releases/tag/v0.1.0
