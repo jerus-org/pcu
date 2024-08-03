@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pass version to commit_changelog_gpg and commit_changelog methods(pr [#257])
 - pass version to push_changelog function instead of None(pr [#259])
 - replace 'svs_root' and 'scs_root' with 'dev_platform' in client/mod.rs and main.rs(pr [#260])
+- change head reference from 'main' to 'HEAD' in ChangelogParseOptions(pr [#261])
 
 ### Security
 
@@ -444,7 +445,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#258]: https://github.com/jerus-org/pcu/pull/258
 [#259]: https://github.com/jerus-org/pcu/pull/259
 [#260]: https://github.com/jerus-org/pcu/pull/260
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.24...main
+[#261]: https://github.com/jerus-org/pcu/pull/261
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.24...HEAD
 [0.1.24]: https://github.com/jerus-org/pcu/compare/v0.1.23...v0.1.24
 [0.1.23]: https://github.com/jerus-org/pcu/compare/v0.1.22...v0.1.23
 [0.1.22]: https://github.com/jerus-org/pcu/compare/v0.1.21...v0.1.22

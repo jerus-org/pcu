@@ -109,7 +109,7 @@ impl Client {
         let repo_url = Some(format!("{}{}/{}", svs_root, owner, repo));
         let changelog_parse_options = ChangelogParseOptions {
             url: repo_url,
-            head: Some("main".to_string()),
+            head: Some("HEAD".to_string()),
             tag_prefix: Some(prefix),
         };
 
