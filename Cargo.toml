@@ -31,7 +31,7 @@ chrono = "0.4.38"
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"
-rstest = "0.21.0"
+rstest = "0.22.0"
 uuid = { version = "1.10.0", features = ["v4"] }
 
 [lib]
