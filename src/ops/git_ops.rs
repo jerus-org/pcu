@@ -206,6 +206,11 @@ impl GitOps for Client {
 
     async fn get_commitish_for_tag(&self, octocrab: &Octocrab, tag: &str) -> Result<String, Error> {
         log::trace!("Get commitish for tag: {tag}");
+        log::trace!(
+            "Get tags for owner {:?} and repo: {:?}",
+            self.owner(),
+            self.repo()
+        );
         for t in octocrab
             .repos(self.owner(), self.repo())
             .list_tags()
