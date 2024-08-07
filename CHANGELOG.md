@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- chore-track get committish(pr [#263])
+
 ### Fixed
 
 - deps: update rust crate rstest to 0.22.0(pr [#262])
@@ -453,6 +457,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#260]: https://github.com/jerus-org/pcu/pull/260
 [#261]: https://github.com/jerus-org/pcu/pull/261
 [#262]: https://github.com/jerus-org/pcu/pull/262
+[#263]: https://github.com/jerus-org/pcu/pull/263
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.25...HEAD
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
 [0.1.24]: https://github.com/jerus-org/pcu/compare/v0.1.23...v0.1.24

@@ -54,6 +54,7 @@ impl MakeRelease for Client {
         let release_notes = changelog.release_notes(version)?;
         log::trace!("Release notes: {:#?}", release_notes);
 
+        log::debug!("Creating octocrab instance {:?}", self.settings);
         let octocrab = match self.settings.get::<String>("pat") {
             Ok(pat) => {
                 log::debug!("Using personal access token for authentication");
