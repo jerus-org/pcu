@@ -48,6 +48,8 @@ pub enum Error {
     ParseInt(#[from] ParseIntError),
     #[error("Octocrab says: {0:?}")]
     Octocrab(#[from] octocrab::Error),
+    #[error("Octocrab says: {0:?}")]
+    Octocrate(#[from] octocrate::Error),
     #[error("Url says: {0:?}")]
     UrlParse(#[from] url::ParseError),
     #[error("Git2 says: {0:?}")]

@@ -150,7 +150,7 @@ impl Client {
         }
     }
 
-    pub fn pr_number(&self) -> u64 {
+    pub fn pr_number(&self) -> i64 {
         if let Some(pr) = self.pull_request.as_ref() {
             pr.pr_number
         } else {

@@ -1,7 +1,7 @@
-use std::{env, sync::Arc};
+use std::env;
 
 use config::Config;
-use octocrab::Octocrab;
+use octocrate::{pulls::GitHubPullsAPI, APIConfig, PersonalAccessToken};
 
 use crate::Error;
 
@@ -14,7 +14,7 @@ pub(crate) struct PullRequest {
     pub(crate) repo: String,
     #[allow(dead_code)]
     pub(crate) repo_url: String,
-    pub(crate) pr_number: u64,
+    pub(crate) pr_number: i64,
 }
 
 impl PullRequest {
@@ -45,35 +45,35 @@ impl PullRequest {
             pr_number,
             repo_url
         );
-        let pr_number = pr_number.parse::<u64>()?;
+        let pr_number = pr_number.parse::<i64>()?;
 
         // Get the github pull release and store the title in the client struct
         // The title can be edited by the calling programme if desired before creating the prtitle
 
-        let octocrab = match settings.get::<String>("pat") {
+        let config = match settings.get::<String>("pat") {
             Ok(pat) => {
                 log::debug!("Using personal access token for authentication");
-                Arc::new(
-                    Octocrab::builder()
-                        .base_uri("https://api.github.com")?
-                        .personal_token(pat)
-                        .build()?,
-                )
+
+                // Create a personal access token
+                let personal_access_token = PersonalAccessToken::new(&pat);
+
+                // Use the personal access token to create a API configuration
+                APIConfig::with_token(personal_access_token).shared()
             }
             // base_uri: https://api.github.com
             // auth: None
             // client: http client with the octocrab user agent.
             Err(_) => {
                 log::debug!("Creating un-authenticated instance");
-                octocrab::instance()
+                APIConfig::default().shared()
             }
         };
-        log::debug!("Using Octocrab instance: {octocrab:#?}");
-        let pr_handler = octocrab.pulls(&owner, &repo);
-        log::debug!("Pull handler acquired");
-        let pr = pr_handler.get(pr_number).await?;
+        let api = GitHubPullsAPI::new(&config);
 
-        let title = pr.title.unwrap_or("".to_owned());
+        log::debug!("Using Octocrate instance");
+        let pr = api.get(&owner, &repo, pr_number).send().await?;
+
+        let title = pr.title;
 
         Ok(Some(Self {
             pull_request,
