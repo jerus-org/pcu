@@ -28,6 +28,7 @@ clap = "4.5.9"
 clap-verbosity-flag = "2.2.0"
 config = "0.14.0"
 chrono = "0.4.38"
+octocrate = { version = "2.0.1", features = ["pulls"] }
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"

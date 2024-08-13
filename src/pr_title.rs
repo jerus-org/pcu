@@ -11,7 +11,7 @@ use crate::Error;
 #[derive(Debug)]
 pub struct PrTitle {
     pub title: String,
-    pub pr_id: Option<u64>,
+    pub pr_id: Option<i64>,
     pub pr_url: Option<Url>,
     pub commit_type: Option<String>,
     pub commit_scope: Option<String>,
@@ -66,7 +66,7 @@ impl PrTitle {
         Ok(pr_title)
     }
 
-    pub fn set_pr_id(&mut self, id: u64) {
+    pub fn set_pr_id(&mut self, id: i64) {
         self.pr_id = Some(id);
     }
 
@@ -451,7 +451,7 @@ mod tests {
     )]
     fn test_calculate_kind_and_description(
         #[case] title: &str,
-        #[case] pr_id: Option<u64>,
+        #[case] pr_id: Option<i64>,
         #[case] pr_url: Option<&str>,
         #[case] expected_kind: ChangeKind,
         #[case] expected_desciption: &str,
