@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- replace octocrab with octocrate in client and pull_request modules(pr [#264])
+
 ## [0.1.26] - 2024-08-10
 
 ### Changed
@@ -458,6 +464,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#261]: https://github.com/jerus-org/pcu/pull/261
 [#262]: https://github.com/jerus-org/pcu/pull/262
 [#263]: https://github.com/jerus-org/pcu/pull/263
+[#264]: https://github.com/jerus-org/pcu/pull/264
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
 [0.1.24]: https://github.com/jerus-org/pcu/compare/v0.1.23...v0.1.24
