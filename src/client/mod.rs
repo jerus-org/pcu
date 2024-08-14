@@ -7,7 +7,7 @@ use self::pull_request::PullRequest;
 use config::Config;
 use git2::Repository;
 use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
-use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
+use octocrate::{APIConfig, AppAuthorization, GitHubAPI, PersonalAccessToken};
 
 use crate::Error;
 use crate::PrTitle;
@@ -135,12 +135,26 @@ impl Client {
         })
     }
 
+    /// Get the GitHub API instance
     fn get_github_api(settings: &Config) -> Result<GitHubAPI, Error> {
-        // Get the github pull release and store the title in the client struct
-        // The title can be edited by the calling programme if desired before creating the prtitle
+        let config = match settings.get::<String>("app_id") {
+            Ok(app_id) => {
+                log::debug!("Using GitHub App for authentication");
 
-        let config = match settings.get::<String>("pat") {
-            Ok(pat) => {
+                let private_key = settings
+                    .get::<String>("private_key")
+                    .map_err(|_| Error::NoGitHubAPIPrivateKey)?;
+
+                // Create a Github App authorization.
+                let app_authorization = AppAuthorization::new(app_id, private_key);
+
+                // Use Github App authorization to create an API configuration
+                APIConfig::with_token(app_authorization).shared()
+            }
+            Err(_) => {
+                let pat = settings
+                    .get::<String>("pat")
+                    .map_err(|_| Error::NoGitHubAPIAuth)?;
                 log::debug!("Using personal access token for authentication");
 
                 // Create a personal access token
@@ -148,10 +162,6 @@ impl Client {
 
                 // Use the personal access token to create a API configuration
                 APIConfig::with_token(personal_access_token).shared()
-            }
-            Err(_) => {
-                log::debug!("Creating un-authenticated instance");
-                APIConfig::default().shared()
             }
         };
 
