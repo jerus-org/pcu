@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsString};
+use std::{env, ffi::OsString};
 
 mod pull_request;
 
@@ -7,32 +7,29 @@ use self::pull_request::PullRequest;
 use config::Config;
 use git2::Repository;
 use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
+use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
 
 use crate::Error;
 use crate::PrTitle;
 
 pub struct Client {
     #[allow(dead_code)]
-    pub(crate) settings: Config,
+    // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
+    pub(crate) git_api: GitHubAPI,
     pub(crate) owner: String,
     pub(crate) repo: String,
+    pub(crate) default_branch: String,
     pub(crate) branch: Option<String>,
     pull_request: Option<PullRequest>,
     pub(crate) changelog: OsString,
     pub(crate) changelog_parse_options: ChangelogParseOptions,
     pub(crate) changelog_update: Option<PrTitle>,
+    pub(crate) commit_message: String,
 }
 
 impl Client {
     pub async fn new_with(settings: Config) -> Result<Self, Error> {
-        log::trace!(
-            "new_with settings: {:#?}",
-            settings
-                .clone()
-                .try_deserialize::<HashMap<String, String>>()?,
-        );
-
         let cmd = settings
             .get::<String>("command")
             .map_err(|_| Error::CommandNotSet)?;
@@ -51,6 +48,14 @@ impl Client {
             .get("reponame")
             .map_err(|_| Error::EnvVarBranchNotSet)?;
         let repo = env::var(pcu_owner).map_err(|_| Error::EnvVarBranchNotFound)?;
+
+        let default_branch = settings
+            .get::<String>("default_branch")
+            .unwrap_or("main".to_string());
+
+        let commit_message = settings
+            .get::<String>("commit_message")
+            .unwrap_or("".to_string());
 
         let (branch, pull_request) = if &cmd == "pull-request" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
@@ -100,6 +105,8 @@ impl Client {
 
         let git_repo = git2::Repository::open(".")?;
 
+        let git_api = Client::get_github_api(&settings)?;
+
         let svs_root = settings
             .get("dev_platform")
             .unwrap_or_else(|_| "https://github.com/".to_string());
@@ -114,8 +121,9 @@ impl Client {
         };
 
         Ok(Self {
-            settings,
             git_repo,
+            git_api,
+            default_branch,
             branch,
             owner,
             repo,
@@ -123,7 +131,31 @@ impl Client {
             changelog,
             changelog_parse_options,
             changelog_update: None,
+            commit_message,
         })
+    }
+
+    fn get_github_api(settings: &Config) -> Result<GitHubAPI, Error> {
+        // Get the github pull release and store the title in the client struct
+        // The title can be edited by the calling programme if desired before creating the prtitle
+
+        let config = match settings.get::<String>("pat") {
+            Ok(pat) => {
+                log::debug!("Using personal access token for authentication");
+
+                // Create a personal access token
+                let personal_access_token = PersonalAccessToken::new(&pat);
+
+                // Use the personal access token to create a API configuration
+                APIConfig::with_token(personal_access_token).shared()
+            }
+            Err(_) => {
+                log::debug!("Creating un-authenticated instance");
+                APIConfig::default().shared()
+            }
+        };
+
+        Ok(GitHubAPI::new(&config))
     }
 
     pub fn branch(&self) -> &str {
@@ -173,11 +205,11 @@ impl Client {
     }
 
     pub fn is_default_branch(&self) -> bool {
-        let default_branch = self
-            .settings
-            .get::<String>("default_branch")
-            .unwrap_or("main".to_string());
-        self.branch == Some(default_branch)
+        if let Some(branch) = &self.branch {
+            *branch == self.default_branch
+        } else {
+            false
+        }
     }
 
     pub fn section(&self) -> Option<&str> {

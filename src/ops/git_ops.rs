@@ -5,7 +5,6 @@ use std::{
 };
 
 use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature};
-use octocrate::repos::GitHubReposAPI;
 
 use crate::Client;
 use crate::Error;
@@ -18,11 +17,7 @@ pub trait GitOps {
     fn repo_status(&self) -> Result<String, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
-    async fn get_commitish_for_tag(
-        &self,
-        api: &GitHubReposAPI,
-        version: &str,
-    ) -> Result<String, Error>;
+    async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
     fn push_changelog(&self, version: Option<&str>) -> Result<(), Error>;
     fn commit_changelog_gpg(&mut self, tag: Option<&str>) -> Result<String, Error>;
     fn commit_changelog(&self, tag: Option<&str>) -> Result<String, Error>;
@@ -38,13 +33,12 @@ impl GitOps for Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-        let msg: String = self.settings.get("commit_message")?;
 
         let commit_id = self.git_repo.commit(
             Some("HEAD"),
             &sig,
             &sig,
-            &msg,
+            &self.commit_message,
             &self.git_repo.find_tree(tree_id)?,
             &[&parent],
         )?;
@@ -66,12 +60,11 @@ impl GitOps for Client {
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
-        let msg: String = self.settings.get("commit_message")?;
 
         let commit_buffer = self.git_repo.commit_create_buffer(
             &sig,
             &sig,
-            &msg,
+            &self.commit_message,
             &self.git_repo.find_tree(tree_id)?,
             &[&parent],
         )?;
@@ -138,7 +131,9 @@ impl GitOps for Client {
         };
 
         // manually advance to the new commit id
-        self.git_repo.head()?.set_target(commit_id, &msg)?;
+        self.git_repo
+            .head()?
+            .set_target(commit_id, &self.commit_message)?;
 
         log::trace!("head updated");
 
@@ -204,18 +199,20 @@ impl GitOps for Client {
         Ok(())
     }
 
-    async fn get_commitish_for_tag(
-        &self,
-        api: &GitHubReposAPI,
-        tag: &str,
-    ) -> Result<String, Error> {
+    async fn get_commitish_for_tag(&self, tag: &str) -> Result<String, Error> {
         log::trace!("Get commitish for tag: {tag}");
         log::trace!(
             "Get tags for owner {:?} and repo: {:?}",
             self.owner(),
             self.repo()
         );
-        for t in api.list_tags(self.owner(), self.repo()).send().await? {
+        for t in self
+            .git_api
+            .repos
+            .list_tags(self.owner(), self.repo())
+            .send()
+            .await?
+        {
             log::trace!("Tag: {}", t.name);
             if t.name == tag {
                 return Ok(t.commit.sha);
