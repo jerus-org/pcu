@@ -5,7 +5,7 @@ use std::{
 };
 
 use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature};
-use octocrab::Octocrab;
+use octocrate::repos::GitHubReposAPI;
 
 use crate::Client;
 use crate::Error;
@@ -20,7 +20,7 @@ pub trait GitOps {
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(
         &self,
-        octocrab: &Octocrab,
+        api: &GitHubReposAPI,
         version: &str,
     ) -> Result<String, Error>;
     fn push_changelog(&self, version: Option<&str>) -> Result<(), Error>;
@@ -204,19 +204,18 @@ impl GitOps for Client {
         Ok(())
     }
 
-    async fn get_commitish_for_tag(&self, octocrab: &Octocrab, tag: &str) -> Result<String, Error> {
+    async fn get_commitish_for_tag(
+        &self,
+        api: &GitHubReposAPI,
+        tag: &str,
+    ) -> Result<String, Error> {
         log::trace!("Get commitish for tag: {tag}");
         log::trace!(
             "Get tags for owner {:?} and repo: {:?}",
             self.owner(),
             self.repo()
         );
-        for t in octocrab
-            .repos(self.owner(), self.repo())
-            .list_tags()
-            .send()
-            .await?
-        {
+        for t in api.list_tags(self.owner(), self.repo()).send().await? {
             log::trace!("Tag: {}", t.name);
             if t.name == tag {
                 return Ok(t.commit.sha);

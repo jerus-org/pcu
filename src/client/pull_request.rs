@@ -60,9 +60,6 @@ impl PullRequest {
                 // Use the personal access token to create a API configuration
                 APIConfig::with_token(personal_access_token).shared()
             }
-            // base_uri: https://api.github.com
-            // auth: None
-            // client: http client with the octocrab user agent.
             Err(_) => {
                 log::debug!("Creating un-authenticated instance");
                 APIConfig::default().shared()
