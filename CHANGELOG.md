@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - replace octocrab with octocrate in client and pull_request modules(pr [#264])
+- BREAKING: add GitHub App authentication support(pr [#272])
 
 ### Changed
 
@@ -485,6 +486,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#269]: https://github.com/jerus-org/pcu/pull/269
 [#270]: https://github.com/jerus-org/pcu/pull/270
 [#271]: https://github.com/jerus-org/pcu/pull/271
+[#272]: https://github.com/jerus-org/pcu/pull/272
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
