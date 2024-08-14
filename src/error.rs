@@ -38,6 +38,10 @@ pub enum Error {
     InvalidRegex,
     #[error("Keep a changelog says: {0}")]
     KeepAChangelog(String),
+    #[error("No GitHub API private key found")]
+    NoGitHubAPIPrivateKey,
+    #[error("No GitHub API Authorisation found")]
+    NoGitHubAPIAuth,
     #[error("On default branch")]
     OnDefaultBranch,
     #[error("Unknown format for pull request: {0}")]
