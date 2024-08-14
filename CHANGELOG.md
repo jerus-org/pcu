@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - refactor-replace octocrab with octocrate in various modules(pr [#265])
+- ci-upgrade jerus-org/circleci-toolkit orb version from 0.25.0 to 1.0.0(pr [#268])
 
 ### Fixed
 
@@ -477,6 +478,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#265]: https://github.com/jerus-org/pcu/pull/265
 [#266]: https://github.com/jerus-org/pcu/pull/266
 [#267]: https://github.com/jerus-org/pcu/pull/267
+[#268]: https://github.com/jerus-org/pcu/pull/268
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
