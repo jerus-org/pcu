@@ -1,7 +1,12 @@
 use keep_a_changelog::{Changelog, Version};
-use octocrab::models::repos::ReleaseNotes;
 
 use crate::Error;
+
+#[derive(Debug, Clone)]
+pub struct ReleaseNotes {
+    pub name: String,
+    pub body: String,
+}
 
 pub trait ReleaseNotesProvider {
     fn release_notes(&self, release: &str) -> Result<ReleaseNotes, Error>;

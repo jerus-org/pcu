@@ -1,12 +1,13 @@
-use std::sync::Arc;
-
-use keep_a_changelog::{Changelog, ChangelogParseOptions};
-use octocrab::Octocrab;
-
 use crate::{
     utilities::{ReleaseNotesProvider, ReleaseUnreleased},
     Client, Error, GitOps,
 };
+use keep_a_changelog::{Changelog, ChangelogParseOptions};
+use octocrate::repos::create_release;
+use octocrate::repos::create_release::RequestMakeLatest;
+use octocrate::repos::GitHubReposAPI;
+use octocrate::APIConfig;
+use octocrate::PersonalAccessToken;
 
 pub trait MakeRelease {
     #[allow(async_fn_in_trait)]
@@ -35,9 +36,9 @@ impl MakeRelease for Client {
     async fn make_release(&self, version: &str) -> Result<(), Error> {
         log::debug!("Making release {version}");
 
-        log::debug!("Creating octocrab instance {:?}", self.settings);
+        log::debug!("Creating octocrate instance {:?}", self.settings);
         log::trace!(
-            "Creating octocrab for owner: {} and repo: {}",
+            "Creating octocate for owner: {} and repo: {}",
             self.owner(),
             self.repo()
         );
@@ -54,36 +55,43 @@ impl MakeRelease for Client {
         let release_notes = changelog.release_notes(version)?;
         log::trace!("Release notes: {:#?}", release_notes);
 
-        log::debug!("Creating octocrab instance {:?}", self.settings);
-        let octocrab = match self.settings.get::<String>("pat") {
+        log::debug!("Creating octocrate instance {:?}", self.settings);
+        let config = match self.settings.get::<String>("pat") {
             Ok(pat) => {
                 log::debug!("Using personal access token for authentication");
-                Arc::new(
-                    Octocrab::builder()
-                        .base_uri("https://api.github.com")?
-                        .personal_token(pat)
-                        .build()?,
-                )
+                // Create a personal access token
+                let personal_access_token = PersonalAccessToken::new(&pat);
+
+                // Use the personal access token to create a API configuration
+                APIConfig::with_token(personal_access_token).shared()
             }
-            // base_uri: https://api.github.com
-            // auth: None
-            // self. http self.with the octocrab user agent.
             Err(_) => {
                 log::debug!("Creating un-authenticated instance");
-                octocrab::instance()
+                APIConfig::default().shared()
             }
         };
 
+        let api = GitHubReposAPI::new(&config);
+
         let tag = format!("v{version}");
-        let commit = Self::get_commitish_for_tag(self, &octocrab, &tag).await?;
+        let commit = Self::get_commitish_for_tag(self, &api, &tag).await?;
         log::trace!("Commit: {:#?}", commit);
 
-        let release = octocrab
-            .repos(self.owner(), self.repo())
-            .releases()
-            .create(format!("v{version}").as_str())
-            .name(&release_notes.name)
-            .body(&release_notes.body)
+        let release_request = create_release::Request {
+            body: Some(release_notes.body.to_string()),
+            discussion_category_name: None,
+            draft: Some(false),
+            generate_release_notes: Some(false),
+            make_latest: Some(RequestMakeLatest::True),
+            name: Some(release_notes.name.to_string()),
+            prerelease: Some(false),
+            tag_name: tag,
+            target_commitish: Some(commit),
+        };
+
+        let release = api
+            .create_release(self.owner(), self.repo())
+            .body(&release_request)
             .send()
             .await?;
 
