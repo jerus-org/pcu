@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - deps: update rust crate clap to 4.5.15(pr [#266])
 - deps: update rust crate clap-verbosity-flag to 2.2.1(pr [#267])
+- deps: update rust crate env_logger to 0.11.5(pr [#269])
 
 ## [0.1.26] - 2024-08-10
 
@@ -479,6 +480,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#266]: https://github.com/jerus-org/pcu/pull/266
 [#267]: https://github.com/jerus-org/pcu/pull/267
 [#268]: https://github.com/jerus-org/pcu/pull/268
+[#269]: https://github.com/jerus-org/pcu/pull/269
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
