@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add pcu-app to context in workflows configuration(pr [#273])
 - add line limit parameter to print_changelog function(pr [#275])
 - add config for line limit(pr [#277])
+- use ansi_term for styled console output(pr [#279])
 
 ### Changed
 
@@ -499,6 +500,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#276]: https://github.com/jerus-org/pcu/pull/276
 [#277]: https://github.com/jerus-org/pcu/pull/277
 [#278]: https://github.com/jerus-org/pcu/pull/278
+[#279]: https://github.com/jerus-org/pcu/pull/279
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25

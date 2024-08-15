@@ -4,6 +4,7 @@ mod pull_request;
 
 use self::pull_request::PullRequest;
 
+use ansi_term::Style;
 use config::Config;
 use git2::Repository;
 use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
@@ -148,7 +149,10 @@ impl Client {
         log::debug!("*******\nGet GitHub API instance");
         let config = match settings.get::<String>("app_id") {
             Ok(app_id) => {
-                log::debug!("Using GitHub App for authentication");
+                log::debug!(
+                    "Using {} for authentication",
+                    Style::new().bold().paint("GitHub App")
+                );
 
                 let private_key = settings
                     .get::<String>("private_key")
@@ -178,7 +182,10 @@ impl Client {
                 let pat = settings
                     .get::<String>("pat")
                     .map_err(|_| Error::NoGitHubAPIAuth)?;
-                log::debug!("Falling back to personal access token for authentication");
+                log::debug!(
+                    "Falling back to {} for authentication",
+                    Style::new().bold().paint("Personal Access Token")
+                );
 
                 // Create a personal access token
                 let personal_access_token = PersonalAccessToken::new(&pat);
