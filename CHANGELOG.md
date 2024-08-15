@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate env_logger to 0.11.5(pr [#269])
 - deps: update rust crate regex to 1.10.6(pr [#270])
 - remove redundant GitHubAPI instantiation in new_pull_request_opt function(pr [#274])
+- limit lines from file in pr_title(pr [#278])
 
 ## [0.1.26] - 2024-08-10
 
@@ -497,6 +498,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#275]: https://github.com/jerus-org/pcu/pull/275
 [#276]: https://github.com/jerus-org/pcu/pull/276
 [#277]: https://github.com/jerus-org/pcu/pull/277
+[#278]: https://github.com/jerus-org/pcu/pull/278
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25

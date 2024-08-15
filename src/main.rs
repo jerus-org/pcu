@@ -191,8 +191,7 @@ fn print_changelog(changelog_path: &str, mut line_limit: usize) {
             line_limit = change_log.lines().count();
         };
 
-        println!("\nChangelog:\n");
-        println!("----------------------------",);
+        println!("\n*****Changelog*****:\n----------------------------");
         for line in change_log.lines() {
             println!("{line}");
             line_count += 1;
