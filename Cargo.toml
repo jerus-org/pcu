@@ -27,7 +27,12 @@ clap = "4.5.15"
 clap-verbosity-flag = "2.2.1"
 config = "0.14.0"
 chrono = "0.4.38"
-octocrate = { version = "2.0.1", features = ["pulls", "repos", "rustls-tls"], default-features = false }
+octocrate = { version = "2.0.1", features = [
+    "apps",
+    "pulls",
+    "repos",
+    "rustls-tls",
+], default-features = false }
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"

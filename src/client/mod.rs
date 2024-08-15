@@ -57,6 +57,8 @@ impl Client {
             .get::<String>("commit_message")
             .unwrap_or("".to_string());
 
+        let git_api = Client::get_github_api(&settings, &owner, &repo).await?;
+
         let (branch, pull_request) = if &cmd == "pull-request" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
             log::trace!("branch: {:?}", settings.get::<String>("branch"));
@@ -70,7 +72,7 @@ impl Client {
                 Some(branch)
             };
 
-            let pull_request = PullRequest::new_pull_request_opt(&settings).await?;
+            let pull_request = PullRequest::new_pull_request_opt(&settings, &git_api).await?;
             (branch, pull_request)
         } else {
             let branch = None;
@@ -105,8 +107,6 @@ impl Client {
 
         let git_repo = git2::Repository::open(".")?;
 
-        let git_api = Client::get_github_api(&settings)?;
-
         let svs_root = settings
             .get("dev_platform")
             .unwrap_or_else(|_| "https://github.com/".to_string());
@@ -136,7 +136,12 @@ impl Client {
     }
 
     /// Get the GitHub API instance
-    fn get_github_api(settings: &Config) -> Result<GitHubAPI, Error> {
+    async fn get_github_api(
+        settings: &Config,
+        owner: &str,
+        repo: &str,
+    ) -> Result<GitHubAPI, Error> {
+        log::debug!("*******\nGet GitHub API instance");
         let config = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::debug!("Using GitHub App for authentication");
@@ -145,17 +150,31 @@ impl Client {
                     .get::<String>("private_key")
                     .map_err(|_| Error::NoGitHubAPIPrivateKey)?;
 
-                // Create a Github App authorization.
                 let app_authorization = AppAuthorization::new(app_id, private_key);
+                let config = APIConfig::with_token(app_authorization).shared();
 
-                // Use Github App authorization to create an API configuration
-                APIConfig::with_token(app_authorization).shared()
+                let api = GitHubAPI::new(&config);
+
+                let installation = api
+                    .apps
+                    .get_repo_installation(owner, repo)
+                    .send()
+                    .await
+                    .unwrap();
+                let installation_token = api
+                    .apps
+                    .create_installation_access_token(installation.id)
+                    .send()
+                    .await
+                    .unwrap();
+
+                APIConfig::with_token(installation_token).shared()
             }
             Err(_) => {
                 let pat = settings
                     .get::<String>("pat")
                     .map_err(|_| Error::NoGitHubAPIAuth)?;
-                log::debug!("Using personal access token for authentication");
+                log::debug!("Falling back to personal access token for authentication");
 
                 // Create a personal access token
                 let personal_access_token = PersonalAccessToken::new(&pat);
