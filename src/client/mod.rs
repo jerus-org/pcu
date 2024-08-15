@@ -57,7 +57,7 @@ impl Client {
             .get::<String>("commit_message")
             .unwrap_or("".to_string());
 
-        let git_api = Client::get_github_api(&settings)?;
+        let git_api = Client::get_github_api(&settings, &owner, &repo).await?;
 
         let (branch, pull_request) = if &cmd == "pull-request" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
@@ -136,7 +136,11 @@ impl Client {
     }
 
     /// Get the GitHub API instance
-    fn get_github_api(settings: &Config) -> Result<GitHubAPI, Error> {
+    async fn get_github_api(
+        settings: &Config,
+        owner: &str,
+        repo: &str,
+    ) -> Result<GitHubAPI, Error> {
         log::debug!("*******\nGet GitHub API instance");
         let config = match settings.get::<String>("app_id") {
             Ok(app_id) => {
@@ -146,11 +150,25 @@ impl Client {
                     .get::<String>("private_key")
                     .map_err(|_| Error::NoGitHubAPIPrivateKey)?;
 
-                // Create a Github App authorization.
                 let app_authorization = AppAuthorization::new(app_id, private_key);
+                let config = APIConfig::with_token(app_authorization).shared();
 
-                // Use Github App authorization to create an API configuration
-                APIConfig::with_token(app_authorization).shared()
+                let api = GitHubAPI::new(&config);
+
+                let installation = api
+                    .apps
+                    .get_repo_installation(owner, repo)
+                    .send()
+                    .await
+                    .unwrap();
+                let installation_token = api
+                    .apps
+                    .create_installation_access_token(installation.id)
+                    .send()
+                    .await
+                    .unwrap();
+
+                APIConfig::with_token(installation_token).shared()
             }
             Err(_) => {
                 let pat = settings

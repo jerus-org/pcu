@@ -53,7 +53,7 @@ impl PullRequest {
         // Get the github pull release and store the title in the client struct
         // The title can be edited by the calling programme if desired before creating the prtitle
 
-        log::debug!("Using Octocrate instance");
+        log::debug!("********* Using Octocrate instance");
         let pr = api.pulls.get(&owner, &repo, pr_number).send().await?;
 
         let title = pr.title;
