@@ -46,4 +46,4 @@ path = "src/lib/lib.rs"
 
 [[bin]]
 name = "pcu"
-path = "src/bin/main.rs"
+path = "src/cli/main.rs"
