@@ -110,7 +110,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
     log::debug!("Changelog file name: {}", client.changelog_as_str());
 
     if log::log_enabled!(log::Level::Trace) {
-        print_changelog(client.changelog_as_str());
+        print_changelog(client.changelog_as_str(), 10);
     };
 
     let report = client.repo_status()?;
@@ -156,7 +156,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
         log::debug!("Changelog file name: {}", client.changelog_as_str());
 
         if log::log_enabled!(log::Level::Trace) {
-            print_changelog(client.changelog_as_str());
+            print_changelog(client.changelog_as_str(), 10);
         };
 
         let report = client.repo_status()?;
@@ -186,12 +186,20 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
     Ok(ClState::Updated)
 }
 
-fn print_changelog(changelog_path: &str) {
+fn print_changelog(changelog_path: &str, mut line_limit: usize) {
     if let Ok(change_log) = fs::read_to_string(changelog_path) {
         println!("\nChangelog:\n");
         println!("----------------------------",);
+        let mut line_count = 0;
+        if line_limit == 0 {
+            line_limit = change_log.lines().count();
+        };
         for line in change_log.lines() {
             println!("{line}");
+            line_count += 1;
+            if line_count >= line_limit {
+                break;
+            }
         }
         println!("----------------------------\n",);
     };
