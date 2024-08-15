@@ -190,7 +190,14 @@ impl PrTitle {
 
         let mut change_log = if path::Path::new(log_file).exists() {
             let file_contents = fs::read_to_string(path::Path::new(log_file))?;
-            log::trace!("file contents:\n---\n{}\n---\n\n", file_contents);
+            log::trace!(
+                "file contents:\n---\n{}\n---\n\n",
+                file_contents
+                    .lines()
+                    .take(20)
+                    .collect::<Vec<&str>>()
+                    .join("\n")
+            );
             if file_contents.contains(&self.entry) {
                 log::trace!("The changelog exists and already contains the entry!");
                 return Ok(None);
