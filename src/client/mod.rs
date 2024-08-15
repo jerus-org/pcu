@@ -57,6 +57,8 @@ impl Client {
             .get::<String>("commit_message")
             .unwrap_or("".to_string());
 
+        let git_api = Client::get_github_api(&settings)?;
+
         let (branch, pull_request) = if &cmd == "pull-request" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
             log::trace!("branch: {:?}", settings.get::<String>("branch"));
@@ -70,7 +72,7 @@ impl Client {
                 Some(branch)
             };
 
-            let pull_request = PullRequest::new_pull_request_opt(&settings).await?;
+            let pull_request = PullRequest::new_pull_request_opt(&settings, &git_api).await?;
             (branch, pull_request)
         } else {
             let branch = None;
@@ -105,8 +107,6 @@ impl Client {
 
         let git_repo = git2::Repository::open(".")?;
 
-        let git_api = Client::get_github_api(&settings)?;
-
         let svs_root = settings
             .get("dev_platform")
             .unwrap_or_else(|_| "https://github.com/".to_string());
@@ -137,6 +137,7 @@ impl Client {
 
     /// Get the GitHub API instance
     fn get_github_api(settings: &Config) -> Result<GitHubAPI, Error> {
+        log::debug!("*******\nGet GitHub API instance");
         let config = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::debug!("Using GitHub App for authentication");
@@ -155,7 +156,7 @@ impl Client {
                 let pat = settings
                     .get::<String>("pat")
                     .map_err(|_| Error::NoGitHubAPIAuth)?;
-                log::debug!("Using personal access token for authentication");
+                log::debug!("Falling back to personal access token for authentication");
 
                 // Create a personal access token
                 let personal_access_token = PersonalAccessToken::new(&pat);

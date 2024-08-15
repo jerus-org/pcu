@@ -1,7 +1,7 @@
 use std::env;
 
 use config::Config;
-use octocrate::{pulls::GitHubPullsAPI, APIConfig, PersonalAccessToken};
+use octocrate::GitHubAPI;
 
 use crate::Error;
 
@@ -18,7 +18,10 @@ pub(crate) struct PullRequest {
 }
 
 impl PullRequest {
-    pub async fn new_pull_request_opt(settings: &Config) -> Result<Option<Self>, Error> {
+    pub async fn new_pull_request_opt(
+        settings: &Config,
+        api: &GitHubAPI,
+    ) -> Result<Option<Self>, Error> {
         // Use the command config to check the command client is run for
         log::trace!("command: {:?}", settings.get::<String>("command"));
         let command: String = settings.get("command").map_err(|_| Error::CommandNotSet)?;
@@ -50,25 +53,8 @@ impl PullRequest {
         // Get the github pull release and store the title in the client struct
         // The title can be edited by the calling programme if desired before creating the prtitle
 
-        let config = match settings.get::<String>("pat") {
-            Ok(pat) => {
-                log::debug!("Using personal access token for authentication");
-
-                // Create a personal access token
-                let personal_access_token = PersonalAccessToken::new(&pat);
-
-                // Use the personal access token to create a API configuration
-                APIConfig::with_token(personal_access_token).shared()
-            }
-            Err(_) => {
-                log::debug!("Creating un-authenticated instance");
-                APIConfig::default().shared()
-            }
-        };
-        let api = GitHubPullsAPI::new(&config);
-
         log::debug!("Using Octocrate instance");
-        let pr = api.get(&owner, &repo, pr_number).send().await?;
+        let pr = api.pulls.get(&owner, &repo, pr_number).send().await?;
 
         let title = pr.title;
 
