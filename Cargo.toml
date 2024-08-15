@@ -42,8 +42,8 @@ uuid = { version = "1.10.0", features = ["v4"] }
 
 [lib]
 name = "pcu_lib"
-path = "src/lib.rs"
+path = "src/lib/lib.rs"
 
 [[bin]]
 name = "pcu"
-path = "src/main.rs"
+path = "src/bin/main.rs"
