@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- refactor-restructure project directories and update paths in Cargo.toml(pr [#281])
+
 ## [0.2.0] - 2024-08-15
 
 ### Added
@@ -503,6 +509,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#278]: https://github.com/jerus-org/pcu/pull/278
 [#279]: https://github.com/jerus-org/pcu/pull/279
 [#280]: https://github.com/jerus-org/pcu/pull/280
+[#281]: https://github.com/jerus-org/pcu/pull/281
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/jerus-org/pcu/compare/v0.1.26...v0.2.0
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
