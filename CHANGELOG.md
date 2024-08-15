@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - replace octocrab with octocrate in client and pull_request modules(pr [#264])
 - BREAKING: add GitHub App authentication support(pr [#272])
 - add pcu-app to context in workflows configuration(pr [#273])
+- add line limit parameter to print_changelog function(pr [#275])
 
 ### Changed
 
@@ -491,6 +492,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#272]: https://github.com/jerus-org/pcu/pull/272
 [#273]: https://github.com/jerus-org/pcu/pull/273
 [#274]: https://github.com/jerus-org/pcu/pull/274
+[#275]: https://github.com/jerus-org/pcu/pull/275
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
