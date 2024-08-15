@@ -110,7 +110,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
     log::debug!("Changelog file name: {}", client.changelog_as_str());
 
     if log::log_enabled!(log::Level::Trace) {
-        print_changelog(client.changelog_as_str(), 10);
+        print_changelog(client.changelog_as_str(), client.line_limit());
     };
 
     let report = client.repo_status()?;
@@ -148,7 +148,6 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
         client.repo()
     );
     log::trace!("Signing: {:?}", sign);
-
     log::trace!("Update changelog flag: {}", args.update_changelog);
 
     if args.update_changelog {
@@ -156,9 +155,8 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
         log::debug!("Changelog file name: {}", client.changelog_as_str());
 
         if log::log_enabled!(log::Level::Trace) {
-            print_changelog(client.changelog_as_str(), 10);
+            print_changelog(client.changelog_as_str(), client.line_limit());
         };
-
         let report = client.repo_status()?;
         log::debug!("Before commit:Repo state: {report}");
         log::debug!("before commit:Branch status: {}", client.branch_status()?);
@@ -188,8 +186,6 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
 fn print_changelog(changelog_path: &str, mut line_limit: usize) {
     if let Ok(change_log) = fs::read_to_string(changelog_path) {
-        println!("\nChangelog:\n");
-        println!("----------------------------",);
         let mut line_count = 0;
         if line_limit == 0 {
             line_limit = change_log.lines().count();
