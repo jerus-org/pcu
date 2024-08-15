@@ -23,6 +23,7 @@ pub struct Client {
     pub(crate) branch: Option<String>,
     pull_request: Option<PullRequest>,
     pub(crate) changelog: OsString,
+    pub(crate) line_limit: usize,
     pub(crate) changelog_parse_options: ChangelogParseOptions,
     pub(crate) changelog_update: Option<PrTitle>,
     pub(crate) commit_message: String,
@@ -56,6 +57,8 @@ impl Client {
         let commit_message = settings
             .get::<String>("commit_message")
             .unwrap_or("".to_string());
+
+        let line_limit = settings.get::<usize>("line_limit").unwrap_or(10);
 
         let git_api = Client::get_github_api(&settings, &owner, &repo).await?;
 
@@ -129,6 +132,7 @@ impl Client {
             repo,
             pull_request,
             changelog,
+            line_limit,
             changelog_parse_options,
             changelog_update: None,
             commit_message,
@@ -225,6 +229,10 @@ impl Client {
 
     pub fn repo(&self) -> &str {
         &self.repo
+    }
+
+    pub fn line_limit(&self) -> usize {
+        self.line_limit
     }
 
     pub fn set_title(&mut self, title: &str) {
