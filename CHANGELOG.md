@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci-upgrade jerus-org/circleci-toolkit orb version from 0.25.0 to 1.0.0(pr [#268])
 - refactor-remove settings field from Client struct, add git_api, default_branch, commit_message fields(pr [#271])
 - ci-increase pcu_verbosity level from -vvv to -vvvv(pr [#276])
+- refactor-change print_changelog function to return string instead of printing directly(pr [#280])
 
 ### Fixed
 
@@ -501,6 +502,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#277]: https://github.com/jerus-org/pcu/pull/277
 [#278]: https://github.com/jerus-org/pcu/pull/278
 [#279]: https://github.com/jerus-org/pcu/pull/279
+[#280]: https://github.com/jerus-org/pcu/pull/280
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.26...HEAD
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/jerus-org/pcu/compare/v0.1.24...v0.1.25
