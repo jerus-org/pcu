@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - BREAKING: add push command to CLI to push any changes to the remote repository(pr [#282])
 - list the unstaged files(pr [#283])
+- add stage_files function to GitOps trait and implement it in Client(pr [#284])
 
 ### Changed
 
@@ -517,6 +518,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#281]: https://github.com/jerus-org/pcu/pull/281
 [#282]: https://github.com/jerus-org/pcu/pull/282
 [#283]: https://github.com/jerus-org/pcu/pull/283
+[#284]: https://github.com/jerus-org/pcu/pull/284
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/jerus-org/pcu/compare/v0.1.26...v0.2.0
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
