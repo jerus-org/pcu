@@ -165,7 +165,7 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
 
     log::info!("Commit the staged changes");
 
-    client.commit_staged(sign, None)?;
+    client.commit_staged(sign, args.commit_message(), args.tag_opt())?;
 
     // match sign {
     //     Sign::Gpg => {

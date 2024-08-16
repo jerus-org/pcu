@@ -51,7 +51,27 @@ pub struct Release {
 }
 
 #[derive(Debug, Parser, Clone)]
-pub struct Push {}
+pub struct Push {
+    /// Semantic version number for a tag
+    #[arg(short, long)]
+    pub semver: String,
+    /// Message to add to the commit when pushing
+    #[arg(short, long)]
+    commit_message: String,
+}
+
+impl Push {
+    pub fn commit_message(&self) -> &str {
+        &self.commit_message
+    }
+
+    pub fn tag_opt(&self) -> Option<&str> {
+        if self.semver.is_empty() {
+            return None;
+        }
+        Some(&self.semver)
+    }
+}
 
 pub enum ClState {
     Updated,

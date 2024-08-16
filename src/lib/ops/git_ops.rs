@@ -26,7 +26,12 @@ pub trait GitOps {
     fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
     fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
     fn stage_files(&self, files: Vec<String>) -> Result<(), Error>;
-    fn commit_staged(&self, sign: Sign, tag: Option<&str>) -> Result<(), Error>;
+    fn commit_staged(
+        &self,
+        sign: Sign,
+        commit_message: &str,
+        tag: Option<&str>,
+    ) -> Result<(), Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -289,7 +294,12 @@ impl GitOps for Client {
         Ok(())
     }
 
-    fn commit_staged(&self, sign: Sign, tag: Option<&str>) -> Result<(), Error> {
+    fn commit_staged(
+        &self,
+        sign: Sign,
+        commit_message: &str,
+        tag: Option<&str>,
+    ) -> Result<(), Error> {
         log::trace!("Commit staged with sign {sign:?}");
         let mut index = self.git_repo.index()?;
         let tree_id = index.write_tree()?;
@@ -302,7 +312,7 @@ impl GitOps for Client {
                 Some("HEAD"),
                 &sig,
                 &sig,
-                &self.commit_message,
+                commit_message,
                 &self.git_repo.find_tree(tree_id)?,
                 &[&parent],
             )?,
@@ -310,7 +320,7 @@ impl GitOps for Client {
                 let commit_buffer = self.git_repo.commit_create_buffer(
                     &sig,
                     &sig,
-                    &self.commit_message,
+                    commit_message,
                     &self.git_repo.find_tree(tree_id)?,
                     &[&parent],
                 )?;
@@ -365,8 +375,18 @@ impl GitOps for Client {
 
                 log::trace!("secured signed commit:\n{}", commit_signature);
 
+                let commit_id =
+                    self.git_repo
+                        .commit_signed(commit_str, commit_signature, Some("gpgsig"))?;
+
+                // manually advance to the new commit id
                 self.git_repo
-                    .commit_signed(commit_str, commit_signature, Some("gpgsig"))?
+                    .head()?
+                    .set_target(commit_id, commit_message)?;
+
+                log::trace!("head updated");
+
+                commit_id
             }
         };
 
