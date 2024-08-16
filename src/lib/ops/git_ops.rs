@@ -4,7 +4,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature};
+use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature, StatusOptions};
 
 use crate::Client;
 use crate::Error;
@@ -14,6 +14,7 @@ const GIT_USER_SIGNATURE: &str = "user.signingkey";
 pub trait GitOps {
     fn branch_status(&self) -> Result<String, Error>;
     fn branch_list(&self) -> Result<String, Error>;
+    fn repo_files_not_staged(&self) -> Result<String, Error>;
     fn repo_status(&self) -> Result<String, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
@@ -228,8 +229,23 @@ impl GitOps for Client {
 
         log::trace!("Repo status length: {:?}", statuses.len());
 
-        let report = print_long(&statuses);
-        Ok(report)
+        Ok(print_long(&statuses))
+    }
+
+    /// Report a list of the files that have not been staged
+    fn repo_files_not_staged(&self) -> Result<String, Error> {
+        let mut options = StatusOptions::new();
+        options.show(git2::StatusShow::Workdir);
+        let statuses = self.git_repo.statuses(Some(&mut options))?;
+
+        log::trace!("Repo status length: {:?}", statuses.len());
+
+        let output = format!(
+            "{:?}",
+            statuses.iter().map(|s| s.status()).collect::<Vec<_>>()
+        );
+
+        Ok(output)
     }
 
     fn branch_list(&self) -> Result<String, Error> {
