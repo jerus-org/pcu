@@ -241,10 +241,12 @@ impl GitOps for Client {
 
         log::trace!("Repo status length: {:?}", statuses.len());
 
-        let output = format!(
-            "{:?}",
-            statuses.iter().map(|s| s.status()).collect::<Vec<_>>()
-        );
+        let files: Vec<String> = statuses
+            .iter()
+            .map(|s| s.path().unwrap_or_default().to_string())
+            .collect();
+
+        let output = format!("{:?}", files);
 
         Ok(output)
     }
