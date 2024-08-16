@@ -1,13 +1,7 @@
 use std::fmt::Display;
 
-use clap::{Parser, Subcommand, ValueEnum};
-
-#[derive(ValueEnum, Debug, Default, Clone)]
-pub enum Sign {
-    #[default]
-    Gpg,
-    None,
-}
+use clap::{Parser, Subcommand};
+use pcu_lib::Sign;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

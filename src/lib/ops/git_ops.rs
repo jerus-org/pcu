@@ -4,12 +4,20 @@ use std::{
     process::{Command, Stdio},
 };
 
+use clap::ValueEnum;
 use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature, StatusOptions};
 
 use crate::Client;
 use crate::Error;
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
+
+#[derive(ValueEnum, Debug, Default, Clone)]
+pub enum Sign {
+    #[default]
+    Gpg,
+    None,
+}
 
 pub trait GitOps {
     fn branch_status(&self) -> Result<String, Error>;
@@ -18,6 +26,7 @@ pub trait GitOps {
     fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
     fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
     fn stage_files(&self, files: Vec<String>) -> Result<(), Error>;
+    fn commit_staged(&self, sign: Sign, tag: Option<&str>) -> Result<String, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -279,6 +288,34 @@ impl GitOps for Client {
 
         Ok(())
     }
+
+    fn commit_staged(&self, sign: Sign, tag: Option<&str>) -> Result<String, Error> {
+        log::trace!("Commit staged with sign {sign:?}");
+        let mut index = self.git_repo.index()?;
+        index.add_path(Path::new(self.changelog_as_str()))?;
+        index.write()?;
+        let tree_id = index.write_tree()?;
+        let head = self.git_repo.head()?;
+        let parent = self.git_repo.find_commit(head.target().unwrap())?;
+        let sig = self.git_repo.signature()?;
+
+        let commit_id = self.git_repo.commit(
+            Some("HEAD"),
+            &sig,
+            &sig,
+            &self.commit_message,
+            &self.git_repo.find_tree(tree_id)?,
+            &[&parent],
+        )?;
+
+        if let Some(version_tag) = tag {
+            let version_tag = format!("v{}", version_tag);
+            self.create_tag(&version_tag, commit_id, &sig)?;
+        };
+
+        Ok(commit_id.to_string())
+    }
+
     fn branch_list(&self) -> Result<String, Error> {
         let branches = self.git_repo.branches(None)?;
 
