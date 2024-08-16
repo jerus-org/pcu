@@ -173,6 +173,11 @@ jobs:
     executor: rust-env
     steps:
       - run:
+          name: Update pcu
+          command: |
+            set -ex
+            cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
+      - run:
           name: Test push
           command: |
             set -ex
