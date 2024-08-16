@@ -54,7 +54,7 @@ pub struct Release {
 pub struct Push {
     /// Semantic version number for a tag
     #[arg(short, long)]
-    pub semver: String,
+    pub semver: Option<String>,
     /// Message to add to the commit when pushing
     #[arg(short, long)]
     commit_message: String,
@@ -66,10 +66,10 @@ impl Push {
     }
 
     pub fn tag_opt(&self) -> Option<&str> {
-        if self.semver.is_empty() {
-            return None;
+        if let Some(semver) = &self.semver {
+            return Some(semver);
         }
-        Some(&self.semver)
+        None
     }
 }
 
