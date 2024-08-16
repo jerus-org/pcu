@@ -236,6 +236,7 @@ impl GitOps for Client {
     fn repo_files_not_staged(&self) -> Result<String, Error> {
         let mut options = StatusOptions::new();
         options.show(git2::StatusShow::Workdir);
+        options.include_untracked(true);
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
         log::trace!("Repo status length: {:?}", statuses.len());
