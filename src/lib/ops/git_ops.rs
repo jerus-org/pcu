@@ -17,6 +17,7 @@ pub trait GitOps {
     fn repo_status(&self) -> Result<String, Error>;
     fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
     fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
+    fn stage_files(&self, files: Vec<String>) -> Result<(), Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -267,6 +268,17 @@ impl GitOps for Client {
         Ok(files)
     }
 
+    fn stage_files(&self, files: Vec<String>) -> Result<(), Error> {
+        let mut index = self.git_repo.index()?;
+
+        for file in files {
+            index.add_path(Path::new(&file))?;
+        }
+
+        index.write()?;
+
+        Ok(())
+    }
     fn branch_list(&self) -> Result<String, Error> {
         let branches = self.git_repo.branches(None)?;
 
