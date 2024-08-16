@@ -222,9 +222,9 @@ jobs:
           command: |
             set -ex
             if [ "<< parameters.pcu_semver >>" == "true"  ] ; then
-              pcu << parameters.pcu_verbosity >> push --commit-message << parameters.pcu_commit_message >> --semver $SEMVER
+              pcu << parameters.pcu_verbosity >> push --commit-message "<< parameters.pcu_commit_message >>" --semver $SEMVER
             else
-              pcu << parameters.pcu_verbosity >> push --commit-message << parameters.pcu_commit_message >> 
+              pcu << parameters.pcu_verbosity >> push --commit-message "<< parameters.pcu_commit_message >>"
             fi
 workflows:
   check_last_commit:
