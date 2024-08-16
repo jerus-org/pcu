@@ -253,7 +253,7 @@ impl GitOps for Client {
     /// Report a list of the files that have not been staged
     fn repo_files_staged(&self) -> Result<Vec<String>, Error> {
         let mut options = StatusOptions::new();
-        options.show(git2::StatusShow::Workdir);
+        options.show(git2::StatusShow::Index);
         options.include_untracked(true);
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
