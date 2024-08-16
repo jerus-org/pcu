@@ -1,5 +1,6 @@
 use std::{env, fs};
 
+use ansi_term::Style;
 use clap::Parser;
 use config::Config;
 use env_logger::Env;
@@ -141,10 +142,25 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 
 async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
     let client = get_client(Commands::Push(args.clone())).await?;
-    log::debug!("Before commit:Repo state: {}", client.repo_status()?);
-    log::debug!("before commit:Branch status: {}", client.branch_status()?);
+
+    log::debug!("{}", Style::new().bold().underline().paint("Check WorkDir"));
+
+    let files_in_workdir = client.repo_files_not_staged()?;
+
+    log::debug!("WorkDir files:\n\t{:?}", files_in_workdir);
+    log::debug!("Staged files:\n\t{:?}", client.repo_files_staged()?);
+    log::debug!("Branch status: {}", client.branch_status()?);
 
     log::info!("Stage the changes for commit");
+
+    log::debug!("{}", Style::new().bold().underline().paint("Check Staged"));
+    log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
+
+    let files_staged_for_commit = client.repo_files_staged()?;
+
+    log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
+    log::debug!("Branch status: {}", client.branch_status()?);
+
     match sign {
         Sign::Gpg => {
             log::info!("Commit and sign the commit with GPG")
@@ -156,12 +172,21 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
         }
     }
 
-    log::debug!("After commit: Repo state: {}", client.repo_status()?);
-    log::debug!("After commit: Branch status: {}", client.branch_status()?);
+    log::debug!(
+        "{}",
+        Style::new().bold().underline().paint("Check Committed")
+    );
+    log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
+
+    let files_staged_for_commit = client.repo_files_staged()?;
+
+    log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
+    log::debug!("Branch status: {}", client.branch_status()?);
 
     log::info!("Push the commit");
     // client.push_changelog(None)?;
-    log::debug!("After push: Branch status: {}", client.branch_status()?);
+    log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
+    log::debug!("Branch status: {}", client.branch_status()?);
 
     Ok(ClState::Pushed)
 }

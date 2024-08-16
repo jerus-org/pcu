@@ -238,6 +238,11 @@ jobs:
           command: |
             pcu --version
       - run:
+          name: Create test file
+          command: |
+            set -ex
+            echo "test" > test.txt
+      - run:
           name: Test push
           command: |
             set -ex
