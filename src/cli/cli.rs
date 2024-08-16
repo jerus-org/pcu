@@ -26,6 +26,7 @@ pub struct Cli {
 pub enum Commands {
     PullRequest(PullRequest),
     Release(Release),
+    Push(Push),
 }
 
 impl Display for Commands {
@@ -33,6 +34,7 @@ impl Display for Commands {
         match self {
             Commands::PullRequest(_) => write!(f, "pull-request"),
             Commands::Release(_) => write!(f, "release"),
+            Commands::Push(_) => write!(f, "push"),
         }
     }
 }
@@ -54,7 +56,12 @@ pub struct Release {
     pub update_changelog: bool,
 }
 
+#[derive(Debug, Parser, Clone)]
+pub struct Push {}
+
 pub enum ClState {
     Updated,
     UnChanged,
+    Pushed,
+    Released,
 }

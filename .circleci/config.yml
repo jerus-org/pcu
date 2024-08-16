@@ -169,6 +169,14 @@ jobs:
                 pcu_verbosity: <<parameters.pcu_verbosity>>
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
 
+  test-push:
+    executor: rust-env
+    steps:
+      - run:
+          name: Test push
+          command: |
+            set -ex
+            result=$(pcu push)
 workflows:
   check_last_commit:
     when:
@@ -203,6 +211,7 @@ workflows:
           min_rust_version: << pipeline.parameters.min-rust-version >>
       - toolkit/idiomatic_rust:
           min_rust_version: << pipeline.parameters.min-rust-version >>
+      - test-push
       - update_changelog:
           requires:
             - toolkit/common_tests

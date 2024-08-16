@@ -222,6 +222,7 @@ impl GitOps for Client {
         Err(Error::TagNotFound(tag.to_string()))
     }
 
+    /// Report the status of the git repo in a human readable format
     fn repo_status(&self) -> Result<String, Error> {
         let statuses = self.git_repo.statuses(None)?;
 

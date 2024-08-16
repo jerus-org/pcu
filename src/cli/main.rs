@@ -15,7 +15,7 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
-use cli::{ClState, Cli, Commands, PullRequest, Release, Sign};
+use cli::{ClState, Cli, Commands, PullRequest, Push, Release, Sign};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -29,6 +29,7 @@ async fn main() -> Result<()> {
 
     let res = match cmd {
         Commands::PullRequest(pr_args) => run_pull_request(sign, pr_args).await,
+        Commands::Push(push_args) => run_push(sign, push_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
 
@@ -37,6 +38,8 @@ async fn main() -> Result<()> {
             match state {
                 ClState::Updated => log::info!("Changelog updated!"),
                 ClState::UnChanged => log::info!("Changelog not changed!"),
+                ClState::Pushed => log::info!("Changelog not changed!"),
+                ClState::Released => log::info!("Changelog not changed!"),
             };
         }
         Err(e) => {
@@ -136,6 +139,33 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
     Ok(ClState::Updated)
 }
 
+async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
+    let client = get_client(Commands::Push(args.clone())).await?;
+    log::debug!("Before commit:Repo state: {}", client.repo_status()?);
+    log::debug!("before commit:Branch status: {}", client.branch_status()?);
+
+    log::info!("Stage the changes for commit");
+    match sign {
+        Sign::Gpg => {
+            log::info!("Commit and sign the commit with GPG")
+            // client.commit_changelog_gpg(None)?;
+        }
+        Sign::None => {
+            log::info!("Commit without signing the commit")
+            //     client.commit_changelog(None)?;
+        }
+    }
+
+    log::debug!("After commit: Repo state: {}", client.repo_status()?);
+    log::debug!("After commit: Branch status: {}", client.branch_status()?);
+
+    log::info!("Push the commit");
+    // client.push_changelog(None)?;
+    log::debug!("After push: Branch status: {}", client.branch_status()?);
+
+    Ok(ClState::Pushed)
+}
+
 async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
     let mut client = get_client(Commands::Release(args.clone())).await?;
 
@@ -184,7 +214,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
     client.make_release(&version).await?;
 
-    Ok(ClState::Updated)
+    Ok(ClState::Released)
 }
 
 fn print_changelog(changelog_path: &str, mut line_limit: usize) -> String {
@@ -255,6 +285,9 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         Commands::Release(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "release")?,
+        Commands::Push(_) => settings
+            .set_override("commit_message", "chore: update changelog for release")?
+            .set_override("command", "push")?,
     };
 
     settings = if let Ok(pat) = env::var(GITHUB_PAT) {
