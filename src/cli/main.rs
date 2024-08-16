@@ -141,11 +141,13 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 
 async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
     let client = get_client(Commands::Push(args.clone())).await?;
+    log::debug!("Before commit\n--------");
     log::debug!(
-        "Before commit:Repo state:\n\t{}",
+        "Working Directory state:\n\t{:?}",
         client.repo_files_not_staged()?
     );
-    log::debug!("before commit:Branch status: {}", client.branch_status()?);
+    log::debug!("Staged state:\n\t{:?}", client.repo_files_staged()?);
+    log::debug!("Branch status: {}", client.branch_status()?);
 
     log::info!("Stage the changes for commit");
     match sign {

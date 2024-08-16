@@ -14,8 +14,9 @@ const GIT_USER_SIGNATURE: &str = "user.signingkey";
 pub trait GitOps {
     fn branch_status(&self) -> Result<String, Error>;
     fn branch_list(&self) -> Result<String, Error>;
-    fn repo_files_not_staged(&self) -> Result<String, Error>;
     fn repo_status(&self) -> Result<String, Error>;
+    fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
+    fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -233,7 +234,7 @@ impl GitOps for Client {
     }
 
     /// Report a list of the files that have not been staged
-    fn repo_files_not_staged(&self) -> Result<String, Error> {
+    fn repo_files_not_staged(&self) -> Result<Vec<String>, Error> {
         let mut options = StatusOptions::new();
         options.show(git2::StatusShow::Workdir);
         options.include_untracked(true);
@@ -246,9 +247,24 @@ impl GitOps for Client {
             .map(|s| s.path().unwrap_or_default().to_string())
             .collect();
 
-        let output = format!("{:?}", files);
+        Ok(files)
+    }
 
-        Ok(output)
+    /// Report a list of the files that have not been staged
+    fn repo_files_staged(&self) -> Result<Vec<String>, Error> {
+        let mut options = StatusOptions::new();
+        options.show(git2::StatusShow::Workdir);
+        options.include_untracked(true);
+        let statuses = self.git_repo.statuses(Some(&mut options))?;
+
+        log::trace!("Repo status length: {:?}", statuses.len());
+
+        let files: Vec<String> = statuses
+            .iter()
+            .map(|s| s.path().unwrap_or_default().to_string())
+            .collect();
+
+        Ok(files)
     }
 
     fn branch_list(&self) -> Result<String, Error> {
