@@ -241,7 +241,7 @@ jobs:
           name: Test push
           command: |
             set -ex
-            result=$(pcu << parameters.pcu_verbosity >> test-push)
+            result=$(pcu << parameters.pcu_verbosity >> push)
 workflows:
   check_last_commit:
     when:
