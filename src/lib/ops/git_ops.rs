@@ -297,19 +297,83 @@ impl GitOps for Client {
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
 
-        let commit_id = self.git_repo.commit(
-            Some("HEAD"),
-            &sig,
-            &sig,
-            &self.commit_message,
-            &self.git_repo.find_tree(tree_id)?,
-            &[&parent],
-        )?;
+        let commit_id = match sign {
+            Sign::None => self.git_repo.commit(
+                Some("HEAD"),
+                &sig,
+                &sig,
+                &self.commit_message,
+                &self.git_repo.find_tree(tree_id)?,
+                &[&parent],
+            )?,
+            Sign::Gpg => {
+                let commit_buffer = self.git_repo.commit_create_buffer(
+                    &sig,
+                    &sig,
+                    &self.commit_message,
+                    &self.git_repo.find_tree(tree_id)?,
+                    &[&parent],
+                )?;
+                let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
+
+                let signature = self.git_repo.config()?.get_string(GIT_USER_SIGNATURE)?;
+
+                let short_sign = signature[12..].to_string();
+                log::trace!("Signature short: {short_sign}");
+
+                let gpg_args = vec!["--status-fd", "2", "-bsau", signature.as_str()];
+                log::trace!("gpg args: {:?}", gpg_args);
+
+                let mut cmd = Command::new("gpg");
+                cmd.args(gpg_args)
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped());
+
+                let mut child = cmd.spawn()?;
+
+                let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
+                log::trace!("Secured access to stdin");
+
+                log::trace!("Input for signing:\n-----\n{}\n-----", commit_str);
+
+                stdin.write_all(commit_str.as_bytes())?;
+                log::trace!("writing complete");
+                drop(stdin); // close stdin to not block indefinitely
+                log::trace!("stdin closed");
+
+                let output = child.wait_with_output()?;
+                log::trace!("secured output");
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    log::trace!("stderr: {}", stderr);
+                    return Err(Error::Stdout(stderr.to_string()));
+                }
+
+                let stderr = std::str::from_utf8(&output.stderr)?;
+
+                if !stderr.contains("\n[GNUPG:] SIG_CREATED ") {
+                    return Err(Error::GpgError(
+                        "failed to sign data, program gpg failed, SIG_CREATED not seen in stderr"
+                            .to_string(),
+                    ));
+                }
+                log::trace!("Error checking completed without error");
+
+                let commit_signature = std::str::from_utf8(&output.stdout)?;
+
+                log::trace!("secured signed commit:\n{}", commit_signature);
+
+                self.git_repo
+                    .commit_signed(commit_str, commit_signature, Some("gpgsig"))?
+            }
+        };
 
         if let Some(version_tag) = tag {
             let version_tag = format!("v{}", version_tag);
             self.create_tag(&version_tag, commit_id, &sig)?;
-        };
+        }
 
         Ok(())
     }
