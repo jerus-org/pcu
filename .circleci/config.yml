@@ -199,10 +199,10 @@ jobs:
       #   type: env_var_name
       #   default: BOT_SIGN_KEY
       #   description: "The GPG key id associated with the GPG key"
-      # pcu_verbosity:
-      #   type: string
-      #   default: "-vv"
-      #   description: "The verbosity of the pcu command"
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
       # pcu_halt_signal:
       #   type: string
       #   default: "halt"
@@ -241,7 +241,7 @@ jobs:
           name: Test push
           command: |
             set -ex
-            result=$(pcu push)
+            result=$(pcu << parameters.pcu_verbosity >> test-push)
 workflows:
   check_last_commit:
     when:
@@ -278,6 +278,7 @@ workflows:
           min_rust_version: << pipeline.parameters.min-rust-version >>
       - test-push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          pcu_verbosity: "-vvvv"
           context:
             - release
             - bot-check
