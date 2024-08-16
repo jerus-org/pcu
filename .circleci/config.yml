@@ -171,12 +171,72 @@ jobs:
 
   test-push:
     executor: rust-env
+    parameters:
+      # min_rust_version:
+      #   type: string
+      #   description: "The minimum version of the rust compiler to use"
+      ssh_fingerprint:
+        type: string
+        description: |
+          The fingerprint of the ssh key to use
+      # gpg_key:
+      #   type: env_var_name
+      #   default: BOT_GPG_KEY
+      #   description: "The base64 encoded GPG key"
+      # gpg_trust:
+      #   type: env_var_name
+      #   default: BOT_TRUST
+      #   description: "The trust associated with the GPG key"
+      # user_email:
+      #   type: env_var_name
+      #   default: BOT_USER_EMAIL
+      #   description: "The user email associated with the GPG key"
+      # user_name:
+      #   type: env_var_name
+      #   default: BOT_USER_NAME
+      #   description: "The user name associated with the GPG key"
+      # sign_key:
+      #   type: env_var_name
+      #   default: BOT_SIGN_KEY
+      #   description: "The GPG key id associated with the GPG key"
+      # pcu_verbosity:
+      #   type: string
+      #   default: "-vv"
+      #   description: "The verbosity of the pcu command"
+      # pcu_halt_signal:
+      #   type: string
+      #   default: "halt"
+      #   description: "Word expected to signal an early exit"
+      # install_from_github:
+      #   type: boolean
+      #   default: false
+      #   description: "Install pcu from github"
+      # update_log_option:
+      #   type: enum
+      #   enum: ["halt", "pipeline"]
+      #   default: "pipeline"
+      #   description: "The option to halt or continue with new pipeline when a change log does not need to be updated"
     steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
       - run:
-          name: Update pcu
+          name: Remove original SSH key from agent
           command: |
-            set -ex
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Install pcu from code on main branch of on github
+          command: |
             cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
+      - run:
+          name: pcu version
+          command: |
+            pcu --version
       - run:
           name: Test push
           command: |
@@ -216,13 +276,15 @@ workflows:
           min_rust_version: << pipeline.parameters.min-rust-version >>
       - toolkit/idiomatic_rust:
           min_rust_version: << pipeline.parameters.min-rust-version >>
-      - test-push
+      - test-push:
+          ssh_fingerprint: << pipeline.parameters.fingerprint >>
       - update_changelog:
           requires:
             - toolkit/common_tests
             - required-builds
             - docs
             - toolkit/idiomatic_rust
+            - test-push
           context:
             - release
             - bot-check
