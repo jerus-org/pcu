@@ -179,43 +179,18 @@ jobs:
         type: string
         description: |
           The fingerprint of the ssh key to use
-      # gpg_key:
-      #   type: env_var_name
-      #   default: BOT_GPG_KEY
-      #   description: "The base64 encoded GPG key"
-      # gpg_trust:
-      #   type: env_var_name
-      #   default: BOT_TRUST
-      #   description: "The trust associated with the GPG key"
-      # user_email:
-      #   type: env_var_name
-      #   default: BOT_USER_EMAIL
-      #   description: "The user email associated with the GPG key"
-      # user_name:
-      #   type: env_var_name
-      #   default: BOT_USER_NAME
-      #   description: "The user name associated with the GPG key"
-      # sign_key:
-      #   type: env_var_name
-      #   default: BOT_SIGN_KEY
-      #   description: "The GPG key id associated with the GPG key"
       pcu_verbosity:
         type: string
         default: "-vv"
         description: "The verbosity of the pcu command"
-      # pcu_halt_signal:
-      #   type: string
-      #   default: "halt"
-      #   description: "Word expected to signal an early exit"
-      # install_from_github:
-      #   type: boolean
-      #   default: false
-      #   description: "Install pcu from github"
-      # update_log_option:
-      #   type: enum
-      #   enum: ["halt", "pipeline"]
-      #   default: "pipeline"
-      #   description: "The option to halt or continue with new pipeline when a change log does not need to be updated"
+      pcu_semver:
+        type: boolean
+        default: false
+        description: "Whether or not set the semver version flag"
+      pcu_commit_message:
+        type: string
+        default: "chore: test push"
+        description: "The commit message to use for the pcu test push"
     steps:
       - checkout
       - add_ssh_keys:
@@ -246,7 +221,11 @@ jobs:
           name: Test push
           command: |
             set -ex
-            result=$(pcu << parameters.pcu_verbosity >> push)
+            if [ "<< parameters.pcu_semver >>" == "true"  ] ; then
+              pcu << parameters.pcu_verbosity >> push --commit-message << parameters.pcu_commit_message >> --semver $SEMVER
+            else
+              pcu << parameters.pcu_verbosity >> push --commit-message << parameters.pcu_commit_message >> 
+            fi
 workflows:
   check_last_commit:
     when:
