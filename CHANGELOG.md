@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - BREAKING: add push command to CLI to push any changes to the remote repository(pr [#282])
+- list the unstaged files(pr [#283])
 
 ### Changed
 
@@ -515,6 +516,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#280]: https://github.com/jerus-org/pcu/pull/280
 [#281]: https://github.com/jerus-org/pcu/pull/281
 [#282]: https://github.com/jerus-org/pcu/pull/282
+[#283]: https://github.com/jerus-org/pcu/pull/283
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/jerus-org/pcu/compare/v0.1.26...v0.2.0
 [0.1.26]: https://github.com/jerus-org/pcu/compare/v0.1.25...v0.1.26
