@@ -153,6 +153,8 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
 
     log::info!("Stage the changes for commit");
 
+    client.stage_files(files_in_workdir)?;
+
     log::debug!("{}", Style::new().bold().underline().paint("Check Staged"));
     log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
 
