@@ -172,9 +172,6 @@ jobs:
   test-push:
     executor: rust-env
     parameters:
-      # min_rust_version:
-      #   type: string
-      #   description: "The minimum version of the rust compiler to use"
       ssh_fingerprint:
         type: string
         description: |
