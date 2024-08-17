@@ -4,12 +4,20 @@ use std::{
     process::{Command, Stdio},
 };
 
+use clap::ValueEnum;
 use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature, StatusOptions};
 
 use crate::Client;
 use crate::Error;
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
+
+#[derive(ValueEnum, Debug, Default, Clone)]
+pub enum Sign {
+    #[default]
+    Gpg,
+    None,
+}
 
 pub trait GitOps {
     fn branch_status(&self) -> Result<String, Error>;
@@ -18,6 +26,12 @@ pub trait GitOps {
     fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
     fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
     fn stage_files(&self, files: Vec<String>) -> Result<(), Error>;
+    fn commit_staged(
+        &self,
+        sign: Sign,
+        commit_message: &str,
+        tag: Option<&str>,
+    ) -> Result<(), Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -279,6 +293,111 @@ impl GitOps for Client {
 
         Ok(())
     }
+
+    fn commit_staged(
+        &self,
+        sign: Sign,
+        commit_message: &str,
+        tag: Option<&str>,
+    ) -> Result<(), Error> {
+        log::trace!("Commit staged with sign {sign:?}");
+        let mut index = self.git_repo.index()?;
+        let tree_id = index.write_tree()?;
+        let head = self.git_repo.head()?;
+        let parent = self.git_repo.find_commit(head.target().unwrap())?;
+        let sig = self.git_repo.signature()?;
+
+        let commit_id = match sign {
+            Sign::None => self.git_repo.commit(
+                Some("HEAD"),
+                &sig,
+                &sig,
+                commit_message,
+                &self.git_repo.find_tree(tree_id)?,
+                &[&parent],
+            )?,
+            Sign::Gpg => {
+                let commit_buffer = self.git_repo.commit_create_buffer(
+                    &sig,
+                    &sig,
+                    commit_message,
+                    &self.git_repo.find_tree(tree_id)?,
+                    &[&parent],
+                )?;
+                let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
+
+                let signature = self.git_repo.config()?.get_string(GIT_USER_SIGNATURE)?;
+
+                let short_sign = signature[12..].to_string();
+                log::trace!("Signature short: {short_sign}");
+
+                let gpg_args = vec!["--status-fd", "2", "-bsau", signature.as_str()];
+                log::trace!("gpg args: {:?}", gpg_args);
+
+                let mut cmd = Command::new("gpg");
+                cmd.args(gpg_args)
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped());
+
+                let mut child = cmd.spawn()?;
+
+                let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
+                log::trace!("Secured access to stdin");
+
+                log::trace!("Input for signing:\n-----\n{}\n-----", commit_str);
+
+                stdin.write_all(commit_str.as_bytes())?;
+                log::trace!("writing complete");
+                drop(stdin); // close stdin to not block indefinitely
+                log::trace!("stdin closed");
+
+                let output = child.wait_with_output()?;
+                log::trace!("secured output");
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    log::trace!("stderr: {}", stderr);
+                    return Err(Error::Stdout(stderr.to_string()));
+                }
+
+                let stderr = std::str::from_utf8(&output.stderr)?;
+
+                if !stderr.contains("\n[GNUPG:] SIG_CREATED ") {
+                    return Err(Error::GpgError(
+                        "failed to sign data, program gpg failed, SIG_CREATED not seen in stderr"
+                            .to_string(),
+                    ));
+                }
+                log::trace!("Error checking completed without error");
+
+                let commit_signature = std::str::from_utf8(&output.stdout)?;
+
+                log::trace!("secured signed commit:\n{}", commit_signature);
+
+                let commit_id =
+                    self.git_repo
+                        .commit_signed(commit_str, commit_signature, Some("gpgsig"))?;
+
+                // manually advance to the new commit id
+                self.git_repo
+                    .head()?
+                    .set_target(commit_id, commit_message)?;
+
+                log::trace!("head updated");
+
+                commit_id
+            }
+        };
+
+        if let Some(version_tag) = tag {
+            let version_tag = format!("v{}", version_tag);
+            self.create_tag(&version_tag, commit_id, &sig)?;
+        }
+
+        Ok(())
+    }
+
     fn branch_list(&self) -> Result<String, Error> {
         let branches = self.git_repo.branches(None)?;
 

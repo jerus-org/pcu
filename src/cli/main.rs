@@ -5,7 +5,7 @@ use clap::Parser;
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
-use pcu_lib::{Client, Error, GitOps, MakeRelease, UpdateFromPr};
+use pcu_lib::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr};
 
 use color_eyre::Result;
 
@@ -16,7 +16,7 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
-use cli::{ClState, Cli, Commands, PullRequest, Push, Release, Sign};
+use cli::{ClState, Cli, Commands, PullRequest, Push, Release};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -163,16 +163,20 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
     log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
     log::debug!("Branch status: {}", client.branch_status()?);
 
-    match sign {
-        Sign::Gpg => {
-            log::info!("Commit and sign the commit with GPG")
-            // client.commit_changelog_gpg(None)?;
-        }
-        Sign::None => {
-            log::info!("Commit without signing the commit")
-            //     client.commit_changelog(None)?;
-        }
-    }
+    log::info!("Commit the staged changes");
+
+    client.commit_staged(sign, args.commit_message(), args.tag_opt())?;
+
+    // match sign {
+    //     Sign::Gpg => {
+    //         log::info!("Commit and sign the commit with GPG")
+    //         // client.commit_changelog_gpg(None)?;
+    //     }
+    //     Sign::None => {
+    //         log::info!("Commit without signing the commit")
+    //         //     client.commit_changelog(None)?;
+    //     }
+    // }
 
     log::debug!(
         "{}",

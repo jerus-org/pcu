@@ -1,13 +1,7 @@
 use std::fmt::Display;
 
-use clap::{Parser, Subcommand, ValueEnum};
-
-#[derive(ValueEnum, Debug, Default, Clone)]
-pub enum Sign {
-    #[default]
-    Gpg,
-    None,
-}
+use clap::{Parser, Subcommand};
+use pcu_lib::Sign;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -57,7 +51,27 @@ pub struct Release {
 }
 
 #[derive(Debug, Parser, Clone)]
-pub struct Push {}
+pub struct Push {
+    /// Semantic version number for a tag
+    #[arg(short, long)]
+    pub semver: Option<String>,
+    /// Message to add to the commit when pushing
+    #[arg(short, long)]
+    commit_message: String,
+}
+
+impl Push {
+    pub fn commit_message(&self) -> &str {
+        &self.commit_message
+    }
+
+    pub fn tag_opt(&self) -> Option<&str> {
+        if let Some(semver) = &self.semver {
+            return Some(semver);
+        }
+        None
+    }
+}
 
 pub enum ClState {
     Updated,
