@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BREAKING: add push command to CLI to push any changes to the remote repository(pr [#282])
 - list the unstaged files(pr [#283])
 - add stage_files function to GitOps trait and implement it in Client(pr [#284])
-- add commit_staged function to GitOps trait(pr [#285])
 
 ### Changed
 
