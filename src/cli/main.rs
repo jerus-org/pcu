@@ -72,7 +72,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 
     log::info!(
         "On the `{}` branch, so time to get to work!",
-        client.branch()
+        client.branch_or_main()
     );
     log::debug!(
         "PR ID: {} - Owner: {} - Repo: {}",
@@ -167,17 +167,6 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
 
     client.commit_staged(sign, args.commit_message(), args.tag_opt())?;
 
-    // match sign {
-    //     Sign::Gpg => {
-    //         log::info!("Commit and sign the commit with GPG")
-    //         // client.commit_changelog_gpg(None)?;
-    //     }
-    //     Sign::None => {
-    //         log::info!("Commit without signing the commit")
-    //         //     client.commit_changelog(None)?;
-    //     }
-    // }
-
     log::debug!(
         "{}",
         Style::new().bold().underline().paint("Check Committed")
@@ -190,7 +179,7 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
     log::debug!("Branch status: {}", client.branch_status()?);
 
     log::info!("Push the commit");
-    // client.push_changelog(None)?;
+    client.push_commit(None)?;
     log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
     log::debug!("Branch status: {}", client.branch_status()?);
 

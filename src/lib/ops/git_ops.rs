@@ -5,7 +5,12 @@ use std::{
 };
 
 use clap::ValueEnum;
-use git2::{BranchType, Cred, Direction, Oid, RemoteCallbacks, Signature, StatusOptions};
+use color_eyre::owo_colors::OwoColorize;
+use git2::{
+    BranchType, Cred, Direction, Oid, PushOptions, Remote, RemoteCallbacks, Signature,
+    StatusOptions,
+};
+use log::log_enabled;
 
 use crate::Client;
 use crate::Error;
@@ -32,9 +37,11 @@ pub trait GitOps {
         commit_message: &str,
         tag: Option<&str>,
     ) -> Result<(), Error>;
+    fn push_commit(&self, version: Option<&str>) -> Result<(), Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
+    fn get_authenticated_remote(&self) -> Result<Remote, Error>;
     fn push_changelog(&self, version: Option<&str>) -> Result<(), Error>;
     fn commit_changelog_gpg(&mut self, tag: Option<&str>) -> Result<String, Error>;
     fn commit_changelog(&self, tag: Option<&str>) -> Result<String, Error>;
@@ -177,7 +184,7 @@ impl GitOps for Client {
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
 
-        log::trace!("Branch: {:?} or {}", self.branch, self.branch());
+        log::trace!("Branch: {:?} or {}", self.branch, self.branch_or_main());
 
         let branch = match self.branch {
             Some(ref branch) => {
@@ -398,6 +405,54 @@ impl GitOps for Client {
         Ok(())
     }
 
+    fn get_authenticated_remote(&self) -> Result<Remote, Error> {
+        let mut remote = self.git_repo.find_remote("origin")?;
+        log::trace!("Pushing changes to {:?}", remote.name());
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            Cred::ssh_key_from_agent(username_from_url.unwrap())
+        });
+        let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
+        Ok(connection.remote().clone())
+    }
+
+    fn push_commit(&self, version: Option<&str>) -> Result<(), Error> {
+        let mut remote = self.get_authenticated_remote()?;
+
+        let local_branch = self
+            .git_repo
+            .find_branch(self.branch_or_main(), BranchType::Local)?;
+        log::trace!("Found local branch: {}", local_branch.name()?.unwrap());
+
+        if log_enabled!(log::Level::Trace) {
+            list_tags();
+        };
+
+        let branch_ref = local_branch.into_reference();
+
+        let mut push_refs = vec![branch_ref.name().unwrap()];
+
+        #[allow(unused_assignments)]
+        let mut tag_ref = String::from("");
+
+        if let Some(version_tag) = version {
+            log::trace!("Found version tag: {}", version_tag);
+            tag_ref = format!("refs/tags/v{version_tag}");
+            log::trace!("Tag ref: {tag_ref}");
+            push_refs.push(&tag_ref);
+        };
+
+        log::trace!("Push refs: {:?}", push_refs);
+        let mut call_backs = RemoteCallbacks::new();
+        call_backs.push_transfer_progress(progress_bar);
+        let mut push_opts = PushOptions::new();
+        push_opts.remote_callbacks(call_backs);
+
+        remote.push(&push_refs, Some(&mut push_opts))?;
+
+        Ok(())
+    }
+
     fn branch_list(&self) -> Result<String, Error> {
         let branches = self.git_repo.branches(None)?;
 
@@ -418,14 +473,14 @@ impl GitOps for Client {
 
     fn branch_status(&self) -> Result<String, Error> {
         let branch_remote = self.git_repo.find_branch(
-            format!("origin/{}", self.branch()).as_str(),
+            format!("origin/{}", self.branch_or_main()).as_str(),
             git2::BranchType::Remote,
         )?;
 
         if branch_remote.get().target() == self.git_repo.head()?.target() {
             return Ok(format!(
                 "\n\nOn branch {}\nYour branch is up to date with `{}`\n",
-                self.branch(),
+                self.branch_or_main(),
                 branch_remote.name()?.unwrap()
             ));
         }
@@ -444,6 +499,31 @@ impl GitOps for Client {
     }
 }
 
+fn progress_bar(current: usize, total: usize, bytes: usize) {
+    let percent = (current as f32 / total as f32) * 100.0;
+
+    let percent = percent as u8;
+
+    match percent {
+        10 => log::trace!("{}%", percent),
+        25 => log::debug!("{}%", percent),
+        40 => log::info!("{}%", percent),
+        55 => log::warn!("{}%", percent),
+        80 => log::error!("{}%", percent),
+        95 => log::error!("{}%", percent),
+        100 => log::error!("{}%", percent),
+        _ => {}
+    }
+
+    log::trace!(
+        "{}:- current: {}, total: {}, bytes: {}",
+        "Push progress".blue().underline().bold(),
+        current.blue().bold(),
+        total.blue().bold(),
+        bytes.blue().bold()
+    );
+}
+
 fn list_tags() {
     let output = Command::new("ls")
         .arg("-R")
@@ -457,24 +537,6 @@ fn list_tags() {
 
     let files = out_string.split_terminator("\n").collect::<Vec<&str>>();
     log::trace!("Files: {:#?}", files);
-
-    // if let Some(last_file) = files.last() {
-    //     let filename = last_file.to_string();
-
-    //     log::trace!("Filename: {filename}");
-    //     let filename = ".git/refs/tags/v0.1.2";
-    //     log::trace!("Filename: {filename}");
-    //     let file_contents_res = read_to_string(filename);
-    //     log::trace!("File contents: {file_contents_res:?}");
-    //     if let Ok(file_contents) = file_contents_res {
-    //         log::trace!("File contents: {file_contents}");
-    //         format!("{}\n`{}`", filename, file_contents)
-    //     } else {
-    //         format!("filename only: {}", filename)
-    //     }
-    // } else {
-    //     "".to_string()
-    // }
 }
 
 // This function print out an output similar to git's status command in long
