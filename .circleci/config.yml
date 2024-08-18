@@ -223,7 +223,7 @@ jobs:
           command: |
             set -ex
             if [ "<< parameters.pcu_no_push >>" == "true"  ] ; then
-              no_push="--no_push"
+              no_push="--no-push"
             else 
               no_push=""
             fi
