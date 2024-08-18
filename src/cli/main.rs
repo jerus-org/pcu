@@ -179,7 +179,9 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
     log::debug!("Branch status: {}", client.branch_status()?);
 
     log::info!("Push the commit");
-    client.push_commit(None)?;
+    if !args.no_push {
+        client.push_commit(None)?;
+    }
     log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
     log::debug!("Branch status: {}", client.branch_status()?);
 

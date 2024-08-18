@@ -55,6 +55,9 @@ pub struct Push {
     /// Semantic version number for a tag
     #[arg(short, long)]
     pub semver: Option<String>,
+    /// Disable the push command
+    #[arg(short, long, default_value_t = false)]
+    pub no_push: bool,
     /// Message to add to the commit when pushing
     #[arg(short, long)]
     commit_message: String,
