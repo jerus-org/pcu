@@ -39,8 +39,8 @@ async fn main() -> Result<()> {
             match state {
                 ClState::Updated => log::info!("Changelog updated!"),
                 ClState::UnChanged => log::info!("Changelog not changed!"),
-                ClState::Pushed => log::info!("Changelog not changed!"),
-                ClState::Released => log::info!("Changelog not changed!"),
+                ClState::Pushed(s) => log::info!("{s}"),
+                ClState::Released => log::info!("Created GitHub Release"),
             };
         }
         Err(e) => {
@@ -179,13 +179,20 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
     log::debug!("Branch status: {}", client.branch_status()?);
 
     log::info!("Push the commit");
-    if !args.no_push {
-        client.push_commit(None)?;
-    }
+
+    client.push_commit(None, args.no_push)?;
     log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
     log::debug!("Branch status: {}", client.branch_status()?);
 
-    Ok(ClState::Pushed)
+    if !args.no_push {
+        Ok(ClState::Pushed(
+            "Changed files committed and pushed to remote repsitory.".to_string(),
+        ))
+    } else {
+        Ok(ClState::Pushed(
+            "Changed files committed and push dry run completed for logging.".to_string(),
+        ))
+    }
 }
 
 async fn run_release(sign: Sign, args: Release) -> Result<ClState> {

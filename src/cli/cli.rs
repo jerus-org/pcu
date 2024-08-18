@@ -79,6 +79,6 @@ impl Push {
 pub enum ClState {
     Updated,
     UnChanged,
-    Pushed,
+    Pushed(String),
     Released,
 }
