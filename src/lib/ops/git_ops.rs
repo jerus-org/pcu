@@ -37,7 +37,7 @@ pub trait GitOps {
         commit_message: &str,
         tag: Option<&str>,
     ) -> Result<(), Error>;
-    fn push_commit(&self, version: Option<&str>) -> Result<(), Error>;
+    fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -416,7 +416,7 @@ impl GitOps for Client {
         Ok(connection.remote().clone())
     }
 
-    fn push_commit(&self, version: Option<&str>) -> Result<(), Error> {
+    fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error> {
         let mut remote = self.get_authenticated_remote()?;
 
         let local_branch = self
@@ -448,7 +448,9 @@ impl GitOps for Client {
         let mut push_opts = PushOptions::new();
         push_opts.remote_callbacks(call_backs);
 
-        remote.push(&push_refs, Some(&mut push_opts))?;
+        if !no_push {
+            remote.push(&push_refs, Some(&mut push_opts))?;
+        }
 
         Ok(())
     }
