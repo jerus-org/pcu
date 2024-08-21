@@ -169,7 +169,7 @@ jobs:
                 pcu_verbosity: <<parameters.pcu_verbosity>>
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
 
-  test-push:
+  test-commit:
     executor: rust-env
     parameters:
       ssh_fingerprint:
@@ -184,14 +184,62 @@ jobs:
         type: boolean
         default: false
         description: "Whether or not set the semver version flag"
-      pcu_no_push:
-        type: boolean
-        default: false
-        description: "Whether or not prevent final push of commit"
       pcu_commit_message:
         type: string
         default: "chore: test push"
         description: "The commit message to use for the pcu test push"
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Install pcu from code on main branch of on github
+          command: |
+            cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
+      - run:
+          name: pcu version
+          command: |
+            pcu --version
+      - run:
+          name: Create test file
+          command: |
+            set -ex
+            echo "test" > test.txt
+      - run:
+          name: Test commit
+          command: |
+            set -ex
+
+            if [ "<< parameters.pcu_semver >>" == "true"  ] && [ $SEMVER != ""  ]; then
+              pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>" --semver $SEMVER
+            else
+              pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>"
+            fi
+
+  test-push:
+    executor: rust-env
+    parameters:
+      ssh_fingerprint:
+        type: string
+        description: |
+          The fingerprint of the ssh key to use
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      pcu_no_push:
+        type: boolean
+        default: false
+        description: "Whether or not prevent final push of commit"
     steps:
       - checkout
       - add_ssh_keys:
@@ -228,11 +276,8 @@ jobs:
               no_push=""
             fi
 
-            if [ "<< parameters.pcu_semver >>" == "true"  ] && [ $SEMVER != ""  ]; then
-              pcu << parameters.pcu_verbosity >> push ${no_push} --commit-message "<< parameters.pcu_commit_message >>" --semver $SEMVER
-            else
-              pcu << parameters.pcu_verbosity >> push ${no_push} --commit-message "<< parameters.pcu_commit_message >>"
-            fi
+            pcu << parameters.pcu_verbosity >> push ${no_push}
+
 workflows:
   check_last_commit:
     when:
@@ -267,6 +312,13 @@ workflows:
           min_rust_version: << pipeline.parameters.min-rust-version >>
       - toolkit/idiomatic_rust:
           min_rust_version: << pipeline.parameters.min-rust-version >>
+      - test-commit:
+          ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          pcu_verbosity: "-vvvv"
+          context:
+            - release
+            - bot-check
+            - pcu-app
       - test-push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"

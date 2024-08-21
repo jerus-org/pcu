@@ -16,7 +16,7 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
-use cli::{ClState, Cli, Commands, PullRequest, Push, Release};
+use cli::{ClState, Cli, Commands, Commit, PullRequest, Push, Release};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,7 +30,8 @@ async fn main() -> Result<()> {
 
     let res = match cmd {
         Commands::PullRequest(pr_args) => run_pull_request(sign, pr_args).await,
-        Commands::Push(push_args) => run_push(sign, push_args).await,
+        Commands::Commit(commit_args) => run_commit(sign, commit_args).await,
+        Commands::Push(push_args) => run_push(push_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
 
@@ -39,12 +40,12 @@ async fn main() -> Result<()> {
             match state {
                 ClState::Updated => log::info!("Changelog updated!"),
                 ClState::UnChanged => log::info!("Changelog not changed!"),
+                ClState::Committed => log::info!("Changed files committed"),
                 ClState::Pushed(s) => log::info!("{s}"),
                 ClState::Released => log::info!("Created GitHub Release"),
             };
         }
         Err(e) => {
-            log::error!("Error running command {}: {e}", args.command);
             return Err(e);
         }
     };
@@ -140,8 +141,8 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
     Ok(ClState::Updated)
 }
 
-async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
-    let client = get_client(Commands::Push(args.clone())).await?;
+async fn run_commit(sign: Sign, args: Commit) -> Result<ClState> {
+    let client = get_client(Commands::Commit(args.clone())).await?;
 
     log::debug!("{}", Style::new().bold().underline().paint("Check WorkDir"));
 
@@ -177,6 +178,12 @@ async fn run_push(sign: Sign, args: Push) -> Result<ClState> {
 
     log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
     log::debug!("Branch status: {}", client.branch_status()?);
+
+    Ok(ClState::Committed)
+}
+
+async fn run_push(args: Push) -> Result<ClState> {
+    let client = get_client(Commands::Push(args.clone())).await?;
 
     log::info!("Push the commit");
 
@@ -314,6 +321,9 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         Commands::Release(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "release")?,
+        Commands::Commit(_) => settings
+            .set_override("commit_message", "chore: adding changed files")?
+            .set_override("command", "commit")?,
         Commands::Push(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "push")?,
