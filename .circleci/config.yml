@@ -236,18 +236,10 @@ jobs:
         type: string
         default: "-vv"
         description: "The verbosity of the pcu command"
-      pcu_semver:
-        type: boolean
-        default: false
-        description: "Whether or not set the semver version flag"
       pcu_no_push:
         type: boolean
         default: false
         description: "Whether or not prevent final push of commit"
-      pcu_commit_message:
-        type: string
-        default: "chore: test push"
-        description: "The commit message to use for the pcu test push"
     steps:
       - checkout
       - add_ssh_keys:
@@ -284,11 +276,7 @@ jobs:
               no_push=""
             fi
 
-            if [ "<< parameters.pcu_semver >>" == "true"  ] && [ $SEMVER != ""  ]; then
-              pcu << parameters.pcu_verbosity >> push ${no_push} --commit-message "<< parameters.pcu_commit_message >>" --semver $SEMVER
-            else
-              pcu << parameters.pcu_verbosity >> push ${no_push} --commit-message "<< parameters.pcu_commit_message >>"
-            fi
+            pcu << parameters.pcu_verbosity >> push ${no_push}
 
 workflows:
   check_last_commit:
