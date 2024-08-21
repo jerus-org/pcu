@@ -84,9 +84,21 @@ impl Commit {
 /// Configuration for the Push command
 #[derive(Debug, Parser, Clone)]
 pub struct Push {
+    /// Semantic version number for a tag
+    #[arg(short, long)]
+    pub semver: Option<String>,
     /// Disable the push command
     #[arg(short, long, default_value_t = false)]
     pub no_push: bool,
+}
+
+impl Push {
+    pub fn tag_opt(&self) -> Option<&str> {
+        if let Some(semver) = &self.semver {
+            return Some(semver);
+        }
+        None
+    }
 }
 
 pub enum ClState {

@@ -500,14 +500,16 @@ fn progress_bar(current: usize, total: usize, bytes: usize) {
 
     let percent = percent as u8;
 
+    log::trace!("Calculated percent: {}", percent);
+
     match percent {
         10 => log::trace!("{}%", percent),
-        25 => log::debug!("{}%", percent),
-        40 => log::info!("{}%", percent),
-        55 => log::warn!("{}%", percent),
-        80 => log::error!("{}%", percent),
-        95 => log::error!("{}%", percent),
-        100 => log::error!("{}%", percent),
+        25 => log::trace!("{}%", percent),
+        40 => log::trace!("{}%", percent),
+        55 => log::trace!("{}%", percent),
+        80 => log::trace!("{}%", percent),
+        95 => log::trace!("{}%", percent),
+        100 => log::trace!("{}%", percent),
         _ => {}
     }
 

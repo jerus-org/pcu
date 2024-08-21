@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add push_commit method and refactor branch method to branch_or_main(pr [#286])
 - add commit and reduce to push to push only(pr [#288])
+- add semver option to Push struct and tag_opt method(pr [#289])
 
 ### Fixed
 
@@ -540,6 +541,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#286]: https://github.com/jerus-org/pcu/pull/286
 [#287]: https://github.com/jerus-org/pcu/pull/287
 [#288]: https://github.com/jerus-org/pcu/pull/288
+[#289]: https://github.com/jerus-org/pcu/pull/289
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jerus-org/pcu/compare/v0.2.0...v0.3.0
