@@ -7,8 +7,7 @@ use std::{
 use clap::ValueEnum;
 use color_eyre::owo_colors::OwoColorize;
 use git2::{
-    BranchType, Cred, Direction, Oid, PushOptions, Remote, RemoteCallbacks, Signature,
-    StatusOptions,
+    BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, StatusOptions,
 };
 use log::log_enabled;
 
@@ -41,7 +40,6 @@ pub trait GitOps {
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
-    fn get_authenticated_remote(&self) -> Result<Remote, Error>;
     fn push_changelog(&self, version: Option<&str>) -> Result<(), Error>;
     fn commit_changelog_gpg(&mut self, tag: Option<&str>) -> Result<String, Error>;
     fn commit_changelog(&self, tag: Option<&str>) -> Result<String, Error>;
@@ -405,7 +403,7 @@ impl GitOps for Client {
         Ok(())
     }
 
-    fn get_authenticated_remote(&self) -> Result<Remote, Error> {
+    fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error> {
         let mut remote = self.git_repo.find_remote("origin")?;
         log::trace!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
@@ -413,11 +411,7 @@ impl GitOps for Client {
             Cred::ssh_key_from_agent(username_from_url.unwrap())
         });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
-        Ok(connection.remote().clone())
-    }
-
-    fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error> {
-        let mut remote = self.get_authenticated_remote()?;
+        let remote = connection.remote();
 
         let local_branch = self
             .git_repo
