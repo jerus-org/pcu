@@ -16,10 +16,16 @@ pub struct Cli {
     pub command: Commands,
 }
 
+/// Commands for the CLI
 #[derive(Debug, Subcommand, Clone)]
 pub enum Commands {
+    /// Update the changelog from a pull request
     PullRequest(PullRequest),
+    /// Create a release on GitHub
     Release(Release),
+    /// Commit changed files in the working directory
+    Commit(Commit),
+    /// Push the current commits to the remote repository
     Push(Push),
 }
 
@@ -28,6 +34,7 @@ impl Display for Commands {
         match self {
             Commands::PullRequest(_) => write!(f, "pull-request"),
             Commands::Release(_) => write!(f, "release"),
+            Commands::Commit(_) => write!(f, "commit"),
             Commands::Push(_) => write!(f, "push"),
         }
     }
@@ -50,20 +57,18 @@ pub struct Release {
     pub update_changelog: bool,
 }
 
+/// Configuration for the Commit command
 #[derive(Debug, Parser, Clone)]
-pub struct Push {
+pub struct Commit {
     /// Semantic version number for a tag
     #[arg(short, long)]
     pub semver: Option<String>,
-    /// Disable the push command
-    #[arg(short, long, default_value_t = false)]
-    pub no_push: bool,
     /// Message to add to the commit when pushing
     #[arg(short, long)]
     commit_message: String,
 }
 
-impl Push {
+impl Commit {
     pub fn commit_message(&self) -> &str {
         &self.commit_message
     }
@@ -76,9 +81,18 @@ impl Push {
     }
 }
 
+/// Configuration for the Push command
+#[derive(Debug, Parser, Clone)]
+pub struct Push {
+    /// Disable the push command
+    #[arg(short, long, default_value_t = false)]
+    pub no_push: bool,
+}
+
 pub enum ClState {
     Updated,
     UnChanged,
+    Committed,
     Pushed(String),
     Released,
 }
