@@ -327,18 +327,18 @@ workflows:
       - test-commit:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
-          # context:
-          #   - release
-          #   - bot-check
-          #   - pcu-app
+          context:
+            - release
+            - bot-check
+            - pcu-app
       - test-push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
-          # context:
-          #   - release
-          #   - bot-check
-          #   - pcu-app
+          context:
+            - release
+            - bot-check
+            - pcu-app
       - update_changelog:
           requires:
             - toolkit/common_tests
