@@ -59,9 +59,12 @@ impl PullRequest {
 
         log::trace!("pr_res: {:?}", pr_res);
 
-        let pr = pr_res?;
-
-        let title = pr.title;
+        let title = if pr_res.is_err() {
+            super::graphql::get_pull_request_title(&owner, &repo, pr_number).await?
+        } else {
+            let pr = pr_res?;
+            pr.title
+        };
 
         Ok(Some(Self {
             pull_request,

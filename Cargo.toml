@@ -34,6 +34,8 @@ octocrate = { version = "2.0.1", features = [
     "rustls-tls",
 ], default-features = false }
 ansi_term = "0.12.1"
+gql_client = "1.0.7"
+serde = { version = "1.0.208", features = ["derive"] }
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"
