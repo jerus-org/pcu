@@ -54,7 +54,12 @@ impl PullRequest {
         // The title can be edited by the calling programme if desired before creating the prtitle
 
         log::debug!("********* Using Octocrate instance");
-        let pr = api.pulls.get(&owner, &repo, pr_number).send().await?;
+
+        let pr_res = api.pulls.get(&owner, &repo, pr_number).send().await;
+
+        log::trace!("pr_res: {:?}", pr_res);
+
+        let pr = pr_res?;
 
         let title = pr.title;
 
