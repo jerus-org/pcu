@@ -1,5 +1,5 @@
 use regex::Error as RegexError;
-use std::{env, ffi::OsString, num::ParseIntError};
+use std::{env, ffi::OsString, fmt::Display, num::ParseIntError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -52,6 +52,8 @@ pub enum Error {
     ParseInt(#[from] ParseIntError),
     #[error("Octocrate says: {0:?}")]
     Octocrate(#[from] octocrate::Error),
+    #[error("GraphQL says: {0:?}")]
+    GraphQL(#[from] GraphQLWrapper),
     #[error("Url says: {0:?}")]
     UrlParse(#[from] url::ParseError),
     #[error("Git2 says: {0:?}")]
@@ -66,4 +68,29 @@ pub enum Error {
     Config(#[from] config::ConfigError),
     #[error("regex error says: {0:?}")]
     Regex(#[from] RegexError),
+}
+
+#[derive(Debug)]
+pub struct GraphQLWrapper(gql_client::GraphQLError);
+
+impl std::error::Error for GraphQLWrapper {
+    fn description(&self) -> &str {
+        "A GraphQL error occurred"
+    }
+
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        None
+    }
+}
+
+impl From<gql_client::GraphQLError> for GraphQLWrapper {
+    fn from(err: gql_client::GraphQLError) -> Self {
+        GraphQLWrapper(err)
+    }
+}
+
+impl Display for GraphQLWrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }

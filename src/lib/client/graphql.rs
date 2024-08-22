@@ -1,8 +1,10 @@
 #![allow(dead_code)]
+use std::collections::HashMap;
+
 use gql_client::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::Error;
+use crate::{Error, GraphQLWrapper};
 
 const END_POINT: &str = "https://api.github.com/graphql";
 
@@ -48,16 +50,25 @@ pub(crate) async fn get_pull_request_title(
     }
     "#;
 
-    let client = Client::new(END_POINT);
+    let headers = HashMap::from([("User-Agent", owner)]);
+
+    let client = Client::new_with_headers(END_POINT, headers);
+
+    log::trace!("Grpah QL client: {:?}", client);
+
     let vars = Vars {
         owner: owner.to_string(),
         name: name.to_string(),
         number,
     };
-    let data = client
+
+    let data_res = client
         .query_with_vars_unwrap::<GetPullRequestTitle, Vars>(query, vars)
-        .await
-        .unwrap();
+        .await;
+
+    log::trace!("data_res: {:?}", data_res);
+
+    let data = data_res.map_err(GraphQLWrapper::from)?;
 
     log::trace!("data: {:?}", data);
 
