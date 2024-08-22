@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add commit and reduce to push to push only(pr [#288])
 - add semver option to Push struct and tag_opt method(pr [#289])
 
+### Changed
+
+- chore-add logging for pull request response(pr [#290])
+
 ### Fixed
 
 - integrate get_authenticated_remote into push_commit method(pr [#287])
@@ -542,6 +546,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#287]: https://github.com/jerus-org/pcu/pull/287
 [#288]: https://github.com/jerus-org/pcu/pull/288
 [#289]: https://github.com/jerus-org/pcu/pull/289
+[#290]: https://github.com/jerus-org/pcu/pull/290
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jerus-org/pcu/compare/v0.2.0...v0.3.0
