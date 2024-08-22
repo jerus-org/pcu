@@ -1,5 +1,6 @@
 use std::{env, ffi::OsString};
 
+pub(crate) mod graphql;
 mod pull_request;
 
 use self::pull_request::PullRequest;
