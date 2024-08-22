@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use std::collections::HashMap;
+
 use gql_client::Client;
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +50,9 @@ pub(crate) async fn get_pull_request_title(
     }
     "#;
 
-    let client = Client::new(END_POINT);
+    let headers = HashMap::from([("User-Agent", owner)]);
+
+    let client = Client::new_with_headers(END_POINT, headers);
     let vars = Vars {
         owner: owner.to_string(),
         name: name.to_string(),
