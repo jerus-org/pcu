@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - integrate get_authenticated_remote into push_commit method(pr [#287])
+- add headers and refine error handling(pr [#293])
 
 ## [0.4.0] - 2024-08-17
 
@@ -549,6 +550,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#289]: https://github.com/jerus-org/pcu/pull/289
 [#290]: https://github.com/jerus-org/pcu/pull/290
 [#291]: https://github.com/jerus-org/pcu/pull/291
+[#293]: https://github.com/jerus-org/pcu/pull/293
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jerus-org/pcu/compare/v0.2.0...v0.3.0
