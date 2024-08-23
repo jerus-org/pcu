@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fallback to graphql client for fetching pull request title(pr [#291])
 - better organisation of code(pr [#294])
 - add support for gql_client with headers in get_github_apis(pr [#295])
+- use GraphQL for pull request title retrieval(pr [#299])
 
 ### Changed
 
@@ -561,6 +562,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#296]: https://github.com/jerus-org/pcu/pull/296
 [#297]: https://github.com/jerus-org/pcu/pull/297
 [#298]: https://github.com/jerus-org/pcu/pull/298
+[#299]: https://github.com/jerus-org/pcu/pull/299
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jerus-org/pcu/compare/v0.2.0...v0.3.0
