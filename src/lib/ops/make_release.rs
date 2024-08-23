@@ -62,7 +62,7 @@ impl MakeRelease for Client {
         };
 
         let release = self
-            .git_api
+            .github_rest
             .repos
             .create_release(self.owner(), self.repo())
             .body(&release_request)

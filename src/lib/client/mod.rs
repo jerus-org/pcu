@@ -1,4 +1,4 @@
-use std::{env, ffi::OsString};
+use std::{collections::HashMap, env, ffi::OsString};
 
 pub(crate) mod graphql;
 mod pull_request;
@@ -14,11 +14,15 @@ use octocrate::{APIConfig, AppAuthorization, GitHubAPI, PersonalAccessToken};
 use crate::Error;
 use crate::PrTitle;
 
+const END_POINT: &str = "https://api.github.com/graphql";
+
 pub struct Client {
     #[allow(dead_code)]
     // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
-    pub(crate) git_api: GitHubAPI,
+    pub(crate) github_rest: GitHubAPI,
+    #[allow(dead_code)]
+    pub(crate) github_graphql: gql_client::Client,
     pub(crate) owner: String,
     pub(crate) repo: String,
     pub(crate) default_branch: String,
@@ -62,7 +66,11 @@ impl Client {
 
         let line_limit = settings.get::<usize>("line_limit").unwrap_or(10);
 
-        let git_api = Client::get_github_api(&settings, &owner, &repo).await?;
+        let github_rest = Client::get_github_api(&settings, &owner, &repo).await?;
+
+        let headers = HashMap::from([("User-Agent", &owner)]);
+
+        let github_graphql = gql_client::Client::new_with_headers(END_POINT, headers);
 
         let (branch, pull_request) = if &cmd == "pull-request" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
@@ -77,7 +85,8 @@ impl Client {
                 Some(branch)
             };
 
-            let pull_request = PullRequest::new_pull_request_opt(&settings, &git_api).await?;
+            let pull_request =
+                PullRequest::new_pull_request_opt(&settings, &github_rest, &github_graphql).await?;
             (branch, pull_request)
         } else {
             let branch = None;
@@ -127,7 +136,8 @@ impl Client {
 
         Ok(Self {
             git_repo,
-            git_api,
+            github_rest,
+            github_graphql,
             default_branch,
             branch,
             owner,

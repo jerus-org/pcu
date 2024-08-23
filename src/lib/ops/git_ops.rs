@@ -229,7 +229,7 @@ impl GitOps for Client {
             self.repo()
         );
         for t in self
-            .git_api
+            .github_rest
             .repos
             .list_tags(self.owner(), self.repo())
             .send()

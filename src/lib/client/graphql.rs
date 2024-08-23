@@ -1,12 +1,7 @@
 #![allow(dead_code)]
-use std::collections::HashMap;
-
-use gql_client::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::{Error, GraphQLWrapper};
-
-const END_POINT: &str = "https://api.github.com/graphql";
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct GetPullRequestTitle {
@@ -34,27 +29,23 @@ pub(crate) struct Vars {
     number: i64,
 }
 
+#[allow(async_fn_in_trait)]
 pub(crate) async fn get_pull_request_title(
+    github_graphql: &gql_client::Client,
     owner: &str,
     name: &str,
     number: i64,
 ) -> Result<String, Error> {
     let query = r#"
-    query($owner:String!, $name:String!, $number:Int!){
-        repository(owner: $owner, name: $name) {
-            pullRequest(number: $number) {
-                number
-                title
+            query($owner:String!, $name:String!, $number:Int!){
+                repository(owner: $owner, name: $name) {
+                    pullRequest(number: $number) {
+                        number
+                        title
+                    }
+                }
             }
-        }
-    }
-    "#;
-
-    let headers = HashMap::from([("User-Agent", owner)]);
-
-    let client = Client::new_with_headers(END_POINT, headers);
-
-    log::trace!("Grpah QL client: {:?}", client);
+            "#;
 
     let vars = Vars {
         owner: owner.to_string(),
@@ -62,7 +53,7 @@ pub(crate) async fn get_pull_request_title(
         number,
     };
 
-    let data_res = client
+    let data_res = github_graphql
         .query_with_vars_unwrap::<GetPullRequestTitle, Vars>(query, vars)
         .await;
 

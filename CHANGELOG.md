@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add commit and reduce to push to push only(pr [#288])
 - add semver option to Push struct and tag_opt method(pr [#289])
 - fallback to graphql client for fetching pull request title(pr [#291])
+- better organisation of code(pr [#294])
 
 ### Changed
 
@@ -551,6 +552,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#290]: https://github.com/jerus-org/pcu/pull/290
 [#291]: https://github.com/jerus-org/pcu/pull/291
 [#293]: https://github.com/jerus-org/pcu/pull/293
+[#294]: https://github.com/jerus-org/pcu/pull/294
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jerus-org/pcu/compare/v0.2.0...v0.3.0

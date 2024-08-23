@@ -20,7 +20,8 @@ pub(crate) struct PullRequest {
 impl PullRequest {
     pub async fn new_pull_request_opt(
         settings: &Config,
-        api: &GitHubAPI,
+        rest: &GitHubAPI,
+        graphql: &gql_client::Client,
     ) -> Result<Option<Self>, Error> {
         // Use the command config to check the command client is run for
         log::trace!("command: {:?}", settings.get::<String>("command"));
@@ -55,12 +56,12 @@ impl PullRequest {
 
         log::debug!("********* Using Octocrate instance");
 
-        let pr_res = api.pulls.get(&owner, &repo, pr_number).send().await;
+        let pr_res = rest.pulls.get(&owner, &repo, pr_number).send().await;
 
         log::trace!("pr_res: {:?}", pr_res);
 
         let title = if pr_res.is_err() {
-            super::graphql::get_pull_request_title(&owner, &repo, pr_number).await?
+            super::graphql::get_pull_request_title(graphql, &owner, &repo, pr_number).await?
         } else {
             let pr = pr_res?;
             pr.title
