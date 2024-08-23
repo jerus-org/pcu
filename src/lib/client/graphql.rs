@@ -10,7 +10,9 @@ pub(crate) struct GetPullRequestTitle {
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct Repository {
+    #[serde(skip_deserializing)]
     owner: String,
+    #[serde(skip_deserializing)]
     name: String,
     #[serde(rename = "pullRequest")]
     pull_request: PullRequest,
