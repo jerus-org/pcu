@@ -41,8 +41,6 @@ pub(crate) async fn get_pull_request_title(
     let query = r#"
             query($owner:String!, $name:String!, $number:Int!){
                 repository(owner: $owner, name: $name) {
-                    owner,
-                    name,
                     pullRequest(number: $number) {
                         number
                         title
