@@ -1,7 +1,6 @@
 use std::env;
 
 use config::Config;
-use octocrate::GitHubAPI;
 
 use crate::Error;
 
@@ -20,7 +19,6 @@ pub(crate) struct PullRequest {
 impl PullRequest {
     pub async fn new_pull_request_opt(
         settings: &Config,
-        #[allow(unused_variables)] rest: &GitHubAPI,
         graphql: &gql_client::Client,
     ) -> Result<Option<Self>, Error> {
         // Use the command config to check the command client is run for
@@ -51,23 +49,7 @@ impl PullRequest {
         );
         let pr_number = pr_number.parse::<i64>()?;
 
-        // Get the github pull release and store the title in the client struct
-        // The title can be edited by the calling programme if desired before creating the prtitle
-
-        // log::debug!("********* Using Octocrate instance");
-        // let pr_res = rest.pulls.get(&owner, &repo, pr_number).send().await;
-
-        // log::trace!("pr_res: {:?}", pr_res);
-
-        // let title = if pr_res.is_err() {
-        //     log::debug!("********* Using GRaphQL");
-        //     super::graphql::get_pull_request_title(graphql, &owner, &repo, pr_number).await?
-        // } else {
-        //     let pr = pr_res?;
-        //     pr.title
-        // };
-
-        log::debug!("********* Using GRaphQL");
+        log::debug!("********* Using GraphQL");
         let title =
             super::graphql::get_pull_request_title(graphql, &owner, &repo, pr_number).await?;
 
