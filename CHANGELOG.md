@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - chore-add logging for pull request response(pr [#290])
+- refactor-remove unused github_graphql variable and related code in pull_request.rs(pr [#300])
 
 ### Fixed
 
@@ -563,6 +564,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#297]: https://github.com/jerus-org/pcu/pull/297
 [#298]: https://github.com/jerus-org/pcu/pull/298
 [#299]: https://github.com/jerus-org/pcu/pull/299
+[#300]: https://github.com/jerus-org/pcu/pull/300
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jerus-org/pcu/compare/v0.2.0...v0.3.0

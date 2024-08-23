@@ -21,8 +21,7 @@ pub struct Client {
     // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
     pub(crate) github_rest: GitHubAPI,
-    #[allow(dead_code)]
-    pub(crate) github_graphql: gql_client::Client,
+    // pub(crate) github_graphql: gql_client::Client,
     pub(crate) owner: String,
     pub(crate) repo: String,
     pub(crate) default_branch: String,
@@ -83,7 +82,7 @@ impl Client {
             };
 
             let pull_request =
-                PullRequest::new_pull_request_opt(&settings, &github_rest, &github_graphql).await?;
+                PullRequest::new_pull_request_opt(&settings, &github_graphql).await?;
 
             (branch, pull_request)
         } else {
@@ -135,7 +134,7 @@ impl Client {
         Ok(Self {
             git_repo,
             github_rest,
-            github_graphql,
+            // github_graphql,
             default_branch,
             branch,
             owner,
