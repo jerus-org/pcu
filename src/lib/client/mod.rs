@@ -66,11 +66,8 @@ impl Client {
 
         let line_limit = settings.get::<usize>("line_limit").unwrap_or(10);
 
-        let github_rest = Client::get_github_api(&settings, &owner, &repo).await?;
-
-        let headers = HashMap::from([("User-Agent", &owner)]);
-
-        let github_graphql = gql_client::Client::new_with_headers(END_POINT, headers);
+        let (github_rest, github_graphql) =
+            Client::get_github_apis(&settings, &owner, &repo).await?;
 
         let (branch, pull_request) = if &cmd == "pull-request" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
@@ -87,6 +84,7 @@ impl Client {
 
             let pull_request =
                 PullRequest::new_pull_request_opt(&settings, &github_rest, &github_graphql).await?;
+
             (branch, pull_request)
         } else {
             let branch = None;
@@ -152,13 +150,13 @@ impl Client {
     }
 
     /// Get the GitHub API instance
-    async fn get_github_api(
+    async fn get_github_apis(
         settings: &Config,
         owner: &str,
         repo: &str,
-    ) -> Result<GitHubAPI, Error> {
+    ) -> Result<(GitHubAPI, gql_client::Client), Error> {
         log::debug!("*******\nGet GitHub API instance");
-        let config = match settings.get::<String>("app_id") {
+        let (config, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::debug!(
                     "Using {} for authentication",
@@ -187,7 +185,10 @@ impl Client {
                     .await
                     .unwrap();
 
-                APIConfig::with_token(installation_token).shared()
+                (
+                    APIConfig::with_token(installation_token.clone()).shared(),
+                    installation_token.token,
+                )
             }
             Err(_) => {
                 let pat = settings
@@ -202,11 +203,19 @@ impl Client {
                 let personal_access_token = PersonalAccessToken::new(&pat);
 
                 // Use the personal access token to create a API configuration
-                APIConfig::with_token(personal_access_token).shared()
+                (APIConfig::with_token(personal_access_token).shared(), pat)
             }
         };
 
-        Ok(GitHubAPI::new(&config))
+        let auth = format!("Bearer {}", token);
+
+        let headers = HashMap::from([("User-Agent", owner), ("Authorization", &auth)]);
+
+        let github_graphql = gql_client::Client::new_with_headers(END_POINT, headers);
+
+        let github_rest = GitHubAPI::new(&config);
+
+        Ok((github_rest, github_graphql))
     }
 
     pub fn branch_or_main(&self) -> &str {
