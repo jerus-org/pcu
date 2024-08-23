@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add headers and refine error handling(pr [#293])
 - add owner and name fields to repository query(pr [#296])
 - add skip_deserializing attribute to owner and name fields in Repository struct(pr [#297])
+- remove unnecessary owner and name fields from get_pull_request_title query(pr [#298])
 
 ## [0.4.0] - 2024-08-17
 
@@ -559,6 +560,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#295]: https://github.com/jerus-org/pcu/pull/295
 [#296]: https://github.com/jerus-org/pcu/pull/296
 [#297]: https://github.com/jerus-org/pcu/pull/297
+[#298]: https://github.com/jerus-org/pcu/pull/298
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jerus-org/pcu/compare/v0.2.0...v0.3.0
