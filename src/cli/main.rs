@@ -119,24 +119,30 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
         print_changelog(client.changelog_as_str(), client.line_limit())
     );
 
-    let report = client.repo_status()?;
-    log::debug!("Before commit:Repo state: {report}");
-    log::debug!("before commit:Branch status: {}", client.branch_status()?);
+    let commit_message = "chore: update changelog for pr";
 
-    match sign {
-        Sign::Gpg => {
-            client.commit_changelog_gpg(None)?;
-        }
-        Sign::None => {
-            client.commit_changelog(None)?;
-        }
-    }
+    commit_changed_files(&client, sign, commit_message, None).await?;
 
-    log::debug!("After commit: Repo state: {}", client.repo_status()?);
-    log::debug!("After commit: Branch status: {}", client.branch_status()?);
+    push_commited(&client, None, false).await?;
 
-    client.push_changelog(None)?;
-    log::debug!("After push: Branch status: {}", client.branch_status()?);
+    // let report = client.repo_status()?;
+    // log::debug!("Before commit:Repo state: {report}");
+    // log::debug!("before commit:Branch status: {}", client.branch_status()?);
+
+    // match sign {
+    //     Sign::Gpg => {
+    //         client.commit_changelog_gpg(None)?;
+    //     }
+    //     Sign::None => {
+    //         client.commit_changelog(None)?;
+    //     }
+    // }
+
+    // log::debug!("After commit: Repo state: {}", client.repo_status()?);
+    // log::debug!("After commit: Branch status: {}", client.branch_status()?);
+
+    // client.push_changelog(None)?;
+    // log::debug!("After push: Branch status: {}", client.branch_status()?);
 
     Ok(ClState::Updated)
 }
@@ -144,6 +150,17 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 async fn run_commit(sign: Sign, args: Commit) -> Result<ClState> {
     let client = get_client(Commands::Commit(args.clone())).await?;
 
+    commit_changed_files(&client, sign, args.commit_message(), args.tag_opt()).await?;
+
+    Ok(ClState::Committed)
+}
+
+async fn commit_changed_files(
+    client: &Client,
+    sign: Sign,
+    commit_message: &str,
+    tag_opt: Option<&str>,
+) -> Result<()> {
     log::debug!("{}", Style::new().bold().underline().paint("Check WorkDir"));
 
     let files_in_workdir = client.repo_files_not_staged()?;
@@ -166,7 +183,7 @@ async fn run_commit(sign: Sign, args: Commit) -> Result<ClState> {
 
     log::info!("Commit the staged changes");
 
-    client.commit_staged(sign, args.commit_message(), args.tag_opt())?;
+    client.commit_staged(sign, commit_message, tag_opt)?;
 
     log::debug!(
         "{}",
@@ -179,17 +196,13 @@ async fn run_commit(sign: Sign, args: Commit) -> Result<ClState> {
     log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
     log::debug!("Branch status: {}", client.branch_status()?);
 
-    Ok(ClState::Committed)
+    Ok(())
 }
 
 async fn run_push(args: Push) -> Result<ClState> {
     let client = get_client(Commands::Push(args.clone())).await?;
 
-    log::info!("Push the commit");
-
-    client.push_commit(args.tag_opt(), args.no_push)?;
-    log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
-    log::debug!("Branch status: {}", client.branch_status()?);
+    push_commited(&client, args.tag_opt(), args.no_push).await?;
 
     if !args.no_push {
         Ok(ClState::Pushed(
@@ -200,6 +213,16 @@ async fn run_push(args: Push) -> Result<ClState> {
             "Changed files committed and push dry run completed for logging.".to_string(),
         ))
     }
+}
+
+async fn push_commited(client: &Client, tag_opt: Option<&str>, no_push: bool) -> Result<()> {
+    log::info!("Push the commit");
+
+    client.push_commit(tag_opt, no_push)?;
+    log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
+    log::debug!("Branch status: {}", client.branch_status()?);
+
+    Ok(())
 }
 
 async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
