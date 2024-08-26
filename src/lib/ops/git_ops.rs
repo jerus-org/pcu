@@ -38,6 +38,7 @@ pub trait GitOps {
         tag: Option<&str>,
     ) -> Result<(), Error>;
     fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error>;
+    fn rebase_next_pr(&self) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -291,6 +292,15 @@ impl GitOps for Client {
         }
 
         Ok(())
+    }
+
+    /// Rebase the next pr of dependency updates if any
+    fn rebase_next_pr(&self) -> Result<Option<String>, Error> {
+        log::debug!("Rebase next PR");
+
+        let pr_number = String::from("");
+
+        Ok(Some(pr_number))
     }
 
     fn branch_list(&self) -> Result<String, Error> {
