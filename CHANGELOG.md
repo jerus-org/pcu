@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - use commit and push logic for changelog update(pr [#301])
 - add Rebase command to CLI(pr [#304])
+- add graphql method to get open pull requests(pr [#306])
 
 ### Changed
 
@@ -583,6 +584,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#303]: https://github.com/jerus-org/pcu/pull/303
 [#304]: https://github.com/jerus-org/pcu/pull/304
 [#305]: https://github.com/jerus-org/pcu/pull/305
+[#306]: https://github.com/jerus-org/pcu/pull/306
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
