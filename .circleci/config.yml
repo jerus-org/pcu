@@ -101,7 +101,7 @@ commands:
           name: Install latest pcu
           command: |
             set -ex
-            cargo install --force --git https://github.com/jerus-org/pcu
+            cargo install --force --git https://github.com/jerus-org/pcu --branch $CIRCLE_BRANCH
 
 jobs:
   update_changelog:
