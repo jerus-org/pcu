@@ -27,6 +27,8 @@ pub enum Commands {
     Commit(Commit),
     /// Push the current commits to the remote repository
     Push(Push),
+    /// Rebase
+    Rebase(Rebase),
 }
 
 impl Display for Commands {
@@ -36,6 +38,7 @@ impl Display for Commands {
             Commands::Release(_) => write!(f, "release"),
             Commands::Commit(_) => write!(f, "commit"),
             Commands::Push(_) => write!(f, "push"),
+            Commands::Rebase(_) => write!(f, "rebase"),
         }
     }
 }
@@ -101,10 +104,21 @@ impl Push {
     }
 }
 
+/// Configuration for the Rebase command
+#[derive(Debug, Parser, Clone)]
+pub struct Rebase {
+    // /// Override the default login rebase author
+    // #[arg(short, long)]
+    // pub login: Option<String>,
+}
+
+impl Rebase {}
+
 pub enum ClState {
     Updated,
     UnChanged,
     Committed,
     Pushed(String),
     Released,
+    Rebased(String),
 }

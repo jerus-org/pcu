@@ -16,7 +16,7 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
-use cli::{ClState, Cli, Commands, Commit, PullRequest, Push, Release};
+use cli::{ClState, Cli, Commands, Commit, PullRequest, Push, Rebase, Release};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,6 +32,7 @@ async fn main() -> Result<()> {
         Commands::PullRequest(pr_args) => run_pull_request(sign, pr_args).await,
         Commands::Commit(commit_args) => run_commit(sign, commit_args).await,
         Commands::Push(push_args) => run_push(push_args).await,
+        Commands::Rebase(rebase_args) => run_rebase(rebase_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
 
@@ -43,6 +44,7 @@ async fn main() -> Result<()> {
                 ClState::Committed => log::info!("Changed files committed"),
                 ClState::Pushed(s) => log::info!("{s}"),
                 ClState::Released => log::info!("Created GitHub Release"),
+                ClState::Rebased(pr) => log::info!("Rebased PR request #{}", pr),
             };
         }
         Err(e) => {
@@ -206,6 +208,18 @@ async fn push_commited(client: &Client, tag_opt: Option<&str>, no_push: bool) ->
     Ok(())
 }
 
+async fn run_rebase(args: Rebase) -> Result<ClState> {
+    let client = get_client(Commands::Rebase(args.clone())).await?;
+
+    let pr_number = client.rebase_next_pr()?;
+
+    if let Some(pr_number) = pr_number {
+        Ok(ClState::Rebased(pr_number))
+    } else {
+        Ok(ClState::UnChanged)
+    }
+}
+
 async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
     let mut client = get_client(Commands::Release(args.clone())).await?;
 
@@ -316,6 +330,9 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         Commands::Push(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "push")?,
+        Commands::Rebase(_) => settings
+            .set_override("commit_message", "chore: update changelog for release")?
+            .set_override("command", "rebase")?,
     };
 
     settings = if let Ok(pat) = env::var(GITHUB_PAT) {
