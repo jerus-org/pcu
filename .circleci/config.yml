@@ -95,6 +95,14 @@ commands:
             set -ex
             pcu <<parameters.pcu_verbosity>> rebase
 
+  install_latest_pcu:
+    steps:
+      - run:
+          name: Install latest pcu
+          command: |
+            set -ex
+            cargo install --force --git https://github.com/jerus-org/pcu
+
 jobs:
   update_changelog:
     executor: rust-env
@@ -160,7 +168,7 @@ jobs:
       - when:
           condition: << parameters.update_pcu >>
           steps:
-            - toolkit/install_latest_pcu
+            - install_latest_pcu
       - run:
           name: pcu version
           command: |
