@@ -21,7 +21,7 @@ pub struct Client {
     // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
     pub(crate) github_rest: GitHubAPI,
-    // pub(crate) github_graphql: gql_client::Client,
+    pub(crate) github_graphql: gql_client::Client,
     pub(crate) owner: String,
     pub(crate) repo: String,
     pub(crate) default_branch: String,
@@ -134,7 +134,7 @@ impl Client {
         Ok(Self {
             git_repo,
             github_rest,
-            // github_graphql,
+            github_graphql,
             default_branch,
             branch,
             owner,

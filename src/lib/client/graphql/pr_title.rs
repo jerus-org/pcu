@@ -31,7 +31,7 @@ pub(crate) struct Vars {
     number: i64,
 }
 
-#[allow(async_fn_in_trait)]
+// #[allow(async_fn_in_trait)]
 pub(crate) async fn get_pull_request_title(
     github_graphql: &gql_client::Client,
     owner: &str,
