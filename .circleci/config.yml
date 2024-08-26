@@ -93,7 +93,7 @@ commands:
           name: Rebase dependency PR
           command: |
             set -ex
-            pcu rebase
+            pcu <<parameters.pcu_verbosity>> rebase
 
 jobs:
   update_changelog:
