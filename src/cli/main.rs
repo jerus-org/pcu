@@ -125,25 +125,6 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 
     push_commited(&client, None, false).await?;
 
-    // let report = client.repo_status()?;
-    // log::debug!("Before commit:Repo state: {report}");
-    // log::debug!("before commit:Branch status: {}", client.branch_status()?);
-
-    // match sign {
-    //     Sign::Gpg => {
-    //         client.commit_changelog_gpg(None)?;
-    //     }
-    //     Sign::None => {
-    //         client.commit_changelog(None)?;
-    //     }
-    // }
-
-    // log::debug!("After commit: Repo state: {}", client.repo_status()?);
-    // log::debug!("After commit: Branch status: {}", client.branch_status()?);
-
-    // client.push_changelog(None)?;
-    // log::debug!("After push: Branch status: {}", client.branch_status()?);
-
     Ok(ClState::Updated)
 }
 

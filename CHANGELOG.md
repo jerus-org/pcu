@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - use commit and push logic for changelog update(pr [#301])
 
+### Changed
+
+- chore-remove commented out debug logs and unused code(pr [#302])
+
 ## [0.4.1] - 2024-08-24
 
 ### Added
@@ -572,6 +576,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#299]: https://github.com/jerus-org/pcu/pull/299
 [#300]: https://github.com/jerus-org/pcu/pull/300
 [#301]: https://github.com/jerus-org/pcu/pull/301
+[#302]: https://github.com/jerus-org/pcu/pull/302
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
