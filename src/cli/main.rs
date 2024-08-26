@@ -230,26 +230,11 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
             print_changelog(client.changelog_as_str(), client.line_limit())
         );
 
-        let report = client.repo_status()?;
-        log::debug!("Before commit:Repo state: {report}");
-        log::debug!("before commit:Branch status: {}", client.branch_status()?);
+        let commit_message = "chore: update changelog for pr";
 
-        match sign {
-            Sign::Gpg => {
-                log::trace!("Signing with GPG");
-                client.commit_changelog_gpg(Some(&version))?;
-            }
-            Sign::None => {
-                log::trace!("Without signing");
-                client.commit_changelog(Some(&version))?;
-            }
-        }
+        commit_changed_files(&client, sign, commit_message, None).await?;
 
-        log::debug!("After commit: Repo state: {}", client.repo_status()?);
-        log::debug!("After commit: Branch status: {}", client.branch_status()?);
-
-        client.push_changelog(Some(&version))?;
-        log::debug!("After push: Branch status: {}", client.branch_status()?);
+        push_commited(&client, None, false).await?;
     }
 
     client.make_release(&version).await?;
