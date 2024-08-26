@@ -82,6 +82,19 @@ commands:
                 https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
             fi
 
+  rebase_dep_pr:
+    parameters:
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+    steps:
+      - run:
+          name: Rebase dependency PR
+          command: |
+            set -ex
+            pcu <<parameters.pcu_verbosity>> rebase
+
 jobs:
   update_changelog:
     executor: rust-env
@@ -121,16 +134,16 @@ jobs:
       pcu_halt_signal:
         type: string
         default: "halt"
-        description: "Word expected to signal an early exit"
-      install_from_github:
-        type: boolean
-        default: false
-        description: "Install pcu from github"
+        description: "The verbosity of the pcu command"
       update_log_option:
         type: enum
         enum: ["halt", "pipeline"]
         default: "pipeline"
         description: "The option to halt or continue with new pipeline when a change log does not need to be updated"
+      update_pcu:
+        type: boolean
+        default: false
+        description: "Update pcu to the latest code from the git repo"
     steps:
       - checkout
       - add_ssh_keys:
@@ -144,12 +157,10 @@ jobs:
             ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
-      - run:
-          name: Install pcu from code on main branch of on github
-          command: |
-            if [ "<< parameters.install_from_github >>" == "true"  ] ; then
-              cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
-            fi
+      - when:
+          condition: << parameters.update_pcu >>
+          steps:
+            - toolkit/install_latest_pcu
       - run:
           name: pcu version
           command: |
@@ -161,6 +172,9 @@ jobs:
             - update_log:
                 pcu_verbosity: <<parameters.pcu_verbosity>>
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
+      - rebase_dep_pr:
+          pcu_verbosity: <<parameters.pcu_verbosity>>
+
       - when:
           condition:
             equal: [pipeline, << parameters.update_log_option >>]
@@ -340,7 +354,7 @@ workflows:
             - pcu-app
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
-          install_from_github: true
+          update_pcu: true
           pcu_verbosity: "-vvvv"
 
   on_success:

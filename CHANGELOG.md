@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - chore-remove commented out debug logs and unused code(pr [#302])
 - remove-remove customised commit and push for changelogs(pr [#303])
+- ci-integrate rebase commanmd into change update job(pr [#305])
 
 ## [0.4.1] - 2024-08-24
 
@@ -581,6 +582,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#302]: https://github.com/jerus-org/pcu/pull/302
 [#303]: https://github.com/jerus-org/pcu/pull/303
 [#304]: https://github.com/jerus-org/pcu/pull/304
+[#305]: https://github.com/jerus-org/pcu/pull/305
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
