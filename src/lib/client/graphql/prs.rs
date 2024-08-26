@@ -50,6 +50,7 @@ pub(crate) struct Vars {
 
 impl GraphQL for Client {
     async fn get_open_pull_requests(&self) -> Result<Vec<Edge>, Error> {
+        log::trace!("get_open_pull_requests");
         let query = r#"
         query($owner:String!, $name:String!){
             repository(owner: $owner, name: $name) {

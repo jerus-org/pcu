@@ -300,7 +300,7 @@ impl GitOps for Client {
         log::debug!("Rebase next PR");
 
         let prs = self.get_open_pull_requests().await?;
-        log::trace!("Open PRs: {:?}", prs);
+        log::debug!("Open PRs: {:?}", prs);
         let pr_number = String::from("");
 
         Ok(Some(pr_number))
