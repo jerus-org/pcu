@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - remove-remove customised commit and push for changelogs(pr [#303])
 - ci-integrate rebase command into change update job(pr [#305])
 
+### Fixed
+
+- add condition to execute pcu rebase only if CIRCLE_PULL_REQUEST is set(pr [#309])
+
 ## [0.4.1] - 2024-08-24
 
 ### Added
@@ -589,6 +593,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#306]: https://github.com/jerus-org/pcu/pull/306
 [#307]: https://github.com/jerus-org/pcu/pull/307
 [#308]: https://github.com/jerus-org/pcu/pull/308
+[#309]: https://github.com/jerus-org/pcu/pull/309
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
