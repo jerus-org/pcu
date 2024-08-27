@@ -91,6 +91,7 @@ impl Client {
             let pull_request = None;
             (branch, pull_request)
         };
+        log::trace!("branch: {:?} and pull_request: {:?}", branch, pull_request);
 
         // Use the log config setting to set the default change log file name
         log::trace!("log: {:?}", settings.get::<String>("log"));
