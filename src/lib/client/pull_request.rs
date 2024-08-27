@@ -26,7 +26,7 @@ impl PullRequest {
         let command: String = settings.get("command").map_err(|_| Error::CommandNotSet)?;
 
         // If the command is not pull-request then return None
-        if command != "pull-request" {
+        if command != "pull-request" || command != "rebase" {
             return Ok(None);
         }
 
