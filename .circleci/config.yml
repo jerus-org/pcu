@@ -95,6 +95,7 @@ commands:
             set -ex
             if [[ -v CIRCLE_PULL_REQUEST ]]; then
               pcu <<parameters.pcu_verbosity>> rebase
+            fi
 
   install_latest_pcu:
     steps:
