@@ -96,16 +96,10 @@ impl GraphQL for Client {
             .pull_requests
             .edges
             .iter()
-            .filter_map(|pr| {
-                if pr.node.number != self.pr_number() {
-                    Some(PrItem {
-                        number: pr.node.number,
-                        title: pr.node.title.clone(),
-                        login: pr.node.author.login.clone(),
-                    })
-                } else {
-                    None
-                }
+            .map(|pr| PrItem {
+                number: pr.node.number,
+                title: pr.node.title.clone(),
+                login: pr.node.author.login.clone(),
             })
             .collect();
 

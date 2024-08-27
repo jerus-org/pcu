@@ -93,7 +93,7 @@ commands:
           name: Rebase dependency PR
           command: |
             set -ex
-            if [[ -v CIRCLE_PULL_REQUEST ]]; then
+            if [ -z CIRCLE_PULL_REQUEST ]; then
               pcu <<parameters.pcu_verbosity>> rebase
             fi
 

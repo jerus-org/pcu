@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add graphql method to get open pull requests(pr [#306])
 - add PrItem struct and return Vec<PrItem> instead of Vec<Edge>(pr [#307])
 - add early return if no open pull requests are found(pr [#308])
+- run rebase only when check run on main(pr [#311])
 
 ### Changed
 
@@ -594,6 +595,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#307]: https://github.com/jerus-org/pcu/pull/307
 [#308]: https://github.com/jerus-org/pcu/pull/308
 [#309]: https://github.com/jerus-org/pcu/pull/309
+[#311]: https://github.com/jerus-org/pcu/pull/311
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
