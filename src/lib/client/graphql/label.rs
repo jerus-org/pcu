@@ -7,8 +7,8 @@ const LABEL: &str = "rebase";
 const COLOR: &str = "FF0000";
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct GetPullRequestTitle {
-    repository: Repository,
+pub(crate) struct GetLabelID {
+    id: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -113,7 +113,7 @@ impl GraphQLLabel for Client {
 
         let data_res = self
             .github_graphql
-            .query_with_vars_unwrap::<GetPullRequestTitle, Vars>(query, vars)
+            .query_with_vars_unwrap::<GetLabelID, Vars>(query, vars)
             .await;
 
         log::trace!("data_res: {:?}", data_res);

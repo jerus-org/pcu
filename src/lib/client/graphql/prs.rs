@@ -92,7 +92,6 @@ impl GraphQLPR for Client {
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
         log::trace!("data: {:?}", data);
-        log::trace!("number of current pr: {:?}", self.pr_number());
 
         let edges = data
             .repository
