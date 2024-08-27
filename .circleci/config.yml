@@ -44,9 +44,11 @@ commands:
           name: Update changelog or halt step
           command: |
             set -ex
-            result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
-            if [ "$result" == << parameters.pcu_halt_signal >> ]; then
-              circleci-agent step halt
+            if [[ -v CIRCLE_PULL_REQUEST ]]; then
+              result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
+              if [ "$result" == << parameters.pcu_halt_signal >> ]; then
+                circleci-agent step halt
+              fi
             fi
 
   pipeline_pcu_check:
@@ -68,18 +70,20 @@ commands:
           name: Update change or redirect to success pipeline
           command: |
             set -ex
-            result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
-            if [ "$result" == << parameters.pcu_halt_signal >> ]; then
-              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-              BODY='{"branch":"'
-              BODY+=${<< parameters.branch >>}
-              BODY+='","parameters":{"success-flag":true}}'
-              echo $BODY
-              curl -u ${CIRCLE_TOKEN}: \
-                -X POST \
-                --header 'content-type: application/json' \
-                -d $BODY \
-                https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
+            if [[ -v CIRCLE_PULL_REQUEST ]]; then
+              result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
+              if [ "$result" == << parameters.pcu_halt_signal >> ]; then
+                export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+                BODY='{"branch":"'
+                BODY+=${<< parameters.branch >>}
+                BODY+='","parameters":{"success-flag":true}}'
+                echo $BODY
+                curl -u ${CIRCLE_TOKEN}: \
+                  -X POST \
+                  --header 'content-type: application/json' \
+                  -d $BODY \
+                  https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
+              fi
             fi
 
   rebase_dep_pr:
@@ -93,7 +97,7 @@ commands:
           name: Rebase dependency PR
           command: |
             set -ex
-            if [ -z CIRCLE_PULL_REQUEST ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST}" ]; then
               pcu <<parameters.pcu_verbosity>> rebase
             fi
 
