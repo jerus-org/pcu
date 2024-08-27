@@ -71,7 +71,7 @@ commands:
           command: |
             set -ex
 
-            result = "halt"
+            result = $(echo halt)
 
             if [[ -v CIRCLE_PULL_REQUEST ]]; then
               result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
