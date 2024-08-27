@@ -70,7 +70,7 @@ commands:
           name: Update change or redirect to success pipeline
           command: |
             set -ex
-            if [[ -v $CIRCLE_PULL_REQUEST ]]; then
+            if [[ -v CIRCLE_PULL_REQUEST ]]; then
               result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
               if [ "$result" == << parameters.pcu_halt_signal >> ]; then
                 export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
