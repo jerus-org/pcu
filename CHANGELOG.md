@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - add condition to execute pcu rebase only if CIRCLE_PULL_REQUEST is set(pr [#309])
+- rename GetPullRequestTitle to GetLabelID and remove redundant log trace(pr [#315])
 
 ## [0.4.1] - 2024-08-24
 
@@ -602,6 +603,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#312]: https://github.com/jerus-org/pcu/pull/312
 [#313]: https://github.com/jerus-org/pcu/pull/313
 [#314]: https://github.com/jerus-org/pcu/pull/314
+[#315]: https://github.com/jerus-org/pcu/pull/315
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
