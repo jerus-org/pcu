@@ -4,6 +4,7 @@ use config::Config;
 
 use crate::Error;
 
+#[derive(Debug)]
 pub(crate) struct PullRequest {
     pub(crate) pull_request: String,
     pub(crate) title: String,
@@ -26,7 +27,8 @@ impl PullRequest {
         let command: String = settings.get("command").map_err(|_| Error::CommandNotSet)?;
 
         // If the command is not pull-request then return None
-        if command != "pull-request" {
+        log::trace!("command: {:?}", command);
+        if command != "pull-request" && command != "rebase" {
             return Ok(None);
         }
 

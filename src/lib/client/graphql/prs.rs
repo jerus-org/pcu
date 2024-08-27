@@ -48,8 +48,15 @@ pub(crate) struct Vars {
     name: String,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct PrItem {
+    pub(crate) number: i64,
+    pub(crate) title: String,
+    pub(crate) login: String,
+}
+
 impl GraphQL for Client {
-    async fn get_open_pull_requests(&self) -> Result<Vec<Edge>, Error> {
+    async fn get_open_pull_requests(&self) -> Result<Vec<PrItem>, Error> {
         log::trace!("get_open_pull_requests");
         let query = r#"
         query($owner:String!, $name:String!){
@@ -82,8 +89,25 @@ impl GraphQL for Client {
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
         log::trace!("data: {:?}", data);
+        log::trace!("number of current pr: {:?}", self.pr_number());
 
-        let edges = data.repository.pull_requests.edges;
+        let edges = data
+            .repository
+            .pull_requests
+            .edges
+            .iter()
+            .filter_map(|pr| {
+                if pr.node.number != self.pr_number() {
+                    Some(PrItem {
+                        number: pr.node.number,
+                        title: pr.node.title.clone(),
+                        login: pr.node.author.login.clone(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         Ok(edges)
     }

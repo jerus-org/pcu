@@ -68,7 +68,8 @@ impl Client {
         let (github_rest, github_graphql) =
             Client::get_github_apis(&settings, &owner, &repo).await?;
 
-        let (branch, pull_request) = if &cmd == "pull-request" {
+        log::trace!("Executing for command: {}", &cmd);
+        let (branch, pull_request) = if &cmd == "pull-request" || &cmd == "rebase" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
             log::trace!("branch: {:?}", settings.get::<String>("branch"));
             let pcu_branch: String = settings
@@ -90,6 +91,7 @@ impl Client {
             let pull_request = None;
             (branch, pull_request)
         };
+        log::trace!("branch: {:?} and pull_request: {:?}", branch, pull_request);
 
         // Use the log config setting to set the default change log file name
         log::trace!("log: {:?}", settings.get::<String>("log"));
