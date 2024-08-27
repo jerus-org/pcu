@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 -->
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -12,9 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - use commit and push logic for changelog update(pr [#301])
 - add Rebase command to CLI(pr [#304])
 - add graphql method to get open pull requests(pr [#306])
-<!-- markdownlint-disable MD033 -->
 - add PrItem struct and return Vec<PrItem> instead of Vec<Edge>(pr [#307])
-<!-- markdownlint-enable MD033 -->
 
 ### Changed
 
