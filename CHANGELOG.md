@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci-integrate rebase command into change update job(pr [#305])
 - ci-add check for pull request before running cl update(pr [#312])
 - ci-modify conditional logic for result variable and API call(pr [#313])
+- refactor(label)-update GetLabelID structure and related types(pr [#316])
 
 ### Fixed
 
@@ -604,6 +605,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#313]: https://github.com/jerus-org/pcu/pull/313
 [#314]: https://github.com/jerus-org/pcu/pull/314
 [#315]: https://github.com/jerus-org/pcu/pull/315
+[#316]: https://github.com/jerus-org/pcu/pull/316
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
