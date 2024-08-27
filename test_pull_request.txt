@@ -1,0 +1,4 @@
+This file is added as part of the test pull request for the rebase command. 
+
+The pull request should not be approved so that the request remains to be amended by the release command.
+
