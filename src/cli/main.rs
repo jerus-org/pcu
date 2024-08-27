@@ -45,6 +45,7 @@ async fn main() -> Result<()> {
                 ClState::Pushed(s) => log::info!("{s}"),
                 ClState::Released => log::info!("Created GitHub Release"),
                 ClState::Rebased(pr) => log::info!("Rebased PR request #{}", pr),
+                ClState::NoRebase => log::info!("No rebase required"),
             };
         }
         Err(e) => {
@@ -216,7 +217,7 @@ async fn run_rebase(args: Rebase) -> Result<ClState> {
     if let Some(pr_number) = pr_number {
         Ok(ClState::Rebased(pr_number))
     } else {
-        Ok(ClState::UnChanged)
+        Ok(ClState::NoRebase)
     }
 }
 
