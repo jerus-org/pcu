@@ -4,6 +4,7 @@ use config::Config;
 
 use crate::Error;
 
+#[derive(Debug)]
 pub(crate) struct PullRequest {
     pub(crate) pull_request: String,
     pub(crate) title: String,
