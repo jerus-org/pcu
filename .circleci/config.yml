@@ -44,9 +44,11 @@ commands:
           name: Update changelog or halt step
           command: |
             set -ex
-            result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
-            if [ "$result" == << parameters.pcu_halt_signal >> ]; then
-              circleci-agent step halt
+            if [[ -v $CIRCLE_PULL_REQUEST ]]; then
+              result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
+              if [ "$result" == << parameters.pcu_halt_signal >> ]; then
+                circleci-agent step halt
+              fi
             fi
 
   pipeline_pcu_check:
@@ -93,7 +95,7 @@ commands:
           name: Rebase dependency PR
           command: |
             set -ex
-            if [ -z CIRCLE_PULL_REQUEST ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST}" ]; then
               pcu <<parameters.pcu_verbosity>> rebase
             fi
 
