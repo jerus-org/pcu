@@ -11,7 +11,8 @@ use git2::{
 };
 use log::log_enabled;
 
-use crate::client::graphql::GraphQL;
+use crate::client::graphql::GraphQLLabel;
+use crate::client::graphql::GraphQLPR;
 use crate::Client;
 use crate::Error;
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
@@ -299,16 +300,20 @@ impl GitOps for Client {
     async fn rebase_next_pr(&self) -> Result<Option<String>, Error> {
         log::debug!("Rebase next PR");
 
-        let prs = self.get_open_pull_requests().await?;
+        let mut prs = self.get_open_pull_requests().await?;
 
         if prs.is_empty() {
             return Ok(None);
         };
 
-        log::debug!("Open PRs: {:?}", prs);
-        let pr_number = String::from("");
+        prs.sort_by(|a, b| a.number.cmp(&b.number));
+        let next_pr = &prs[0];
 
-        Ok(Some(pr_number))
+        log::trace!("Next PR: {}", next_pr.number);
+
+        self.label_pr(next_pr.number).await?;
+
+        Ok(Some(next_pr.number.to_string()))
     }
 
     fn branch_list(&self) -> Result<String, Error> {

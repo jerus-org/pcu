@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Client, Error, GraphQLWrapper};
 
+const LABEL: &str = "rebase";
+const COLOR: &str = "FF0000";
+
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct GetPullRequestTitle {
     repository: Repository,
@@ -44,6 +47,7 @@ pub(crate) struct Actor {
 pub(crate) struct Vars {
     owner: String,
     name: String,
+    label: String,
 }
 
 #[derive(Debug, Clone)]
@@ -53,33 +57,58 @@ pub(crate) struct PrItem {
     pub(crate) login: String,
 }
 
-pub(crate) trait GraphQLPR {
-    #[allow(async_fn_in_trait)]
-    async fn get_open_pull_requests(&self) -> Result<Vec<PrItem>, Error>;
+#[derive(Debug, Clone)]
+pub(crate) struct Label {
+    pub(crate) number: String,
+    pub(crate) name: String,
+    pub(crate) color: String,
 }
 
-impl GraphQLPR for Client {
-    async fn get_open_pull_requests(&self) -> Result<Vec<PrItem>, Error> {
-        log::trace!("get_open_pull_requests");
+pub(crate) trait GraphQLLabel {
+    #[allow(async_fn_in_trait)]
+    async fn label_pr(&self, pr_number: i64) -> Result<(), Error>;
+}
+
+impl GraphQLLabel for Client {
+    // query ($owner: String!, $name: String!){
+    //     repository(owner: $owner, name: $name) {
+    //       id
+    //     }
+    //   }
+
+    // mutation ($repo_node: ID!, $label: String!, $color: String!) {
+    //     createLabel(input: {
+    //       repositoryId: $repo_node,
+    //       name: $label,
+    //       color: $color
+    //       description: "Label to trigger rebase"
+    //     }) {
+    //       label {
+    //         id
+    //         name
+    //         color
+    //       }
+    //     }
+    //   }
+
+    async fn label_pr(&self, pr_number: i64) -> Result<(), Error> {
+        log::trace!("label_pr number: {}", pr_number);
+
+        // Get the label ID
         let query = r#"
-        query($owner:String!, $name:String!){
-            repository(owner: $owner, name: $name) {
-                pullRequests(first: 100, states: OPEN) {
-                    edges {
-                        node {
-                            title
-                            number
-                            author {login}
-                            }
-                        }
-                    }
+            query($owner:String!, $name:String!, $label:String!) {
+              repository(owner: $owner, name: $name) {
+                label(name: $label) {
+                  id
                 }
+              }
             }
             "#;
 
         let vars = Vars {
             owner: self.owner.clone(),
             name: self.repo().to_string(),
+            label: LABEL.to_string(),
         };
 
         let data_res = self
@@ -92,20 +121,7 @@ impl GraphQLPR for Client {
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
         log::trace!("data: {:?}", data);
-        log::trace!("number of current pr: {:?}", self.pr_number());
 
-        let edges = data
-            .repository
-            .pull_requests
-            .edges
-            .iter()
-            .map(|pr| PrItem {
-                number: pr.node.number,
-                title: pr.node.title.clone(),
-                login: pr.node.author.login.clone(),
-            })
-            .collect();
-
-        Ok(edges)
+        Ok(())
     }
 }

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add PrItem struct and return Vec<PrItem> instead of Vec<Edge>(pr [#307])
 - add early return if no open pull requests are found(pr [#308])
 - run rebase only when check run on main(pr [#311])
+- add label support for pull requests(pr [#314])
 
 ### Changed
 
@@ -600,6 +601,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#311]: https://github.com/jerus-org/pcu/pull/311
 [#312]: https://github.com/jerus-org/pcu/pull/312
 [#313]: https://github.com/jerus-org/pcu/pull/313
+[#314]: https://github.com/jerus-org/pcu/pull/314
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
