@@ -28,7 +28,7 @@ impl PullRequest {
 
         // If the command is not pull-request then return None
         log::trace!("command: {:?}", command);
-        if command != "pull-request" || command != "rebase" {
+        if command != "pull-request" && command != "rebase" {
             return Ok(None);
         }
 
