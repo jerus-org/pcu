@@ -11,9 +11,9 @@ use git2::{
 };
 use log::log_enabled;
 
+use crate::client::graphql::GraphQL;
 use crate::Client;
 use crate::Error;
-
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 const DEFAULT_COMMIT_MESSAGE: &str = "chore: commit staged files";
 
@@ -38,7 +38,8 @@ pub trait GitOps {
         tag: Option<&str>,
     ) -> Result<(), Error>;
     fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error>;
-    fn rebase_next_pr(&self) -> Result<Option<String>, Error>;
+    #[allow(async_fn_in_trait)]
+    async fn rebase_next_pr(&self) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -295,9 +296,11 @@ impl GitOps for Client {
     }
 
     /// Rebase the next pr of dependency updates if any
-    fn rebase_next_pr(&self) -> Result<Option<String>, Error> {
+    async fn rebase_next_pr(&self) -> Result<Option<String>, Error> {
         log::debug!("Rebase next PR");
 
+        let prs = self.get_open_pull_requests().await?;
+        log::debug!("Open PRs: {:?}", prs);
         let pr_number = String::from("");
 
         Ok(Some(pr_number))
