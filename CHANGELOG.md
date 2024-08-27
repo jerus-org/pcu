@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - remove-remove customised commit and push for changelogs(pr [#303])
 - ci-integrate rebase command into change update job(pr [#305])
 - ci-add check for pull request before running cl update(pr [#312])
+- ci-modify conditional logic for result variable and API call(pr [#313])
 
 ### Fixed
 
@@ -598,6 +599,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#309]: https://github.com/jerus-org/pcu/pull/309
 [#311]: https://github.com/jerus-org/pcu/pull/311
 [#312]: https://github.com/jerus-org/pcu/pull/312
+[#313]: https://github.com/jerus-org/pcu/pull/313
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
