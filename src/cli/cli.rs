@@ -121,4 +121,5 @@ pub enum ClState {
     Pushed(String),
     Released,
     Rebased(String),
+    NoRebase,
 }
