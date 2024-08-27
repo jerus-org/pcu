@@ -8,7 +8,7 @@ const COLOR: &str = "FF0000";
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct GetLabelID {
-    id: String,
+    repository: Repository,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -18,12 +18,12 @@ pub(crate) struct Repository {
     #[serde(skip_deserializing)]
     name: String,
     #[serde(rename = "pullRequests")]
-    pull_requests: PullRequests,
+    label: LabelId,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct PullRequests {
-    edges: Vec<Edge>,
+pub(crate) struct LabelId {
+    id: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -108,7 +108,8 @@ impl GraphQLLabel for Client {
         let vars = Vars {
             owner: self.owner.clone(),
             name: self.repo().to_string(),
-            label: LABEL.to_string(),
+            // label: LABEL.to_string(),
+            label: "test".to_string(),
         };
 
         let data_res = self
