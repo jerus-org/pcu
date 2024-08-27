@@ -68,7 +68,7 @@ impl Client {
         let (github_rest, github_graphql) =
             Client::get_github_apis(&settings, &owner, &repo).await?;
 
-        let (branch, pull_request) = if &cmd == "pull-request" {
+        let (branch, pull_request) = if &cmd == "pull-request" || &cmd == "rebase" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
             log::trace!("branch: {:?}", settings.get::<String>("branch"));
             let pcu_branch: String = settings
