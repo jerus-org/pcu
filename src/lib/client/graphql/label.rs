@@ -17,7 +17,7 @@ pub(crate) struct Repository {
     owner: String,
     #[serde(skip_deserializing)]
     name: String,
-    #[serde(rename = "pullRequests")]
+    // #[serde(skip_deserializing)]
     label: LabelId,
 }
 
