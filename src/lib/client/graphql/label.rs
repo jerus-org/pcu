@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Client, Error, GraphQLWrapper};
 
+use tracing::instrument;
+
 const LABEL: &str = "rebase";
 const COLOR: &str = "FF0000";
 
@@ -18,7 +20,7 @@ pub(crate) struct Repository {
     #[serde(skip_deserializing)]
     name: String,
     // #[serde(skip_deserializing)]
-    label: LabelId,
+    label: Label,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -57,11 +59,11 @@ pub(crate) struct PrItem {
     pub(crate) login: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub(crate) struct Label {
-    pub(crate) number: String,
     pub(crate) name: String,
     pub(crate) color: String,
+    pub(crate) id: String,
 }
 
 pub(crate) trait GraphQLLabel {
@@ -91,15 +93,18 @@ impl GraphQLLabel for Client {
     //     }
     //   }
 
+    #[instrument(skip(self))]
     async fn label_pr(&self, pr_number: i64) -> Result<(), Error> {
-        log::trace!("label_pr number: {}", pr_number);
+        tracing::trace!("label_pr number: {}", pr_number);
 
         // Get the label ID
         let query = r#"
             query($owner:String!, $name:String!, $label:String!) {
               repository(owner: $owner, name: $name) {
                 label(name: $label) {
-                  id
+                  id,
+                  name,
+                  color
                 }
               }
             }
@@ -112,16 +117,18 @@ impl GraphQLLabel for Client {
             label: "test".to_string(),
         };
 
+        tracing::trace!("vars: {:?}", vars);
+
         let data_res = self
             .github_graphql
             .query_with_vars_unwrap::<GetLabelID, Vars>(query, vars)
             .await;
 
-        log::trace!("data_res: {:?}", data_res);
+        tracing::trace!("data_res: {:?}", data_res);
 
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
-        log::trace!("data: {:?}", data);
+        tracing::trace!("data: {:?}", data);
 
         Ok(())
     }
