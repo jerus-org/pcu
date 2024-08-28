@@ -40,6 +40,8 @@ impl GraphQLRepo for Client {
         let query = r#"
             query ($owner: String!, $name: String!){
                 repository(owner: $owner, name: $name) {
+                  owner,
+                  name,
                   id
                 }
               }
