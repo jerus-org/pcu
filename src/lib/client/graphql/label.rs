@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Client, Error, GraphQLWrapper};
 
+use tracing::instrument;
+
 const LABEL: &str = "rebase";
 const COLOR: &str = "FF0000";
 
@@ -91,8 +93,9 @@ impl GraphQLLabel for Client {
     //     }
     //   }
 
+    #[instrument(skip(self))]
     async fn label_pr(&self, pr_number: i64) -> Result<(), Error> {
-        log::trace!("label_pr number: {}", pr_number);
+        tracing::trace!("label_pr number: {}", pr_number);
 
         // Get the label ID
         let query = r#"
@@ -117,11 +120,11 @@ impl GraphQLLabel for Client {
             .query_with_vars_unwrap::<GetLabelID, Vars>(query, vars)
             .await;
 
-        log::trace!("data_res: {:?}", data_res);
+        tracing::trace!("data_res: {:?}", data_res);
 
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
-        log::trace!("data: {:?}", data);
+        tracing::trace!("data: {:?}", data);
 
         Ok(())
     }
