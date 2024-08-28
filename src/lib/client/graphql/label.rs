@@ -20,7 +20,7 @@ pub(crate) struct Repository {
     #[serde(skip_deserializing)]
     name: String,
     // #[serde(skip_deserializing)]
-    label: LabelId,
+    label: Label,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -59,11 +59,11 @@ pub(crate) struct PrItem {
     pub(crate) login: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub(crate) struct Label {
-    pub(crate) number: String,
     pub(crate) name: String,
     pub(crate) color: String,
+    pub(crate) id: String,
 }
 
 pub(crate) trait GraphQLLabel {
@@ -102,7 +102,9 @@ impl GraphQLLabel for Client {
             query($owner:String!, $name:String!, $label:String!) {
               repository(owner: $owner, name: $name) {
                 label(name: $label) {
-                  id
+                  id,
+                  name,
+                  color
                 }
               }
             }
@@ -114,6 +116,8 @@ impl GraphQLLabel for Client {
             // label: LABEL.to_string(),
             label: "test".to_string(),
         };
+
+        tracing::trace!("vars: {:?}", vars);
 
         let data_res = self
             .github_graphql
