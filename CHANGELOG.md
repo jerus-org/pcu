@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci-add check for pull request before running cl update(pr [#312])
 - ci-modify conditional logic for result variable and API call(pr [#313])
 - refactor(label)-update GetLabelID structure and related types(pr [#316])
+- fix(: skip deserializing owner and name fields in Repository struct(pr [#322])
 
 ### Fixed
 
@@ -616,6 +617,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#319]: https://github.com/jerus-org/pcu/pull/319
 [#320]: https://github.com/jerus-org/pcu/pull/320
 [#321]: https://github.com/jerus-org/pcu/pull/321
+[#322]: https://github.com/jerus-org/pcu/pull/322
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0

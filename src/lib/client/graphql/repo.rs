@@ -16,7 +16,9 @@ pub(crate) struct GetRepositoryId {
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct Repository {
+    #[serde(skip_deserializing)]
     owner: String,
+    #[serde(skip_deserializing)]
     name: String,
     id: String,
 }
@@ -40,8 +42,6 @@ impl GraphQLRepo for Client {
         let query = r#"
             query ($owner: String!, $name: String!){
                 repository(owner: $owner, name: $name) {
-                  owner,
-                  name,
                   id
                 }
               }
