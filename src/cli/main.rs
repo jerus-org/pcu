@@ -17,12 +17,14 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 mod cli;
 
 use cli::{ClState, Cli, Commands, Commit, PullRequest, Push, Rebase, Release};
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
-    let mut builder = get_logging(args.logging.log_level_filter());
+    let mut builder = get_logging(&args.logging.log_level_filter());
     builder.init();
+    get_tracing(args.logging.log_level_filter());
     log::debug!("Args: {args:?}");
     let sign = args.sign.unwrap_or_default();
 
@@ -280,15 +282,15 @@ fn print_changelog(changelog_path: &str, mut line_limit: usize) -> String {
     output
 }
 
-fn get_logging(level: log::LevelFilter) -> env_logger::Builder {
+fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {
     let env = Env::new()
         .filter_or(LOG_ENV_VAR, "off")
         .write_style_or(LOG_STYLE_ENV_VAR, "auto");
 
     let mut builder = env_logger::Builder::from_env(env);
 
-    builder.filter_module("pcu", level);
-    builder.filter_module("pcu_lib", level);
+    builder.filter_module("pcu", *level);
+    builder.filter_module("pcu_lib", *level);
     builder.format_timestamp_secs();
 
     builder
@@ -299,6 +301,22 @@ async fn get_client(cmd: Commands) -> Result<Client, Error> {
     let client = Client::new_with(settings).await?;
 
     Ok(client)
+}
+
+fn get_tracing(level: log::LevelFilter) {
+    let filter_pcu = EnvFilter::from(format!("pcu={}", level));
+    let filter_pcu_lib = EnvFilter::from(format!("pcu_lib={}", level));
+
+    let log_subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .pretty()
+        .with_env_filter(filter_pcu)
+        .with_env_filter(filter_pcu_lib)
+        .finish();
+
+    let _ = tracing::subscriber::set_global_default(log_subscriber)
+        .map_err(|_| eprintln!("Unable to set global default subscriber!"));
+
+    tracing::info!("Initialised logging to console at {level}");
 }
 
 fn get_settings(cmd: Commands) -> Result<Config, Error> {
