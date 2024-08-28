@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-use ansi_term::Style;
 use serde::{Deserialize, Serialize};
 
 use crate::{Client, Error, GraphQLWrapper};
@@ -36,11 +35,8 @@ pub(crate) trait GraphQLRepo {
 impl GraphQLRepo for Client {
     #[instrument(skip(self))]
     async fn get_repository_id(&self) -> Result<String, Error> {
-        tracing::trace!("{}", Style::new().bold().paint("get_repository_id"));
-
-        // Get the label ID
         let query = r#"
-            query ($owner: String!, $name: String!){
+                    query ($owner: String!, $name: String!){
                 repository(owner: $owner, name: $name) {
                   id
                 }

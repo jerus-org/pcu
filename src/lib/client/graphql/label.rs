@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use color_eyre::owo_colors::OwoColorize;
+// use named_colour::ColourRgb;
 use serde::{Deserialize, Serialize};
 
 use crate::{client::graphql::repo::GraphQLRepo, Client, Error, GraphQLWrapper};
@@ -7,7 +7,7 @@ use crate::{client::graphql::repo::GraphQLRepo, Client, Error, GraphQLWrapper};
 use tracing::instrument;
 
 const LABEL: &str = "rebase";
-const COLOR: &str = "FF0000";
+const COLOR: &str = "B22222";
 
 #[derive(Deserialize, Debug, Clone)]
 pub(crate) struct GetLabelID {
@@ -29,23 +29,6 @@ pub(crate) struct LabelId {
     id: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Edge {
-    node: PullRequest,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub(crate) struct PullRequest {
-    number: i64,
-    title: String,
-    author: Actor,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Actor {
-    login: String,
-}
-
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct Vars {
     owner: String,
@@ -53,11 +36,22 @@ pub(crate) struct Vars {
     label: String,
 }
 
-#[derive(Debug, Clone)]
-pub(crate) struct PrItem {
-    pub(crate) number: i64,
-    pub(crate) title: String,
-    pub(crate) login: String,
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct CreateLabelData {
+    #[serde(rename = "createLabel")]
+    create_label: CreateLabel,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct CreateLabel {
+    label: Label,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub(crate) struct CreateVars {
+    repo_node: String,
+    label: String,
+    color: String,
+    desc: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -70,19 +64,18 @@ pub(crate) struct Label {
 pub(crate) trait GraphQLLabel {
     #[allow(async_fn_in_trait)]
     async fn label_pr(&self, pr_number: i64) -> Result<(), Error>;
+    async fn create_label(
+        &self,
+        repo_node: &str,
+        label: &str,
+        color: &str,
+        desc: &str,
+    ) -> Result<String, Error>;
 }
 
 impl GraphQLLabel for Client {
-    // query ($owner: String!, $name: String!){
-    //     repository(owner: $owner, name: $name) {
-    //       id
-    //     }
-    //   }
-
     #[instrument(skip(self))]
     async fn label_pr(&self, pr_number: i64) -> Result<(), Error> {
-        tracing::trace!("label_pr number: {}", pr_number);
-
         // Get the label ID
         let query = r#"
         query($owner:String!, $name:String!, $label:String!) {
@@ -114,8 +107,8 @@ impl GraphQLLabel for Client {
 
         tracing::trace!("data_res: {:?}", data_res);
 
-        if data_res.is_err() {
-            tracing::trace!("label `{}` not found", label.white());
+        let label_id = if data_res.is_err() {
+            tracing::trace!("label `{}` not found", label);
 
             let repo_id_res = self.get_repository_id().await;
 
@@ -125,30 +118,71 @@ impl GraphQLLabel for Client {
 
             tracing::trace!("repo_id: {:?}", repo_id);
 
-            // let mutation = r#"
-            // mutation ($repo_node: ID!, $label: String!, $color: String!) {
-            //     createLabel(input: {
-            //       repositoryId: $repo_node,
-            //       name: $label,
-            //       color: $color
-            //       description: "Label to trigger rebase"
-            //     }) {
-            //       label {
-            //         id
-            //         name
-            //         color
-            //       }
-            //     }
-            //   }
-            // "#;
+            let id_res = self
+                .create_label(&repo_id, &label, COLOR, "Label to trigger rebase")
+                .await;
+            tracing::trace!("id_res: {:?}", id_res);
 
-            return Ok(());
+            let id = id_res?;
+            tracing::debug!("label_id: {:?}", id);
+
+            id
+        } else {
+            let data = data_res.map_err(GraphQLWrapper::from)?;
+            tracing::debug!("data: {:?}", data);
+            data.repository.label.id
         };
+
+        tracing::trace!("label_id: {:?}", label_id);
+
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    async fn create_label(
+        &self,
+        repo_node: &str,
+        label: &str,
+        color: &str,
+        desc: &str,
+    ) -> Result<String, Error> {
+        let mutation = r#"
+        mutation ($repo_node: ID!, $label: String!, $color: String!) {
+            createLabel(input: {
+              repositoryId: $repo_node,
+              name: $label,
+              color: $color
+              description: "Label to trigger rebase"
+            }) {
+              label {
+                id
+                name
+                color
+              }
+            }
+          }
+        "#;
+
+        let vars = CreateVars {
+            repo_node: repo_node.to_string(),
+            label: label.to_string(),
+            color: color.to_string(),
+            desc: desc.to_string(),
+        };
+
+        tracing::trace!("vars: {:?}", vars);
+
+        let data_res = self
+            .github_graphql
+            .query_with_vars_unwrap::<CreateLabelData, CreateVars>(mutation, vars)
+            .await;
+
+        tracing::trace!("data_res: {:?}", data_res);
 
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
         tracing::trace!("data: {:?}", data);
 
-        Ok(())
+        Ok(data.create_label.label.id)
     }
 }

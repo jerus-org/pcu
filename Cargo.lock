@@ -1305,6 +1305,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "named-colour"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a65653bfbdc029a2eda5df8413320502251c4f4ef3a561adc1faecd16633265"
+
+[[package]]
 name = "native-tls"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1519,6 +1525,7 @@ dependencies = [
  "keep-a-changelog",
  "log",
  "log4rs_test_utils",
+ "named-colour",
  "octocrate",
  "regex",
  "rstest",
