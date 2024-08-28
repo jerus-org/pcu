@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - run rebase only when check run on main(pr [#311])
 - add label support for pull requests(pr [#314])
 - integrate tracing library for enhanced logging(pr [#318])
+- add tracing-subscriber for enhanced logging(pr [#319])
 
 ### Changed
 
@@ -610,6 +611,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#316]: https://github.com/jerus-org/pcu/pull/316
 [#317]: https://github.com/jerus-org/pcu/pull/317
 [#318]: https://github.com/jerus-org/pcu/pull/318
+[#319]: https://github.com/jerus-org/pcu/pull/319
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
