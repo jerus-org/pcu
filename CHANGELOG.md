@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add tracing-subscriber for enhanced logging(pr [#319])
 - add repository ID retrieval and improve label handling(pr [#320])
 - add create_label function and update label_pr to use it(pr [#323])
+- add new GraphQL operations for labels, PRs, and repository(pr [#324])
 
 ### Changed
 
@@ -620,6 +621,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#321]: https://github.com/jerus-org/pcu/pull/321
 [#322]: https://github.com/jerus-org/pcu/pull/322
 [#323]: https://github.com/jerus-org/pcu/pull/323
+[#324]: https://github.com/jerus-org/pcu/pull/324
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
