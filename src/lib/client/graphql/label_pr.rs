@@ -74,7 +74,7 @@ impl GraphQLLabelPR for Client {
         }
         "#;
 
-        tracing::trace!("vars: {:?}", vars);
+        tracing::trace!("mutation: {:?}", mutation);
 
         let data_res = self
             .github_graphql
