@@ -41,8 +41,6 @@ struct Edge {
 
 #[derive(Deserialize, Debug, Clone)]
 struct Label {
-    name: String,
-    color: String,
     id: String,
 }
 
@@ -68,8 +66,6 @@ impl GraphQLLabelPR for Client {
             labels(first: 10) {
               edges {
                 node {
-                  name,
-                  color,
                   id
                 }
               }
