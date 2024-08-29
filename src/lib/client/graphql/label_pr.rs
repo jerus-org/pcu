@@ -62,7 +62,7 @@ impl GraphQLLabelPR for Client {
         let mutation = r#"
         mutation ($pr_id: ID!, $label_id: ID!) {
           addLabelsToLabelable(input: {labelableId: $pr_id, labelIds: [$label_id]}) {
-            labelable {
+            lableable {
               labels(first: 10) {
                 edges {
                   node {
