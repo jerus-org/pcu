@@ -107,12 +107,19 @@ impl Push {
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
 pub struct Rebase {
-    // /// Override the default login rebase author
-    // #[arg(short, long)]
-    // pub login: Option<String>,
+    /// Override the default login rebase author
+    #[arg(short, long)]
+    pub login: Option<String>,
 }
 
-impl Rebase {}
+impl Rebase {
+    pub fn login(&self) -> Option<&str> {
+        if let Some(login) = &self.login {
+            return Some(login);
+        }
+        None
+    }
+}
 
 pub enum ClState {
     Updated,
