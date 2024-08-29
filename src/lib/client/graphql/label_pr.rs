@@ -80,8 +80,6 @@ impl GraphQLLabelPR for Client {
             }
         "#;
 
-        tracing::trace!("mutation: {:#?}", mutation);
-
         let data_res = self
             .github_graphql
             .query_with_vars_unwrap::<Data, Vars>(mutation, vars)
