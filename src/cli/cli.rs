@@ -113,13 +113,23 @@ impl Push {
 pub struct Rebase {
     /// Override the default author login (renovate) when selecting the pull request to label
     #[arg(short, long)]
-    pub login: Option<String>,
+    pub author: Option<String>,
+    /// Override the default label (rebase) to add to the pull request
+    #[arg(short, long)]
+    pub label: Option<String>,
 }
 
 impl Rebase {
-    pub fn login(&self) -> Option<&str> {
-        if let Some(login) = &self.login {
-            return Some(login);
+    pub fn author(&self) -> Option<&str> {
+        if let Some(l) = &self.author {
+            return Some(l);
+        }
+        None
+    }
+
+    pub fn label(&self) -> Option<&str> {
+        if let Some(l) = &self.label {
+            return Some(l);
         }
         None
     }
