@@ -55,7 +55,7 @@ struct Vars {
 pub(crate) struct PrItem {
     pub(crate) number: i64,
     title: String,
-    login: String,
+    pub(crate) login: String,
 }
 
 impl GraphQLGetOpenPRs for Client {
