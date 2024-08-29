@@ -21,7 +21,7 @@ struct Vars {
 
 #[derive(Deserialize, Debug, Clone)]
 struct Data {
-    lableable: LabelAble,
+    labelable: LabelAble,
 }
 
 #[derive(Deserialize, Debug, Clone)]
