@@ -11,10 +11,11 @@ use git2::{
 };
 use log::log_enabled;
 
-use crate::client::graphql::GraphQLLabel;
-use crate::client::graphql::GraphQLPR;
+use crate::client::graphql::GraphQLGetOpenPRs;
+use crate::client::graphql::GraphQLLabelPR;
 use crate::Client;
 use crate::Error;
+
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 const DEFAULT_COMMIT_MESSAGE: &str = "chore: commit staged files";
 
@@ -311,7 +312,7 @@ impl GitOps for Client {
 
         log::trace!("Next PR: {}", next_pr.number);
 
-        self.label_pr(next_pr.number).await?;
+        self.add_label_to_pr(next_pr.number).await?;
 
         Ok(Some(next_pr.number.to_string()))
     }

@@ -5,16 +5,18 @@ use crate::{Client, Error, GraphQLWrapper};
 
 use tracing::instrument;
 
-const LABEL: &str = "rebase";
-const COLOR: &str = "FF0000";
+pub(crate) trait GraphQLGetRepoID {
+    #[allow(async_fn_in_trait)]
+    async fn get_repository_id(&self) -> Result<String, Error>;
+}
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct GetRepositoryId {
+struct GetRepositoryId {
     repository: Repository,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Repository {
+struct Repository {
     #[serde(skip_deserializing)]
     owner: String,
     #[serde(skip_deserializing)]
@@ -22,17 +24,12 @@ pub(crate) struct Repository {
     id: String,
 }
 #[derive(Serialize, Debug, Clone)]
-pub(crate) struct Vars {
+struct Vars {
     owner: String,
     name: String,
 }
 
-pub(crate) trait GraphQLRepo {
-    #[allow(async_fn_in_trait)]
-    async fn get_repository_id(&self) -> Result<String, Error>;
-}
-
-impl GraphQLRepo for Client {
+impl GraphQLGetRepoID for Client {
     #[instrument(skip(self))]
     async fn get_repository_id(&self) -> Result<String, Error> {
         let query = r#"

@@ -3,13 +3,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Client, Error, GraphQLWrapper};
 
+pub(crate) trait GraphQLGetOpenPRs {
+    #[allow(async_fn_in_trait)]
+    async fn get_open_pull_requests(&self) -> Result<Vec<PrItem>, Error>;
+}
+
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct GetPullRequestTitle {
+struct Data {
     repository: Repository,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Repository {
+struct Repository {
     #[serde(skip_deserializing)]
     owner: String,
     #[serde(skip_deserializing)]
@@ -19,29 +24,29 @@ pub(crate) struct Repository {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct PullRequests {
+struct PullRequests {
     edges: Vec<Edge>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Edge {
+struct Edge {
     node: PullRequest,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct PullRequest {
+struct PullRequest {
     number: i64,
     title: String,
     author: Actor,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Actor {
+struct Actor {
     login: String,
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub(crate) struct Vars {
+struct Vars {
     owner: String,
     name: String,
 }
@@ -49,16 +54,11 @@ pub(crate) struct Vars {
 #[derive(Debug, Clone)]
 pub(crate) struct PrItem {
     pub(crate) number: i64,
-    pub(crate) title: String,
-    pub(crate) login: String,
+    title: String,
+    login: String,
 }
 
-pub(crate) trait GraphQLPR {
-    #[allow(async_fn_in_trait)]
-    async fn get_open_pull_requests(&self) -> Result<Vec<PrItem>, Error>;
-}
-
-impl GraphQLPR for Client {
+impl GraphQLGetOpenPRs for Client {
     async fn get_open_pull_requests(&self) -> Result<Vec<PrItem>, Error> {
         log::trace!("get_open_pull_requests");
         let query = r#"
@@ -84,7 +84,7 @@ impl GraphQLPR for Client {
 
         let data_res = self
             .github_graphql
-            .query_with_vars_unwrap::<GetPullRequestTitle, Vars>(query, vars)
+            .query_with_vars_unwrap::<Data, Vars>(query, vars)
             .await;
 
         log::trace!("data_res: {:?}", data_res);

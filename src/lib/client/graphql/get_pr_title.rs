@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 use crate::{Error, GraphQLWrapper};
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct GetPullRequestTitle {
+struct GetPullRequestTitle {
     repository: Repository,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Repository {
+struct Repository {
     #[serde(skip_deserializing)]
     owner: String,
     #[serde(skip_deserializing)]
@@ -19,13 +19,13 @@ pub(crate) struct Repository {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct PullRequest {
+struct PullRequest {
     number: i64,
     title: String,
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub(crate) struct Vars {
+struct Vars {
     owner: String,
     name: String,
     number: i64,
