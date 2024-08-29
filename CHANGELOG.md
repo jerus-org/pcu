@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - label_pr: replace id with name in Label struct and GraphQL query(pr [#328])
 - graphql: correct label_id type in mutation from String to ID(pr [#329])
 - correct typo in GraphQL mutation query in label_pr.rs(pr [#330])
+- correct typos in GraphQL mutation for adding labels to PR(pr [#331])
 
 ## [0.4.1] - 2024-08-24
 
@@ -634,6 +635,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#328]: https://github.com/jerus-org/pcu/pull/328
 [#329]: https://github.com/jerus-org/pcu/pull/329
 [#330]: https://github.com/jerus-org/pcu/pull/330
+[#331]: https://github.com/jerus-org/pcu/pull/331
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
