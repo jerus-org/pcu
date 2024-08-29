@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add new GraphQL operations for labels, PRs, and repository(pr [#324])
 - add filtering by login in rebase_next_pr(pr [#335])
 - add login option to rebase command(pr [#337])
+- add label to pull request during rebase(pr [#338])
 
 ### Changed
 
@@ -648,6 +649,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#335]: https://github.com/jerus-org/pcu/pull/335
 [#336]: https://github.com/jerus-org/pcu/pull/336
 [#337]: https://github.com/jerus-org/pcu/pull/337
+[#338]: https://github.com/jerus-org/pcu/pull/338
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0

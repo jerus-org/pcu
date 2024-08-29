@@ -27,7 +27,11 @@ pub enum Commands {
     Commit(Commit),
     /// Push the current commits to the remote repository
     Push(Push),
-    /// Rebase
+    /// Apply a label to a pull request.
+    #[clap(long_about = "
+Apply a label to a pull request.
+In default use applies the `rebase` label to the pull request with 
+the lowest number submitted by the `renovate` user")]
     Rebase(Rebase),
 }
 
@@ -107,7 +111,7 @@ impl Push {
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
 pub struct Rebase {
-    /// Override the default login rebase author
+    /// Override the default author login (renovate) when selecting the pull request to label
     #[arg(short, long)]
     pub login: Option<String>,
 }
