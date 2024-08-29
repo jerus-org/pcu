@@ -211,9 +211,9 @@ impl Client {
         let auth = format!("Bearer {}", token);
 
         let headers = HashMap::from([
+            ("X-Github-Next-Global-ID", "1"),
             ("User-Agent", owner),
             ("Authorization", &auth),
-            ("X-Github-Next-Global-ID:", "1"),
         ]);
 
         let github_graphql = gql_client::Client::new_with_headers(END_POINT, headers);
