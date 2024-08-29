@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - correct typos in GraphQL mutation for adding labels to PR(pr [#331])
 - graphql: correct typo in 'labelable' struct field name in label_pr.rs(pr [#332])
 - graphql: rename GetPullRequestTitle struct to Data and enhance Data struct in label_pr.rs(pr [#333])
+- git_ops: add early exit for no open PRs scenario following filter to login(pr [#336])
 
 ## [0.4.1] - 2024-08-24
 
@@ -644,6 +645,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#333]: https://github.com/jerus-org/pcu/pull/333
 [#334]: https://github.com/jerus-org/pcu/pull/334
 [#335]: https://github.com/jerus-org/pcu/pull/335
+[#336]: https://github.com/jerus-org/pcu/pull/336
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
