@@ -10,7 +10,7 @@ use crate::{
 use tracing::instrument;
 
 pub(crate) trait GraphQLLabelPR {
-    async fn add_label_to_pr(&self, pr_number: i64) -> Result<(), Error>;
+    async fn add_label_to_pr(&self, pr_number: i64, label: Option<&str>) -> Result<(), Error>;
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -51,8 +51,8 @@ struct Label {
 
 impl GraphQLLabelPR for Client {
     #[instrument(skip(self))]
-    async fn add_label_to_pr(&self, pr_number: i64) -> Result<(), Error> {
-        let label_id = self.get_or_create_label_id().await?;
+    async fn add_label_to_pr(&self, pr_number: i64, label: Option<&str>) -> Result<(), Error> {
+        let label_id = self.get_or_create_label_id(label).await?;
         tracing::trace!("label_id: {:?}", label_id);
 
         let pr_id = self.get_pull_request_id(pr_number).await?;

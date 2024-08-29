@@ -43,7 +43,11 @@ pub trait GitOps {
     ) -> Result<(), Error>;
     fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
-    async fn rebase_next_pr(&self, login: Option<&str>) -> Result<Option<String>, Error>;
+    async fn rebase_next_pr(
+        &self,
+        author: Option<&str>,
+        label: Option<&str>,
+    ) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -301,7 +305,11 @@ impl GitOps for Client {
 
     /// Rebase the next pr of dependency updates if any
     #[instrument(skip(self))]
-    async fn rebase_next_pr(&self, login: Option<&str>) -> Result<Option<String>, Error> {
+    async fn rebase_next_pr(
+        &self,
+        author: Option<&str>,
+        label: Option<&str>,
+    ) -> Result<Option<String>, Error> {
         tracing::debug!("Rebase next PR");
 
         let prs = self.get_open_pull_requests().await?;
@@ -314,7 +322,7 @@ impl GitOps for Client {
 
         // filter to PRs created by a specfic login
 
-        let login = if let Some(login) = login {
+        let login = if let Some(login) = author {
             login
         } else {
             DEFAULT_REBASE_LOGIN
@@ -334,7 +342,7 @@ impl GitOps for Client {
 
         tracing::trace!("Next PR: {}", next_pr.number);
 
-        self.add_label_to_pr(next_pr.number).await?;
+        self.add_label_to_pr(next_pr.number, label).await?;
 
         Ok(Some(next_pr.number.to_string()))
     }
