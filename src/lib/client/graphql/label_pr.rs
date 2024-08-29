@@ -62,8 +62,8 @@ impl GraphQLLabelPR for Client {
         tracing::trace!("vars: {:?}", vars);
 
         let mutation = r#"
-        mutation ($repo_node: ID!, $label: String!, $color: String!) {
-        addLabelsToLabelable(input: {labelableId: "MDExOlB1bGxSZXF1ZXN0NTY3ODkw", labelIds: ["MDU6TGFiZWwxMjM0NTY="]}) {
+        mutation ($pr_id: ID!, $label_id: String!) {
+        addLabelsToLabelable(input: {labelableId: $pr_id, labelIds: [$label_id]}) {
           labelable {
             labels(first: 10) {
               edges {
