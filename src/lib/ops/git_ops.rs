@@ -315,6 +315,11 @@ impl GitOps for Client {
 
         let mut prs: Vec<_> = prs.iter().filter(|pr| pr.login == login).collect();
 
+        if prs.is_empty() {
+            log::trace!("Found no open PRs for {login}");
+            return Ok(None);
+        };
+
         log::trace!("Found {:?} open PRs for {login}", prs);
 
         prs.sort_by(|a, b| a.number.cmp(&b.number));
