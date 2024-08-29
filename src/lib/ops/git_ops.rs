@@ -10,6 +10,7 @@ use git2::{
     BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, StatusOptions,
 };
 use log::log_enabled;
+use tracing::instrument;
 
 use crate::client::graphql::GraphQLGetOpenPRs;
 use crate::client::graphql::GraphQLLabelPR;
@@ -42,7 +43,7 @@ pub trait GitOps {
     ) -> Result<(), Error>;
     fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
-    async fn rebase_next_pr(&self) -> Result<Option<String>, Error>;
+    async fn rebase_next_pr(&self, login: Option<&str>) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
@@ -299,8 +300,9 @@ impl GitOps for Client {
     }
 
     /// Rebase the next pr of dependency updates if any
-    async fn rebase_next_pr(&self) -> Result<Option<String>, Error> {
-        log::debug!("Rebase next PR");
+    #[instrument(skip(self))]
+    async fn rebase_next_pr(&self, login: Option<&str>) -> Result<Option<String>, Error> {
+        tracing::debug!("Rebase next PR");
 
         let prs = self.get_open_pull_requests().await?;
 
@@ -308,24 +310,29 @@ impl GitOps for Client {
             return Ok(None);
         };
 
-        log::trace!("Found {:?} open PRs", prs);
+        tracing::trace!("Found {:?} open PRs", prs);
 
         // filter to PRs created by a specfic login
-        let login = DEFAULT_REBASE_LOGIN;
+
+        let login = if let Some(login) = login {
+            login
+        } else {
+            DEFAULT_REBASE_LOGIN
+        };
 
         let mut prs: Vec<_> = prs.iter().filter(|pr| pr.login == login).collect();
 
         if prs.is_empty() {
-            log::trace!("Found no open PRs for {login}");
+            tracing::trace!("Found no open PRs for {login}");
             return Ok(None);
         };
 
-        log::trace!("Found {:?} open PRs for {login}", prs);
+        tracing::trace!("Found {:?} open PRs for {login}", prs);
 
         prs.sort_by(|a, b| a.number.cmp(&b.number));
         let next_pr = &prs[0];
 
-        log::trace!("Next PR: {}", next_pr.number);
+        tracing::trace!("Next PR: {}", next_pr.number);
 
         self.add_label_to_pr(next_pr.number).await?;
 

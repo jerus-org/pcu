@@ -214,7 +214,7 @@ async fn push_commited(client: &Client, tag_opt: Option<&str>, no_push: bool) ->
 async fn run_rebase(args: Rebase) -> Result<ClState> {
     let client = get_client(Commands::Rebase(args.clone())).await?;
 
-    let pr_number = client.rebase_next_pr().await?;
+    let pr_number = client.rebase_next_pr(args.login()).await?;
 
     if let Some(pr_number) = pr_number {
         Ok(ClState::Rebased(pr_number))
