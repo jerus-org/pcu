@@ -21,6 +21,11 @@ struct Vars {
 
 #[derive(Deserialize, Debug, Clone)]
 struct Data {
+    #[serde(rename = "addLabelsToLabelable")]
+    add_labels_to_labelable: AddLabel,
+}
+#[derive(Deserialize, Debug, Clone)]
+struct AddLabel {
     labelable: LabelAble,
 }
 
@@ -75,7 +80,7 @@ impl GraphQLLabelPR for Client {
             }
         "#;
 
-        tracing::trace!("mutation: {:?}", mutation);
+        tracing::trace!("mutation: {:#?}", mutation);
 
         let data_res = self
             .github_graphql

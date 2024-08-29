@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{Error, GraphQLWrapper};
 
 #[derive(Deserialize, Debug, Clone)]
-struct GetPullRequestTitle {
+struct Data {
     repository: Repository,
 }
 
@@ -56,7 +56,7 @@ pub(crate) async fn get_pull_request_title(
     };
 
     let data_res = github_graphql
-        .query_with_vars_unwrap::<GetPullRequestTitle, Vars>(query, vars)
+        .query_with_vars_unwrap::<Data, Vars>(query, vars)
         .await;
 
     log::trace!("data_res: {:?}", data_res);
