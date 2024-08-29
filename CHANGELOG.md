@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - label_pr: simplify GraphQL mutation parameters for labeling PRs(pr [#325])
 - remove unused fields 'name' and 'color' from Label struct in label_pr.rs(pr [#326])
 - graphql: correct trace log message from vars to mutation in label_pr.rs(pr [#327])
+- label_pr: replace id with name in Label struct and GraphQL query(pr [#328])
 
 ## [0.4.1] - 2024-08-24
 
@@ -628,6 +629,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#325]: https://github.com/jerus-org/pcu/pull/325
 [#326]: https://github.com/jerus-org/pcu/pull/326
 [#327]: https://github.com/jerus-org/pcu/pull/327
+[#328]: https://github.com/jerus-org/pcu/pull/328
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
