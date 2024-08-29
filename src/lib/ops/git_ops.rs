@@ -18,6 +18,7 @@ use crate::Error;
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 const DEFAULT_COMMIT_MESSAGE: &str = "chore: commit staged files";
+const DEFAULT_REBASE_LOGIN: &str = "renovate";
 
 #[derive(ValueEnum, Debug, Default, Clone)]
 pub enum Sign {
@@ -301,11 +302,20 @@ impl GitOps for Client {
     async fn rebase_next_pr(&self) -> Result<Option<String>, Error> {
         log::debug!("Rebase next PR");
 
-        let mut prs = self.get_open_pull_requests().await?;
+        let prs = self.get_open_pull_requests().await?;
 
         if prs.is_empty() {
             return Ok(None);
         };
+
+        log::trace!("Found {:?} open PRs", prs);
+
+        // filter to PRs created by a specfic login
+        let login = DEFAULT_REBASE_LOGIN;
+
+        let mut prs: Vec<_> = prs.iter().filter(|pr| pr.login == login).collect();
+
+        log::trace!("Found {:?} open PRs for {login}", prs);
 
         prs.sort_by(|a, b| a.number.cmp(&b.number));
         let next_pr = &prs[0];
