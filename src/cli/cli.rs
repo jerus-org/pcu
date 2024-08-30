@@ -32,7 +32,7 @@ pub enum Commands {
 Apply a label to a pull request.
 In default use applies the `rebase` label to the pull request with 
 the lowest number submitted by the `renovate` user")]
-    Rebase(Rebase),
+    Label(Label),
 }
 
 impl Display for Commands {
@@ -42,7 +42,7 @@ impl Display for Commands {
             Commands::Release(_) => write!(f, "release"),
             Commands::Commit(_) => write!(f, "commit"),
             Commands::Push(_) => write!(f, "push"),
-            Commands::Rebase(_) => write!(f, "rebase"),
+            Commands::Label(_) => write!(f, "label"),
         }
     }
 }
@@ -110,7 +110,7 @@ impl Push {
 
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
-pub struct Rebase {
+pub struct Label {
     /// Override the default author login (renovate) when selecting the pull request to label
     #[arg(short, long)]
     pub author: Option<String>,
@@ -125,7 +125,7 @@ pub struct Rebase {
     pub colour: Option<String>,
 }
 
-impl Rebase {
+impl Label {
     pub fn author(&self) -> Option<&str> {
         if let Some(l) = &self.author {
             return Some(l);
@@ -155,12 +155,12 @@ impl Rebase {
     }
 }
 
-pub enum ClState {
+pub enum CIExit {
     Updated,
     UnChanged,
     Committed,
     Pushed(String),
     Released,
-    Rebased(String),
-    NoRebase,
+    Label(String),
+    NoLabel,
 }
