@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor(label)-update GetLabelID structure and related types(pr [#316])
 - fix(: skip deserializing owner and name fields in Repository struct(pr [#322])
 - refactor(label_pr)-remove debug trace statement from GraphQLLabelPR implementation(pr [#334])
+- refactor-rename 'rebase' command to 'label' in CI configuration and CLI(pr [#343])
 
 ### Fixed
 
@@ -658,6 +659,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#340]: https://github.com/jerus-org/pcu/pull/340
 [#341]: https://github.com/jerus-org/pcu/pull/341
 [#342]: https://github.com/jerus-org/pcu/pull/342
+[#343]: https://github.com/jerus-org/pcu/pull/343
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
