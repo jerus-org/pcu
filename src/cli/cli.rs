@@ -118,8 +118,11 @@ pub struct Rebase {
     #[arg(short, long)]
     pub label: Option<String>,
     /// Override the default description for the label if it is creaated
-    #[arg(short, long)]
-    pub description: Option<String>,
+    #[arg(short, long = "description")]
+    pub desc: Option<String>,
+    /// Override the default colour (B22222) for the label if it is creaated
+    #[arg(short, long, visible_alias = "color")]
+    pub colour: Option<String>,
 }
 
 impl Rebase {
@@ -137,9 +140,16 @@ impl Rebase {
         None
     }
 
-    pub fn description(&self) -> Option<&str> {
-        if let Some(d) = &self.description {
+    pub fn desc(&self) -> Option<&str> {
+        if let Some(d) = &self.desc {
             return Some(d);
+        }
+        None
+    }
+
+    pub fn colour(&self) -> Option<&str> {
+        if let Some(c) = &self.colour {
+            return Some(c);
         }
         None
     }
