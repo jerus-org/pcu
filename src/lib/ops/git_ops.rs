@@ -43,7 +43,7 @@ pub trait GitOps {
     ) -> Result<(), Error>;
     fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
-    async fn rebase_next_pr(
+    async fn label_next_pr(
         &self,
         author: Option<&str>,
         label: Option<&str>,
@@ -307,7 +307,7 @@ impl GitOps for Client {
 
     /// Rebase the next pr of dependency updates if any
     #[instrument(skip(self))]
-    async fn rebase_next_pr(
+    async fn label_next_pr(
         &self,
         author: Option<&str>,
         label: Option<&str>,

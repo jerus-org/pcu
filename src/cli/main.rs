@@ -16,7 +16,7 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
-use cli::{ClState, Cli, Commands, Commit, PullRequest, Push, Rebase, Release};
+use cli::{CIExit, Cli, Commands, Commit, Label, PullRequest, Push, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -34,20 +34,20 @@ async fn main() -> Result<()> {
         Commands::PullRequest(pr_args) => run_pull_request(sign, pr_args).await,
         Commands::Commit(commit_args) => run_commit(sign, commit_args).await,
         Commands::Push(push_args) => run_push(push_args).await,
-        Commands::Rebase(rebase_args) => run_rebase(rebase_args).await,
+        Commands::Label(label_args) => run_label(label_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
 
     match res {
         Ok(state) => {
             match state {
-                ClState::Updated => log::info!("Changelog updated!"),
-                ClState::UnChanged => log::info!("Changelog not changed!"),
-                ClState::Committed => log::info!("Changed files committed"),
-                ClState::Pushed(s) => log::info!("{s}"),
-                ClState::Released => log::info!("Created GitHub Release"),
-                ClState::Rebased(pr) => log::info!("Rebased PR request #{}", pr),
-                ClState::NoRebase => log::info!("No rebase required"),
+                CIExit::Updated => log::info!("Changelog updated!"),
+                CIExit::UnChanged => log::info!("Changelog not changed!"),
+                CIExit::Committed => log::info!("Changed files committed"),
+                CIExit::Pushed(s) => log::info!("{s}"),
+                CIExit::Released => log::info!("Created GitHub Release"),
+                CIExit::Label(pr) => log::info!("Rebased PR request #{}", pr),
+                CIExit::NoLabel => log::info!("No label required"),
             };
         }
         Err(e) => {
@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
+async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<CIExit> {
     let branch = env::var("CIRCLE_BRANCH");
     log::trace!("Branch: {branch:?}");
 
@@ -71,7 +71,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
             println!("{SIGNAL_HALT}");
         }
 
-        return Ok(ClState::UnChanged);
+        return Ok(CIExit::UnChanged);
     }
 
     let mut client = get_client(Commands::PullRequest(args.clone())).await?;
@@ -111,10 +111,10 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
             if args.early_exit {
                 println!("{SIGNAL_HALT}");
             }
-            return Ok(ClState::UnChanged);
+            return Ok(CIExit::UnChanged);
         };
     } else if client.update_changelog()?.is_none() {
-        return Ok(ClState::UnChanged);
+        return Ok(CIExit::UnChanged);
     }
 
     log::debug!("Changelog file name: {}", client.changelog_as_str());
@@ -130,15 +130,15 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<ClState> {
 
     push_commited(&client, None, false).await?;
 
-    Ok(ClState::Updated)
+    Ok(CIExit::Updated)
 }
 
-async fn run_commit(sign: Sign, args: Commit) -> Result<ClState> {
+async fn run_commit(sign: Sign, args: Commit) -> Result<CIExit> {
     let client = get_client(Commands::Commit(args.clone())).await?;
 
     commit_changed_files(&client, sign, args.commit_message(), args.tag_opt()).await?;
 
-    Ok(ClState::Committed)
+    Ok(CIExit::Committed)
 }
 
 async fn commit_changed_files(
@@ -185,17 +185,17 @@ async fn commit_changed_files(
     Ok(())
 }
 
-async fn run_push(args: Push) -> Result<ClState> {
+async fn run_push(args: Push) -> Result<CIExit> {
     let client = get_client(Commands::Push(args.clone())).await?;
 
     push_commited(&client, args.tag_opt(), args.no_push).await?;
 
     if !args.no_push {
-        Ok(ClState::Pushed(
+        Ok(CIExit::Pushed(
             "Changed files committed and pushed to remote repsitory.".to_string(),
         ))
     } else {
-        Ok(ClState::Pushed(
+        Ok(CIExit::Pushed(
             "Changed files committed and push dry run completed for logging.".to_string(),
         ))
     }
@@ -211,21 +211,21 @@ async fn push_commited(client: &Client, tag_opt: Option<&str>, no_push: bool) ->
     Ok(())
 }
 
-async fn run_rebase(args: Rebase) -> Result<ClState> {
-    let client = get_client(Commands::Rebase(args.clone())).await?;
+async fn run_label(args: Label) -> Result<CIExit> {
+    let client = get_client(Commands::Label(args.clone())).await?;
 
     let pr_number = client
-        .rebase_next_pr(args.author(), args.label(), args.desc(), args.colour())
+        .label_next_pr(args.author(), args.label(), args.desc(), args.colour())
         .await?;
 
     if let Some(pr_number) = pr_number {
-        Ok(ClState::Rebased(pr_number))
+        Ok(CIExit::Label(pr_number))
     } else {
-        Ok(ClState::NoRebase)
+        Ok(CIExit::NoLabel)
     }
 }
 
-async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
+async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
     let mut client = get_client(Commands::Release(args.clone())).await?;
 
     let version = args.semver;
@@ -258,7 +258,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<ClState> {
 
     client.make_release(&version).await?;
 
-    Ok(ClState::Released)
+    Ok(CIExit::Released)
 }
 
 fn print_changelog(changelog_path: &str, mut line_limit: usize) -> String {
@@ -351,9 +351,9 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         Commands::Push(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "push")?,
-        Commands::Rebase(_) => settings
+        Commands::Label(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
-            .set_override("command", "rebase")?,
+            .set_override("command", "label")?,
     };
 
     settings = if let Ok(pat) = env::var(GITHUB_PAT) {

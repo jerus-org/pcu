@@ -89,20 +89,19 @@ commands:
                 -d $BODY \
                 https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
             fi
-
-  rebase_dep_pr:
+  label_dep_pr:
     parameters:
       pcu_verbosity:
         type: string
         default: "-vv"
-        description: "The verbosity of the pcu command"
+        description: "The verbosity of the pcu command. Only runs on main branch"
     steps:
       - run:
-          name: Rebase dependency PR
+          name: Label dependency PR
           command: |
             set -ex
             if [ -z "${CIRCLE_PULL_REQUEST}" ]; then
-              pcu <<parameters.pcu_verbosity>> rebase -a gortavoher -l test4 -d "Yet another test label" -c DDA0DD
+              pcu <<parameters.pcu_verbosity>> label -a gortavoher -l test4 -d "Yet another test label" -c DDA0DD
             fi
 
   install_latest_pcu:
@@ -190,7 +189,7 @@ jobs:
             - update_log:
                 pcu_verbosity: <<parameters.pcu_verbosity>>
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
-      - rebase_dep_pr:
+      - label_dep_pr:
           pcu_verbosity: <<parameters.pcu_verbosity>>
 
       - when:
