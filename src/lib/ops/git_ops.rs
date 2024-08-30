@@ -48,6 +48,7 @@ pub trait GitOps {
         author: Option<&str>,
         label: Option<&str>,
         desc: Option<&str>,
+        colour: Option<&str>,
     ) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
@@ -311,6 +312,7 @@ impl GitOps for Client {
         author: Option<&str>,
         label: Option<&str>,
         desc: Option<&str>,
+        colour: Option<&str>,
     ) -> Result<Option<String>, Error> {
         tracing::debug!("Rebase next PR");
 
@@ -323,7 +325,6 @@ impl GitOps for Client {
         tracing::trace!("Found {:?} open PRs", prs);
 
         // filter to PRs created by a specfic login
-
         let login = if let Some(login) = author {
             login
         } else {
@@ -344,7 +345,8 @@ impl GitOps for Client {
 
         tracing::trace!("Next PR: {}", next_pr.number);
 
-        self.add_label_to_pr(next_pr.number, label, desc).await?;
+        self.add_label_to_pr(next_pr.number, label, desc, colour)
+            .await?;
 
         Ok(Some(next_pr.number.to_string()))
     }

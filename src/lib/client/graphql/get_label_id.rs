@@ -19,6 +19,7 @@ pub(crate) trait GraphQLGetLabel {
         &self,
         label: Option<&str>,
         desc: Option<&str>,
+        colour: Option<&str>,
     ) -> Result<String, Error>;
 }
 
@@ -62,6 +63,7 @@ impl GraphQLGetLabel for Client {
         &self,
         label: Option<&str>,
         desc: Option<&str>,
+        colour: Option<&str>,
     ) -> Result<String, Error> {
         // Get the label ID
         let query = r#"
@@ -86,6 +88,12 @@ impl GraphQLGetLabel for Client {
             d.to_string()
         } else {
             LABEL_DESCRIPTION.to_string()
+        };
+
+        let colour = if let Some(c) = colour {
+            c.to_string()
+        } else {
+            LABEL_COLOR.to_string()
         };
 
         let vars = Vars {
@@ -114,9 +122,7 @@ impl GraphQLGetLabel for Client {
 
             tracing::trace!("repo_id: {:?}", repo_id);
 
-            let id_res = self
-                .create_label(&repo_id, &label, LABEL_COLOR, &desc)
-                .await;
+            let id_res = self.create_label(&repo_id, &label, &colour, &desc).await;
             tracing::trace!("id_res: {:?}", id_res);
 
             let id = id_res?;

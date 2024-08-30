@@ -215,7 +215,7 @@ async fn run_rebase(args: Rebase) -> Result<ClState> {
     let client = get_client(Commands::Rebase(args.clone())).await?;
 
     let pr_number = client
-        .rebase_next_pr(args.author(), args.label(), args.description())
+        .rebase_next_pr(args.author(), args.label(), args.desc(), args.colour())
         .await?;
 
     if let Some(pr_number) = pr_number {

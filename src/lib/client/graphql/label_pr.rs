@@ -15,6 +15,7 @@ pub(crate) trait GraphQLLabelPR {
         pr_number: i64,
         label: Option<&str>,
         desc: Option<&str>,
+        colour: Option<&str>,
     ) -> Result<(), Error>;
 }
 
@@ -61,8 +62,9 @@ impl GraphQLLabelPR for Client {
         pr_number: i64,
         label: Option<&str>,
         desc: Option<&str>,
+        colour: Option<&str>,
     ) -> Result<(), Error> {
-        let label_id = self.get_or_create_label_id(label, desc).await?;
+        let label_id = self.get_or_create_label_id(label, desc, colour).await?;
         tracing::trace!("label_id: {:?}", label_id);
 
         let pr_id = self.get_pull_request_id(pr_number).await?;
