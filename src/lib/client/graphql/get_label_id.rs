@@ -10,10 +10,16 @@ use crate::{
 use tracing::instrument;
 
 const LABEL: &str = "rebase";
-const COLOR: &str = "B22222";
+const LABEL_COLOR: &str = "B22222";
+const LABEL_DESCRIPTION: &str = "Label to trigger rebase";
+
 pub(crate) trait GraphQLGetLabel {
     #[allow(async_fn_in_trait)]
-    async fn get_or_create_label_id(&self, label: Option<&str>) -> Result<String, Error>;
+    async fn get_or_create_label_id(
+        &self,
+        label: Option<&str>,
+        desc: Option<&str>,
+    ) -> Result<String, Error>;
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -52,7 +58,11 @@ struct Label {
 
 impl GraphQLGetLabel for Client {
     #[instrument(skip(self))]
-    async fn get_or_create_label_id(&self, label: Option<&str>) -> Result<String, Error> {
+    async fn get_or_create_label_id(
+        &self,
+        label: Option<&str>,
+        desc: Option<&str>,
+    ) -> Result<String, Error> {
         // Get the label ID
         let query = r#"
         query($owner:String!, $name:String!, $label:String!) {
@@ -70,6 +80,12 @@ impl GraphQLGetLabel for Client {
             l.to_string()
         } else {
             LABEL.to_string()
+        };
+
+        let desc = if let Some(d) = desc {
+            d.to_string()
+        } else {
+            LABEL_DESCRIPTION.to_string()
         };
 
         let vars = Vars {
@@ -99,7 +115,7 @@ impl GraphQLGetLabel for Client {
             tracing::trace!("repo_id: {:?}", repo_id);
 
             let id_res = self
-                .create_label(&repo_id, &label, COLOR, "Label to trigger rebase")
+                .create_label(&repo_id, &label, LABEL_COLOR, &desc)
                 .await;
             tracing::trace!("id_res: {:?}", id_res);
 
