@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - graphql: correct typo in 'labelable' struct field name in label_pr.rs(pr [#332])
 - graphql: rename GetPullRequestTitle struct to Data and enhance Data struct in label_pr.rs(pr [#333])
 - git_ops: add early exit for no open PRs scenario following filter to login(pr [#336])
+- update test label in CircleCI config and add description parameter to GraphQL mutation(pr [#341])
 
 ## [0.4.1] - 2024-08-24
 
@@ -654,6 +655,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#338]: https://github.com/jerus-org/pcu/pull/338
 [#339]: https://github.com/jerus-org/pcu/pull/339
 [#340]: https://github.com/jerus-org/pcu/pull/340
+[#341]: https://github.com/jerus-org/pcu/pull/341
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
