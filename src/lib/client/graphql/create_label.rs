@@ -52,12 +52,12 @@ impl GraphQLCreateLabel for Client {
         desc: &str,
     ) -> Result<String, Error> {
         let mutation = r#"
-        mutation ($repo_node: ID!, $label: String!, $color: String!) {
+        mutation ($repo_node: ID!, $label: String!, $color: String!, $desc: String!) {
             createLabel(input: {
               repositoryId: $repo_node,
               name: $label,
               color: $color
-              description: "Label to trigger rebase"
+              description: $desc
             }) {
               label {
                 id
