@@ -102,7 +102,7 @@ commands:
           command: |
             set -ex
             if [ -z "${CIRCLE_PULL_REQUEST}" ]; then
-              pcu <<parameters.pcu_verbosity>> rebase -a gortavoher -l test2
+              pcu <<parameters.pcu_verbosity>> rebase -a gortavoher -l test3 -d "Yet another test label"
             fi
 
   install_latest_pcu:

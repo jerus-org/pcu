@@ -47,6 +47,7 @@ pub trait GitOps {
         &self,
         author: Option<&str>,
         label: Option<&str>,
+        desc: Option<&str>,
     ) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
@@ -309,6 +310,7 @@ impl GitOps for Client {
         &self,
         author: Option<&str>,
         label: Option<&str>,
+        desc: Option<&str>,
     ) -> Result<Option<String>, Error> {
         tracing::debug!("Rebase next PR");
 
@@ -342,7 +344,7 @@ impl GitOps for Client {
 
         tracing::trace!("Next PR: {}", next_pr.number);
 
-        self.add_label_to_pr(next_pr.number, label).await?;
+        self.add_label_to_pr(next_pr.number, label, desc).await?;
 
         Ok(Some(next_pr.number.to_string()))
     }

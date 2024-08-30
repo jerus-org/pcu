@@ -117,6 +117,9 @@ pub struct Rebase {
     /// Override the default label (rebase) to add to the pull request
     #[arg(short, long)]
     pub label: Option<String>,
+    /// Override the default description for the label if it is creaated
+    #[arg(short, long)]
+    pub description: Option<String>,
 }
 
 impl Rebase {
@@ -130,6 +133,13 @@ impl Rebase {
     pub fn label(&self) -> Option<&str> {
         if let Some(l) = &self.label {
             return Some(l);
+        }
+        None
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        if let Some(d) = &self.description {
+            return Some(d);
         }
         None
     }
