@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add login option to rebase command(pr [#337])
 - add label to pull request during rebase(pr [#338])
 - add label option for rebase command(pr [#339])
+- add description option for rebase label(pr [#340])
 
 ### Changed
 
@@ -652,6 +653,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#337]: https://github.com/jerus-org/pcu/pull/337
 [#338]: https://github.com/jerus-org/pcu/pull/338
 [#339]: https://github.com/jerus-org/pcu/pull/339
+[#340]: https://github.com/jerus-org/pcu/pull/340
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
