@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add label to pull request during rebase(pr [#338])
 - add label option for rebase command(pr [#339])
 - add description option for rebase label(pr [#340])
+- add colour option for labels in rebase command(pr [#342])
 
 ### Changed
 
@@ -656,6 +657,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#339]: https://github.com/jerus-org/pcu/pull/339
 [#340]: https://github.com/jerus-org/pcu/pull/340
 [#341]: https://github.com/jerus-org/pcu/pull/341
+[#342]: https://github.com/jerus-org/pcu/pull/342
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.1...HEAD
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jerus-org/pcu/compare/v0.3.0...v0.4.0
