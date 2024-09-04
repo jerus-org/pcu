@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - deps: update rust crate named-colour to 0.2.0(pr [#344])
 
+### Security
+
+- Dependencies: bump quinn-proto from 0.11.6 to 0.11.8 in the cargo group across 1 directory(pr [#345])
+
 ## [0.4.2] - 2024-08-30
 
 ### Added
@@ -667,6 +671,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#342]: https://github.com/jerus-org/pcu/pull/342
 [#343]: https://github.com/jerus-org/pcu/pull/343
 [#344]: https://github.com/jerus-org/pcu/pull/344
+[#345]: https://github.com/jerus-org/pcu/pull/345
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.2...HEAD
 [0.4.2]: https://github.com/jerus-org/pcu/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/jerus-org/pcu/compare/v0.4.0...v0.4.1
