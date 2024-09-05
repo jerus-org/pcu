@@ -38,7 +38,7 @@ gql_client = "1.0.7"
 serde = { version = "1.0.208", features = ["derive"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["std", "env-filter"] }
-named-colour = { version = "0.2.0", features = ["extended"] }
+named-colour = { version = "0.3.0", features = ["extended"] }
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"
