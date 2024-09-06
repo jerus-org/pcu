@@ -3,6 +3,11 @@
   "extends": [
     "config:recommended"
   ],
+  "dependencyDashboard": true,
+  "rangeStrategy": "replace",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "fix",
+  "versioning": "cargo",
   "packageRules": [
     {
       "excludePackageNames": [
