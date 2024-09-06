@@ -2,5 +2,26 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "excludePackageNames": [
+        "jerusdp/ci-rust"
+      ]
+    },
+    {
+      "matchPackagePatterns": [
+        "github/codeql-action",
+        "ossf/scorecard-action",
+        "actions/checkout"
+      ],
+      "automerge": true
+    },
+    {
+      "matchPackagePatterns": [
+        "jerus-org/circleci-toolkit"
+      ],
+      "enabled": false
+    }
   ]
 }
