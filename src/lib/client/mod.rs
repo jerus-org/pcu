@@ -224,11 +224,7 @@ impl Client {
     }
 
     pub fn branch_or_main(&self) -> &str {
-        if let Some(branch) = self.branch.as_ref() {
-            branch
-        } else {
-            "main"
-        }
+        self.branch.as_ref().map_or("main", |v| v)
     }
 
     pub fn pull_request(&self) -> &str {
