@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-rename renovate.json to do-not-renovate.json(pr [#348])
 - chore-Configure Renovate(pr [#349])
 
+### Fixed
+
+- update rangeStrategy to auto in renovate.json(pr [#351])
+
 ## [0.4.4] - 2024-09-05
 
 ### Fixed
@@ -695,6 +699,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#348]: https://github.com/jerus-org/pcu/pull/348
 [#349]: https://github.com/jerus-org/pcu/pull/349
 [#350]: https://github.com/jerus-org/pcu/pull/350
+[#351]: https://github.com/jerus-org/pcu/pull/351
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.4...HEAD
 [0.4.4]: https://github.com/jerus-org/pcu/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/jerus-org/pcu/compare/v0.4.2...v0.4.3
