@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- update renovate.json with new configuration options(pr [#350])
+
 ### Changed
 
 - refactor(client)-simplify branch_or_main method using map_or(pr [#347])
@@ -690,6 +694,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#347]: https://github.com/jerus-org/pcu/pull/347
 [#348]: https://github.com/jerus-org/pcu/pull/348
 [#349]: https://github.com/jerus-org/pcu/pull/349
+[#350]: https://github.com/jerus-org/pcu/pull/350
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.4...HEAD
 [0.4.4]: https://github.com/jerus-org/pcu/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/jerus-org/pcu/compare/v0.4.2...v0.4.3
