@@ -4,7 +4,7 @@
     "config:recommended"
   ],
   "dependencyDashboard": true,
-  "rangeStrategy": "replace",
+  "rangeStrategy": "auto",
   "semanticCommits": "enabled",
   "semanticCommitType": "fix",
   "versioning": "cargo",
