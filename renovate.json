@@ -3,7 +3,6 @@
   "dependencyDashboard": true,
   "rangeStrategy": "auto",
   "semanticCommits": "enabled",
-  "semanticCommitType": "fix",
   "versioning": "cargo",
   "packageRules": [
     {
