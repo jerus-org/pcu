@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- add package grouping and regex manager for rust-toolchain(pr [#357])
+
 ### Changed
 
 - chore-remove semanticCommitType from renovate.json(pr [#353])
@@ -715,6 +719,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#354]: https://github.com/jerus-org/pcu/pull/354
 [#355]: https://github.com/jerus-org/pcu/pull/355
 [#356]: https://github.com/jerus-org/pcu/pull/356
+[#357]: https://github.com/jerus-org/pcu/pull/357
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.5...HEAD
 [0.4.5]: https://github.com/jerus-org/pcu/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/jerus-org/pcu/compare/v0.4.3...v0.4.4
