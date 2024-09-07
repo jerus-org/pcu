@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-remove semanticCommits setting from renovate.json(pr [#354])
 - chore-remove versioning configuration from renovate.json(pr [#355])
 - chore-remove rangeStrategy from renovate configuration(pr [#356])
+- chore-update rangeStrategy to update-lockfile in renovate.json(pr [#358])
 
 ## [0.4.5] - 2024-09-07
 
@@ -720,6 +721,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#355]: https://github.com/jerus-org/pcu/pull/355
 [#356]: https://github.com/jerus-org/pcu/pull/356
 [#357]: https://github.com/jerus-org/pcu/pull/357
+[#358]: https://github.com/jerus-org/pcu/pull/358
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.5...HEAD
 [0.4.5]: https://github.com/jerus-org/pcu/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/jerus-org/pcu/compare/v0.4.3...v0.4.4
