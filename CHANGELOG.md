@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-remove versioning configuration from renovate.json(pr [#355])
 - chore-remove rangeStrategy from renovate configuration(pr [#356])
 - chore-update rangeStrategy to update-lockfile in renovate.json(pr [#358])
+- ci-update CircleCI config to use toolkit 1.5.0 and add label_pr job(pr [#363])
 
 ### Fixed
 
@@ -731,6 +732,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#359]: https://github.com/jerus-org/pcu/pull/359
 [#360]: https://github.com/jerus-org/pcu/pull/360
 [#361]: https://github.com/jerus-org/pcu/pull/361
+[#363]: https://github.com/jerus-org/pcu/pull/363
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.5...HEAD
 [0.4.5]: https://github.com/jerus-org/pcu/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/jerus-org/pcu/compare/v0.4.3...v0.4.4
