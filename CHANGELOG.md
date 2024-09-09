@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - change rangeStrategy in renovate.json from update-lockfile to replace(pr [#359])
+- update rangeStrategy in renovate.json from replace to bump(pr [#360])
 
 ## [0.4.5] - 2024-09-07
 
@@ -727,6 +728,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#357]: https://github.com/jerus-org/pcu/pull/357
 [#358]: https://github.com/jerus-org/pcu/pull/358
 [#359]: https://github.com/jerus-org/pcu/pull/359
+[#360]: https://github.com/jerus-org/pcu/pull/360
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.5...HEAD
 [0.4.5]: https://github.com/jerus-org/pcu/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/jerus-org/pcu/compare/v0.4.3...v0.4.4
