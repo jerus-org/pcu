@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate named-colour to 0.3.1(pr [#362])
 - deps: update rust crate serde to 1.0.210(pr [#364])
 - deps: update rust crate tokio to 1.40.0(pr [#365])
+- cli: pass version to push_committed function in run_release(pr [#366])
 
 ## [0.4.5] - 2024-09-07
 
@@ -739,6 +740,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#362]: https://github.com/jerus-org/pcu/pull/362
 [#364]: https://github.com/jerus-org/pcu/pull/364
 [#365]: https://github.com/jerus-org/pcu/pull/365
+[#366]: https://github.com/jerus-org/pcu/pull/366
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.5...HEAD
 [0.4.5]: https://github.com/jerus-org/pcu/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/jerus-org/pcu/compare/v0.4.3...v0.4.4
