@@ -128,7 +128,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<CIExit> {
 
     commit_changed_files(&client, sign, commit_message, None).await?;
 
-    push_commited(&client, None, false).await?;
+    push_committed(&client, None, false).await?;
 
     Ok(CIExit::Updated)
 }
@@ -188,7 +188,7 @@ async fn commit_changed_files(
 async fn run_push(args: Push) -> Result<CIExit> {
     let client = get_client(Commands::Push(args.clone())).await?;
 
-    push_commited(&client, args.tag_opt(), args.no_push).await?;
+    push_committed(&client, args.tag_opt(), args.no_push).await?;
 
     if !args.no_push {
         Ok(CIExit::Pushed(
@@ -201,7 +201,7 @@ async fn run_push(args: Push) -> Result<CIExit> {
     }
 }
 
-async fn push_commited(client: &Client, tag_opt: Option<&str>, no_push: bool) -> Result<()> {
+async fn push_committed(client: &Client, tag_opt: Option<&str>, no_push: bool) -> Result<()> {
     log::info!("Push the commit");
 
     client.push_commit(tag_opt, no_push)?;
@@ -253,7 +253,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
 
         commit_changed_files(&client, sign, commit_message, None).await?;
 
-        push_commited(&client, None, false).await?;
+        push_committed(&client, Some(&version), false).await?;
     }
 
     client.make_release(&version).await?;
