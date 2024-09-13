@@ -251,7 +251,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
 
         let commit_message = "chore: update changelog for pr";
 
-        commit_changed_files(&client, sign, commit_message, None).await?;
+        commit_changed_files(&client, sign, commit_message, Some(&version)).await?;
 
         push_committed(&client, Some(&version), false).await?;
     }
