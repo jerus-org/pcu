@@ -260,6 +260,7 @@ impl GitOps for Client {
     }
 
     fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error> {
+        log::trace!("version: {version:?} and no_push: {no_push}");
         let mut remote = self.git_repo.find_remote("origin")?;
         log::trace!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
