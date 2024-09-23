@@ -203,6 +203,7 @@ async fn run_push(args: Push) -> Result<CIExit> {
 
 async fn push_committed(client: &Client, tag_opt: Option<&str>, no_push: bool) -> Result<()> {
     log::info!("Push the commit");
+    log::trace!("tag_opt: {tag_opt:?} and no_push: {no_push}");
 
     client.push_commit(tag_opt, no_push)?;
     log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
