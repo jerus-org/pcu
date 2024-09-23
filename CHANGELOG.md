@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- deps: update rust crate thiserror to 1.0.64(pr [#372])
+
 ## [0.4.7] - 2024-09-21
 
 ### Fixed
@@ -752,6 +758,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#367]: https://github.com/jerus-org/pcu/pull/367
 [#368]: https://github.com/jerus-org/pcu/pull/368
 [#369]: https://github.com/jerus-org/pcu/pull/369
+[#372]: https://github.com/jerus-org/pcu/pull/372
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.7...HEAD
 [0.4.7]: https://github.com/jerus-org/pcu/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/jerus-org/pcu/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/jerus-org/pcu/compare/v0.4.4...v0.4.5
