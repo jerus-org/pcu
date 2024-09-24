@@ -8,7 +8,7 @@ use octocrate::repos::create_release::RequestMakeLatest;
 
 pub trait MakeRelease {
     #[allow(async_fn_in_trait)]
-    async fn make_release(&self, version: &str) -> Result<(), Error>;
+    async fn make_release(&self, prefix: &str, version: &str) -> Result<(), Error>;
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error>;
 }
 
@@ -30,7 +30,7 @@ impl MakeRelease for Client {
         Ok(())
     }
 
-    async fn make_release(&self, version: &str) -> Result<(), Error> {
+    async fn make_release(&self, prefix: &str, version: &str) -> Result<(), Error> {
         log::debug!("Making release {version}");
 
         let opts = ChangelogParseOptions::default();
@@ -42,10 +42,10 @@ impl MakeRelease for Client {
             }
         };
 
-        let release_notes = changelog.release_notes(version)?;
+        let release_notes = changelog.release_notes(prefix, version)?;
         log::trace!("Release notes: {:#?}", release_notes);
 
-        let tag = format!("v{version}");
+        let tag = format!("{prefix}{version}");
         let commit = Self::get_commitish_for_tag(self, &tag).await?;
         log::trace!("Commit: {:#?}", commit);
 

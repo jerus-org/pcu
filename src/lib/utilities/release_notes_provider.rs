@@ -9,12 +9,12 @@ pub struct ReleaseNotes {
 }
 
 pub trait ReleaseNotesProvider {
-    fn release_notes(&self, release: &str) -> Result<ReleaseNotes, Error>;
+    fn release_notes(&self, prefix: &str, release: &str) -> Result<ReleaseNotes, Error>;
 }
 
 impl ReleaseNotesProvider for Changelog {
-    fn release_notes(&self, release: &str) -> Result<ReleaseNotes, Error> {
-        let name = format!("v{release}");
+    fn release_notes(&self, prefix: &str, release: &str) -> Result<ReleaseNotes, Error> {
+        let name = format!("{prefix}{release}");
 
         let version = match Version::parse(release) {
             Ok(version) => version,
