@@ -1,10 +1,10 @@
 use std::{env, fs};
 
-use ansi_term::Style;
 use clap::Parser;
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
+use owo_colors::{OwoColorize, Style};
 use pcu_lib::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr};
 
 use color_eyre::Result;
@@ -147,7 +147,8 @@ async fn commit_changed_files(
     commit_message: &str,
     tag_opt: Option<&str>,
 ) -> Result<()> {
-    log::debug!("{}", Style::new().bold().underline().paint("Check WorkDir"));
+    let hdr_style = Style::new().bold().underline();
+    log::debug!("{}", "Check WorkDir".style(hdr_style));
 
     let files_in_workdir = client.repo_files_not_staged()?;
 
@@ -159,7 +160,7 @@ async fn commit_changed_files(
 
     client.stage_files(files_in_workdir)?;
 
-    log::debug!("{}", Style::new().bold().underline().paint("Check Staged"));
+    log::debug!("{}", "Check Staged".style(hdr_style));
     log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
 
     let files_staged_for_commit = client.repo_files_staged()?;
@@ -171,10 +172,7 @@ async fn commit_changed_files(
 
     client.commit_staged(sign, commit_message, tag_opt)?;
 
-    log::debug!(
-        "{}",
-        Style::new().bold().underline().paint("Check Committed")
-    );
+    log::debug!("{}", "Check Committed".style(hdr_style));
     log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
 
     let files_staged_for_commit = client.repo_files_staged()?;
@@ -206,7 +204,8 @@ async fn push_committed(client: &Client, tag_opt: Option<&str>, no_push: bool) -
     log::trace!("tag_opt: {tag_opt:?} and no_push: {no_push}");
 
     client.push_commit(tag_opt, no_push)?;
-    log::debug!("{}", Style::new().bold().underline().paint("Check Push"));
+    let hdr_style = Style::new().bold().underline();
+    log::debug!("{}", "Check Push".style(hdr_style));
     log::debug!("Branch status: {}", client.branch_status()?);
 
     Ok(())

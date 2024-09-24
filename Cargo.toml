@@ -33,12 +33,12 @@ octocrate = { version = "2.0.1", features = [
     "repos",
     "rustls-tls",
 ], default-features = false }
-ansi_term = "0.12.1"
 gql_client = "1.0.7"
 serde = { version = "1.0.210", features = ["derive"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["std", "env-filter"] }
 named-colour = { version = "0.3.2", features = ["extended"] }
+owo-colors = "4.1.0"
 
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"
@@ -52,3 +52,6 @@ path = "src/lib/lib.rs"
 [[bin]]
 name = "pcu"
 path = "src/cli/main.rs"
+
+[patch.crates-io]
+config = { git = 'https://github.com/mehcode/config-rs.git' }
