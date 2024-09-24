@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add trace logs for push_commit function(pr [#373])
 
+### Changed
+
+- ci(circleci)-update toolkit orb to version 1.9.2 and add security context to workflows(pr [#374])
+
 ### Fixed
 
 - deps: update rust crate thiserror to 1.0.64(pr [#372])
@@ -766,6 +770,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#372]: https://github.com/jerus-org/pcu/pull/372
 [#371]: https://github.com/jerus-org/pcu/pull/371
 [#373]: https://github.com/jerus-org/pcu/pull/373
+[#374]: https://github.com/jerus-org/pcu/pull/374
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.7...HEAD
 [0.4.7]: https://github.com/jerus-org/pcu/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/jerus-org/pcu/compare/v0.4.5...v0.4.6
