@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - add trace logs for push_commit function(pr [#373])
+- add prefix option for version tags in CLI commands(pr [#375])
 
 ### Changed
 
@@ -771,6 +772,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#371]: https://github.com/jerus-org/pcu/pull/371
 [#373]: https://github.com/jerus-org/pcu/pull/373
 [#374]: https://github.com/jerus-org/pcu/pull/374
+[#375]: https://github.com/jerus-org/pcu/pull/375
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.7...HEAD
 [0.4.7]: https://github.com/jerus-org/pcu/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/jerus-org/pcu/compare/v0.4.5...v0.4.6
