@@ -45,7 +45,7 @@ commands:
           command: |
             set -ex
             if [[ -v CIRCLE_PULL_REQUEST ]]; then
-              result=$(pcu <<parameters.pcu_verbosity>> pull-request --early-exit)
+              result=$(pcu <<parameters.pcu_verbosity>> pr --early-exit)
               if [ "$result" == << parameters.pcu_halt_signal >> ]; then
                 circleci-agent step halt
               fi
