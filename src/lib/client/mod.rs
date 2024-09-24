@@ -5,11 +5,11 @@ mod pull_request;
 
 use self::pull_request::PullRequest;
 
-use ansi_term::Style;
 use config::Config;
 use git2::Repository;
 use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
 use octocrate::{APIConfig, AppAuthorization, GitHubAPI, PersonalAccessToken};
+use owo_colors::{OwoColorize, Style};
 
 use crate::Error;
 use crate::PrTitle;
@@ -156,13 +156,11 @@ impl Client {
         owner: &str,
         repo: &str,
     ) -> Result<(GitHubAPI, gql_client::Client), Error> {
+        let bld_style = Style::new().bold();
         log::debug!("*******\nGet GitHub API instance");
         let (config, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
-                log::debug!(
-                    "Using {} for authentication",
-                    Style::new().bold().paint("GitHub App")
-                );
+                log::debug!("Using {} for authentication", "GitHub App".style(bld_style));
 
                 let private_key = settings
                     .get::<String>("private_key")
@@ -197,7 +195,7 @@ impl Client {
                     .map_err(|_| Error::NoGitHubAPIAuth)?;
                 log::debug!(
                     "Falling back to {} for authentication",
-                    Style::new().bold().paint("Personal Access Token")
+                    "Personal Access Token".style(bld_style)
                 );
 
                 // Create a personal access token
