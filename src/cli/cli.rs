@@ -20,7 +20,7 @@ pub struct Cli {
 #[derive(Debug, Subcommand, Clone)]
 pub enum Commands {
     /// Update the changelog from a pull request
-    PullRequest(PullRequest),
+    Pr(Pr),
     /// Create a release on GitHub
     Release(Release),
     /// Commit changed files in the working directory
@@ -38,7 +38,7 @@ the lowest number submitted by the `renovate` user")]
 impl Display for Commands {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Commands::PullRequest(_) => write!(f, "pull-request"),
+            Commands::Pr(_) => write!(f, "prequest"),
             Commands::Release(_) => write!(f, "release"),
             Commands::Commit(_) => write!(f, "commit"),
             Commands::Push(_) => write!(f, "push"),
@@ -48,11 +48,11 @@ impl Display for Commands {
 }
 
 #[derive(Debug, Parser, Clone)]
-pub struct PullRequest {
+pub struct Pr {
     /// Signal an early exit as the changelog is already updated
     #[clap(short, long, default_value_t = false)]
     pub early_exit: bool,
-    /// Prefix for the version tag (default 'v')
+    /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
 }
@@ -65,7 +65,7 @@ pub struct Release {
     /// Update the changelog by renaming the unreleased section with the version number
     #[arg(short, long, default_value_t = false)]
     pub update_changelog: bool,
-    /// Prefix for the version tag (default 'v')
+    /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
 }
@@ -79,7 +79,7 @@ pub struct Commit {
     /// Message to add to the commit when pushing
     #[arg(short, long)]
     commit_message: String,
-    /// Prefix for the version tag (default 'v')
+    /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
 }
@@ -106,7 +106,7 @@ pub struct Push {
     /// Disable the push command
     #[arg(short, long, default_value_t = false)]
     pub no_push: bool,
-    /// Prefix for the version tag (default 'v')
+    /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
 }

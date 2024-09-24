@@ -26,9 +26,9 @@ impl PullRequest {
         log::trace!("command: {:?}", settings.get::<String>("command"));
         let command: String = settings.get("command").map_err(|_| Error::CommandNotSet)?;
 
-        // If the command is not pull-request then return None
+        // If the command is not pr then return None
         log::trace!("command: {:?}", command);
-        if command != "pull-request" {
+        if command != "pr" {
             return Ok(None);
         }
 
