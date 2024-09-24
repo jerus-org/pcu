@@ -16,7 +16,7 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
-use cli::{CIExit, Cli, Commands, Commit, Label, PullRequest, Push, Release};
+use cli::{CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     let cmd = args.command.clone();
 
     let res = match cmd {
-        Commands::PullRequest(pr_args) => run_pull_request(sign, pr_args).await,
+        Commands::Pr(pr_args) => run_pull_request(sign, pr_args).await,
         Commands::Commit(commit_args) => run_commit(sign, commit_args).await,
         Commands::Push(push_args) => run_push(push_args).await,
         Commands::Label(label_args) => run_label(label_args).await,
@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<CIExit> {
+async fn run_pull_request(sign: Sign, args: Pr) -> Result<CIExit> {
     let branch = env::var("CIRCLE_BRANCH");
     log::trace!("Branch: {branch:?}");
 
@@ -74,7 +74,7 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<CIExit> {
         return Ok(CIExit::UnChanged);
     }
 
-    let mut client = get_client(Commands::PullRequest(args.clone())).await?;
+    let mut client = get_client(Commands::Pr(args.clone())).await?;
 
     log::info!(
         "On the `{}` branch, so time to get to work!",
@@ -352,9 +352,9 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         .add_source(config::Environment::with_prefix("PCU"));
 
     settings = match cmd {
-        Commands::PullRequest(_) => settings
+        Commands::Pr(_) => settings
             .set_override("commit_message", "chore: update changelog for pr")?
-            .set_override("command", "pull-request")?,
+            .set_override("command", "pr")?,
         Commands::Release(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "release")?,
