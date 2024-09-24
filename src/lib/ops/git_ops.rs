@@ -39,9 +39,10 @@ pub trait GitOps {
         &self,
         sign: Sign,
         commit_message: &str,
+        prefix: &str,
         tag: Option<&str>,
     ) -> Result<(), Error>;
-    fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error>;
+    fn push_commit(&self, prefix: &str, version: Option<&str>, no_push: bool) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn label_next_pr(
         &self,
@@ -148,6 +149,7 @@ impl GitOps for Client {
         &self,
         sign: Sign,
         commit_message: &str,
+        prefix: &str,
         tag: Option<&str>,
     ) -> Result<(), Error> {
         log::trace!("Commit staged with sign {sign:?}");
@@ -252,14 +254,14 @@ impl GitOps for Client {
         };
 
         if let Some(version_tag) = tag {
-            let version_tag = format!("v{}", version_tag);
+            let version_tag = format!("{prefix}{version_tag}");
             self.create_tag(&version_tag, commit_id, &sig)?;
         }
 
         Ok(())
     }
 
-    fn push_commit(&self, version: Option<&str>, no_push: bool) -> Result<(), Error> {
+    fn push_commit(&self, prefix: &str, version: Option<&str>, no_push: bool) -> Result<(), Error> {
         log::trace!("version: {version:?} and no_push: {no_push}");
         let mut remote = self.git_repo.find_remote("origin")?;
         log::trace!("Pushing changes to {:?}", remote.name());
@@ -287,8 +289,8 @@ impl GitOps for Client {
         let mut tag_ref = String::from("");
 
         if let Some(version_tag) = version {
-            log::trace!("Found version tag: {}", version_tag);
-            tag_ref = format!("refs/tags/v{version_tag}");
+            log::trace!("Found version tag: {prefix}{version_tag}");
+            tag_ref = format!("refs/tags/{prefix}{version_tag}");
             log::trace!("Tag ref: {tag_ref}");
             push_refs.push(&tag_ref);
         };

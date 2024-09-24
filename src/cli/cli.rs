@@ -52,6 +52,9 @@ pub struct PullRequest {
     /// Signal an early exit as the changelog is already updated
     #[clap(short, long, default_value_t = false)]
     pub early_exit: bool,
+    /// Prefix for the version tag (default 'v')
+    #[clap(short, long, default_value_t = String::from("v"))]
+    pub prefix: String,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -62,6 +65,9 @@ pub struct Release {
     /// Update the changelog by renaming the unreleased section with the version number
     #[arg(short, long, default_value_t = false)]
     pub update_changelog: bool,
+    /// Prefix for the version tag (default 'v')
+    #[clap(short, long, default_value_t = String::from("v"))]
+    pub prefix: String,
 }
 
 /// Configuration for the Commit command
@@ -73,6 +79,9 @@ pub struct Commit {
     /// Message to add to the commit when pushing
     #[arg(short, long)]
     commit_message: String,
+    /// Prefix for the version tag (default 'v')
+    #[clap(short, long, default_value_t = String::from("v"))]
+    pub prefix: String,
 }
 
 impl Commit {
@@ -97,6 +106,9 @@ pub struct Push {
     /// Disable the push command
     #[arg(short, long, default_value_t = false)]
     pub no_push: bool,
+    /// Prefix for the version tag (default 'v')
+    #[clap(short, long, default_value_t = String::from("v"))]
+    pub prefix: String,
 }
 
 impl Push {

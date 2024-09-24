@@ -126,9 +126,9 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<CIExit> {
 
     let commit_message = "chore: update changelog for pr";
 
-    commit_changed_files(&client, sign, commit_message, None).await?;
+    commit_changed_files(&client, sign, commit_message, &args.prefix, None).await?;
 
-    push_committed(&client, None, false).await?;
+    push_committed(&client, &args.prefix, None, false).await?;
 
     Ok(CIExit::Updated)
 }
@@ -136,7 +136,14 @@ async fn run_pull_request(sign: Sign, args: PullRequest) -> Result<CIExit> {
 async fn run_commit(sign: Sign, args: Commit) -> Result<CIExit> {
     let client = get_client(Commands::Commit(args.clone())).await?;
 
-    commit_changed_files(&client, sign, args.commit_message(), args.tag_opt()).await?;
+    commit_changed_files(
+        &client,
+        sign,
+        args.commit_message(),
+        &args.prefix,
+        args.tag_opt(),
+    )
+    .await?;
 
     Ok(CIExit::Committed)
 }
@@ -145,6 +152,7 @@ async fn commit_changed_files(
     client: &Client,
     sign: Sign,
     commit_message: &str,
+    prefix: &str,
     tag_opt: Option<&str>,
 ) -> Result<()> {
     let hdr_style = Style::new().bold().underline();
@@ -170,7 +178,7 @@ async fn commit_changed_files(
 
     log::info!("Commit the staged changes");
 
-    client.commit_staged(sign, commit_message, tag_opt)?;
+    client.commit_staged(sign, commit_message, prefix, tag_opt)?;
 
     log::debug!("{}", "Check Committed".style(hdr_style));
     log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
@@ -186,7 +194,7 @@ async fn commit_changed_files(
 async fn run_push(args: Push) -> Result<CIExit> {
     let client = get_client(Commands::Push(args.clone())).await?;
 
-    push_committed(&client, args.tag_opt(), args.no_push).await?;
+    push_committed(&client, &args.prefix, args.tag_opt(), args.no_push).await?;
 
     if !args.no_push {
         Ok(CIExit::Pushed(
@@ -199,11 +207,16 @@ async fn run_push(args: Push) -> Result<CIExit> {
     }
 }
 
-async fn push_committed(client: &Client, tag_opt: Option<&str>, no_push: bool) -> Result<()> {
+async fn push_committed(
+    client: &Client,
+    prefix: &str,
+    tag_opt: Option<&str>,
+    no_push: bool,
+) -> Result<()> {
     log::info!("Push the commit");
     log::trace!("tag_opt: {tag_opt:?} and no_push: {no_push}");
 
-    client.push_commit(tag_opt, no_push)?;
+    client.push_commit(prefix, tag_opt, no_push)?;
     let hdr_style = Style::new().bold().underline();
     log::debug!("{}", "Check Push".style(hdr_style));
     log::debug!("Branch status: {}", client.branch_status()?);
@@ -251,12 +264,12 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
 
         let commit_message = "chore: update changelog for pr";
 
-        commit_changed_files(&client, sign, commit_message, Some(&version)).await?;
+        commit_changed_files(&client, sign, commit_message, &args.prefix, Some(&version)).await?;
 
-        push_committed(&client, Some(&version), false).await?;
+        push_committed(&client, &args.prefix, Some(&version), false).await?;
     }
 
-    client.make_release(&version).await?;
+    client.make_release(&args.prefix, &version).await?;
 
     Ok(CIExit::Released)
 }
