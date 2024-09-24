@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - ci(circleci)-update toolkit orb to version 1.9.2 and add security context to workflows(pr [#374])
+- refactor!(cli): rename PullRequest to Pr for brevity(pr [#376])
 
 ### Fixed
 
@@ -773,6 +774,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#373]: https://github.com/jerus-org/pcu/pull/373
 [#374]: https://github.com/jerus-org/pcu/pull/374
 [#375]: https://github.com/jerus-org/pcu/pull/375
+[#376]: https://github.com/jerus-org/pcu/pull/376
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.7...HEAD
 [0.4.7]: https://github.com/jerus-org/pcu/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/jerus-org/pcu/compare/v0.4.5...v0.4.6
