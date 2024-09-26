@@ -8,6 +8,7 @@
   "hostRules": [
     {
       "matchHost": "circleci.com",
+      "authType": "Token-Only",
       "token": "{{ secrets.CIRCLECI_TOKEN }}"
     }
   ],
