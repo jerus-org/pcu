@@ -5,6 +5,12 @@
   "semanticCommits": "enabled",
   "semanticCommitType": "fix",
   "versioning": "cargo",
+  "hostRules": [
+    {
+      "matchHost": "circleci.com",
+      "token": "{{ secrets.circleci }}"
+    }
+  ],
   "packageRules": [
     {
       "excludePackageNames": [
