@@ -57,7 +57,7 @@
       "matchPackagePatterns": [
         "jerus-org/circleci-toolkit"
       ],
-      "enabled": false
+      "enabled": true
     }
   ],
   "regexManagers": [
