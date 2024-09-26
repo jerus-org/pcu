@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add host rules for CircleCI token in renovate.json(pr [#378])
 - add sourceUrl for circleci-toolkit orb(pr [#379])
+- add authType configuration for CircleCI host in renovate.json(pr [#382])
 
 ### Fixed
 
@@ -793,6 +794,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#379]: https://github.com/jerus-org/pcu/pull/379
 [#380]: https://github.com/jerus-org/pcu/pull/380
 [#381]: https://github.com/jerus-org/pcu/pull/381
+[#382]: https://github.com/jerus-org/pcu/pull/382
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.8...HEAD
 [0.4.8]: https://github.com/jerus-org/pcu/compare/v0.4.7...v0.4.8
 [0.4.7]: https://github.com/jerus-org/pcu/compare/v0.4.6...v0.4.7
