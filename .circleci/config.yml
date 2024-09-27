@@ -333,6 +333,13 @@ workflows:
         - not: << pipeline.parameters.success-flag >>
         - << pipeline.parameters.validation-flag >>
     jobs:
+      - toolkit/label:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
+          context: pcu-app
+          filters:
+            branches:
+              only:
+                - main
       - toolkit/required_builds:
           name: required-builds
           min_rust_version: << pipeline.parameters.min-rust-version >>
@@ -376,7 +383,6 @@ workflows:
             - pcu-app
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
-
           update_pcu: true
           pcu_verbosity: "-vvvv"
 
