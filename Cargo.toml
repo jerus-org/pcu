@@ -24,7 +24,7 @@ color-eyre = "0.6.3"
 thiserror = "1.0.64"
 env_logger = "0.11.5"
 clap = "4.5.18"
-clap-verbosity-flag = "2.2.1"
+clap-verbosity-flag = "2.2.2"
 config = "0.14.0"
 chrono = "0.4.38"
 octocrate = { version = "2.0.1", features = [
