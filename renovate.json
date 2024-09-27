@@ -5,13 +5,6 @@
   "semanticCommits": "enabled",
   "semanticCommitType": "fix",
   "versioning": "cargo",
-  "hostRules": [
-    {
-      "matchHost": "circleci.com",
-      "authType": "Token-Only",
-      "token": "{{ secrets.CIRCLECI_TOKEN }}"
-    }
-  ],
   "packageRules": [
     {
       "excludePackageNames": [
