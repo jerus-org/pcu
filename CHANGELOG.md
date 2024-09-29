@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - deps: update rust crate named-colour to 0.3.3(pr [#386])
 - deps: update rust crate rstest to 0.23.0(pr [#387])
+- deps: update rust crate regex to 1.11.0(pr [#388])
 
 ## [0.4.9] - 2024-09-28
 
@@ -810,6 +811,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#385]: https://github.com/jerus-org/pcu/pull/385
 [#386]: https://github.com/jerus-org/pcu/pull/386
 [#387]: https://github.com/jerus-org/pcu/pull/387
+[#388]: https://github.com/jerus-org/pcu/pull/388
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.9...HEAD
 [0.4.9]: https://github.com/jerus-org/pcu/compare/v0.4.8...v0.4.9
 [0.4.8]: https://github.com/jerus-org/pcu/compare/v0.4.7...v0.4.8
