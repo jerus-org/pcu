@@ -43,7 +43,7 @@ owo-colors = "4.1.0"
 [dev-dependencies]
 log4rs_test_utils = "0.2.3"
 rstest = "0.23.0"
-uuid = { version = "1.10.0", features = ["v4"] }
+uuid = { version = "1.11.0", features = ["v4"] }
 
 [lib]
 name = "pcu_lib"
