@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- add workspace flag to process packages in the workspace(pr [#395])
+
 ### Fixed
 
 - deps: update rust crate serde to 1.0.211(pr [#393])
@@ -839,6 +843,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#392]: https://github.com/jerus-org/pcu/pull/392
 [#393]: https://github.com/jerus-org/pcu/pull/393
 [#394]: https://github.com/jerus-org/pcu/pull/394
+[#395]: https://github.com/jerus-org/pcu/pull/395
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.12...HEAD
 [0.4.12]: https://github.com/jerus-org/pcu/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jerus-org/pcu/compare/v0.4.10...v0.4.11
