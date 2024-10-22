@@ -68,6 +68,8 @@ pub enum Error {
     Config(#[from] config::ConfigError),
     #[error("regex error says: {0:?}")]
     Regex(#[from] RegexError),
+    #[error("cargo_toml error says: {0:?}")]
+    Toml(#[from] cargo_toml::Error),
 }
 
 #[derive(Debug)]
