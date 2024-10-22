@@ -3,6 +3,7 @@ mod error;
 mod ops;
 mod pr_title;
 mod utilities;
+mod workspace;
 
 pub use client::Client;
 pub use error::Error;
