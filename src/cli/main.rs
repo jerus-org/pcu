@@ -1,11 +1,11 @@
-use std::{env, fs};
+use std::{env, fs, path::Path};
 
 use clap::Parser;
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
 use owo_colors::{OwoColorize, Style};
-use pcu_lib::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr};
+use pcu_lib::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr, Workspace};
 
 use color_eyre::Result;
 
@@ -270,8 +270,8 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
     }
 
     if args.workspace {
-        todo!("Workspace release not yet implemented");
-        let workspace = Workspace::new();
+        let path = Path::new("./Cargo.toml");
+        let workspace = Workspace::new(&path).unwrap();
 
         for package in workspace.packages() {
             let prefix = format!("{}-{}", package.name(), args.prefix);
