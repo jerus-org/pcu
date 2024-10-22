@@ -68,6 +68,9 @@ pub struct Release {
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
+    /// Process packages in the workspace s
+    #[clap(short, long, default_value_t = false)]
+    pub workspace: bool,
 }
 
 /// Configuration for the Commit command
