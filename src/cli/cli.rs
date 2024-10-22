@@ -68,7 +68,7 @@ pub struct Release {
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
-    /// Process packages in the workspace s
+    /// Process packages in the workspace
     #[clap(short, long, default_value_t = false)]
     pub workspace: bool,
 }
