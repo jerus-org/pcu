@@ -269,7 +269,21 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
         push_committed(&client, &args.prefix, Some(&version), false).await?;
     }
 
-    client.make_release(&args.prefix, &version).await?;
+    if args.workspace {
+        todo!("Workspace release not yet implemented");
+        let workspace = Workspace::new();
+
+        for package in workspace.packages() {
+            let prefix = format!("{}-{}", package.name(), args.prefix);
+            let version = package.version().to_string();
+            let tag = format!("{prefix}{version}");
+            if !client.tag_exists(tag) {
+                client.make_release(&prefix, &version).await?;
+            }
+        }
+    } else {
+        client.make_release(&args.prefix, &version).await?;
+    }
 
     Ok(CIExit::Released)
 }
