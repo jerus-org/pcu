@@ -273,12 +273,16 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
         let path = Path::new("./Cargo.toml");
         let workspace = Workspace::new(&path).unwrap();
 
-        for package in workspace.packages() {
-            let prefix = format!("{}-{}", package.name(), args.prefix);
-            let version = package.version().to_string();
-            let tag = format!("{prefix}{version}");
-            if !client.tag_exists(tag) {
-                client.make_release(&prefix, &version).await?;
+        let packages = workspace.packages();
+
+        if let Some(packages) = packages {
+            for package in packages {
+                let prefix = format!("{}-{}", package.name, args.prefix);
+                let version = package.version;
+                let tag = format!("{prefix}{version}");
+                if !client.tag_exists(tag) {
+                    client.make_release(&prefix, &version).await?;
+                }
             }
         }
     } else {

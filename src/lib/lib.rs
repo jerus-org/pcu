@@ -13,4 +13,4 @@ pub use ops::MakeRelease;
 pub use ops::Sign;
 pub use ops::UpdateFromPr;
 pub use pr_title::PrTitle;
-pub use workspace::Workspace;
+pub use workspace::{Package, Workspace};
