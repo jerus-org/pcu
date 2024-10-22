@@ -225,6 +225,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
 
 [[package]]
+name = "cargo_toml"
+version = "0.20.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88da5a13c620b4ca0078845707ea9c3faf11edbc3ffd8497d11d686211cd1ac0"
+dependencies = [
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "cc"
 version = "1.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1550,6 +1560,7 @@ checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
 name = "pcu"
 version = "0.4.12"
 dependencies = [
+ "cargo_toml",
  "chrono",
  "clap",
  "clap-verbosity-flag",
