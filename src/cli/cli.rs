@@ -61,7 +61,7 @@ pub struct Pr {
 pub struct Release {
     /// Semantic version number for the release
     #[arg(short, long)]
-    pub semver: String,
+    pub semver: Option<String>,
     /// Update the changelog by renaming the unreleased section with the version number
     #[arg(short, long, default_value_t = false)]
     pub update_changelog: bool,
