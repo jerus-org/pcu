@@ -241,34 +241,6 @@ async fn run_label(args: Label) -> Result<CIExit> {
 async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
     let mut client = get_client(Commands::Release(args.clone())).await?;
 
-    let version = args.semver;
-
-    log::trace!("Running release {version}");
-    log::trace!(
-        "PR ID: {} - Owner: {} - Repo: {}",
-        client.pr_number(),
-        client.owner(),
-        client.repo()
-    );
-    log::trace!("Signing: {:?}", sign);
-    log::trace!("Update changelog flag: {}", args.update_changelog);
-
-    if args.update_changelog {
-        client.release_unreleased(&version)?;
-        log::debug!("Changelog file name: {}", client.changelog_as_str());
-
-        log::trace!(
-            "{}",
-            print_changelog(client.changelog_as_str(), client.line_limit())
-        );
-
-        let commit_message = "chore: update changelog for pr";
-
-        commit_changed_files(&client, sign, commit_message, &args.prefix, Some(&version)).await?;
-
-        push_committed(&client, &args.prefix, Some(&version), false).await?;
-    }
-
     if args.workspace {
         let path = Path::new("./Cargo.toml");
         let workspace = Workspace::new(path).unwrap();
@@ -289,6 +261,38 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
             }
         }
     } else {
+        let Some(version) = args.semver else {
+            log::error!("Semver required to update changelog");
+            return Ok(CIExit::UnChanged);
+        };
+
+        log::trace!("Running release {version}");
+        log::trace!(
+            "PR ID: {} - Owner: {} - Repo: {}",
+            client.pr_number(),
+            client.owner(),
+            client.repo()
+        );
+        log::trace!("Signing: {:?}", sign);
+        log::trace!("Update changelog flag: {}", args.update_changelog);
+
+        if args.update_changelog {
+            client.release_unreleased(&version)?;
+            log::debug!("Changelog file name: {}", client.changelog_as_str());
+
+            log::trace!(
+                "{}",
+                print_changelog(client.changelog_as_str(), client.line_limit())
+            );
+
+            let commit_message = "chore: update changelog for pr";
+
+            commit_changed_files(&client, sign, commit_message, &args.prefix, Some(&version))
+                .await?;
+
+            push_committed(&client, &args.prefix, Some(&version), false).await?;
+        }
+
         client.make_release(&args.prefix, &version).await?;
     }
 
