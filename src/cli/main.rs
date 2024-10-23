@@ -271,7 +271,7 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
 
     if args.workspace {
         let path = Path::new("./Cargo.toml");
-        let workspace = Workspace::new(&path).unwrap();
+        let workspace = Workspace::new(path).unwrap();
 
         let packages = workspace.packages();
 
@@ -280,8 +280,11 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
                 let prefix = format!("{}-{}", package.name, args.prefix);
                 let version = package.version;
                 let tag = format!("{prefix}{version}");
-                if !client.tag_exists(tag) {
+                if !client.tag_exists(&tag) {
+                    log::info!("Make release and create tag: {tag}");
                     client.make_release(&prefix, &version).await?;
+                } else {
+                    log::info!("Tag already exists: {tag}");
                 }
             }
         }
