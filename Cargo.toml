@@ -34,7 +34,7 @@ octocrate = { version = "2.0.1", features = [
     "rustls-tls",
 ], default-features = false }
 gql_client = "1.0.7"
-serde = { version = "1.0.211", features = ["derive"] }
+serde = { version = "1.0.213", features = ["derive"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["std", "env-filter"] }
 named-colour = { version = "0.3.4", features = ["extended"] }
