@@ -1,11 +1,11 @@
-use std::{env, fs};
+use std::{env, fs, path::Path};
 
 use clap::Parser;
 use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
 use owo_colors::{OwoColorize, Style};
-use pcu_lib::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr};
+use pcu_lib::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr, Workspace};
 
 use color_eyre::Result;
 
@@ -269,7 +269,28 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
         push_committed(&client, &args.prefix, Some(&version), false).await?;
     }
 
-    client.make_release(&args.prefix, &version).await?;
+    if args.workspace {
+        let path = Path::new("./Cargo.toml");
+        let workspace = Workspace::new(path).unwrap();
+
+        let packages = workspace.packages();
+
+        if let Some(packages) = packages {
+            for package in packages {
+                let prefix = format!("{}-{}", package.name, args.prefix);
+                let version = package.version;
+                let tag = format!("{prefix}{version}");
+                if !client.tag_exists(&tag) {
+                    log::info!("Make release and create tag: {tag}");
+                    client.make_release(&prefix, &version).await?;
+                } else {
+                    log::info!("Tag already exists: {tag}");
+                }
+            }
+        }
+    } else {
+        client.make_release(&args.prefix, &version).await?;
+    }
 
     Ok(CIExit::Released)
 }

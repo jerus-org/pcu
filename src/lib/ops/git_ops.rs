@@ -52,6 +52,7 @@ pub trait GitOps {
         colour: Option<&str>,
     ) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
+    fn tag_exists(&self, tag: &str) -> bool;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
 }
@@ -65,6 +66,22 @@ impl GitOps for Client {
         let reference = format!("refs/tags/{tag}");
         revwalk.push_ref(&reference)?;
         Ok(())
+    }
+
+    fn tag_exists(&self, tag: &str) -> bool {
+        let names = self.git_repo.tag_names(Some(tag));
+
+        if names.is_err() {
+            return false;
+        };
+
+        let names = names.unwrap();
+
+        if names.is_empty() {
+            return false;
+        }
+
+        true
     }
 
     async fn get_commitish_for_tag(&self, tag: &str) -> Result<String, Error> {

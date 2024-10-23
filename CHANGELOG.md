@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- add workspace flag to process packages in the workspace(pr [#395])
+
 ### Fixed
 
 - deps: update rust crate serde to 1.0.211(pr [#393])
