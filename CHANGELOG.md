@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add workspace flag to process packages in the workspace(pr [#395])
 - implement pagination for listing tags in GitOps(pr [#401])
+- add option to release specific workspace package(pr [#402])
 
 ### Changed
 
@@ -858,6 +859,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#399]: https://github.com/jerus-org/pcu/pull/399
 [#400]: https://github.com/jerus-org/pcu/pull/400
 [#401]: https://github.com/jerus-org/pcu/pull/401
+[#402]: https://github.com/jerus-org/pcu/pull/402
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.12...HEAD
 [0.4.12]: https://github.com/jerus-org/pcu/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jerus-org/pcu/compare/v0.4.10...v0.4.11
