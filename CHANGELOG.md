@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate thiserror to 1.0.65(pr [#397])
 - cli: correct tag existence check and release creation logic(pr [#399])
 - deps: update rust crate config to 0.14.1(pr [#400])
+- deps: update rust crate regex to 1.11.1(pr [#403])
 
 ## [0.4.12] - 2024-10-19
 
@@ -858,6 +859,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#399]: https://github.com/jerus-org/pcu/pull/399
 [#400]: https://github.com/jerus-org/pcu/pull/400
 [#401]: https://github.com/jerus-org/pcu/pull/401
+[#403]: https://github.com/jerus-org/pcu/pull/403
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.12...HEAD
 [0.4.12]: https://github.com/jerus-org/pcu/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jerus-org/pcu/compare/v0.4.10...v0.4.11
