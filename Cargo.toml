@@ -25,7 +25,7 @@ thiserror = "1.0.65"
 env_logger = "0.11.5"
 clap = "4.5.20"
 clap-verbosity-flag = "2.2.2"
-config = "0.14.0"
+config = "0.14.1"
 chrono = "0.4.38"
 octocrate = { version = "2.0.1", features = [
     "apps",
