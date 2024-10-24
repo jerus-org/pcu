@@ -350,13 +350,13 @@ checksum = "d3fd119d74b830634cea2a0f58bbd0d54540518a14397557951e79340abc28c0"
 
 [[package]]
 name = "config"
-version = "0.14.0"
-source = "git+https://github.com/mehcode/config-rs.git#e3c1d0b452639478662a44f15ef6d5b6d969bf9b"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68578f196d2a33ff61b27fae256c3164f65e36382648e30666dde05b8cc9dfdf"
 dependencies = [
  "async-trait",
  "convert_case",
  "json5",
- "lazy_static",
  "nom",
  "pathdiff",
  "ron",
@@ -3132,3 +3132,8 @@ name = "zeroize"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ced3678a2879b30306d323f4542626697a464a97c0a07c9aebf7ebca65cd4dde"
+
+[[patch.unused]]
+name = "config"
+version = "0.14.0"
+source = "git+https://github.com/mehcode/config-rs.git#e3c1d0b452639478662a44f15ef6d5b6d969bf9b"
