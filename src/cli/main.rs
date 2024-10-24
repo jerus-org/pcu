@@ -253,10 +253,10 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
                 let version = package.version;
                 let tag = format!("{prefix}{version}");
                 if !client.tag_exists(&tag) {
-                    log::info!("Make release and create tag: {tag}");
-                    client.make_release(&prefix, &version).await?;
+                    log::error!("Tag does not exist: {tag}");
                 } else {
-                    log::info!("Tag already exists: {tag}");
+                    log::info!("Tag already exists: {tag}, attempt to make release");
+                    client.make_release(&prefix, &version).await?;
                 }
             }
         }
