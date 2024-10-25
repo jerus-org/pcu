@@ -71,7 +71,7 @@ pub struct Release {
     /// Process packages in the workspace
     #[clap(short, long, default_value_t = false)]
     pub workspace: bool,
-    /// Relase specific workspace package
+    /// Release specific workspace package
     #[clap(short = 'k', long)]
     pub package: Option<String>,
 }
