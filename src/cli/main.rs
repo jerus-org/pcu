@@ -323,6 +323,7 @@ async fn release_package(client: Client, args: Release) -> Result<CIExit> {
 
     if let Some(packages) = packages {
         for package in packages {
+            log::trace!("Found workspace package: {}", package.name);
             if package.name != rel_package {
                 continue;
             }
@@ -335,6 +336,7 @@ async fn release_package(client: Client, args: Release) -> Result<CIExit> {
                 log::info!("Tag already exists: {tag}, attempt to make release");
                 client.make_release(&prefix, &version).await?;
             }
+            break;
         }
     }
     Ok(CIExit::Released)
