@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - refactor(cli)-make semver optional and handle missing value in release process(pr [#398])
+- refactor(circleci)-simplify config by removing unused commands and jobs(pr [#404])
 
 ### Fixed
 
@@ -860,6 +861,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#400]: https://github.com/jerus-org/pcu/pull/400
 [#401]: https://github.com/jerus-org/pcu/pull/401
 [#402]: https://github.com/jerus-org/pcu/pull/402
+[#404]: https://github.com/jerus-org/pcu/pull/404
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.12...HEAD
 [0.4.12]: https://github.com/jerus-org/pcu/compare/v0.4.11...v0.4.12
 [0.4.11]: https://github.com/jerus-org/pcu/compare/v0.4.10...v0.4.11
