@@ -239,63 +239,106 @@ async fn run_label(args: Label) -> Result<CIExit> {
 }
 
 async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
-    let mut client = get_client(Commands::Release(args.clone())).await?;
+    let client = get_client(Commands::Release(args.clone())).await?;
 
     if args.workspace {
-        let path = Path::new("./Cargo.toml");
-        let workspace = Workspace::new(path).unwrap();
+        log::info!("Running release for workspace");
+        return release_workspace(client, args).await;
+    };
 
-        let packages = workspace.packages();
-
-        if let Some(packages) = packages {
-            for package in packages {
-                let prefix = format!("{}-{}", package.name, args.prefix);
-                let version = package.version;
-                let tag = format!("{prefix}{version}");
-                if !client.tag_exists(&tag) {
-                    log::error!("Tag does not exist: {tag}");
-                } else {
-                    log::info!("Tag already exists: {tag}, attempt to make release");
-                    client.make_release(&prefix, &version).await?;
-                }
-            }
-        }
-    } else {
-        let Some(version) = args.semver else {
-            log::error!("Semver required to update changelog");
-            return Ok(CIExit::UnChanged);
-        };
-
-        log::trace!("Running release {version}");
-        log::trace!(
-            "PR ID: {} - Owner: {} - Repo: {}",
-            client.pr_number(),
-            client.owner(),
-            client.repo()
-        );
-        log::trace!("Signing: {:?}", sign);
-        log::trace!("Update changelog flag: {}", args.update_changelog);
-
-        if args.update_changelog {
-            client.release_unreleased(&version)?;
-            log::debug!("Changelog file name: {}", client.changelog_as_str());
-
-            log::trace!(
-                "{}",
-                print_changelog(client.changelog_as_str(), client.line_limit())
-            );
-
-            let commit_message = "chore: update changelog for pr";
-
-            commit_changed_files(&client, sign, commit_message, &args.prefix, Some(&version))
-                .await?;
-
-            push_committed(&client, &args.prefix, Some(&version), false).await?;
-        }
-
-        client.make_release(&args.prefix, &version).await?;
+    if args.package.is_some() {
+        return release_package(client, args).await;
     }
 
+    release_semver(client, args, sign).await
+}
+
+async fn release_semver(mut client: Client, args: Release, sign: Sign) -> Result<CIExit> {
+    let Some(version) = args.semver else {
+        log::error!("Semver required to update changelog");
+        return Ok(CIExit::UnChanged);
+    };
+
+    log::trace!("Running release {version}");
+    log::trace!(
+        "PR ID: {} - Owner: {} - Repo: {}",
+        client.pr_number(),
+        client.owner(),
+        client.repo()
+    );
+    log::trace!("Signing: {:?}", sign);
+    log::trace!("Update changelog flag: {}", args.update_changelog);
+
+    if args.update_changelog {
+        client.release_unreleased(&version)?;
+        log::debug!("Changelog file name: {}", client.changelog_as_str());
+
+        log::trace!(
+            "{}",
+            print_changelog(client.changelog_as_str(), client.line_limit())
+        );
+
+        let commit_message = "chore: update changelog for pr";
+
+        commit_changed_files(&client, sign, commit_message, &args.prefix, Some(&version)).await?;
+
+        push_committed(&client, &args.prefix, Some(&version), false).await?;
+    }
+
+    client.make_release(&args.prefix, &version).await?;
+
+    Ok(CIExit::Released)
+}
+
+async fn release_workspace(client: Client, args: Release) -> Result<CIExit> {
+    let path = Path::new("./Cargo.toml");
+    let workspace = Workspace::new(path).unwrap();
+
+    let packages = workspace.packages();
+
+    if let Some(packages) = packages {
+        for package in packages {
+            let prefix = format!("{}-{}", package.name, args.prefix);
+            let version = package.version;
+            let tag = format!("{prefix}{version}");
+            if !client.tag_exists(&tag) {
+                log::error!("Tag does not exist: {tag}");
+            } else {
+                log::info!("Tag already exists: {tag}, attempt to make release");
+                client.make_release(&prefix, &version).await?;
+            }
+        }
+    }
+    Ok(CIExit::Released)
+}
+
+async fn release_package(client: Client, args: Release) -> Result<CIExit> {
+    let rel_package = args.package.unwrap();
+    log::info!("Running release for package: {}", rel_package);
+
+    let path = Path::new("./Cargo.toml");
+    let workspace = Workspace::new(path).unwrap();
+
+    let packages = workspace.packages();
+
+    if let Some(packages) = packages {
+        for package in packages {
+            log::debug!("Found workspace package: {}", package.name);
+            if package.name != rel_package {
+                continue;
+            }
+            let prefix = format!("{}-{}", package.name, args.prefix);
+            let version = package.version;
+            let tag = format!("{prefix}{version}");
+            if !client.tag_exists(&tag) {
+                log::error!("Tag does not exist: {tag}");
+            } else {
+                log::info!("Tag already exists: {tag}, attempt to make release");
+                client.make_release(&prefix, &version).await?;
+            }
+            break;
+        }
+    }
     Ok(CIExit::Released)
 }
 
