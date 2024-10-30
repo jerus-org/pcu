@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate serde to 1.0.214(pr [#406])
+- deps: update dependency toolkit to v1.15.0(pr [#407])
 
 ## [0.4.13] - 2024-10-26
 
@@ -873,6 +874,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#403]: https://github.com/jerus-org/pcu/pull/403
 [#405]: https://github.com/jerus-org/pcu/pull/405
 [#406]: https://github.com/jerus-org/pcu/pull/406
+[#407]: https://github.com/jerus-org/pcu/pull/407
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.13...HEAD
 [0.4.13]: https://github.com/jerus-org/pcu/compare/v0.4.12...v0.4.13
 [0.4.12]: https://github.com/jerus-org/pcu/compare/v0.4.11...v0.4.12
