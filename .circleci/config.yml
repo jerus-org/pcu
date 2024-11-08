@@ -166,6 +166,8 @@ workflows:
             branches:
               only:
                 - main
+      - toolkit/code_coverage:
+          min_rust_version: << pipeline.parameters.min-rust-version >>
       - toolkit/required_builds:
           name: required-builds
           min_rust_version: << pipeline.parameters.min-rust-version >>
