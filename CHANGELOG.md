@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate thiserror to 2.0.2(pr [#418])
+- deps: update rust crate serde to 1.0.215(pr [#420])
 
 ## [0.4.15] - 2024-11-09
 
@@ -907,6 +908,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#416]: https://github.com/jerus-org/pcu/pull/416
 [#417]: https://github.com/jerus-org/pcu/pull/417
 [#418]: https://github.com/jerus-org/pcu/pull/418
+[#420]: https://github.com/jerus-org/pcu/pull/420
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.15...HEAD
 [0.4.15]: https://github.com/jerus-org/pcu/compare/v0.4.14...v0.4.15
 [0.4.14]: https://github.com/jerus-org/pcu/compare/v0.4.13...v0.4.14
