@@ -35,7 +35,7 @@ octocrate = { version = "2.0.1", features = [
 owo-colors = "4.1.0"
 regex = "1.11.1"
 serde = { version = "1.0.215", features = ["derive"] }
-thiserror = "2.0.2"
+thiserror = "2.0.3"
 tokio = { version = "1.41.1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["std", "env-filter"] }
