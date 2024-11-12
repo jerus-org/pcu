@@ -287,9 +287,15 @@ mod tests {
 
     use super::*;
     use log::LevelFilter;
-    use log4rs_test_utils::test_logging;
     use rstest::rstest;
     use uuid::Uuid;
+
+    fn get_test_logger() {
+        let mut builder = env_logger::Builder::new();
+        builder.filter(None, LevelFilter::Debug);
+        builder.format_timestamp_secs().format_module_path(false);
+        let _ = builder.try_init();
+    }
 
     #[test]
     fn test_pr_title_parse() {
@@ -463,7 +469,7 @@ mod tests {
         #[case] expected_kind: ChangeKind,
         #[case] expected_desciption: &str,
     ) -> Result<()> {
-        test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
+        get_test_logger();
 
         let mut pr_title = PrTitle::parse(title).unwrap();
         if let Some(id) = pr_id {
@@ -484,7 +490,7 @@ mod tests {
 
     #[rstest]
     fn test_update_change_log_added() -> Result<()> {
-        test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
+        get_test_logger();
 
         let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
         let expected_content = fs::read_to_string("tests/data/expected_changelog.md")?;
@@ -528,7 +534,7 @@ mod tests {
 
     #[rstest]
     fn test_update_change_log_added_issue_172() -> Result<()> {
-        test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
+        get_test_logger();
 
         let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
         let expected_content = fs::read_to_string("tests/data/expected_changelog_issue_172.md")?;

@@ -69,9 +69,15 @@ mod tests {
     use crate::Error;
     use keep_a_changelog::ChangelogParseOptions;
     use log::LevelFilter;
-    use log4rs_test_utils::test_logging;
 
     use super::*;
+
+    fn get_test_logger() {
+        let mut builder = env_logger::Builder::new();
+        builder.filter(None, LevelFilter::Debug);
+        builder.format_timestamp_secs().format_module_path(false);
+        let _ = builder.try_init();
+    }
 
     #[allow(dead_code)]
     fn are_the_same(file_a: &str, file_b: &str) -> Result<bool, Error> {
@@ -100,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_release_unreleased_creates_unreleased_section() -> Result<(), Error> {
-        test_logging::init_logging_once_for(vec![], LevelFilter::Debug, None);
+        get_test_logger();
 
         let original_path = "tests/data/release_changelog.md";
 
