@@ -5,6 +5,9 @@
   "semanticCommits": "enabled",
   "semanticCommitType": "fix",
   "versioning": "cargo",
+  "schedule": [
+    "before 6am on Friday"
+  ],
   "packageRules": [
     {
       "excludePackageNames": [
