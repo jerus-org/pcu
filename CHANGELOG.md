@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- deps: update rust crate clap-verbosity-flag to 3.0.1(pr [#426])
+
 ### Security
 
 - Dependencies: bump rustls from 0.23.16 to 0.23.18 in the cargo group across 1 directory(pr [#425])
@@ -931,6 +935,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#423]: https://github.com/jerus-org/pcu/pull/423
 [#424]: https://github.com/jerus-org/pcu/pull/424
 [#425]: https://github.com/jerus-org/pcu/pull/425
+[#426]: https://github.com/jerus-org/pcu/pull/426
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.17...HEAD
 [0.4.17]: https://github.com/jerus-org/pcu/compare/v0.4.16...v0.4.17
 [0.4.16]: https://github.com/jerus-org/pcu/compare/v0.4.15...v0.4.16
