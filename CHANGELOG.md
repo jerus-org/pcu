@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.18] - 2024-11-30
 
 ### Fixed
 
@@ -938,7 +938,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#425]: https://github.com/jerus-org/pcu/pull/425
 [#426]: https://github.com/jerus-org/pcu/pull/426
 [#427]: https://github.com/jerus-org/pcu/pull/427
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.17...HEAD
+[0.4.18]: https://github.com/jerus-org/pcu/compare/v0.4.17...v0.4.18
 [0.4.17]: https://github.com/jerus-org/pcu/compare/v0.4.16...v0.4.17
 [0.4.16]: https://github.com/jerus-org/pcu/compare/v0.4.15...v0.4.16
 [0.4.15]: https://github.com/jerus-org/pcu/compare/v0.4.14...v0.4.15
