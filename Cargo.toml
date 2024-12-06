@@ -13,7 +13,7 @@ include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
 categories = ["development-tools::build-utils", "command-line-utilities"]
 
 [dependencies]
-cargo_toml = "0.20.5"
+cargo_toml = "0.21.0"
 chrono = "0.4.38"
 clap = "4.5.23"
 clap-verbosity-flag = "3.0.1"
