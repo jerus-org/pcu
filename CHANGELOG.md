@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate chrono to 0.4.39(pr [#432])
+- deps: update rust crate named-colour to 0.3.8(pr [#433])
 
 ## [0.4.19] - 2024-12-07
 
@@ -958,6 +959,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#430]: https://github.com/jerus-org/pcu/pull/430
 [#431]: https://github.com/jerus-org/pcu/pull/431
 [#432]: https://github.com/jerus-org/pcu/pull/432
+[#433]: https://github.com/jerus-org/pcu/pull/433
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.19...HEAD
 [0.4.19]: https://github.com/jerus-org/pcu/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/jerus-org/pcu/compare/v0.4.17...v0.4.18

@@ -1434,9 +1434,9 @@ dependencies = [
 
 [[package]]
 name = "named-colour"
-version = "0.3.6"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfe6ce933f326e34ac5f2074f7afd88632878e3f7f6c09692ea1e05927691920"
+checksum = "e7598a5834d9729e8202217a508e8ff020dba715a383796974946766eded7335"
 dependencies = [
  "rgb",
  "strum",
