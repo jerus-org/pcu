@@ -34,7 +34,7 @@ octocrate = { version = "2.0.1", features = [
 ], default-features = false }
 owo-colors = "4.1.0"
 regex = "1.11.1"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.216", features = ["derive"] }
 thiserror = "2.0.4"
 tokio = { version = "1.41.1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.41"
