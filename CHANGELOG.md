@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- deps: update rust crate chrono to 0.4.39(pr [#432])
+
 ## [0.4.19] - 2024-12-07
 
 ### Fixed
@@ -951,6 +957,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#429]: https://github.com/jerus-org/pcu/pull/429
 [#430]: https://github.com/jerus-org/pcu/pull/430
 [#431]: https://github.com/jerus-org/pcu/pull/431
+[#432]: https://github.com/jerus-org/pcu/pull/432
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.19...HEAD
 [0.4.19]: https://github.com/jerus-org/pcu/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/jerus-org/pcu/compare/v0.4.17...v0.4.18
 [0.4.17]: https://github.com/jerus-org/pcu/compare/v0.4.16...v0.4.17
