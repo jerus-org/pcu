@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- deps: update rust crate clap-verbosity-flag to 3.0.2(pr [#436])
+
 ## [0.4.20] - 2024-12-14
 
 ### Fixed
@@ -964,6 +970,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#433]: https://github.com/jerus-org/pcu/pull/433
 [#434]: https://github.com/jerus-org/pcu/pull/434
 [#435]: https://github.com/jerus-org/pcu/pull/435
+[#436]: https://github.com/jerus-org/pcu/pull/436
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.20...HEAD
 [0.4.20]: https://github.com/jerus-org/pcu/compare/v0.4.19...v0.4.20
 [0.4.19]: https://github.com/jerus-org/pcu/compare/v0.4.18...v0.4.19
 [0.4.18]: https://github.com/jerus-org/pcu/compare/v0.4.17...v0.4.18
