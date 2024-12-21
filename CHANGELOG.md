@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- chore-update CircleCI toolkit orb to version 1.21.0(pr [#440])
+
 ### Fixed
 
 - deps: update rust crate clap-verbosity-flag to 3.0.2(pr [#436])
@@ -977,6 +981,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#437]: https://github.com/jerus-org/pcu/pull/437
 [#439]: https://github.com/jerus-org/pcu/pull/439
 [#438]: https://github.com/jerus-org/pcu/pull/438
+[#440]: https://github.com/jerus-org/pcu/pull/440
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.20...HEAD
 [0.4.20]: https://github.com/jerus-org/pcu/compare/v0.4.19...v0.4.20
 [0.4.19]: https://github.com/jerus-org/pcu/compare/v0.4.18...v0.4.19
