@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- chore-update CircleCI toolkit orb to version 1.20.3(pr [#440])
+- chore-update CircleCI toolkit orb to version 1.21.0(pr [#440])
 
 ### Fixed
 
