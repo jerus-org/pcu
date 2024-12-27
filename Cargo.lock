@@ -338,8 +338,9 @@ checksum = "5b63caa9aa9397e2d9480a9b13673856c78d8ac123288526c37d7839f2a86990"
 
 [[package]]
 name = "config"
-version = "0.15.3"
-source = "git+https://github.com/mehcode/config-rs.git#e3ab957fd005449084b5501e20e10dc73208417f"
+version = "0.15.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d84f8d224ac58107d53d3ec2b9ad39fd8c8c4e285d3c9cb35485ffd2ca88cb3"
 dependencies = [
  "async-trait",
  "convert_case",
@@ -3330,3 +3331,8 @@ dependencies = [
  "quote",
  "syn 2.0.90",
 ]
+
+[[patch.unused]]
+name = "config"
+version = "0.15.3"
+source = "git+https://github.com/mehcode/config-rs.git#e3ab957fd005449084b5501e20e10dc73208417f"
