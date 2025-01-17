@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate config to 0.15.6(pr [#451])
+- deps: update rust crate log to 0.4.25(pr [#452])
 
 ## [0.4.24] - 2025-01-11
 
@@ -1024,6 +1025,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#449]: https://github.com/jerus-org/pcu/pull/449
 [#450]: https://github.com/jerus-org/pcu/pull/450
 [#451]: https://github.com/jerus-org/pcu/pull/451
+[#452]: https://github.com/jerus-org/pcu/pull/452
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.24...HEAD
 [0.4.24]: https://github.com/jerus-org/pcu/compare/v0.4.23...v0.4.24
 [0.4.23]: https://github.com/jerus-org/pcu/compare/v0.4.22...v0.4.23
