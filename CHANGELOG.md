@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- deps: update rust crate config to 0.15.6(pr [#451])
+
 ## [0.4.24] - 2025-01-11
 
 ### Fixed
@@ -1017,6 +1023,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#448]: https://github.com/jerus-org/pcu/pull/448
 [#449]: https://github.com/jerus-org/pcu/pull/449
 [#450]: https://github.com/jerus-org/pcu/pull/450
+[#451]: https://github.com/jerus-org/pcu/pull/451
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.24...HEAD
 [0.4.24]: https://github.com/jerus-org/pcu/compare/v0.4.23...v0.4.24
 [0.4.23]: https://github.com/jerus-org/pcu/compare/v0.4.22...v0.4.23
 [0.4.22]: https://github.com/jerus-org/pcu/compare/v0.4.21...v0.4.22
