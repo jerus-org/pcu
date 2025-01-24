@@ -36,7 +36,7 @@ owo-colors = "4.1.0"
 regex = "1.11.1"
 serde = { version = "1.0.217", features = ["derive"] }
 thiserror = "2.0.11"
-tokio = { version = "1.42.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["std", "env-filter"] }
 url = "2.5.3"
