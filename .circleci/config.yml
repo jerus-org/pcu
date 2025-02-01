@@ -144,6 +144,7 @@ workflows:
         - not:
             equal: [scheduled_pipeline, << pipeline.trigger_source >>]
         - not: << pipeline.parameters.success-flag >>
+        - not: << pipeline.parameters.release-flag >>
         - not: << pipeline.parameters.validation-flag >>
 
     jobs:
@@ -157,6 +158,7 @@ workflows:
         - not:
             equal: [scheduled_pipeline, << pipeline.trigger_source >>]
         - not: << pipeline.parameters.success-flag >>
+        - not: << pipeline.parameters.release-flag >>
         - << pipeline.parameters.validation-flag >>
     jobs:
       - toolkit/label:
@@ -221,6 +223,7 @@ workflows:
             equal: [scheduled_pipeline, << pipeline.trigger_source >>]
         - << pipeline.parameters.success-flag >>
         - not: << pipeline.parameters.validation-flag >>
+        - not: << pipeline.parameters.release-flag >>
 
     jobs:
       - toolkit/end_success
@@ -228,8 +231,11 @@ workflows:
   release:
     when:
       and:
-        - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - equal: ["release check", << pipeline.schedule.name >>]
+        - or:
+            - and:
+                - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+                - equal: ["release check", << pipeline.schedule.name >>]
+            - <<  pipeline.parameters.release-flag >>
         - not: << pipeline.parameters.success-flag >>
         - not: << pipeline.parameters.validation-flag >>
     jobs:
