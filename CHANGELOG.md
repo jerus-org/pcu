@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- 👷 ci(circleci): enhance CircleCI config with new job dependencies  and trigger(pr [#464])
+
 ### Fixed
 
 - deps: update rust crate config to 0.15.7(pr [#460])
@@ -1058,6 +1062,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#461]: https://github.com/jerus-org/pcu/pull/461
 [#462]: https://github.com/jerus-org/pcu/pull/462
 [#463]: https://github.com/jerus-org/pcu/pull/463
+[#464]: https://github.com/jerus-org/pcu/pull/464
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.26...HEAD
 [0.4.26]: https://github.com/jerus-org/pcu/compare/v0.4.25...v0.4.26
 [0.4.25]: https://github.com/jerus-org/pcu/compare/v0.4.24...v0.4.25
