@@ -15,6 +15,10 @@ parameters:
     type: boolean
     default: false
     description: "If true, the success pipeline will be executed."
+  release-flag:
+    type: boolean
+    default: false
+    description: "If true, the release pipeline will be executed."
 
 orbs:
   toolkit: jerus-org/circleci-toolkit@2.0.4
