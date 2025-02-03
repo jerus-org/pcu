@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- Dependencies: bump openssl from 0.10.68 to 0.10.70 in the cargo group across 1 directory(pr [#465])
+
 ## [0.4.27] - 2025-02-01
 
 ### Changed
@@ -1063,6 +1069,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#462]: https://github.com/jerus-org/pcu/pull/462
 [#463]: https://github.com/jerus-org/pcu/pull/463
 [#464]: https://github.com/jerus-org/pcu/pull/464
+[#465]: https://github.com/jerus-org/pcu/pull/465
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.27...HEAD
 [0.4.27]: https://github.com/jerus-org/pcu/compare/v0.4.26...v0.4.27
 [0.4.26]: https://github.com/jerus-org/pcu/compare/v0.4.25...v0.4.26
 [0.4.25]: https://github.com/jerus-org/pcu/compare/v0.4.24...v0.4.25
