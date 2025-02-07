@@ -15,7 +15,7 @@ categories = ["development-tools::build-utils", "command-line-utilities"]
 [dependencies]
 cargo_toml = "0.21.0"
 chrono = "0.4.39"
-clap = "4.5.27"
+clap = "4.5.28"
 clap-verbosity-flag = "3.0.2"
 color-eyre = "0.6.3"
 config = "0.15.7"
