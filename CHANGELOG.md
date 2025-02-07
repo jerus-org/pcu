@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate clap to 4.5.28(pr [#466])
+- deps: update rust crate uuid to 1.13.1(pr [#467])
 
 ### Security
 
@@ -1075,6 +1076,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#464]: https://github.com/jerus-org/pcu/pull/464
 [#465]: https://github.com/jerus-org/pcu/pull/465
 [#466]: https://github.com/jerus-org/pcu/pull/466
+[#467]: https://github.com/jerus-org/pcu/pull/467
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.27...HEAD
 [0.4.27]: https://github.com/jerus-org/pcu/compare/v0.4.26...v0.4.27
 [0.4.26]: https://github.com/jerus-org/pcu/compare/v0.4.25...v0.4.26
