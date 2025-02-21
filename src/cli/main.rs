@@ -198,7 +198,7 @@ async fn run_push(args: Push) -> Result<CIExit> {
 
     if !args.no_push {
         Ok(CIExit::Pushed(
-            "Changed files committed and pushed to remote repsitory.".to_string(),
+            "Changed files committed and pushed to remote repository.".to_string(),
         ))
     } else {
         Ok(CIExit::Pushed(
