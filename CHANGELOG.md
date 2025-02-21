@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate clap to 4.5.30(pr [#470])
+- deps: update rust crate named-colour to 0.3.16(pr [#471])
 
 ## [0.4.29] - 2025-02-15
 
@@ -1093,6 +1094,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#468]: https://github.com/jerus-org/pcu/pull/468
 [#469]: https://github.com/jerus-org/pcu/pull/469
 [#470]: https://github.com/jerus-org/pcu/pull/470
+[#471]: https://github.com/jerus-org/pcu/pull/471
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.29...HEAD
 [0.4.29]: https://github.com/jerus-org/pcu/compare/v0.4.28...v0.4.29
 [0.4.28]: https://github.com/jerus-org/pcu/compare/v0.4.27...v0.4.28
