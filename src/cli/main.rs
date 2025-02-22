@@ -132,15 +132,17 @@ async fn run_pull_request(sign: Sign, args: Pr) -> Result<CIExit> {
     match res {
         Ok(()) => Ok(CIExit::Updated),
         Err(e) => {
-            if args.allow_push_fail && e.to_string().contains("cannot push non-fastforwardable reference") {
+            if args.allow_push_fail
+                && e.to_string()
+                    .contains("cannot push non-fastforwardable reference")
+            {
                 log::info!("Cannot psh non-fastforwardable reference, presuming change made already in parallel job.");
                 Ok(CIExit::UnChanged)
             } else {
                 Err(e)
             }
         }
-    }   
-
+    }
 }
 
 async fn run_commit(sign: Sign, args: Commit) -> Result<CIExit> {
