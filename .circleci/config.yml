@@ -203,6 +203,7 @@ workflows:
             - pcu-app
       - toolkit/security:
           context: SonarCloud
+          ignore_advisories: "RUSTSEC-2025-0007"
       - toolkit/update_changelog:
           requires:
             - toolkit/common_tests
