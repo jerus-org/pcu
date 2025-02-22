@@ -128,9 +128,19 @@ async fn run_pull_request(sign: Sign, args: Pr) -> Result<CIExit> {
 
     commit_changed_files(&client, sign, commit_message, &args.prefix, None).await?;
 
-    push_committed(&client, &args.prefix, None, false).await?;
+    let res = push_committed(&client, &args.prefix, None, false).await;
+    match res {
+        Ok(()) => Ok(CIExit::Updated),
+        Err(e) => {
+            if args.allow_push_fail && e.to_string().contains("cannot push non-fastforwardable reference") {
+                log::info!("Cannot psh non-fastforwardable reference, presuming change made already in parallel job.");
+                Ok(CIExit::UnChanged)
+            } else {
+                Err(e)
+            }
+        }
+    }   
 
-    Ok(CIExit::Updated)
 }
 
 async fn run_commit(sign: Sign, args: Commit) -> Result<CIExit> {
