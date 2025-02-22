@@ -3,7 +3,7 @@
 [![Crates.io][crates-badge]][crates-url]
 [![MIT licensed][mit-badge]][mit-url]
 [![circleci-badge]][circleci-url]
-[![Rust 1.74+][version-badge]][version-url]
+[![Rust 1.80+][version-badge]][version-url]
 [![FOSSA Status][fossa-badge]][fossa-url]
 [![Docs][docs-badge]][docs-url]
 [![BuyMeaCoffee][bmac-badge]][bmac-url]
@@ -15,7 +15,7 @@
 [mit-url]: https://github.com/jerusdp/pcu/blob/main/LICENSE
 [circleci-badge]: https://dl.circleci.com/status-badge/img/gh/jerus-org/pcu/tree/main.svg?style=svg
 [circleci-url]: https://dl.circleci.com/status-badge/redirect/gh/jerus-org/pcu/tree/main
-[version-badge]: https://img.shields.io/badge/rust-1.74+-orange.svg
+[version-badge]: https://img.shields.io/badge/rust-1.80+-orange.svg
 [version-url]: https://www.rust-lang.org
 [fossa-badge]: https://app.fossa.com/api/projects/custom%2B22707%2Fgit%40github.com%3Ajerus-org%2Fpcu.git.svg?type=shield&issueType=license
 [fossa-url]: (https://app.fossa.com/projects/custom%2B22707%2Fgit%40github.com%3Ajerus-org%2Fpcu.git?ref=badge_shield&issueType=license)
