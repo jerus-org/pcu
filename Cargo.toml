@@ -53,5 +53,5 @@ path = "src/lib/lib.rs"
 name = "pcu"
 path = "src/cli/main.rs"
 
-[patch.crates-io]
-config = { git = 'https://github.com/mehcode/config-rs.git' }
+# [patch.crates-io]
+# config = { git = 'https://github.com/mehcode/config-rs.git' }
