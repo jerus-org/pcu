@@ -4,7 +4,7 @@ version = "0.4.30"
 edition = "2021"
 authors = ["jerusdp <jrussell@jerus.ie>"]
 description = "A CI tool to update change log in a PR"
-rust-version = "1.74"
+rust-version = "1.81"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/jerus-org/pcu"
@@ -53,5 +53,5 @@ path = "src/lib/lib.rs"
 name = "pcu"
 path = "src/cli/main.rs"
 
-[patch.crates-io]
-config = { git = 'https://github.com/mehcode/config-rs.git' }
+# [patch.crates-io]
+# config = { git = 'https://github.com/mehcode/config-rs.git' }

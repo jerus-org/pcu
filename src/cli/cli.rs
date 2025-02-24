@@ -55,6 +55,9 @@ pub struct Pr {
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
+    /// Allow git push to fail. Allows the case of two parallel updates where the second push would fail.
+    #[clap(short, long, default_value_t = false)]
+    pub allow_push_fail: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -135,10 +138,10 @@ pub struct Label {
     /// Override the default label (rebase) to add to the pull request
     #[arg(short, long)]
     pub label: Option<String>,
-    /// Override the default description for the label if it is creaated
+    /// Override the default description for the label if it is created
     #[arg(short, long = "description")]
     pub desc: Option<String>,
-    /// Override the default colour (B22222) for the label if it is creaated
+    /// Override the default colour (B22222) for the label if it is created
     #[arg(short, long, visible_alias = "color")]
     pub colour: Option<String>,
 }
