@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsString};
+use std::{collections::HashMap, env, ffi::OsString, fmt::Debug};
 
 pub(crate) mod graphql;
 mod pull_request;
@@ -32,6 +32,25 @@ pub struct Client {
     pub(crate) changelog_parse_options: ChangelogParseOptions,
     pub(crate) changelog_update: Option<PrTitle>,
     pub(crate) commit_message: String,
+}
+
+impl Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Client")
+            .field("github_graphql", &self.github_graphql)
+            .field("owner", &self.owner)
+            .field("repo", &self.repo)
+            .field("default_branch", &self.default_branch)
+            .field("branch", &self.branch)
+            .field("pull_request", &self.pull_request)
+            .field("changelog", &self.changelog)
+            .field("line_limit", &self.line_limit)
+            .field("changelog_parse_options", &self.changelog_parse_options)
+            .field("changelog_update", &self.changelog_update)
+            .field("commit_message", &self.commit_message)
+            .finish()
+
+    }
 }
 
 impl Client {
