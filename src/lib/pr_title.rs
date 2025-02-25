@@ -3,7 +3,6 @@ use std::{ffi::OsStr, fs, path};
 use keep_a_changelog::{
     changelog::ChangelogBuilder, ChangeKind, Changelog, ChangelogParseOptions, Release,
 };
-use log::debug;
 use url::Url;
 
 use crate::Error;
@@ -27,7 +26,7 @@ impl PrTitle {
             r"^(?P<emoji>.+\s)?(?P<type>[a-z]+)(?:\((?P<scope>.+)\))?(?P<breaking>!)?: (?P<description>.*)$$",
         )?;
 
-        debug!("String to parse: `{}`", title);
+        log::debug!("String to parse: `{}`", title);
 
         let pr_title = if let Some(captures) = re.captures(title) {
             log::debug!("Captures: {:#?}", captures);
@@ -65,7 +64,7 @@ impl PrTitle {
             }
         };
 
-        debug!("Parsed title: {:?}", pr_title);
+        log::debug!("Parsed title: {:?}", pr_title);
 
         Ok(pr_title)
     }
@@ -79,10 +78,11 @@ impl PrTitle {
     }
 
     pub fn calculate_section_and_entry(&mut self) {
+        log::trace!("Calculating section and entry for `{:#?}`", self);
         let mut section = ChangeKind::Changed;
         let mut entry = self.title.clone();
 
-        debug!("Initial description `{}`", entry);
+        log::debug!("Initial description `{}`", entry);
 
         if let Some(commit_type) = &self.commit_type {
             match commit_type.as_str() {
@@ -98,7 +98,7 @@ impl PrTitle {
                     section = ChangeKind::Changed;
                     entry = format!("{}-{}", self.commit_type.as_ref().unwrap(), entry);
 
-                    debug!("After checking for `feat` or `fix` type: `{}`", entry);
+                    log::debug!("After checking for `feat` or `fix` type: `{}`", entry);
 
                     if let Some(commit_scope) = &self.commit_scope {
                         log::trace!("Checking scope `{}`", commit_scope);
@@ -133,7 +133,7 @@ impl PrTitle {
                 }
             }
         }
-        debug!("After checking scope `{}`", entry);
+        log::debug!("After checking scope `{}`", entry);
 
         if self.commit_breaking {
             entry = format!("BREAKING: {}", entry);
@@ -146,7 +146,7 @@ impl PrTitle {
                 entry = format!("{}(pr #{})", entry, id);
             }
 
-            debug!("After checking pr id `{}`", entry);
+            log::debug!("After checking pr id `{}`", entry);
         };
 
         // Prepend the emoji to the entry
@@ -154,7 +154,7 @@ impl PrTitle {
             entry = format!("{}{}", emoji, entry);
         }
 
-        debug!("Final entry `{}`", entry);
+        log::debug!("Final entry `{}`", entry);
         self.section = Some(section);
         self.entry = entry;
     }
@@ -579,7 +579,7 @@ mod tests {
         fs::create_dir_all(temp_dir)?;
 
         let file_name = temp_dir.join("CHANGELOG.md");
-        debug!("filename : {:?}", file_name);
+        log::debug!("filename : {:?}", file_name);
 
         let mut file = File::create(&file_name)?;
         file.write_all(initial_content.as_bytes())?;
@@ -624,7 +624,7 @@ mod tests {
         fs::create_dir_all(temp_dir)?;
 
         let file_name = temp_dir.join("CHANGELOG.md");
-        debug!("filename : {:?}", file_name);
+        log::debug!("filename : {:?}", file_name);
 
         let mut file = File::create(&file_name)?;
         file.write_all(initial_content.as_bytes())?;
