@@ -5,12 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Changed
-
-- ✨ feat(pr_title): add commit emoji support(pr [#477])
-
 ## [0.4.31] - 2025-02-24
 
 ### Changed
@@ -1116,8 +1110,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#474]: https://github.com/jerus-org/pcu/pull/474
 [#475]: https://github.com/jerus-org/pcu/pull/475
 [#476]: https://github.com/jerus-org/pcu/pull/476
-[#477]: https://github.com/jerus-org/pcu/pull/477
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.31...HEAD
 [0.4.31]: https://github.com/jerus-org/pcu/compare/v0.4.30...v0.4.31
 [0.4.30]: https://github.com/jerus-org/pcu/compare/v0.4.29...v0.4.30
 [0.4.29]: https://github.com/jerus-org/pcu/compare/v0.4.28...v0.4.29
