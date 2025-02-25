@@ -149,11 +149,10 @@ impl PrTitle {
             debug!("After checking pr id `{}`", entry);
         };
 
-        // Prepend the emoji to the entry 
+        // Prepend the emoji to the entry
         if let Some(emoji) = &self.commit_emoji {
             entry = format!("{}{}", emoji, entry);
         }
-
 
         debug!("Final entry `{}`", entry);
         self.section = Some(section);
@@ -442,14 +441,14 @@ mod tests {
         None,
         None,
         ChangeKind::Changed,
-        "style-fix typo and lint issues",
+        "style-fix typo and lint issues"
     )]
     #[case(
         "💄 style: fix typo and lint issues",
         None,
         None,
         ChangeKind::Changed,
-        "💄 style-fix typo and lint issues",
+        "💄 style-fix typo and lint issues"
     )]
     #[case(
         "test: update tests",
