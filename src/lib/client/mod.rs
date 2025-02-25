@@ -49,7 +49,6 @@ impl Debug for Client {
             .field("changelog_update", &self.changelog_update)
             .field("commit_message", &self.commit_message)
             .finish()
-
     }
 }
 
