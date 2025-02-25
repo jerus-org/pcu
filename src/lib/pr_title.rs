@@ -3,7 +3,6 @@ use std::{ffi::OsStr, fs, path};
 use keep_a_changelog::{
     changelog::ChangelogBuilder, ChangeKind, Changelog, ChangelogParseOptions, Release,
 };
-use log::debug;
 use url::Url;
 
 use crate::Error;
@@ -13,6 +12,7 @@ pub struct PrTitle {
     pub title: String,
     pub pr_id: Option<i64>,
     pub pr_url: Option<Url>,
+    pub commit_emoji: Option<String>,
     pub commit_type: Option<String>,
     pub commit_scope: Option<String>,
     pub commit_breaking: bool,
@@ -23,13 +23,14 @@ pub struct PrTitle {
 impl PrTitle {
     pub fn parse(title: &str) -> Result<Self, Error> {
         let re = regex::Regex::new(
-            r"^(?P<type>[a-z]+)(?:\((?P<scope>.+)\))?(?P<breaking>!)?: (?P<description>.*)$",
+            r"^(?P<emoji>.+\s)?(?P<type>[a-z]+)(?:\((?P<scope>.+)\))?(?P<breaking>!)?: (?P<description>.*)$$",
         )?;
 
-        debug!("String to parse: `{}`", title);
+        log::debug!("String to parse: `{}`", title);
 
         let pr_title = if let Some(captures) = re.captures(title) {
-            log::trace!("Captures: {:#?}", captures);
+            log::debug!("Captures: {:#?}", captures);
+            let commit_emoji = captures.name("emoji").map(|m| m.as_str().to_string());
             let commit_type = captures.name("type").map(|m| m.as_str().to_string());
             let commit_scope = captures.name("scope").map(|m| m.as_str().to_string());
             let commit_breaking = captures.name("breaking").is_some();
@@ -42,6 +43,7 @@ impl PrTitle {
                 title,
                 pr_id: None,
                 pr_url: None,
+                commit_emoji,
                 commit_type,
                 commit_scope,
                 commit_breaking,
@@ -53,6 +55,7 @@ impl PrTitle {
                 title: title.to_string(),
                 pr_id: None,
                 pr_url: None,
+                commit_emoji: None,
                 commit_type: None,
                 commit_scope: None,
                 commit_breaking: false,
@@ -61,7 +64,7 @@ impl PrTitle {
             }
         };
 
-        debug!("Parsed title: {:?}", pr_title);
+        log::debug!("Parsed title: {:?}", pr_title);
 
         Ok(pr_title)
     }
@@ -75,10 +78,11 @@ impl PrTitle {
     }
 
     pub fn calculate_section_and_entry(&mut self) {
+        log::trace!("Calculating section and entry for `{:#?}`", self);
         let mut section = ChangeKind::Changed;
         let mut entry = self.title.clone();
 
-        debug!("Initial description `{}`", entry);
+        log::debug!("Initial description `{}`", entry);
 
         if let Some(commit_type) = &self.commit_type {
             match commit_type.as_str() {
@@ -94,7 +98,7 @@ impl PrTitle {
                     section = ChangeKind::Changed;
                     entry = format!("{}-{}", self.commit_type.as_ref().unwrap(), entry);
 
-                    debug!("After checking for `feat` or `fix` type: `{}`", entry);
+                    log::debug!("After checking for `feat` or `fix` type: `{}`", entry);
 
                     if let Some(commit_scope) = &self.commit_scope {
                         log::trace!("Checking scope `{}`", commit_scope);
@@ -129,7 +133,7 @@ impl PrTitle {
                 }
             }
         }
-        debug!("After checking scope `{}`", entry);
+        log::debug!("After checking scope `{}`", entry);
 
         if self.commit_breaking {
             entry = format!("BREAKING: {}", entry);
@@ -142,10 +146,15 @@ impl PrTitle {
                 entry = format!("{}(pr #{})", entry, id);
             }
 
-            debug!("After checking pr id `{}`", entry);
+            log::debug!("After checking pr id `{}`", entry);
         };
 
-        debug!("Final entry `{}`", entry);
+        // Prepend the emoji to the entry
+        if let Some(emoji) = &self.commit_emoji {
+            entry = format!("{}{}", emoji, entry);
+        }
+
+        log::debug!("Final entry `{}`", entry);
         self.section = Some(section);
         self.entry = entry;
     }
@@ -379,6 +388,13 @@ mod tests {
         "add new feature(pr [#5])"
     )]
     #[case(
+        "✨ feat: add new feature",
+        Some(5),
+        Some("https://github.com/jerus-org/pcu/pull/5"),
+        ChangeKind::Added,
+        "✨ add new feature(pr [#5])"
+    )]
+    #[case(
         "feat: add new feature",
         Some(5),
         None,
@@ -400,11 +416,39 @@ mod tests {
         "add new feature"
     )]
     #[case(
+        "✨ feat: add new feature",
+        None,
+        None,
+        ChangeKind::Added,
+        "✨ add new feature"
+    )]
+    #[case(
         "fix: fix an existing feature",
         None,
         None,
         ChangeKind::Fixed,
         "fix an existing feature"
+    )]
+    #[case(
+        "🐛 fix: fix an existing feature",
+        None,
+        None,
+        ChangeKind::Fixed,
+        "🐛 fix an existing feature"
+    )]
+    #[case(
+        "style: fix typo and lint issues",
+        None,
+        None,
+        ChangeKind::Changed,
+        "style-fix typo and lint issues"
+    )]
+    #[case(
+        "💄 style: fix typo and lint issues",
+        None,
+        None,
+        ChangeKind::Changed,
+        "💄 style-fix typo and lint issues"
     )]
     #[case(
         "test: update tests",
@@ -428,11 +472,25 @@ mod tests {
         "Dependencies: Update dependencies"
     )]
     #[case(
+        "🔧 chore(deps): Update dependencies",
+        None,
+        None,
+        ChangeKind::Security,
+        "🔧 Dependencies: Update dependencies"
+    )]
+    #[case(
         "refactor(remove): Remove unused code",
         None,
         None,
         ChangeKind::Removed,
         "Removed: Remove unused code"
+    )]
+    #[case(
+        "♻️ refactor(remove): Remove unused code",
+        None,
+        None,
+        ChangeKind::Removed,
+        "♻️ Removed: Remove unused code"
     )]
     #[case(
         "docs(deprecate): Deprecate old API",
@@ -442,11 +500,25 @@ mod tests {
         "Deprecated: Deprecate old API"
     )]
     #[case(
+        "📚 docs(deprecate): Deprecate old API",
+        None,
+        None,
+        ChangeKind::Deprecated,
+        "📚 Deprecated: Deprecate old API"
+    )]
+    #[case(
         "ci(other-scope): Update CI configuration",
         None,
         None,
         ChangeKind::Changed,
         "ci(other-scope)-Update CI configuration"
+    )]
+    #[case(
+        "👷 ci(other-scope): Update CI configuration",
+        None,
+        None,
+        ChangeKind::Changed,
+        "👷 ci(other-scope)-Update CI configuration"
     )]
     #[case(
         "test!: Update test cases",
@@ -462,12 +534,19 @@ mod tests {
         ChangeKind::Changed,
         "chore(config.yml)-update jerus-org/circleci-toolkit orb version to 0.4.0(pr [#6])"
     )]
+    #[case::with_emoji(
+        "✨ feat(ci): add optional flag for push failure handling",
+        Some(6),
+        Some("https://github.com/jerus-org/pcu/pull/6"),
+        ChangeKind::Added,
+        "✨ add optional flag for push failure handling(pr [#6])"
+    )]
     fn test_calculate_kind_and_description(
         #[case] title: &str,
         #[case] pr_id: Option<i64>,
         #[case] pr_url: Option<&str>,
         #[case] expected_kind: ChangeKind,
-        #[case] expected_desciption: &str,
+        #[case] expected_description: &str,
     ) -> Result<()> {
         get_test_logger();
 
@@ -481,7 +560,7 @@ mod tests {
         }
         pr_title.calculate_section_and_entry();
         assert_eq!(expected_kind, pr_title.section());
-        assert_eq!(expected_desciption, pr_title.entry);
+        assert_eq!(expected_description, pr_title.entry);
 
         Ok(())
     }
@@ -500,7 +579,7 @@ mod tests {
         fs::create_dir_all(temp_dir)?;
 
         let file_name = temp_dir.join("CHANGELOG.md");
-        debug!("filename : {:?}", file_name);
+        log::debug!("filename : {:?}", file_name);
 
         let mut file = File::create(&file_name)?;
         file.write_all(initial_content.as_bytes())?;
@@ -509,6 +588,7 @@ mod tests {
             title: "add new feature".to_string(),
             pr_id: Some(5),
             pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
+            commit_emoji: None,
             commit_type: Some("feat".to_string()),
             commit_scope: None,
             commit_breaking: false,
@@ -544,7 +624,7 @@ mod tests {
         fs::create_dir_all(temp_dir)?;
 
         let file_name = temp_dir.join("CHANGELOG.md");
-        debug!("filename : {:?}", file_name);
+        log::debug!("filename : {:?}", file_name);
 
         let mut file = File::create(&file_name)?;
         file.write_all(initial_content.as_bytes())?;
@@ -553,6 +633,7 @@ mod tests {
             title: "add new feature".to_string(),
             pr_id: Some(5),
             pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
+            commit_emoji: None,
             commit_type: Some("feat".to_string()),
             commit_scope: None,
             commit_breaking: false,

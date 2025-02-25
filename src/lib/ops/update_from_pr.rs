@@ -12,10 +12,12 @@ pub trait UpdateFromPr {
 
 impl UpdateFromPr for Client {
     fn create_entry(&mut self) -> Result<(), Error> {
+        log::trace!("******************/n** create entry **/n******************/n");
         let mut pr_title = PrTitle::parse(self.title())?;
         pr_title.pr_id = Some(self.pr_number());
         pr_title.pr_url = Some(Url::from_str(self.pull_request())?);
         pr_title.calculate_section_and_entry();
+        log::trace!("pr_title: {:#?}", pr_title);
 
         self.changelog_update = Some(pr_title);
 
