@@ -60,8 +60,6 @@ async fn main() -> Result<()> {
 
 async fn run_pull_request(sign: Sign, args: Pr) -> Result<CIExit> {
     let branch = env::var("CIRCLE_BRANCH");
-    log::trace!("Branch: {branch:?}");
-
     let branch = branch.unwrap_or("main".to_string());
     log::trace!("Branch: {branch:?}");
 
@@ -74,6 +72,7 @@ async fn run_pull_request(sign: Sign, args: Pr) -> Result<CIExit> {
         return Ok(CIExit::UnChanged);
     }
 
+    log::trace!("*** Get Client ***");
     let mut client = get_client(Commands::Pr(args.clone())).await?;
 
     log::info!(
@@ -87,6 +86,7 @@ async fn run_pull_request(sign: Sign, args: Pr) -> Result<CIExit> {
         client.repo()
     );
 
+    log::trace!("Full client: {:#?}", client);
     let title = client.title();
 
     log::debug!("Pull Request Title: {title}");
