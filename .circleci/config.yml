@@ -32,6 +32,47 @@ executors:
       - image: jerusdp/ci-rust:base
 
 commands:
+  pipeline_pcu_check:
+    description: >
+      Makes a post request to https://circleci.com/api/v2/pipeline/continue to
+      continue a setup workflow.
+
+    parameters:
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      pcu_halt_signal:
+        type: string
+        default: "halt"
+        description: "The verbosity of the pcu command"
+      api_token_key:
+        type: env_var_name
+        default: TOKEN
+        description: "The api token to use"
+      branch:
+        type: env_var_name
+        default: CIRCLE_BRANCH
+        description: "The branch for the pipeline"
+    steps:
+      - run:
+          name: Update change or redirect to success pipeline
+          command: |
+            set -ex
+            result=$(cargo run -- <<parameters.pcu_verbosity>> pr --early-exit)
+            if [ "$result" == << parameters.pcu_halt_signal >> ]; then
+              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+              BODY='{"branch":"'
+              BODY+=${<< parameters.branch >>}
+              BODY+='","parameters":{"success-flag":true}}'
+              echo $BODY
+              curl -u ${CIRCLE_TOKEN}: \
+                -X POST \
+                --header 'content-type: application/json' \
+                -d $BODY \
+                https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
+            fi
+
   update_log:
     description: >
       Makes a post request to https://circleci.com/api/v2/pipeline/continue to
@@ -63,7 +104,6 @@ commands:
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
               circleci-agent step halt
             fi
-
 
 jobs:
   update_changelog:
@@ -187,7 +227,7 @@ jobs:
           condition:
             equal: [pipeline, << parameters.update_log_option >>]
           steps:
-            - toolkit/pipeline_pcu_check:
+            - pipeline_pcu_check:
                 pcu_verbosity: <<parameters.pcu_verbosity>>
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
 
@@ -377,7 +417,7 @@ workflows:
             - pcu-app
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
-          update_pcu: true
+          # update_pcu: true
           pcu_verbosity: "-vvvv"
 
   on_success:
