@@ -33,6 +33,8 @@ Apply a label to a pull request.
 In default use applies the `rebase` label to the pull request with 
 the lowest number submitted by the `renovate` user")]
     Label(Label),
+    /// Post summaries and link to new or changed blog posts to bluesky
+    Bsky(Bsky),
 }
 
 impl Display for Commands {
@@ -43,6 +45,7 @@ impl Display for Commands {
             Commands::Commit(_) => write!(f, "commit"),
             Commands::Push(_) => write!(f, "push"),
             Commands::Label(_) => write!(f, "label"),
+            Commands::Bsky(_) => write!(f, "bluesky"),
         }
     }
 }
@@ -129,7 +132,7 @@ impl Push {
     }
 }
 
-/// Configuration for the Rebase command
+/// Configuration for the Label command
 #[derive(Debug, Parser, Clone)]
 pub struct Label {
     /// Override the default author login (renovate) when selecting the pull request to label
@@ -176,6 +179,10 @@ impl Label {
     }
 }
 
+/// Configuration for the Bsky command
+#[derive(Debug, Parser, Clone)]
+pub struct Bsky {}
+
 pub enum CIExit {
     Updated,
     UnChanged,
@@ -184,4 +191,5 @@ pub enum CIExit {
     Released,
     Label(String),
     NoLabel,
+    PostedToBluesky,
 }

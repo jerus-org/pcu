@@ -16,7 +16,7 @@ const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
 mod cli;
 
-use cli::{CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
+use cli::{Bsky, CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -36,6 +36,7 @@ async fn main() -> Result<()> {
         Commands::Push(push_args) => run_push(push_args).await,
         Commands::Label(label_args) => run_label(label_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
+        Commands::Bsky(rel_args) => run_bsky(rel_args).await,
     };
 
     match res {
@@ -48,6 +49,7 @@ async fn main() -> Result<()> {
                 CIExit::Released => log::info!("Created GitHub Release"),
                 CIExit::Label(pr) => log::info!("Rebased PR request #{}", pr),
                 CIExit::NoLabel => log::info!("No label required"),
+                CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
             };
         }
         Err(e) => {
@@ -265,6 +267,14 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
     release_semver(client, args, sign).await
 }
 
+async fn run_bsky(_args: Bsky) -> Result<CIExit> {
+    // TODO: Identify blogs that have changed
+    // TODO: For each blog, extract the title, description, and tags
+    // TODO: For each blog, create a Bluesky post
+
+    Ok(CIExit::PostedToBluesky)
+}
+
 async fn release_semver(mut client: Client, args: Release, sign: Sign) -> Result<CIExit> {
     let Some(version) = args.semver else {
         log::error!("Semver required to update changelog");
@@ -447,6 +457,7 @@ fn get_settings(cmd: Commands) -> Result<Config, Error> {
         Commands::Label(_) => settings
             .set_override("commit_message", "chore: update changelog for release")?
             .set_override("command", "label")?,
+        Commands::Bsky(_) => settings.set_override("command", "bsky")?,
     };
 
     settings = if let Ok(pat) = env::var(GITHUB_PAT) {
