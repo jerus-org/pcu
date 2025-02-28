@@ -101,6 +101,9 @@ jobs:
           command: |
             set -exo pipefail
 
+            ls -la 
+            ls -la bin
+
             ./bin/pcu << parameters.pcu_verbosity >> bsky
 
   test-commit:
