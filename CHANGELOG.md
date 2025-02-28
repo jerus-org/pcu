@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- ✨ add Bsky command for posting to Bluesky(pr [#479])
-
 ### Changed
 
 - 💄 style(issue template)-improve formatting consistency(pr [#478])
@@ -1141,7 +1137,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#482]: https://github.com/jerus-org/pcu/pull/482
 [#483]: https://github.com/jerus-org/pcu/pull/483
 [#484]: https://github.com/jerus-org/pcu/pull/484
-[#479]: https://github.com/jerus-org/pcu/pull/479
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.32...HEAD
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/jerus-org/pcu/compare/v0.4.30...v0.4.31
