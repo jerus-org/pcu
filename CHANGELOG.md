@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 💄 style(issue template)-improve formatting consistency(pr [#478])
 
+### Fixed
+
+- deps: update dependency toolkit to v2.0.13(pr [#480])
+
 ## [0.4.32] - 2025-02-25
 
 ### Added
@@ -1124,6 +1128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#476]: https://github.com/jerus-org/pcu/pull/476
 [#477]: https://github.com/jerus-org/pcu/pull/477
 [#478]: https://github.com/jerus-org/pcu/pull/478
+[#480]: https://github.com/jerus-org/pcu/pull/480
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.32...HEAD
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/jerus-org/pcu/compare/v0.4.30...v0.4.31
