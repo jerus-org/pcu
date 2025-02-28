@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- ✨ add Bsky command for posting to Bluesky(pr [#479])
-
 ### Changed
 
 - 💄 style(issue template)-improve formatting consistency(pr [#478])
+
+### Fixed
+
+- deps: update dependency toolkit to v2.0.13(pr [#480])
+- deps: update rust crate chrono to 0.4.40(pr [#481])
+- deps: update rust crate clap to 4.5.31(pr [#482])
+- deps: update rust crate owo-colors to 4.2.0(pr [#483])
+- deps: update rust crate uuid to 1.15.1(pr [#484])
 
 ## [0.4.32] - 2025-02-25
 
@@ -1128,7 +1132,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#476]: https://github.com/jerus-org/pcu/pull/476
 [#477]: https://github.com/jerus-org/pcu/pull/477
 [#478]: https://github.com/jerus-org/pcu/pull/478
-[#479]: https://github.com/jerus-org/pcu/pull/479
+[#480]: https://github.com/jerus-org/pcu/pull/480
+[#481]: https://github.com/jerus-org/pcu/pull/481
+[#482]: https://github.com/jerus-org/pcu/pull/482
+[#483]: https://github.com/jerus-org/pcu/pull/483
+[#484]: https://github.com/jerus-org/pcu/pull/484
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.32...HEAD
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/jerus-org/pcu/compare/v0.4.30...v0.4.31
