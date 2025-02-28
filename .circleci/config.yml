@@ -273,7 +273,7 @@ workflows:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           # update_pcu: true
-          update_me: true
+          install_me: true
           pcu_verbosity: "-vvvv"
 
   on_success:
