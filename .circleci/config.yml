@@ -69,13 +69,11 @@ jobs:
           command: |
             cargo install --force --path .
       - run:
-          name: Get some info
+          name: Copy updated pcu to bin directory
           command: |
             set -exo pipefail
 
-            pwd
             mkdir -p ~/project/bin
-            which pcu
             cp $(which pcu) ~/project/bin/pcu
 
       - persist_to_workspace:
@@ -95,7 +93,7 @@ jobs:
         default: "-vv"
         description: "The verbosity of the pcu command"
     steps:
-      # Start with the initial build
+      # Start with the test setup workspace
       - attach_workspace:
           at: ~/
       - run:
@@ -125,22 +123,9 @@ jobs:
         default: "chore: test push"
         description: "The commit message to use for the pcu test push"
     steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - run:
-          name: Install pcu from code on main branch of on github
-          command: |
-            cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
+      # Start with the test setup workspace
+      - attach_workspace:
+          at: ~/
       - run:
           name: Create test file
           command: |
@@ -152,9 +137,9 @@ jobs:
             set -ex
 
             if [ "<< parameters.pcu_semver >>" == "true"  ] && [ $SEMVER != ""  ]; then
-              pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>" --semver $SEMVER
+              bin/pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>" --semver $SEMVER
             else
-              pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>"
+              bin/pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>"
             fi
 
   test-push:
@@ -173,22 +158,9 @@ jobs:
         default: false
         description: "Whether or not prevent final push of commit"
     steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - run:
-          name: Install pcu from code on main branch of on github
-          command: |
-            cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
+      # Start with the test setup workspace
+      - attach_workspace:
+          at: ~/
       - run:
           name: Create test file
           command: |
@@ -204,7 +176,7 @@ jobs:
               no_push=""
             fi
 
-            pcu << parameters.pcu_verbosity >> push ${no_push}
+            bin/pcu << parameters.pcu_verbosity >> push ${no_push}
 
 workflows:
   check_last_commit:
@@ -271,11 +243,7 @@ workflows:
             - bot-check
             - pcu-app
           requires:
-            - toolkit/common_tests
-            - toolkit/security
-            - required-builds
-            - docs
-            - toolkit/idiomatic_rust
+            - test-setup
       - test-bsky:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
@@ -294,11 +262,7 @@ workflows:
             - bot-check
             - pcu-app
           requires:
-            - toolkit/common_tests
-            - toolkit/security
-            - required-builds
-            - docs
-            - toolkit/idiomatic_rust
+            - test-setup
 
       - toolkit/security:
           context: SonarCloud
