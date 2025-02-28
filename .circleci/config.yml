@@ -392,6 +392,12 @@ workflows:
             - release
             - bot-check
             - pcu-app
+          requires:
+            - toolkit/common_tests
+            - toolkit/security
+            - required-builds
+            - docs
+            - toolkit/idiomatic_rust
       - test-push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
@@ -400,17 +406,19 @@ workflows:
             - release
             - bot-check
             - pcu-app
-      - toolkit/security:
-          context: SonarCloud
-          ignore_advisories: "RUSTSEC-2025-0007"
-      - update_changelog:
           requires:
             - toolkit/common_tests
             - toolkit/security
             - required-builds
             - docs
             - toolkit/idiomatic_rust
+      - toolkit/security:
+          context: SonarCloud
+          ignore_advisories: "RUSTSEC-2025-0007"
+      - update_changelog:
+          requires:
             - test-push
+            - test-commit
           context:
             - release
             - bot-check
