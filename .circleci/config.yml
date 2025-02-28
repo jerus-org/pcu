@@ -32,6 +32,54 @@ executors:
       - image: jerusdp/ci-rust:base
 
 jobs:
+  test-setup:
+    executor: rust-env
+    parameters:
+      ssh_fingerprint:
+        type: string
+        description: |
+          The fingerprint of the ssh key to use
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      pcu_semver:
+        type: boolean
+        default: false
+        description: "Whether or not set the semver version flag"
+      pcu_commit_message:
+        type: string
+        default: "chore: test push"
+        description: "The commit message to use for the pcu test push"
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Install pcu from code on main branch of on github
+          command: |
+            cargo install --force --git https://github.com/jerus-org/pcu.git --branch $CIRCLE_BRANCH
+      - run:
+          name: Get some info
+          command: |
+            set -exo pipefail
+
+            pwd
+
+      # - persist_to_workspace:
+      #     root: /circleci
+      #     paths:
+      #       -
+
   test-bsky:
     executor: rust-env
     parameters:
@@ -218,6 +266,14 @@ workflows:
           min_rust_version: << pipeline.parameters.min-rust-version >>
       - toolkit/idiomatic_rust:
           min_rust_version: << pipeline.parameters.min-rust-version >>
+      - test-setup:
+          ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          requires:
+            - toolkit/common_tests
+            - toolkit/security
+            - required-builds
+            - docs
+            - toolkit/idiomatic_rust
       - test-commit:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
@@ -266,6 +322,7 @@ workflows:
           requires:
             - test-push
             - test-commit
+            - test-bsky
           context:
             - release
             - bot-check
