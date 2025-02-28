@@ -267,10 +267,11 @@ async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
     release_semver(client, args, sign).await
 }
 
-async fn run_bsky(_args: Bsky) -> Result<CIExit> {
+async fn run_bsky(args: Bsky) -> Result<CIExit> {
     // TODO: Identify blogs that have changed
     // TODO: For each blog, extract the title, description, and tags
     // TODO: For each blog, create a Bluesky post
+    let _client = get_client(Commands::Bsky(args.clone())).await?;
 
     Ok(CIExit::PostedToBluesky)
 }
