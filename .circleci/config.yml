@@ -268,6 +268,10 @@ workflows:
           min_rust_version: << pipeline.parameters.min-rust-version >>
       - test-setup:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          context:
+            - release
+            - bot-check
+            - pcu-app
           requires:
             - toolkit/common_tests
             - toolkit/security
