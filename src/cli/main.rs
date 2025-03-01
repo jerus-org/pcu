@@ -14,9 +14,7 @@ const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 const SIGNAL_HALT: &str = "halt";
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
-mod cli;
-
-use cli::{Bsky, CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
+use pcu_lib::{Bsky, CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]

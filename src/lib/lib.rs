@@ -1,3 +1,4 @@
+mod cli;
 mod client;
 mod error;
 mod ops;
@@ -5,6 +6,15 @@ mod pr_title;
 mod utilities;
 mod workspace;
 
+pub use cli::Bsky;
+pub use cli::CIExit;
+pub use cli::Cli;
+pub use cli::Commands;
+pub use cli::Commit;
+pub use cli::Label;
+pub use cli::Pr;
+pub use cli::Push;
+pub use cli::Release;
 pub use client::Client;
 pub use error::Error;
 pub use error::GraphQLWrapper;
