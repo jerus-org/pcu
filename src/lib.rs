@@ -6,6 +6,7 @@ mod pr_title;
 mod utilities;
 mod workspace;
 
+pub use cli::run_commit;
 pub use cli::Bsky;
 pub use cli::CIExit;
 pub use cli::Cli;
