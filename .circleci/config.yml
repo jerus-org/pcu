@@ -53,19 +53,19 @@ jobs:
         description: "The commit message to use for the pcu test push"
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
+      # - add_ssh_keys:
+      #     fingerprints:
+      #       - <<parameters.ssh_fingerprint>>
+      # - run:
+      #     name: Remove original SSH key from agent
+      #     command: |
+      #       ssh-add -l
+      #       ssh-add -d ~/.ssh/id_rsa.pub
+      #       ssh-add -l
+      # - toolkit/gpg_key
+      # - toolkit/git_config
       - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - run:
-          name: Install pcu from code on main branch of on github
+          name: Install pcu from project under test
           command: |
             cargo install --force --path .
       - run:
@@ -129,6 +129,17 @@ jobs:
       # Start with the test setup workspace
       - attach_workspace:
           at: ~/
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
       - run:
           name: Create test file
           command: |
@@ -162,6 +173,17 @@ jobs:
         description: "Whether or not prevent final push of commit"
     steps:
       # Start with the test setup workspace
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
       - attach_workspace:
           at: ~/
       - run:
