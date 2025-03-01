@@ -77,9 +77,9 @@ jobs:
             cp $(which pcu) ~/project/bin/pcu
 
       - persist_to_workspace:
-          root: /home
+          root: .
           paths:
-            - circleci
+            - bin
 
   test-bsky:
     executor: rust-env
@@ -93,9 +93,21 @@ jobs:
         default: "-vv"
         description: "The verbosity of the pcu command"
     steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
       # Start with the test setup workspace
       - attach_workspace:
-          at: /home
+          at: .
       - run:
           name: Test bsky
           command: |
@@ -126,20 +138,21 @@ jobs:
         default: "chore: test push"
         description: "The commit message to use for the pcu test push"
     steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
       # Start with the test setup workspace
       - attach_workspace:
-          at: /home
-      # - add_ssh_keys:
-      #     fingerprints:
-      #       - <<parameters.ssh_fingerprint>>
-      # - run:
-      #     name: Remove original SSH key from agent
-      #     command: |
-      #       ssh-add -l
-      #       ssh-add -d ~/.ssh/id_rsa.pub
-      #       ssh-add -l
-      # - toolkit/gpg_key
-      # - toolkit/git_config
+          at: .
       - run:
           name: Create test file
           command: |
