@@ -197,6 +197,9 @@ jobs:
             ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
+      # Start with the test setup workspace
+      - attach_workspace:
+          at: .
       - run:
           name: Create test file
           command: |
@@ -298,11 +301,7 @@ workflows:
             - bot-check
             - pcu-app
           requires:
-            - toolkit/common_tests
-            - toolkit/security
-            - required-builds
-            - docs
-            - toolkit/idiomatic_rust
+            - test-setup
 
       - toolkit/security:
           context: SonarCloud
