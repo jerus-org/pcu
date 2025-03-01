@@ -172,20 +172,18 @@ jobs:
         default: false
         description: "Whether or not prevent final push of commit"
     steps:
-      # Start with the test setup workspace
-      # - add_ssh_keys:
-      #     fingerprints:
-      #       - <<parameters.ssh_fingerprint>>
-      # - run:
-      #     name: Remove original SSH key from agent
-      #     command: |
-      #       ssh-add -l
-      #       ssh-add -d ~/.ssh/id_rsa.pub
-      #       ssh-add -l
-      # - toolkit/gpg_key
-      # - toolkit/git_config
-      - attach_workspace:
-          at: /home
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
       - run:
           name: Create test file
           command: |
@@ -287,7 +285,11 @@ workflows:
             - bot-check
             - pcu-app
           requires:
-            - test-setup
+            - toolkit/common_tests
+            - toolkit/security
+            - required-builds
+            - docs
+            - toolkit/idiomatic_rust
 
       - toolkit/security:
           context: SonarCloud
