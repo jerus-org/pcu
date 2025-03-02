@@ -1,3 +1,5 @@
+pub mod cli;
+
 mod client;
 mod error;
 mod ops;
