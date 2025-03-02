@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(structure)-reorganize directory structure(pr [#485])
 - ♻️ refactor(cli)-modularize pull request handling(pr [#486])
 - ♻️ refactor(cli)-modularize commit command handling(pr [#487])
+- ♻️ refactor(cli)-modularize push command handling(pr [#488])
 
 ## [0.4.33] - 2025-03-01
 
@@ -1148,6 +1149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#485]: https://github.com/jerus-org/pcu/pull/485
 [#486]: https://github.com/jerus-org/pcu/pull/486
 [#487]: https://github.com/jerus-org/pcu/pull/487
+[#488]: https://github.com/jerus-org/pcu/pull/488
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32

@@ -1,8 +1,10 @@
 mod commit;
 mod pull_request;
+mod push;
 
 pub use commit::run_commit;
 pub use pull_request::run_pull_request;
+pub use push::run_push;
 
 use std::{env, fmt::Display, fs};
 

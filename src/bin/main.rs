@@ -12,7 +12,7 @@ const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
-use pcu::cli::{CIExit, Cli, Commands, Label, Push, Release};
+use pcu::cli::{CIExit, Cli, Commands, Label, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
     let res = match cmd {
         Commands::Pr(pr_args) => pcu::cli::run_pull_request(sign, pr_args).await,
         Commands::Commit(commit_args) => pcu::cli::run_commit(sign, commit_args).await,
-        Commands::Push(push_args) => run_push(push_args).await,
+        Commands::Push(push_args) => pcu::cli::run_push(push_args).await,
         Commands::Label(label_args) => run_label(label_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
@@ -50,6 +50,23 @@ async fn main() -> Result<()> {
             return Err(e);
         }
     };
+
+    Ok(())
+}
+
+async fn push_committed(
+    client: &Client,
+    prefix: &str,
+    tag_opt: Option<&str>,
+    no_push: bool,
+) -> Result<()> {
+    log::info!("Push the commit");
+    log::trace!("tag_opt: {tag_opt:?} and no_push: {no_push}");
+
+    client.push_commit(prefix, tag_opt, no_push)?;
+    let hdr_style = Style::new().bold().underline();
+    log::debug!("{}", "Check Push".style(hdr_style));
+    log::debug!("Branch status: {}", client.branch_status()?);
 
     Ok(())
 }
@@ -92,39 +109,6 @@ async fn commit_changed_files(
     let files_staged_for_commit = client.repo_files_staged()?;
 
     log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
-    log::debug!("Branch status: {}", client.branch_status()?);
-
-    Ok(())
-}
-
-async fn run_push(args: Push) -> Result<CIExit> {
-    let client = get_client(Commands::Push(args.clone())).await?;
-
-    push_committed(&client, &args.prefix, args.tag_opt(), args.no_push).await?;
-
-    if !args.no_push {
-        Ok(CIExit::Pushed(
-            "Changed files committed and pushed to remote repository.".to_string(),
-        ))
-    } else {
-        Ok(CIExit::Pushed(
-            "Changed files committed and push dry run completed for logging.".to_string(),
-        ))
-    }
-}
-
-async fn push_committed(
-    client: &Client,
-    prefix: &str,
-    tag_opt: Option<&str>,
-    no_push: bool,
-) -> Result<()> {
-    log::info!("Push the commit");
-    log::trace!("tag_opt: {tag_opt:?} and no_push: {no_push}");
-
-    client.push_commit(prefix, tag_opt, no_push)?;
-    let hdr_style = Style::new().bold().underline();
-    log::debug!("{}", "Check Push".style(hdr_style));
     log::debug!("Branch status: {}", client.branch_status()?);
 
     Ok(())
