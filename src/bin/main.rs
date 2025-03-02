@@ -12,7 +12,7 @@ const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
-use pcu::cli::{CIExit, Cli, Commands, Commit, Label, Push, Release};
+use pcu::cli::{CIExit, Cli, Commands, Label, Push, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
 
     let res = match cmd {
         Commands::Pr(pr_args) => pcu::cli::run_pull_request(sign, pr_args).await,
-        Commands::Commit(commit_args) => run_commit(sign, commit_args).await,
+        Commands::Commit(commit_args) => pcu::cli::run_commit(sign, commit_args).await,
         Commands::Push(push_args) => run_push(push_args).await,
         Commands::Label(label_args) => run_label(label_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
@@ -52,21 +52,6 @@ async fn main() -> Result<()> {
     };
 
     Ok(())
-}
-
-async fn run_commit(sign: Sign, args: Commit) -> Result<CIExit> {
-    let client = get_client(Commands::Commit(args.clone())).await?;
-
-    commit_changed_files(
-        &client,
-        sign,
-        args.commit_message(),
-        &args.prefix,
-        args.tag_opt(),
-    )
-    .await?;
-
-    Ok(CIExit::Committed)
 }
 
 async fn commit_changed_files(

@@ -1,4 +1,7 @@
+mod commit;
 mod pull_request;
+
+pub use commit::run_commit;
 pub use pull_request::run_pull_request;
 
 use std::{env, fmt::Display, fs};
