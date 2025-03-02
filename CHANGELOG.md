@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 🔧 chore(structure)-reorganize directory structure(pr [#485])
+- ♻️ refactor(cli)-modularize pull request handling(pr [#486])
 
 ## [0.4.33] - 2025-03-01
 
@@ -1144,6 +1145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#483]: https://github.com/jerus-org/pcu/pull/483
 [#484]: https://github.com/jerus-org/pcu/pull/484
 [#485]: https://github.com/jerus-org/pcu/pull/485
+[#486]: https://github.com/jerus-org/pcu/pull/486
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32

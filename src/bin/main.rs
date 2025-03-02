@@ -3,18 +3,16 @@ use std::{env, fs, path::Path};
 use clap::Parser;
 use config::Config;
 use env_logger::Env;
-use keep_a_changelog::ChangeKind;
 use owo_colors::{OwoColorize, Style};
-use pcu::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr, Workspace};
+use pcu::{Client, Error, GitOps, MakeRelease, Sign, Workspace};
 
 use color_eyre::Result;
 
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
-const SIGNAL_HALT: &str = "halt";
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
-use pcu::cli::{CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
+use pcu::cli::{CIExit, Cli, Commands, Commit, Label, Push, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -29,7 +27,7 @@ async fn main() -> Result<()> {
     let cmd = args.command.clone();
 
     let res = match cmd {
-        Commands::Pr(pr_args) => run_pull_request(sign, pr_args).await,
+        Commands::Pr(pr_args) => pcu::cli::run_pull_request(sign, pr_args).await,
         Commands::Commit(commit_args) => run_commit(sign, commit_args).await,
         Commands::Push(push_args) => run_push(push_args).await,
         Commands::Label(label_args) => run_label(label_args).await,
@@ -54,93 +52,6 @@ async fn main() -> Result<()> {
     };
 
     Ok(())
-}
-
-async fn run_pull_request(sign: Sign, args: Pr) -> Result<CIExit> {
-    let branch = env::var("CIRCLE_BRANCH");
-    let branch = branch.unwrap_or("main".to_string());
-    log::trace!("Branch: {branch:?}");
-
-    if branch == "main" {
-        log::info!("On the default branch, nothing to do here!");
-        if args.early_exit {
-            println!("{SIGNAL_HALT}");
-        }
-
-        return Ok(CIExit::UnChanged);
-    }
-
-    log::trace!("*** Get Client ***");
-    let mut client = get_client(Commands::Pr(args.clone())).await?;
-
-    log::info!(
-        "On the `{}` branch, so time to get to work!",
-        client.branch_or_main()
-    );
-    log::debug!(
-        "PR ID: {} - Owner: {} - Repo: {}",
-        client.pr_number(),
-        client.owner(),
-        client.repo()
-    );
-
-    log::trace!("Full client: {:#?}", client);
-    let title = client.title();
-
-    log::debug!("Pull Request Title: {title}");
-
-    client.create_entry()?;
-
-    log::debug!("Proposed entry: {:?}", client.entry());
-
-    if log::log_enabled!(log::Level::Info) {
-        if let Some((section, entry)) = client.update_changelog()? {
-            let section = match section {
-                ChangeKind::Added => "Added",
-                ChangeKind::Changed => "Changed",
-                ChangeKind::Deprecated => "Deprecated",
-                ChangeKind::Fixed => "Fixed",
-                ChangeKind::Removed => "Removed",
-                ChangeKind::Security => "Security",
-            };
-            log::info!("Amendment: In section `{section}`, adding `{entry}`");
-        } else {
-            log::info!("No update required");
-            if args.early_exit {
-                println!("{SIGNAL_HALT}");
-            }
-            return Ok(CIExit::UnChanged);
-        };
-    } else if client.update_changelog()?.is_none() {
-        return Ok(CIExit::UnChanged);
-    }
-
-    log::debug!("Changelog file name: {}", client.changelog_as_str());
-
-    log::trace!(
-        "{}",
-        print_changelog(client.changelog_as_str(), client.line_limit())
-    );
-
-    let commit_message = "chore: update changelog for pr";
-
-    commit_changed_files(&client, sign, commit_message, &args.prefix, None).await?;
-
-    let res = push_committed(&client, &args.prefix, None, false).await;
-    match res {
-        Ok(()) => Ok(CIExit::Updated),
-        Err(e) => {
-            if args.allow_push_fail
-                && e.to_string()
-                    .contains("cannot push non-fastforwardable reference")
-            {
-                log::info!("Cannot psh non-fastforwardable reference, presuming change made already in parallel job.");
-                Ok(CIExit::UnChanged)
-            } else {
-                Err(e)
-            }
-        }
-    }
 }
 
 async fn run_commit(sign: Sign, args: Commit) -> Result<CIExit> {
