@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use clap::{Parser, Subcommand};
-use pcu_lib::Sign;
+
+use crate::Sign;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

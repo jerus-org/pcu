@@ -5,7 +5,7 @@ use config::Config;
 use env_logger::Env;
 use keep_a_changelog::ChangeKind;
 use owo_colors::{OwoColorize, Style};
-use pcu_lib::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr, Workspace};
+use pcu::{Client, Error, GitOps, MakeRelease, Sign, UpdateFromPr, Workspace};
 
 use color_eyre::Result;
 
@@ -14,9 +14,7 @@ const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 const SIGNAL_HALT: &str = "halt";
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
-mod cli;
-
-use cli::{CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
+use pcu::cli::{CIExit, Cli, Commands, Commit, Label, Pr, Push, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
