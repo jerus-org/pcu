@@ -42,7 +42,7 @@ impl Pr {
         }
 
         log::trace!("*** Get Client ***");
-        let mut client = crate::cli::get_client(Commands::Pr(self.clone())).await?;
+        let mut client = Commands::Pr(self.clone()).get_client().await?;
 
         log::info!(
             "On the `{}` branch, so time to get to work!",

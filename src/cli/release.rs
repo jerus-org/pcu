@@ -28,7 +28,7 @@ pub struct Release {
 
 impl Release {
     pub async fn run_release(self, sign: Sign) -> Result<CIExit> {
-        let client = super::get_client(Commands::Release(self.clone())).await?;
+        let client = Commands::Release(self.clone()).get_client().await?;
 
         if self.workspace {
             log::info!("Running release for workspace");

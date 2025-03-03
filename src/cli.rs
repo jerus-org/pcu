@@ -21,6 +21,16 @@ use crate::{Client, Error, GitOps, Sign};
 
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
+pub enum CIExit {
+    Updated,
+    UnChanged,
+    Committed,
+    Pushed(String),
+    Released,
+    Label(String),
+    NoLabel,
+}
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Cli {
@@ -65,69 +75,61 @@ impl Display for Commands {
     }
 }
 
-pub enum CIExit {
-    Updated,
-    UnChanged,
-    Committed,
-    Pushed(String),
-    Released,
-    Label(String),
-    NoLabel,
-}
+impl Commands {
+    async fn get_client(&self) -> Result<Client, Error> {
+        let settings = self.get_settings()?;
+        let client = Client::new_with(settings).await?;
 
-async fn get_client(cmd: Commands) -> Result<Client, Error> {
-    let settings = get_settings(cmd)?;
-    let client = Client::new_with(settings).await?;
+        Ok(client)
+    }
 
-    Ok(client)
-}
+    fn get_settings(&self) -> Result<Config, Error> {
+        let mut settings = Config::builder()
+            // Set defaults for CircleCI
+            .set_default("log", "CHANGELOG.md")?
+            .set_default("branch", "CIRCLE_BRANCH")?
+            .set_default("default_branch", "main")?
+            .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
+            .set_default("username", "CIRCLE_PROJECT_USERNAME")?
+            .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
+            .set_default("commit_message", "chore: update changelog")?
+            .set_default("dev_platform", "https://github.com/")?
+            .set_default("version_prefix", "v")?
+            // Add in settings from pcu.toml if it exists
+            .add_source(config::File::with_name("pcu.toml").required(false))
+            // Add in settings from the environment (with a prefix of PCU)
+            .add_source(config::Environment::with_prefix("PCU"));
 
-fn get_settings(cmd: Commands) -> Result<Config, Error> {
-    let mut settings = Config::builder()
-        // Set defaults for CircleCI
-        .set_default("log", "CHANGELOG.md")?
-        .set_default("branch", "CIRCLE_BRANCH")?
-        .set_default("default_branch", "main")?
-        .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
-        .set_default("username", "CIRCLE_PROJECT_USERNAME")?
-        .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
-        .set_default("commit_message", "chore: update changelog")?
-        .set_default("dev_platform", "https://github.com/")?
-        .set_default("version_prefix", "v")?
-        // Add in settings from pcu.toml if it exists
-        .add_source(config::File::with_name("pcu.toml").required(false))
-        // Add in settings from the environment (with a prefix of PCU)
-        .add_source(config::Environment::with_prefix("PCU"));
+        settings = match self {
+            Commands::Pr(_) => settings
+                .set_override("commit_message", "chore: update changelog for pr")?
+                .set_override("command", "pr")?,
+            Commands::Release(_) => settings
+                .set_override("commit_message", "chore: update changelog for release")?
+                .set_override("command", "release")?,
+            Commands::Commit(_) => settings
+                .set_override("commit_message", "chore: adding changed files")?
+                .set_override("command", "commit")?,
+            Commands::Push(_) => settings
+                .set_override("commit_message", "chore: update changelog for release")?
+                .set_override("command", "push")?,
+            Commands::Label(_) => settings
+                .set_override("commit_message", "chore: update changelog for release")?
+                .set_override("command", "label")?,
+        };
 
-    settings = match cmd {
-        Commands::Pr(_) => settings
-            .set_override("commit_message", "chore: update changelog for pr")?
-            .set_override("command", "pr")?,
-        Commands::Release(_) => settings
-            .set_override("commit_message", "chore: update changelog for release")?
-            .set_override("command", "release")?,
-        Commands::Commit(_) => settings
-            .set_override("commit_message", "chore: adding changed files")?
-            .set_override("command", "commit")?,
-        Commands::Push(_) => settings
-            .set_override("commit_message", "chore: update changelog for release")?
-            .set_override("command", "push")?,
-        Commands::Label(_) => settings
-            .set_override("commit_message", "chore: update changelog for release")?
-            .set_override("command", "label")?,
-    };
+        settings = if let Ok(pat) = env::var(GITHUB_PAT) {
+            settings.set_override("pat", pat.to_string())?
+        } else {
+            settings
+        };
 
-    settings = if let Ok(pat) = env::var(GITHUB_PAT) {
-        settings.set_override("pat", pat.to_string())?
-    } else {
-        settings
-    };
-
-    match settings.build() {
-        Ok(settings) => Ok(settings),
-        Err(e) => {
-            log::error!("Error: {e}");
-            Err(e.into())
+        match settings.build() {
+            Ok(settings) => Ok(settings),
+            Err(e) => {
+                log::error!("Error: {e}");
+                Err(e.into())
+            }
         }
     }
 }
