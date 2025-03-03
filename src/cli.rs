@@ -6,7 +6,7 @@ mod release;
 
 use commit::Commit;
 use label::Label;
-pub use pull_request::run_pull_request;
+use pull_request::Pr;
 use push::Push;
 use release::Release;
 
@@ -63,19 +63,6 @@ impl Display for Commands {
             Commands::Label(_) => write!(f, "label"),
         }
     }
-}
-
-#[derive(Debug, Parser, Clone)]
-pub struct Pr {
-    /// Signal an early exit as the changelog is already updated
-    #[clap(short, long, default_value_t = false)]
-    pub early_exit: bool,
-    /// Prefix for the version tag
-    #[clap(short, long, default_value_t = String::from("v"))]
-    pub prefix: String,
-    /// Allow git push to fail. Allows the case of two parallel updates where the second push would fail.
-    #[clap(short, long, default_value_t = false)]
-    pub allow_push_fail: bool,
 }
 
 pub enum CIExit {
