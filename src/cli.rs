@@ -2,11 +2,13 @@ mod commit;
 mod label;
 mod pull_request;
 mod push;
+mod release;
 
 pub use commit::run_commit;
 pub use label::run_label;
 pub use pull_request::run_pull_request;
 pub use push::run_push;
+pub use release::run_release;
 
 use std::{env, fmt::Display, fs};
 
