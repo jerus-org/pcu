@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(cli)-move commit command logic to cli/commit.rs(pr [#492])
 - ♻️ refactor(cli)-enhance label command structure(pr [#493])
 - ♻️ refactor(release)-restructure release command handling(pr [#494])
+- ♻️ refactor(cli)-migrate `Pr` struct and method to `pull_request.rs`(pr [#495])
 
 ## [0.4.33] - 2025-03-01
 
@@ -1162,6 +1163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#492]: https://github.com/jerus-org/pcu/pull/492
 [#493]: https://github.com/jerus-org/pcu/pull/493
 [#494]: https://github.com/jerus-org/pcu/pull/494
+[#495]: https://github.com/jerus-org/pcu/pull/495
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
