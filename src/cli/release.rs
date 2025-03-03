@@ -122,14 +122,9 @@ impl Release {
 
             let commit_message = "chore: update changelog for pr";
 
-            crate::cli::commit_changed_files(
-                &client,
-                sign,
-                commit_message,
-                &self.prefix,
-                Some(&version),
-            )
-            .await?;
+            client
+                .commit_changed_files(sign, commit_message, &self.prefix, Some(&version))
+                .await?;
 
             log::info!("Push the commit");
             log::trace!("tag_opt: {:?} and no_push: {:?}", Some(&version), false);
