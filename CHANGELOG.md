@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ✨ add Bsky command for posting to Bluesky(pr [#479])
+
 ### Changed
 
 - 🔧 chore(structure)-reorganize directory structure(pr [#485])
@@ -1170,6 +1174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#496]: https://github.com/jerus-org/pcu/pull/496
 [#497]: https://github.com/jerus-org/pcu/pull/497
 [#498]: https://github.com/jerus-org/pcu/pull/498
+[#479]: https://github.com/jerus-org/pcu/pull/479
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
