@@ -369,7 +369,7 @@ impl GitOps for Client {
 
         tracing::trace!("Found {:?} open PRs", prs);
 
-        // filter to PRs created by a specfic login
+        // filter to PRs created by a specific login
         let login = if let Some(login) = author {
             login
         } else {
@@ -502,7 +502,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
         if entry.status().contains(git2::Status::WT_DELETED) {
             rm_in_workdir = true;
         }
-        let istatus = match entry.status() {
+        let is_status = match entry.status() {
             s if s.contains(git2::Status::INDEX_NEW) => "new file: ",
             s if s.contains(git2::Status::INDEX_MODIFIED) => "modified: ",
             s if s.contains(git2::Status::INDEX_DELETED) => "deleted: ",
@@ -528,7 +528,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
                 output = format!(
                     "{}\n#\t{}  {} -> {}",
                     output,
-                    istatus,
+                    is_status,
                     old.display(),
                     new.display()
                 );
@@ -537,7 +537,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
                 output = format!(
                     "{}\n#\t{}  {}",
                     output,
-                    istatus,
+                    is_status,
                     old.or(new).unwrap().display()
                 );
             }
@@ -559,7 +559,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
             continue;
         }
 
-        let istatus = match entry.status() {
+        let is_status = match entry.status() {
             s if s.contains(git2::Status::WT_MODIFIED) => "modified: ",
             s if s.contains(git2::Status::WT_DELETED) => "deleted: ",
             s if s.contains(git2::Status::WT_RENAMED) => "renamed: ",
@@ -583,7 +583,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
                 output = format!(
                     "{}\n#\t{}  {} -> {}",
                     output,
-                    istatus,
+                    is_status,
                     old.display(),
                     new.display()
                 );
@@ -592,7 +592,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
                 output = format!(
                     "{}\n#\t{}  {}",
                     output,
-                    istatus,
+                    is_status,
                     old.or(new).unwrap().display()
                 );
             }

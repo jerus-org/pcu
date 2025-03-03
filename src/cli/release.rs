@@ -6,6 +6,7 @@ use super::{CIExit, Commands};
 
 use clap::Parser;
 use color_eyre::Result;
+use owo_colors::{OwoColorize, Style};
 
 #[derive(Debug, Parser, Clone)]
 pub struct Release {
@@ -130,7 +131,13 @@ impl Release {
             )
             .await?;
 
-            crate::cli::push_committed(&client, &self.prefix, Some(&version), false).await?;
+            log::info!("Push the commit");
+            log::trace!("tag_opt: {:?} and no_push: {:?}", Some(&version), false);
+
+            client.push_commit(&self.prefix, Some(&version), false)?;
+            let hdr_style = Style::new().bold().underline();
+            log::debug!("{}", "Check Push".style(hdr_style));
+            log::debug!("Branch status: {}", client.branch_status()?);
         }
 
         client.make_release(&self.prefix, &version).await?;
