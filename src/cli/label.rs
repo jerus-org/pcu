@@ -50,7 +50,7 @@ impl Label {
     }
 
     pub async fn run_label(&self) -> Result<CIExit> {
-        let client = super::get_client(Commands::Label(self.clone())).await?;
+        let client = Commands::Label(self.clone()).get_client().await?;
 
         let pr_number = client
             .label_next_pr(self.author(), self.label(), self.desc(), self.colour())

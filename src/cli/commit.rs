@@ -32,7 +32,7 @@ impl Commit {
     }
 
     pub async fn run_commit(&self, sign: Sign) -> Result<CIExit> {
-        let client = super::get_client(Commands::Commit(self.clone())).await?;
+        let client = Commands::Commit(self.clone()).get_client().await?;
 
         super::commit_changed_files(
             &client,

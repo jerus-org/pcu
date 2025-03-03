@@ -29,7 +29,7 @@ impl Push {
     }
 
     pub async fn run_push(&self) -> Result<CIExit> {
-        let client = super::get_client(Commands::Push(self.clone())).await?;
+        let client = Commands::Push(self.clone()).get_client().await?;
 
         push_committed(&client, &self.prefix, self.tag_opt(), self.no_push).await?;
 
