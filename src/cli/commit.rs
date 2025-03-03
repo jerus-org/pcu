@@ -1,64 +1,43 @@
-use super::Commit;
-use super::{CIExit, Commands};
-use crate::{Client, GitOps, Sign};
-use owo_colors::{OwoColorize, Style};
+use crate::Sign;
 
+use clap::Parser;
 use color_eyre::Result;
 
-pub async fn run_commit(sign: Sign, args: Commit) -> Result<CIExit> {
-    let client = super::get_client(Commands::Commit(args.clone())).await?;
+use super::{CIExit, Commands, GitOps};
 
-    commit_changed_files(
-        &client,
-        sign,
-        args.commit_message(),
-        &args.prefix,
-        args.tag_opt(),
-    )
-    .await?;
-
-    Ok(CIExit::Committed)
+/// Configuration for the Commit command
+#[derive(Debug, Parser, Clone)]
+pub struct Commit {
+    /// Semantic version number for a tag
+    #[arg(short, long)]
+    pub semver: Option<String>,
+    /// Message to add to the commit when pushing
+    #[arg(short, long)]
+    commit_message: String,
+    /// Prefix for the version tag
+    #[clap(short, long, default_value_t = String::from("v"))]
+    pub prefix: String,
 }
 
-async fn commit_changed_files(
-    client: &Client,
-    sign: Sign,
-    commit_message: &str,
-    prefix: &str,
-    tag_opt: Option<&str>,
-) -> Result<()> {
-    let hdr_style = Style::new().bold().underline();
-    log::debug!("{}", "Check WorkDir".style(hdr_style));
+impl Commit {
+    pub fn commit_message(&self) -> &str {
+        &self.commit_message
+    }
 
-    let files_in_workdir = client.repo_files_not_staged()?;
+    pub fn tag_opt(&self) -> Option<&str> {
+        if let Some(semver) = &self.semver {
+            return Some(semver);
+        }
+        None
+    }
 
-    log::debug!("WorkDir files:\n\t{:?}", files_in_workdir);
-    log::debug!("Staged files:\n\t{:?}", client.repo_files_staged()?);
-    log::debug!("Branch status: {}", client.branch_status()?);
+    pub async fn run_commit(&self, sign: Sign) -> Result<CIExit> {
+        let client = Commands::Commit(self.clone()).get_client().await?;
 
-    log::info!("Stage the changes for commit");
+        client
+            .commit_changed_files(sign, self.commit_message(), &self.prefix, self.tag_opt())
+            .await?;
 
-    client.stage_files(files_in_workdir)?;
-
-    log::debug!("{}", "Check Staged".style(hdr_style));
-    log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
-
-    let files_staged_for_commit = client.repo_files_staged()?;
-
-    log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
-    log::debug!("Branch status: {}", client.branch_status()?);
-
-    log::info!("Commit the staged changes");
-
-    client.commit_staged(sign, commit_message, prefix, tag_opt)?;
-
-    log::debug!("{}", "Check Committed".style(hdr_style));
-    log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
-
-    let files_staged_for_commit = client.repo_files_staged()?;
-
-    log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
-    log::debug!("Branch status: {}", client.branch_status()?);
-
-    Ok(())
+        Ok(CIExit::Committed)
+    }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "pcu"
-version = "0.4.32"
+version = "0.4.33"
 edition = "2021"
 authors = ["jerusdp <jrussell@jerus.ie>"]
 description = "A CI tool to update change log in a PR"
@@ -46,7 +46,7 @@ rstest = "0.24.0"
 uuid = { version = "1.15.1", features = ["v4"] }
 
 [lib]
-# name = "pcu_lib"
+name = "pcu"
 path = "src/lib.rs"
 
 [[bin]]

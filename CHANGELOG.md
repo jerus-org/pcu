@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- ✨ add Bsky command for posting to Bluesky(pr [#479])
+- 🔧 chore(structure)-reorganize directory structure(pr [#485])
+- ♻️ refactor(cli)-modularize pull request handling(pr [#486])
+- ♻️ refactor(cli)-modularize commit command handling(pr [#487])
+- ♻️ refactor(cli)-modularize push command handling(pr [#488])
+- ♻️ refactor(cli)-modularize label command handling(pr [#489])
+- ♻️ refactor(cli)-modularize release logic into separate module(pr [#490])
+- ♻️ refactor(cli)-centralize push command implementation(pr [#491])
+- ♻️ refactor(cli)-move commit command logic to cli/commit.rs(pr [#492])
+- ♻️ refactor(cli)-enhance label command structure(pr [#493])
+- ♻️ refactor(release)-restructure release command handling(pr [#494])
+- ♻️ refactor(cli)-migrate `Pr` struct and method to `pull_request.rs`(pr [#495])
+- ♻️ refactor(cli)-refactor client acquisition method(pr [#496])
+- ♻️ refactor(cli)-remove duplicate push_committed function(pr [#497])
+- ♻️ refactor(cli)-remove duplicate commit function(pr [#498])
+
+## [0.4.33] - 2025-03-01
 
 ### Changed
 
@@ -1141,8 +1156,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#482]: https://github.com/jerus-org/pcu/pull/482
 [#483]: https://github.com/jerus-org/pcu/pull/483
 [#484]: https://github.com/jerus-org/pcu/pull/484
-[#479]: https://github.com/jerus-org/pcu/pull/479
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.32...HEAD
+[#485]: https://github.com/jerus-org/pcu/pull/485
+[#486]: https://github.com/jerus-org/pcu/pull/486
+[#487]: https://github.com/jerus-org/pcu/pull/487
+[#488]: https://github.com/jerus-org/pcu/pull/488
+[#489]: https://github.com/jerus-org/pcu/pull/489
+[#490]: https://github.com/jerus-org/pcu/pull/490
+[#491]: https://github.com/jerus-org/pcu/pull/491
+[#492]: https://github.com/jerus-org/pcu/pull/492
+[#493]: https://github.com/jerus-org/pcu/pull/493
+[#494]: https://github.com/jerus-org/pcu/pull/494
+[#495]: https://github.com/jerus-org/pcu/pull/495
+[#496]: https://github.com/jerus-org/pcu/pull/496
+[#497]: https://github.com/jerus-org/pcu/pull/497
+[#498]: https://github.com/jerus-org/pcu/pull/498
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
+[0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
 [0.4.31]: https://github.com/jerus-org/pcu/compare/v0.4.30...v0.4.31
 [0.4.30]: https://github.com/jerus-org/pcu/compare/v0.4.29...v0.4.30

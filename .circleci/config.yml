@@ -81,43 +81,6 @@ jobs:
           paths:
             - bin
 
-  test-bsky:
-    executor: rust-env
-    parameters:
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      # Start with the test setup workspace
-      - attach_workspace:
-          at: .
-      - run:
-          name: Test bsky
-          command: |
-            set -exo pipefail
-
-            ls -la 
-            ls -la bin
-
-            ./bin/pcu << parameters.pcu_verbosity >> bsky
-
   test-commit:
     executor: rust-env
     parameters:
@@ -283,15 +246,6 @@ workflows:
             - pcu-app
           requires:
             - test-setup
-      - test-bsky:
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
-          pcu_verbosity: "-vvvv"
-          context:
-            - release
-            - bot-check
-            - pcu-app
-          requires:
-            - test-setup
       - test-push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
@@ -310,7 +264,6 @@ workflows:
           requires:
             - test-push
             - test-commit
-            - test-bsky
           context:
             - release
             - bot-check
