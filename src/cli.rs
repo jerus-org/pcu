@@ -15,7 +15,6 @@ use std::{env, fmt::Display, fs};
 use clap::{Parser, Subcommand};
 use color_eyre::Result;
 use config::Config;
-use owo_colors::{OwoColorize, Style};
 
 use crate::{Client, Error, GitOps, Sign};
 
@@ -155,47 +154,4 @@ fn print_changelog(changelog_path: &str, mut line_limit: usize) -> String {
     };
 
     output
-}
-
-async fn commit_changed_files(
-    client: &Client,
-    sign: Sign,
-    commit_message: &str,
-    prefix: &str,
-    tag_opt: Option<&str>,
-) -> Result<()> {
-    let hdr_style = Style::new().bold().underline();
-    log::debug!("{}", "Check WorkDir".style(hdr_style));
-
-    let files_in_workdir = client.repo_files_not_staged()?;
-
-    log::debug!("WorkDir files:\n\t{:?}", files_in_workdir);
-    log::debug!("Staged files:\n\t{:?}", client.repo_files_staged()?);
-    log::debug!("Branch status: {}", client.branch_status()?);
-
-    log::info!("Stage the changes for commit");
-
-    client.stage_files(files_in_workdir)?;
-
-    log::debug!("{}", "Check Staged".style(hdr_style));
-    log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
-
-    let files_staged_for_commit = client.repo_files_staged()?;
-
-    log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
-    log::debug!("Branch status: {}", client.branch_status()?);
-
-    log::info!("Commit the staged changes");
-
-    client.commit_staged(sign, commit_message, prefix, tag_opt)?;
-
-    log::debug!("{}", "Check Committed".style(hdr_style));
-    log::debug!("WorkDir files:\n\t{:?}", client.repo_files_not_staged()?);
-
-    let files_staged_for_commit = client.repo_files_staged()?;
-
-    log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
-    log::debug!("Branch status: {}", client.branch_status()?);
-
-    Ok(())
 }

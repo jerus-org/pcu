@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(cli)-migrate `Pr` struct and method to `pull_request.rs`(pr [#495])
 - ♻️ refactor(cli)-refactor client acquisition method(pr [#496])
 - ♻️ refactor(cli)-remove duplicate push_committed function(pr [#497])
+- ♻️ refactor(cli)-remove duplicate commit function(pr [#498])
 
 ## [0.4.33] - 2025-03-01
 
@@ -1168,6 +1169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#495]: https://github.com/jerus-org/pcu/pull/495
 [#496]: https://github.com/jerus-org/pcu/pull/496
 [#497]: https://github.com/jerus-org/pcu/pull/497
+[#498]: https://github.com/jerus-org/pcu/pull/498
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32

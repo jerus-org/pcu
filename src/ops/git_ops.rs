@@ -5,12 +5,12 @@ use std::{
 };
 
 use clap::ValueEnum;
-use color_eyre::owo_colors::OwoColorize;
 use git2::{
     BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, StatusOptions,
 };
 use log::log_enabled;
 use octocrate::repos::list_tags::Query;
+use owo_colors::{OwoColorize, Style};
 use tracing::instrument;
 
 use crate::client::graphql::GraphQLGetOpenPRs;
@@ -36,6 +36,14 @@ pub trait GitOps {
     fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
     fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
     fn stage_files(&self, files: Vec<String>) -> Result<(), Error>;
+    #[allow(async_fn_in_trait)]
+    async fn commit_changed_files(
+        &self,
+        sign: Sign,
+        commit_message: &str,
+        prefix: &str,
+        tag_opt: Option<&str>,
+    ) -> Result<(), Error>;
     fn commit_staged(
         &self,
         sign: Sign,
@@ -183,6 +191,49 @@ impl GitOps for Client {
         }
 
         index.write()?;
+
+        Ok(())
+    }
+
+    async fn commit_changed_files(
+        &self,
+        sign: Sign,
+        commit_message: &str,
+        prefix: &str,
+        tag_opt: Option<&str>,
+    ) -> Result<(), Error> {
+        let hdr_style = Style::new().bold().underline();
+        log::debug!("{}", "Check WorkDir".style(hdr_style));
+
+        let files_in_workdir = self.repo_files_not_staged()?;
+
+        log::debug!("WorkDir files:\n\t{:?}", files_in_workdir);
+        log::debug!("Staged files:\n\t{:?}", self.repo_files_staged()?);
+        log::debug!("Branch status: {}", self.branch_status()?);
+
+        log::info!("Stage the changes for commit");
+
+        self.stage_files(files_in_workdir)?;
+
+        log::debug!("{}", "Check Staged".style(hdr_style));
+        log::debug!("WorkDir files:\n\t{:?}", self.repo_files_not_staged()?);
+
+        let files_staged_for_commit = self.repo_files_staged()?;
+
+        log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
+        log::debug!("Branch status: {}", self.branch_status()?);
+
+        log::info!("Commit the staged changes");
+
+        self.commit_staged(sign, commit_message, prefix, tag_opt)?;
+
+        log::debug!("{}", "Check Committed".style(hdr_style));
+        log::debug!("WorkDir files:\n\t{:?}", self.repo_files_not_staged()?);
+
+        let files_staged_for_commit = self.repo_files_staged()?;
+
+        log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
+        log::debug!("Branch status: {}", self.branch_status()?);
 
         Ok(())
     }

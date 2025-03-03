@@ -3,7 +3,7 @@ use crate::Sign;
 use clap::Parser;
 use color_eyre::Result;
 
-use super::{CIExit, Commands};
+use super::{CIExit, Commands, GitOps};
 
 /// Configuration for the Commit command
 #[derive(Debug, Parser, Clone)]
@@ -34,14 +34,9 @@ impl Commit {
     pub async fn run_commit(&self, sign: Sign) -> Result<CIExit> {
         let client = Commands::Commit(self.clone()).get_client().await?;
 
-        super::commit_changed_files(
-            &client,
-            sign,
-            self.commit_message(),
-            &self.prefix,
-            self.tag_opt(),
-        )
-        .await?;
+        client
+            .commit_changed_files(sign, self.commit_message(), &self.prefix, self.tag_opt())
+            .await?;
 
         Ok(CIExit::Committed)
     }

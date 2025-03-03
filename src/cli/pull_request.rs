@@ -1,7 +1,7 @@
 use std::env;
 
 use crate::{
-    cli::{commit_changed_files, Commands, GitOps},
+    cli::{Commands, GitOps},
     Sign, UpdateFromPr,
 };
 
@@ -96,7 +96,9 @@ impl Pr {
 
         let commit_message = "chore: update changelog for pr";
 
-        commit_changed_files(&client, sign, commit_message, &self.prefix, None).await?;
+        client
+            .commit_changed_files(sign, commit_message, &self.prefix, None)
+            .await?;
 
         log::info!("Push the commit");
         log::trace!("tag_opt: None and no_push: false");
