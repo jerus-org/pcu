@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(cli)-modularize label command handling(pr [#489])
 - ♻️ refactor(cli)-modularize release logic into separate module(pr [#490])
 - ♻️ refactor(cli)-centralize push command implementation(pr [#491])
+- ♻️ refactor(cli)-move commit command logic to cli/commit.rs(pr [#492])
 
 ## [0.4.33] - 2025-03-01
 
@@ -1156,6 +1157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#489]: https://github.com/jerus-org/pcu/pull/489
 [#490]: https://github.com/jerus-org/pcu/pull/490
 [#491]: https://github.com/jerus-org/pcu/pull/491
+[#492]: https://github.com/jerus-org/pcu/pull/492
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
