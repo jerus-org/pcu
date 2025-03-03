@@ -1,8 +1,10 @@
 mod commit;
+mod label;
 mod pull_request;
 mod push;
 
 pub use commit::run_commit;
+pub use label::run_label;
 pub use pull_request::run_pull_request;
 pub use push::run_push;
 

@@ -12,7 +12,7 @@ const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
-use pcu::cli::{CIExit, Cli, Commands, Label, Release};
+use pcu::cli::{CIExit, Cli, Commands, Release};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
         Commands::Pr(pr_args) => pcu::cli::run_pull_request(sign, pr_args).await,
         Commands::Commit(commit_args) => pcu::cli::run_commit(sign, commit_args).await,
         Commands::Push(push_args) => pcu::cli::run_push(push_args).await,
-        Commands::Label(label_args) => run_label(label_args).await,
+        Commands::Label(label_args) => pcu::cli::run_label(label_args).await,
         Commands::Release(rel_args) => run_release(sign, rel_args).await,
     };
 
@@ -112,20 +112,6 @@ async fn commit_changed_files(
     log::debug!("Branch status: {}", client.branch_status()?);
 
     Ok(())
-}
-
-async fn run_label(args: Label) -> Result<CIExit> {
-    let client = get_client(Commands::Label(args.clone())).await?;
-
-    let pr_number = client
-        .label_next_pr(args.author(), args.label(), args.desc(), args.colour())
-        .await?;
-
-    if let Some(pr_number) = pr_number {
-        Ok(CIExit::Label(pr_number))
-    } else {
-        Ok(CIExit::NoLabel)
-    }
 }
 
 async fn run_release(sign: Sign, args: Release) -> Result<CIExit> {
