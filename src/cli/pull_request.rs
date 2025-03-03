@@ -1,7 +1,7 @@
 use std::env;
 
 use crate::{
-    cli::{commit_changed_files, Commands},
+    cli::{commit_changed_files, Commands, GitOps},
     Sign, UpdateFromPr,
 };
 
@@ -10,6 +10,7 @@ use super::CIExit;
 use clap::Parser;
 use color_eyre::Result;
 use keep_a_changelog::ChangeKind;
+use owo_colors::{OwoColorize, Style};
 
 const SIGNAL_HALT: &str = "halt";
 
@@ -97,7 +98,14 @@ impl Pr {
 
         commit_changed_files(&client, sign, commit_message, &self.prefix, None).await?;
 
-        let res = crate::cli::push_committed(&client, &self.prefix, None, false).await;
+        log::info!("Push the commit");
+        log::trace!("tag_opt: None and no_push: false");
+
+        let res = client.push_commit(&self.prefix, None, false);
+        let hdr_style = Style::new().bold().underline();
+        log::debug!("{}", "Check Push".style(hdr_style));
+        log::debug!("Branch status: {}", client.branch_status()?);
+
         match res {
             Ok(()) => Ok(CIExit::Updated),
             Err(e) => {
@@ -108,7 +116,7 @@ impl Pr {
                     log::info!("Cannot psh non-fastforwardable reference, presuming change made already in parallel job.");
                     Ok(CIExit::UnChanged)
                 } else {
-                    Err(e)
+                    Err(e.into())
                 }
             }
         }

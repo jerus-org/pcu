@@ -199,20 +199,3 @@ async fn commit_changed_files(
 
     Ok(())
 }
-
-async fn push_committed(
-    client: &Client,
-    prefix: &str,
-    tag_opt: Option<&str>,
-    no_push: bool,
-) -> Result<()> {
-    log::info!("Push the commit");
-    log::trace!("tag_opt: {tag_opt:?} and no_push: {no_push}");
-
-    client.push_commit(prefix, tag_opt, no_push)?;
-    let hdr_style = Style::new().bold().underline();
-    log::debug!("{}", "Check Push".style(hdr_style));
-    log::debug!("Branch status: {}", client.branch_status()?);
-
-    Ok(())
-}
