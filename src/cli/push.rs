@@ -1,23 +1,47 @@
 use crate::Client;
 
-use super::{CIExit, Commands, GitOps, Push};
+use super::{CIExit, Commands, GitOps};
 
+use clap::Parser;
 use color_eyre::Result;
 use owo_colors::{OwoColorize, Style};
 
-pub async fn run_push(args: Push) -> Result<CIExit> {
-    let client = super::get_client(Commands::Push(args.clone())).await?;
+/// Configuration for the Push command
+#[derive(Debug, Parser, Clone)]
+pub struct Push {
+    /// Semantic version number for a tag
+    #[arg(short, long)]
+    pub semver: Option<String>,
+    /// Disable the push command
+    #[arg(short, long, default_value_t = false)]
+    pub no_push: bool,
+    /// Prefix for the version tag
+    #[clap(short, long, default_value_t = String::from("v"))]
+    pub prefix: String,
+}
 
-    push_committed(&client, &args.prefix, args.tag_opt(), args.no_push).await?;
+impl Push {
+    pub fn tag_opt(&self) -> Option<&str> {
+        if let Some(semver) = &self.semver {
+            return Some(semver);
+        }
+        None
+    }
 
-    if !args.no_push {
-        Ok(CIExit::Pushed(
-            "Changed files committed and pushed to remote repository.".to_string(),
-        ))
-    } else {
-        Ok(CIExit::Pushed(
-            "Changed files committed and push dry run completed for logging.".to_string(),
-        ))
+    pub async fn run_push(&self) -> Result<CIExit> {
+        let client = super::get_client(Commands::Push(self.clone())).await?;
+
+        push_committed(&client, &self.prefix, self.tag_opt(), self.no_push).await?;
+
+        if !self.no_push {
+            Ok(CIExit::Pushed(
+                "Changed files committed and pushed to remote repository.".to_string(),
+            ))
+        } else {
+            Ok(CIExit::Pushed(
+                "Changed files committed and push dry run completed for logging.".to_string(),
+            ))
+        }
     }
 }
 
