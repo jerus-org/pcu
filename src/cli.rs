@@ -5,7 +5,7 @@ mod push;
 mod release;
 
 use commit::Commit;
-pub use label::run_label;
+use label::Label;
 pub use pull_request::run_pull_request;
 use push::Push;
 pub use release::run_release;
@@ -95,53 +95,6 @@ pub struct Release {
     /// Release specific workspace package
     #[clap(short = 'k', long)]
     pub package: Option<String>,
-}
-
-/// Configuration for the Rebase command
-#[derive(Debug, Parser, Clone)]
-pub struct Label {
-    /// Override the default author login (renovate) when selecting the pull request to label
-    #[arg(short, long)]
-    pub author: Option<String>,
-    /// Override the default label (rebase) to add to the pull request
-    #[arg(short, long)]
-    pub label: Option<String>,
-    /// Override the default description for the label if it is created
-    #[arg(short, long = "description")]
-    pub desc: Option<String>,
-    /// Override the default colour (B22222) for the label if it is created
-    #[arg(short, long, visible_alias = "color")]
-    pub colour: Option<String>,
-}
-
-impl Label {
-    pub fn author(&self) -> Option<&str> {
-        if let Some(l) = &self.author {
-            return Some(l);
-        }
-        None
-    }
-
-    pub fn label(&self) -> Option<&str> {
-        if let Some(l) = &self.label {
-            return Some(l);
-        }
-        None
-    }
-
-    pub fn desc(&self) -> Option<&str> {
-        if let Some(d) = &self.desc {
-            return Some(d);
-        }
-        None
-    }
-
-    pub fn colour(&self) -> Option<&str> {
-        if let Some(c) = &self.colour {
-            return Some(c);
-        }
-        None
-    }
 }
 
 pub enum CIExit {

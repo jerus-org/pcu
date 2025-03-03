@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         Commands::Pr(pr_args) => pcu::cli::run_pull_request(sign, pr_args).await,
         Commands::Commit(commit_args) => commit_args.run_commit(sign).await,
         Commands::Push(push_args) => push_args.run_push().await,
-        Commands::Label(label_args) => pcu::cli::run_label(label_args).await,
+        Commands::Label(label_args) => label_args.run_label().await,
         Commands::Release(rel_args) => pcu::cli::run_release(sign, rel_args).await,
     };
 
