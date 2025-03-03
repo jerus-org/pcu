@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
     let cmd = args.command.clone();
 
     let res = match cmd {
-        Commands::Pr(pr_args) => pcu::cli::run_pull_request(sign, pr_args).await,
+        Commands::Pr(pr_args) => pr_args.run_pull_request(sign).await,
         Commands::Commit(commit_args) => commit_args.run_commit(sign).await,
         Commands::Push(push_args) => push_args.run_push().await,
         Commands::Label(label_args) => label_args.run_label().await,
