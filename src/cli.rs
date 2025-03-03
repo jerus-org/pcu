@@ -7,7 +7,7 @@ mod release;
 pub use commit::run_commit;
 pub use label::run_label;
 pub use pull_request::run_pull_request;
-pub use push::run_push;
+use push::Push;
 pub use release::run_release;
 
 use std::{env, fmt::Display, fs};
@@ -116,29 +116,6 @@ impl Commit {
         &self.commit_message
     }
 
-    pub fn tag_opt(&self) -> Option<&str> {
-        if let Some(semver) = &self.semver {
-            return Some(semver);
-        }
-        None
-    }
-}
-
-/// Configuration for the Push command
-#[derive(Debug, Parser, Clone)]
-pub struct Push {
-    /// Semantic version number for a tag
-    #[arg(short, long)]
-    pub semver: Option<String>,
-    /// Disable the push command
-    #[arg(short, long, default_value_t = false)]
-    pub no_push: bool,
-    /// Prefix for the version tag
-    #[clap(short, long, default_value_t = String::from("v"))]
-    pub prefix: String,
-}
-
-impl Push {
     pub fn tag_opt(&self) -> Option<&str> {
         if let Some(semver) = &self.semver {
             return Some(semver);
