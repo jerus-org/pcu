@@ -4,7 +4,7 @@ mod pull_request;
 mod push;
 mod release;
 
-pub use commit::run_commit;
+use commit::Commit;
 pub use label::run_label;
 pub use pull_request::run_pull_request;
 use push::Push;
@@ -95,33 +95,6 @@ pub struct Release {
     /// Release specific workspace package
     #[clap(short = 'k', long)]
     pub package: Option<String>,
-}
-
-/// Configuration for the Commit command
-#[derive(Debug, Parser, Clone)]
-pub struct Commit {
-    /// Semantic version number for a tag
-    #[arg(short, long)]
-    pub semver: Option<String>,
-    /// Message to add to the commit when pushing
-    #[arg(short, long)]
-    commit_message: String,
-    /// Prefix for the version tag
-    #[clap(short, long, default_value_t = String::from("v"))]
-    pub prefix: String,
-}
-
-impl Commit {
-    pub fn commit_message(&self) -> &str {
-        &self.commit_message
-    }
-
-    pub fn tag_opt(&self) -> Option<&str> {
-        if let Some(semver) = &self.semver {
-            return Some(semver);
-        }
-        None
-    }
 }
 
 /// Configuration for the Rebase command
