@@ -20,10 +20,14 @@ impl Bsky {
 
         log::info!("Release: {release:#?}");
 
+        let basehead = release.tag_name.clone();
+
+        log::info!("Basehead: {basehead}");
+
         let compare = client
             .github_rest
             .repos
-            .compare_commits(client.owner(), client.repo(), release.tag_name)
+            .compare_commits(client.owner(), client.repo(), &basehead)
             .send()
             .await?;
 
