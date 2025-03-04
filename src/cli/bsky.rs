@@ -18,6 +18,8 @@ impl Bsky {
             .send()
             .await?;
 
+        log::info!("Release: {release:#?}");
+
         let compare = client
             .github_rest
             .repos
