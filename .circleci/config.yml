@@ -212,21 +212,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Create test file
-          command: |
-            set -ex
-            echo "test" > test.txt
-      - run:
           name: Test push
           command: |
             set -ex
-            if [ "<< parameters.pcu_no_push >>" == "true"  ] ; then
-              no_push="--no-push"
-            else 
-              no_push=""
-            fi
 
-            bin/pcu << parameters.pcu_verbosity >> push ${no_push}
+            bin/pcu << parameters.pcu_verbosity >> bsky
 
 workflows:
   check_last_commit:
