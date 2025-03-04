@@ -212,11 +212,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Test push
+          name: Test bsky
           command: |
             set -ex
 
-            bin/pcu << parameters.pcu_verbosity >> bsky
+            bin/pcu << parameters.pcu_verbosity >> bsky --filter graphql
 
 workflows:
   check_last_commit:
