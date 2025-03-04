@@ -72,8 +72,6 @@ impl Bsky {
             .send()
             .await?;
 
-        log::info!("Compare: {compare:#?}");
-
         if let Some(files) = compare.files {
             log::info!("Files: {files:?}");
             let mut changed_files = files.iter().map(|f| f.filename.clone()).collect::<Vec<_>>();
