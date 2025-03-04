@@ -216,7 +216,7 @@ jobs:
           command: |
             set -ex
 
-            bin/pcu << parameters.pcu_verbosity >> bsky --filter graphql
+            bin/pcu << parameters.pcu_verbosity >> bsky --filter bsky
 
 workflows:
   check_last_commit:
