@@ -124,6 +124,26 @@ impl Commands {
             Commands::Bsky(_) => settings.set_override("command", "bsky")?,
         };
 
+        settings = if let Commands::Bsky(bsky) = self {
+            if let Some(_owner) = &bsky.owner {
+                settings.set_override("username", "OWNER")?
+            } else {
+                settings
+            }
+        } else {
+            settings
+        };
+
+        settings = if let Commands::Bsky(bsky) = self {
+            if let Some(_repo) = &bsky.repo {
+                settings.set_override("reponame", "REPO")?
+            } else {
+                settings
+            }
+        } else {
+            settings
+        };
+
         settings = if let Ok(pat) = env::var(GITHUB_PAT) {
             settings.set_override("pat", pat.to_string())?
         } else {
