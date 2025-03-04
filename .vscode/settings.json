@@ -1,12 +1,14 @@
 {
-    "cSpell.words": [
-        "bsau",
-        "Cred",
-        "fastforwardable",
-        "gpgsig",
-        "prequest",
-        "printlns",
-        "revwalk",
-        "TYPECHANGE"
-    ]
+        "cSpell.words": [
+                "basehead",
+                "bsau",
+                "Bsky",
+                "Cred",
+                "fastforwardable",
+                "gpgsig",
+                "prequest",
+                "printlns",
+                "revwalk",
+                "TYPECHANGE"
+        ]
 }
