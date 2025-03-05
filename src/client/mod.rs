@@ -53,7 +53,7 @@ impl Debug for Client {
 }
 
 impl Client {
-    pub async fn new_with(settings: Config) -> Result<Self, Error> {
+    pub async fn new_with(settings: &Config) -> Result<Self, Error> {
         let cmd = settings
             .get::<String>("command")
             .map_err(|_| Error::CommandNotSet)?;
@@ -85,7 +85,7 @@ impl Client {
 
         log::trace!("Getting the github api with {settings:#?}, {owner}, {repo}");
         let (github_rest, github_graphql) =
-            Client::get_github_apis(&settings, &owner, &repo).await?;
+            Client::get_github_apis(settings, &owner, &repo).await?;
 
         log::trace!("Executing for command: {}", &cmd);
         let (branch, pull_request) = if &cmd == "pr" {
@@ -101,8 +101,7 @@ impl Client {
                 Some(branch)
             };
 
-            let pull_request =
-                PullRequest::new_pull_request_opt(&settings, &github_graphql).await?;
+            let pull_request = PullRequest::new_pull_request_opt(settings, &github_graphql).await?;
 
             (branch, pull_request)
         } else {

@@ -83,7 +83,7 @@ impl Display for Commands {
 impl Commands {
     async fn get_client(&self) -> Result<Client, Error> {
         let settings = self.get_settings()?;
-        let client = Client::new_with(settings).await?;
+        let client = Client::new_with(&settings).await?;
 
         Ok(client)
     }
@@ -137,6 +137,16 @@ impl Commands {
         settings = if let Commands::Bsky(bsky) = self {
             if let Some(_repo) = &bsky.repo {
                 settings.set_override("reponame", "REPO")?
+            } else {
+                settings
+            }
+        } else {
+            settings
+        };
+
+        settings = if let Commands::Bsky(bsky) = self {
+            if let Some(_branch) = &bsky.branch {
+                settings.set_override("branch", "BRANCH")?
             } else {
                 settings
             }
