@@ -3,7 +3,6 @@ use crate::{
     Client, Error, GitOps,
 };
 use keep_a_changelog::{Changelog, ChangelogParseOptions};
-use octocrate::repos::create_release;
 use octocrate::repos::create_release::RequestMakeLatest;
 
 pub trait MakeRelease {
@@ -49,7 +48,7 @@ impl MakeRelease for Client {
         let commit = Self::get_commitish_for_tag(self, &tag).await?;
         log::trace!("Commit: {:#?}", commit);
 
-        let release_request = create_release::Request {
+        let release_request = octocrate::repos::create_release::Request {
             body: Some(release_notes.body.to_string()),
             discussion_category_name: None,
             draft: Some(false),
