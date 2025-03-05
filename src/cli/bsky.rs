@@ -1,8 +1,15 @@
-use std::{env, fs};
+mod front_matter;
+
+use std::{
+    env,
+    fs::{self, File},
+    io::Read,
+};
 
 use clap::Parser;
 use color_eyre::Result;
 use config::Config;
+use front_matter::FrontMatter;
 use regex::Regex;
 
 use crate::{Client, Error};
@@ -46,7 +53,10 @@ impl Bsky {
         };
         log::debug!("Changed files: {changed_files:#?}");
 
-        // let _changed_files = self.get_filtered_changed_files(&client, &settings).await?;
+        for filename in changed_files {
+            log::info!("File: {filename}");
+            self.process_blog_file(&filename)?;
+        }
 
         // TODO: For each blog, extract the title, description, and tags
         // TODO: For each blog, create a Bluesky post
@@ -132,5 +142,37 @@ impl Bsky {
         log::trace!("Filtered files: {filtered_files:#?}");
 
         Ok(filtered_files)
+    }
+
+    fn process_blog_file(&self, filename: &str) -> Result<()> {
+        let mut file = File::open(filename)?;
+        let mut file_contents = String::new();
+        file.read_to_string(&mut file_contents)?;
+        log::debug!("File contents: {file_contents}");
+        let lines: Vec<String> = file_contents.lines().map(|l| l.to_string()).collect();
+        log::debug!("Lines: {lines:#?}");
+
+        let mut front_str = String::new();
+
+        let mut quit = false;
+
+        for line in lines {
+            if line.starts_with("+++") && quit {
+                break;
+            } else if line.starts_with("+++") {
+                quit = true;
+                continue;
+            } else {
+                front_str.push_str(&line);
+                front_str.push('\n');
+                log::debug!("Front matter: {front_str} and quit: {quit}");
+            }
+        }
+
+        let front_matter: FrontMatter = toml::from_str(&front_str)?;
+
+        log::debug!("Front matter: {front_matter:#?}");
+
+        Ok(())
     }
 }
