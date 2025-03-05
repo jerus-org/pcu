@@ -12,6 +12,8 @@ use super::{CIExit, Commands};
 /// Configuration for the Bsky command
 #[derive(Debug, Parser, Clone)]
 pub struct Bsky {
+    /// Optional blog post file to process
+    file: Option<String>,
     /// owner of the repository
     #[arg(short, long)]
     pub owner: Option<String>,
@@ -36,7 +38,15 @@ impl Bsky {
     pub async fn run(&self) -> Result<CIExit> {
         let (client, settings) = self.setup_client().await?;
 
-        let _changed_files = self.get_filtered_changed_files(&client, &settings).await?;
+        let changed_files = if let Some(file) = &self.file {
+            log::info!("File: {file}");
+            vec![file.clone()]
+        } else {
+            self.get_filtered_changed_files(&client, &settings).await?
+        };
+        log::debug!("Changed files: {changed_files:#?}");
+
+        // let _changed_files = self.get_filtered_changed_files(&client, &settings).await?;
 
         // TODO: For each blog, extract the title, description, and tags
         // TODO: For each blog, create a Bluesky post
@@ -64,7 +74,6 @@ impl Bsky {
         if let Some(app_private_key) = &self.pk {
             log::info!("App Private Key file: {app_private_key}");
             let app_private_key = fs::read_to_string(app_private_key)?;
-            log::info!("App Private Key: {app_private_key}");
             env::set_var("PCU_PRIVATE_KEY", app_private_key);
         }
         let settings = Commands::Bsky(self.clone()).get_settings()?;
@@ -105,7 +114,7 @@ impl Bsky {
             return Ok(changed_files);
         };
         changed_files = files.iter().map(|f| f.filename.clone()).collect::<Vec<_>>();
-        log::info!("Changed files: {changed_files:#?}");
+        log::debug!("Changed files: {changed_files:#?}");
 
         let re = if let Some(filter) = &self.filter {
             log::info!("Filtering filenames containing: {filter}");
@@ -120,7 +129,7 @@ impl Bsky {
             .filter(|f| re.is_match(f))
             .cloned()
             .collect::<Vec<_>>();
-        log::info!("Filtered files: {filtered_files:#?}");
+        log::trace!("Filtered files: {filtered_files:#?}");
 
         Ok(filtered_files)
     }
