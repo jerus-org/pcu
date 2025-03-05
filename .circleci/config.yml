@@ -216,7 +216,7 @@ jobs:
           command: |
             set -ex
             echo "test" > tests/bsky/blog/test.md
-            ls -la
+            ls -la tests/bsky/blog
       - run:
           name: Test bsky
           command: |
