@@ -53,10 +53,20 @@ impl Bsky {
         };
         log::debug!("Changed files: {changed_files:#?}");
 
+        let mut front_matters = Vec::new();
+
         for filename in changed_files {
             log::info!("File: {filename}");
-            self.process_blog_file(&filename)?;
+            match self.get_frontmatter(&filename) {
+                Ok(front_matter) => front_matters.push(front_matter),
+                Err(e) => {
+                    log::error!("Error: {e}");
+                    continue;
+                }
+            }
         }
+
+        log::debug!("Front matters: {front_matters:#?}");
 
         // TODO: For each blog, extract the title, description, and tags
         // TODO: For each blog, create a Bluesky post
@@ -144,7 +154,7 @@ impl Bsky {
         Ok(filtered_files)
     }
 
-    fn process_blog_file(&self, filename: &str) -> Result<()> {
+    fn get_frontmatter(&self, filename: &str) -> Result<FrontMatter> {
         let mut file = File::open(filename)?;
         let mut file_contents = String::new();
         file.read_to_string(&mut file_contents)?;
@@ -169,23 +179,8 @@ impl Bsky {
             }
         }
 
-        let front_matter = toml::from_str::<FrontMatter>(&front_str);
+        let front_matter = toml::from_str::<FrontMatter>(&front_str)?;
 
-        match front_matter {
-            Ok(front_matter) => {
-                log::debug!("Front matter: {front_matter:#?}");
-                let title = front_matter.title;
-                let description = front_matter.description;
-                let tags = front_matter.taxonomies.tags;
-                log::info!("Title: {title}");
-                log::info!("Description: {description}");
-                log::info!("Tags: {tags:#?}");
-            }
-            Err(e) => {
-                log::error!("Error parsing front matter: {e}");
-            }
-        }
-
-        Ok(())
+        Ok(front_matter)
     }
 }
