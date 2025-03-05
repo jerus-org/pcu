@@ -212,11 +212,17 @@ jobs:
       - attach_workspace:
           at: .
       - run:
+          name: Create test file
+          command: |
+            set -ex
+            echo "test" > tests/bsky/blog/test.md
+            ls -la
+      - run:
           name: Test bsky
           command: |
             set -ex
 
-            bin/pcu << parameters.pcu_verbosity >> bsky --filter bsky
+            bin/pcu << parameters.pcu_verbosity >> bsky --filter blog
 
 workflows:
   check_last_commit:
