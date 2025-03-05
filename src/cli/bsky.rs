@@ -169,9 +169,22 @@ impl Bsky {
             }
         }
 
-        let front_matter: FrontMatter = toml::from_str(&front_str)?;
+        let front_matter = toml::from_str::<FrontMatter>(&front_str);
 
-        log::debug!("Front matter: {front_matter:#?}");
+        match front_matter {
+            Ok(front_matter) => {
+                log::debug!("Front matter: {front_matter:#?}");
+                let title = front_matter.title;
+                let description = front_matter.description;
+                let tags = front_matter.taxonomies.tags;
+                log::info!("Title: {title}");
+                log::info!("Description: {description}");
+                log::info!("Tags: {tags:#?}");
+            }
+            Err(e) => {
+                log::error!("Error parsing front matter: {e}");
+            }
+        }
 
         Ok(())
     }
