@@ -3,6 +3,7 @@ use std::{env, fs};
 use clap::Parser;
 use color_eyre::Result;
 use config::Config;
+use regex::Regex;
 
 use crate::{Client, Error};
 
@@ -72,6 +73,11 @@ impl Bsky {
         Ok((client, settings))
     }
 
+    /// Filter for Markdown files containing blog posts
+    ///
+    /// Markdown files are filtered based on ending with ".md" and blog
+    /// files are identified based on the filter string specified
+    /// at the command line.
     async fn get_filtered_changed_files(
         &self,
         client: &Client,
@@ -100,21 +106,22 @@ impl Bsky {
         };
         changed_files = files.iter().map(|f| f.filename.clone()).collect::<Vec<_>>();
         log::info!("Changed files: {changed_files:#?}");
-        changed_files = if let Some(filter) = &self.filter {
+
+        let re = if let Some(filter) = &self.filter {
             log::info!("Filtering filenames containing: {filter}");
-            let filtered_files = changed_files
-                .iter()
-                .filter(|f| f.contains(filter))
-                .cloned()
-                .collect::<Vec<_>>();
-            log::info!("Filtered files: {filtered_files:#?}");
-            filtered_files
+            let regex_str = format!(r"^.+{filter}.+\.md$");
+            Regex::new(&regex_str).unwrap()
         } else {
-            changed_files
+            Regex::new(r"^.+\.md$").unwrap()
         };
 
-        log::info!("Changed files: {changed_files:#?}");
+        let filtered_files = changed_files
+            .iter()
+            .filter(|f| re.is_match(f))
+            .cloned()
+            .collect::<Vec<_>>();
+        log::info!("Filtered files: {filtered_files:#?}");
 
-        Ok(changed_files)
+        Ok(filtered_files)
     }
 }
