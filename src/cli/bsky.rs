@@ -2,6 +2,7 @@ use std::{env, fs};
 
 use clap::Parser;
 use color_eyre::Result;
+use config::Config;
 
 use crate::{Client, Error};
 
@@ -32,6 +33,17 @@ pub struct Bsky {
 
 impl Bsky {
     pub async fn run(&self) -> Result<CIExit> {
+        let (client, settings) = self.setup_client().await?;
+
+        let _changed_files = self.get_filtered_changed_files(&client, &settings).await?;
+
+        // TODO: For each blog, extract the title, description, and tags
+        // TODO: For each blog, create a Bluesky post
+
+        Ok(CIExit::PostedToBluesky)
+    }
+
+    async fn setup_client(&self) -> Result<(Client, Config)> {
         if let Some(owner) = &self.owner {
             log::info!("Owner: {owner}");
             env::set_var("OWNER", owner);
@@ -57,18 +69,14 @@ impl Bsky {
         let settings = Commands::Bsky(self.clone()).get_settings()?;
         let client = Client::new_with(&settings).await?;
 
-        // let release = client
-        //     .github_rest
-        //     .repos
-        //     .get_latest_release(client.owner(), client.repo())
-        //     .send()
-        //     .await?;
+        Ok((client, settings))
+    }
 
-        // log::info!("Release: {release:#?}");
-
-        // let mut basehead = release.tag_name.clone();
-        // basehead.push_str("...feat/add-bluesky-posting");
-        // basehead.push_str("...main");
+    async fn get_filtered_changed_files(
+        &self,
+        client: &Client,
+        settings: &Config,
+    ) -> Result<Vec<String>> {
         log::trace!("branch: {:?}", settings.get::<String>("branch"));
         let pcu_branch: String = settings
             .get("branch")
@@ -85,30 +93,28 @@ impl Bsky {
             .send()
             .await?;
 
-        if let Some(files) = compare.files {
-            let mut changed_files = files.iter().map(|f| f.filename.clone()).collect::<Vec<_>>();
-            log::info!("Changed files: {changed_files:#?}");
-            changed_files = if let Some(filter) = &self.filter {
-                log::info!("Filtering filenames containing: {filter}");
-                let filtered_files = changed_files
-                    .iter()
-                    .filter(|f| f.contains(filter))
-                    .cloned()
-                    .collect::<Vec<_>>();
-                log::info!("Filtered files: {filtered_files:#?}");
-                filtered_files
-            } else {
-                changed_files
-            };
-            log::info!("Changed files: {changed_files:#?}");
-        }
+        let mut changed_files = Vec::new();
+        let Some(files) = compare.files else {
+            log::warn!("No files found in compare");
+            return Ok(changed_files);
+        };
+        changed_files = files.iter().map(|f| f.filename.clone()).collect::<Vec<_>>();
+        log::info!("Changed files: {changed_files:#?}");
+        changed_files = if let Some(filter) = &self.filter {
+            log::info!("Filtering filenames containing: {filter}");
+            let filtered_files = changed_files
+                .iter()
+                .filter(|f| f.contains(filter))
+                .cloned()
+                .collect::<Vec<_>>();
+            log::info!("Filtered files: {filtered_files:#?}");
+            filtered_files
+        } else {
+            changed_files
+        };
 
-        // TODO: Get the list of blogs from the config
+        log::info!("Changed files: {changed_files:#?}");
 
-        // TODO: Identify blogs that have changed
-        // TODO: For each blog, extract the title, description, and tags
-        // TODO: For each blog, create a Bluesky post
-
-        Ok(CIExit::PostedToBluesky)
+        Ok(changed_files)
     }
 }
