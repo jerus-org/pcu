@@ -1,4 +1,5 @@
 mod front_matter;
+mod poster;
 
 use std::{
     env,
@@ -10,6 +11,7 @@ use clap::Parser;
 use color_eyre::Result;
 use config::Config;
 use front_matter::FrontMatter;
+use poster::Poster;
 use regex::Regex;
 
 use crate::{Client, Error};
@@ -68,9 +70,11 @@ impl Bsky {
 
         log::debug!("Front matters: {front_matters:#?}");
 
-        for front_matter in front_matters {
-            log::info!("Front matter: {front_matter:#?}");
-        }
+        let id = settings.get::<String>("bsky_id")?;
+        let pw = settings.get::<String>("bsky_password")?;
+
+        let poster = Poster::new(front_matters, id, pw).await?;
+        poster.post_to_bluesky().await?;
 
         // TODO: For each blog, extract the title, description, and tags
         // TODO: For each blog, create a Bluesky post
