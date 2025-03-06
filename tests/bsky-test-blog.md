@@ -7,7 +7,7 @@ draft = false
 
 [taxonomies]
 topic = ["Technology"]
-tags = ["bluesky", "testing", "test only", "ci"]
+tags = ["bluesky", "testing", "test-only", "ci"]
 +++
 
 ## Start of blog
