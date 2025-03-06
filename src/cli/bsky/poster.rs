@@ -53,10 +53,10 @@ impl Poster {
             log::info!("Blog post: {blog_post:#?}");
 
             let post_text = format!(
-                "{} {} {}",
+                "{}\n\n{} #{}",
                 blog_post.title,
                 blog_post.description,
-                blog_post.taxonomies.tags.join(" ")
+                blog_post.taxonomies.tags.join(" #")
             );
 
             log::debug!("Post text: {post_text}");
