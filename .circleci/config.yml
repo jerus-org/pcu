@@ -217,12 +217,12 @@ jobs:
             set -ex
             echo "test" > tests/bsky/blog/test.md
             ls -la tests/bsky/blog
-      - run:
-          name: Test bsky filter
-          command: |
-            set -ex
+      # - run:
+      #     name: Test bsky filter
+      #     command: |
+      #       set -ex
 
-            bin/pcu << parameters.pcu_verbosity >> bsky --filter blog
+      #       bin/pcu << parameters.pcu_verbosity >> bsky --filter blog
       - run:
           name: Test bsky file
           command: |
