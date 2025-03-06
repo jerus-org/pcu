@@ -68,6 +68,10 @@ impl Bsky {
 
         log::debug!("Front matters: {front_matters:#?}");
 
+        for front_matter in front_matters {
+            log::info!("Front matter: {front_matter:#?}");
+        }
+
         // TODO: For each blog, extract the title, description, and tags
         // TODO: For each blog, create a Bluesky post
 
@@ -179,7 +183,7 @@ impl Bsky {
             }
         }
 
-        let front_matter = toml::from_str::<FrontMatter>(&front_str)?;
+        let front_matter = FrontMatter::from_toml(&front_str)?;
 
         Ok(front_matter)
     }

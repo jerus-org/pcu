@@ -1,3 +1,4 @@
+use color_eyre::Result;
 use serde::Deserialize;
 
 // +++
@@ -27,4 +28,11 @@ pub struct FrontMatter {
     pub description: String,
     #[allow(dead_code)]
     pub taxonomies: Taxonomies,
+}
+
+impl FrontMatter {
+    pub fn from_toml(toml: &str) -> Result<Self> {
+        let front_matter = toml::from_str::<FrontMatter>(toml)?;
+        Ok(front_matter)
+    }
 }
