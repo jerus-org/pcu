@@ -41,6 +41,9 @@ pub struct Bsky {
     /// filter for files containing blog posts to broadcast on Bluesky
     #[arg(short, long)]
     pub filter: Option<String>,
+    /// directory containing blog posts to broadcast on Bluesky
+    #[arg(short, long)]
+    pub dir: Option<String>,
 }
 
 impl Bsky {
