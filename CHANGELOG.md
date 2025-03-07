@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(cli)-remove duplicate push_committed function(pr [#497])
 - ♻️ refactor(cli)-remove duplicate commit function(pr [#498])
 
+### Fixed
+
+- deps: update rust crate config to 0.15.9(pr [#499])
+
 ## [0.4.33] - 2025-03-01
 
 ### Changed
@@ -1170,6 +1174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#496]: https://github.com/jerus-org/pcu/pull/496
 [#497]: https://github.com/jerus-org/pcu/pull/497
 [#498]: https://github.com/jerus-org/pcu/pull/498
+[#499]: https://github.com/jerus-org/pcu/pull/499
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.33...HEAD
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
