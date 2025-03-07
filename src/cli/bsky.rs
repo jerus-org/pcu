@@ -53,6 +53,23 @@ impl Bsky {
         let changed_files = if let Some(file) = &self.file {
             log::info!("File: {file}");
             vec![file.clone()]
+        } else if let Some(dir) = &self.dir {
+            log::info!("Directory: {dir}");
+            let dir_entries = fs::read_dir(dir)?;
+            let mut files = Vec::new();
+            for entry in dir_entries {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_file() {
+                    log::debug!("File: {path:?}");
+                    let file = path.to_str().unwrap();
+                    if file.ends_with(".md") {
+                        files.push(file.to_string());
+                    }
+                }
+            }
+
+            files
         } else {
             self.get_filtered_changed_files(&client, &settings).await?
         };
