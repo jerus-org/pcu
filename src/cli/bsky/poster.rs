@@ -1,3 +1,5 @@
+use std::fs;
+
 use bsky_sdk::{
     agent::config::Config,
     api::{app::bsky::feed::post::RecordData, types::string::Datetime},
@@ -5,18 +7,31 @@ use bsky_sdk::{
     BskyAgent,
 };
 use color_eyre::Result;
+use serde::Deserialize;
 
 use super::front_matter::FrontMatter;
+
+#[derive(Debug, Clone, Deserialize)]
+struct SiteConfig {
+    base_url: String,
+}
 
 #[derive(Clone)]
 pub struct Poster {
     blog_posts: Vec<FrontMatter>,
     #[allow(dead_code)]
     agent: BskyAgent,
+    base_url: String,
+    folder: String,
 }
 
 impl Poster {
-    pub async fn new<S>(blog_posts: Vec<FrontMatter>, identifier: S, password: S) -> Result<Self>
+    pub async fn new<S>(
+        blog_posts: Vec<FrontMatter>,
+        identifier: S,
+        password: S,
+        folder: &str,
+    ) -> Result<Self>
     where
         S: ToString,
     {
@@ -29,6 +44,10 @@ impl Poster {
         if password.to_string().is_empty() {
             return Err(color_eyre::eyre::eyre!("No password provided"));
         };
+
+        let site_config = fs::read_to_string("config.toml")?;
+
+        let site_config: SiteConfig = toml::from_str(site_config.as_str())?;
 
         let bsky_config = Config::default();
 
@@ -43,7 +62,12 @@ impl Poster {
 
         log::info!("Bluesky login successful!");
 
-        Ok(Poster { blog_posts, agent })
+        Ok(Poster {
+            blog_posts,
+            agent,
+            base_url: site_config.base_url,
+            folder: folder.to_string(),
+        })
     }
 
     pub async fn post_to_bluesky(&self) -> Result<()> {
@@ -52,11 +76,19 @@ impl Poster {
         for blog_post in &self.blog_posts {
             log::info!("Blog post: {blog_post:#?}");
 
+            let post_link = format!(
+                "{}/{}/{}/index.html",
+                self.base_url,
+                self.folder,
+                blog_post.filename.as_ref().unwrap()
+            );
+
             let post_text = format!(
-                "{}\n\n{} #{}",
+                "{}\n\n{} #{}\n\n{}",
                 blog_post.title,
                 blog_post.description,
-                blog_post.taxonomies.tags.join(" #")
+                blog_post.taxonomies.tags.join(" #"),
+                post_link
             );
 
             log::debug!("Post text: {post_text}");
