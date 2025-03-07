@@ -19,14 +19,14 @@ chrono = "0.4.40"
 clap = "4.5.31"
 clap-verbosity-flag = "3.0.2"
 color-eyre = "0.6.3"
-config = "0.15.8"
+config = "0.15.9"
 env_logger = "0.11.6"
 git2 = "0.20.0"
 gql_client = "1.0.7"
 keep-a-changelog = "0.1.4"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
 log = "0.4.26"
-named-colour = { version = "0.3.16", features = ["extended"] }
+named-colour = { version = "0.3.18", features = ["extended"] }
 octocrate = { version = "2.2.0", features = [
     "apps",
     "pulls",
@@ -36,7 +36,7 @@ octocrate = { version = "2.2.0", features = [
 owo-colors = "4.2.0"
 regex = "1.11.1"
 serde = { version = "1.0.218", features = ["derive"] }
-thiserror = "2.0.11"
+thiserror = "2.0.12"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 toml = "0.8.20"
 tracing = "0.1.41"
@@ -44,7 +44,7 @@ tracing-subscriber = { version = "0.3.19", features = ["std", "env-filter"] }
 url = "2.5.3"
 
 [dev-dependencies]
-rstest = "0.24.0"
+rstest = "0.25.0"
 uuid = { version = "1.15.1", features = ["v4"] }
 
 [lib]
