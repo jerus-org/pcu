@@ -22,12 +22,10 @@ pub struct Taxonomies {
 
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct FrontMatter {
-    #[allow(dead_code)]
     pub title: String,
-    #[allow(dead_code)]
     pub description: String,
-    #[allow(dead_code)]
     pub taxonomies: Taxonomies,
+    pub filename: Option<String>,
 }
 
 impl FrontMatter {
