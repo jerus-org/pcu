@@ -76,10 +76,16 @@ impl Poster {
         for blog_post in &self.blog_posts {
             log::info!("Blog post: {blog_post:#?}");
 
+            let path = if self.folder.is_empty() {
+                ""
+            } else {
+                &format!("{}/", self.folder)
+            };
+
             let post_link = format!(
                 "{}/{}/{}/index.html",
                 self.base_url,
-                self.folder,
+                path,
                 blog_post.filename.as_ref().unwrap()
             );
 
