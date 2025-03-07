@@ -76,6 +76,8 @@ impl Poster {
         for blog_post in &self.blog_posts {
             log::info!("Blog post: {blog_post:#?}");
 
+            log::debug!("Folder: `{}`", self.folder);
+
             let path = if self.folder.is_empty() {
                 ""
             } else {
@@ -89,6 +91,7 @@ impl Poster {
                 path,
                 blog_post.filename.as_ref().unwrap()
             );
+            log::debug!("Post link: {post_link}");
 
             let post_text = format!(
                 "{}\n\n{} #{}\n\n{}",
