@@ -81,9 +81,10 @@ impl Poster {
             } else {
                 &format!("{}/", self.folder)
             };
+            log::debug!("Path: {path}");
 
             let post_link = format!(
-                "{}/{}/{}/index.html",
+                "{}/{}{}/index.html",
                 self.base_url,
                 path,
                 blog_post.filename.as_ref().unwrap()
