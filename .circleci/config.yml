@@ -224,6 +224,12 @@ jobs:
 
       #       bin/pcu << parameters.pcu_verbosity >> bsky --filter blog
       - run:
+          name: Test bsky directory
+          command: |
+            set -ex
+
+            bin/pcu << parameters.pcu_verbosity >> bsky --dir tests
+      - run:
           name: Test bsky file
           command: |
             set -ex
