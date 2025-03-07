@@ -72,8 +72,9 @@ impl Bsky {
 
         let id = settings.get::<String>("bsky_id")?;
         let pw = settings.get::<String>("bsky_password")?;
+        let dir = self.filter.as_deref().unwrap_or_default();
 
-        let poster = Poster::new(front_matters, id, pw).await?;
+        let poster = Poster::new(front_matters, id, pw, dir).await?;
         poster.post_to_bluesky().await?;
 
         // TODO: For each blog, extract the title, description, and tags
@@ -187,7 +188,11 @@ impl Bsky {
             }
         }
 
-        let front_matter = FrontMatter::from_toml(&front_str)?;
+        let mut front_matter = FrontMatter::from_toml(&front_str)?;
+        let basename = filename.split('/').last().unwrap().to_string();
+        let basename = basename.split('.').next().unwrap().to_string();
+        log::trace!("Basename: {basename}");
+        front_matter.filename = Some(basename);
 
         Ok(front_matter)
     }
