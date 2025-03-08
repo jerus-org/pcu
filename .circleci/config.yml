@@ -228,7 +228,7 @@ jobs:
           command: |
             set -ex
 
-            bin/pcu << parameters.pcu_verbosity >> bsky --dir tests
+            bin/pcu << parameters.pcu_verbosity >> bsky tests
       - run:
           name: Test bsky file
           command: |
