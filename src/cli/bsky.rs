@@ -5,6 +5,7 @@ use std::{
     env,
     fs::{self, File},
     io::Read,
+    path::PathBuf,
 };
 
 use clap::Parser;
@@ -21,8 +22,8 @@ use super::{CIExit, Commands};
 /// Configuration for the Bsky command
 #[derive(Debug, Parser, Clone)]
 pub struct Bsky {
-    /// Optional blog post file to process
-    file: Option<String>,
+    /// Optional path to file or directory of blog post(s) to process
+    path: Option<String>,
     /// owner of the repository
     #[arg(short, long)]
     pub owner: Option<String>,
@@ -41,35 +42,15 @@ pub struct Bsky {
     /// filter for files containing blog posts to broadcast on Bluesky
     #[arg(short, long)]
     pub filter: Option<String>,
-    /// directory containing blog posts to broadcast on Bluesky
-    #[arg(short, long)]
-    pub dir: Option<String>,
 }
 
 impl Bsky {
     pub async fn run(&self) -> Result<CIExit> {
         let (client, settings) = self.setup_client().await?;
 
-        let changed_files = if let Some(file) = &self.file {
-            log::info!("File: {file}");
-            vec![file.clone()]
-        } else if let Some(dir) = &self.dir {
-            log::info!("Directory: {dir}");
-            let dir_entries = fs::read_dir(dir)?;
-            let mut files = Vec::new();
-            for entry in dir_entries {
-                let entry = entry?;
-                let path = entry.path();
-                if path.is_file() {
-                    log::debug!("File: {path:?}");
-                    let file = path.to_str().unwrap();
-                    if file.ends_with(".md") {
-                        files.push(file.to_string());
-                    }
-                }
-            }
-
-            files
+        let changed_files = if let Some(path) = &self.path {
+            log::info!("Path: {path}");
+            self.get_files_from_path(path)?
         } else {
             self.get_filtered_changed_files(&client, &settings).await?
         };
@@ -129,6 +110,43 @@ impl Bsky {
         let client = Client::new_with(&settings).await?;
 
         Ok((client, settings))
+    }
+
+    /// Get the file from the path and return a list of files
+    /// The path may be a single file or a directory containing files
+    /// Only files ending in `.md` will be returned
+    fn get_files_from_path(&self, path: &str) -> Result<Vec<String>> {
+        let path = PathBuf::from(path);
+        if !path.exists() {
+            return Err(Error::PathNotFound(path.to_string_lossy().to_string()).into());
+        };
+
+        if path.is_file() {
+            if path.extension().unwrap_or_default() == "md" {
+                Ok(vec![path.to_string_lossy().to_string()])
+            } else {
+                Err(Error::FileExtensionInvalid(
+                    path.to_string_lossy().to_string(),
+                    ".md".to_string(),
+                )
+                .into())
+            }
+        } else if path.is_dir() {
+            let paths = fs::read_dir(path)?;
+            let mut files = Vec::new();
+            for path in paths {
+                let path = path?.path();
+                if path.is_dir() {
+                    // files.append(&mut self.get_files_from_path(&path.to_string_lossy())?);
+                    continue;
+                } else if path.is_file() && path.extension().unwrap_or_default() == "md" {
+                    files.push(path.to_string_lossy().to_string());
+                }
+            }
+            return Ok(files);
+        } else {
+            return Err(Error::PathNotFound(path.to_string_lossy().to_string()).into());
+        }
     }
 
     /// Filter for Markdown files containing blog posts
