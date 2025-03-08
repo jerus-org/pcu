@@ -14,6 +14,10 @@ pub enum Error {
 
     #[error("{0}")]
     GpgError(String),
+    #[error("Path not found: {0}")]
+    PathNotFound(String),
+    #[error("File extension invalid (must be `{1}`): {0}")]
+    FileExtensionInvalid(String, String),
     #[error("Environment variable PCU_BRANCH not set")]
     EnvVarBranchNotSet,
     #[error("Environment variable specified in PCU_BRANCH not found")]
@@ -45,7 +49,7 @@ pub enum Error {
     #[error("On default branch")]
     OnDefaultBranch,
     #[error("Unknown format for pull request: {0}")]
-    UknownPullRequestFormat(String),
+    UnknownPullRequestFormat(String),
     #[error("No default changelog file found")]
     NoChangeLogFileFound,
     #[error("ParseInt says: {0:?}")]

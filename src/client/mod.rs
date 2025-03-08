@@ -53,7 +53,7 @@ impl Debug for Client {
 }
 
 impl Client {
-    pub async fn new_with(settings: Config) -> Result<Self, Error> {
+    pub async fn new_with(settings: &Config) -> Result<Self, Error> {
         let cmd = settings
             .get::<String>("command")
             .map_err(|_| Error::CommandNotSet)?;
@@ -68,10 +68,10 @@ impl Client {
 
         // Use the reponame config settings to direct to the appropriate CI environment variable to find the repo
         log::trace!("repo: {:?}", settings.get::<String>("reponame"));
-        let pcu_owner: String = settings
+        let pcu_repo: String = settings
             .get("reponame")
             .map_err(|_| Error::EnvVarBranchNotSet)?;
-        let repo = env::var(pcu_owner).map_err(|_| Error::EnvVarBranchNotFound)?;
+        let repo = env::var(pcu_repo).map_err(|_| Error::EnvVarBranchNotFound)?;
 
         let default_branch = settings
             .get::<String>("default_branch")
@@ -83,8 +83,9 @@ impl Client {
 
         let line_limit = settings.get::<usize>("line_limit").unwrap_or(10);
 
+        log::trace!("Getting the github api with {settings:#?}, {owner}, {repo}");
         let (github_rest, github_graphql) =
-            Client::get_github_apis(&settings, &owner, &repo).await?;
+            Client::get_github_apis(settings, &owner, &repo).await?;
 
         log::trace!("Executing for command: {}", &cmd);
         let (branch, pull_request) = if &cmd == "pr" {
@@ -100,8 +101,7 @@ impl Client {
                 Some(branch)
             };
 
-            let pull_request =
-                PullRequest::new_pull_request_opt(&settings, &github_graphql).await?;
+            let pull_request = PullRequest::new_pull_request_opt(settings, &github_graphql).await?;
 
             (branch, pull_request)
         } else {
@@ -175,7 +175,7 @@ impl Client {
         repo: &str,
     ) -> Result<(GitHubAPI, gql_client::Client), Error> {
         let bld_style = Style::new().bold();
-        log::debug!("*******\nGet GitHub API instance");
+        log::debug!("\n***Get GitHub API instance***\n");
         let (config, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::debug!("Using {} for authentication", "GitHub App".style(bld_style));
@@ -183,6 +183,8 @@ impl Client {
                 let private_key = settings
                     .get::<String>("private_key")
                     .map_err(|_| Error::NoGitHubAPIPrivateKey)?;
+
+                log::trace!("Using private key {private_key:#?} for authentication");
 
                 let app_authorization = AppAuthorization::new(app_id, private_key);
                 let config = APIConfig::with_token(app_authorization).shared();

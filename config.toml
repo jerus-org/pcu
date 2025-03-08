@@ -1,0 +1,155 @@
+# The URL the site will be built for
+base_url = "https://www.jrussell.ie"
+
+# Whether to automatically compile all Sass files in the sass directory
+compile_sass = true
+
+theme = "tabi"
+title = "ruminations"
+generate_feeds = true
+
+taxonomies = [
+    # You can enable/disable RSS
+    { name = "topic", feed = true },
+    { name = "categories", feed = true },
+    { name = "tags", feed = true },
+]
+
+# Whether to build a search index to be used later on by a JavaScript library
+build_search_index = true
+
+[search]
+index_format = "elasticlunr_json" # Or the less efficient "elasticlunr_javascript".
+include_title = true
+include_description = true
+include_path = true
+include_content = true
+
+# Configuration of the link checker.
+[link_checker]
+# Skip link checking for external URLs that start with these prefixes
+skip_prefixes = [
+    "https://www.linkedin.com/",
+    "https://frostbrowntodd.com/",
+    "http://www.dataprivacypod.com/",
+    "https://www.newstalk.com/",
+    "https://www.wsj.com/",
+    "https://thehistoryofrome.",
+    "https://immersivelabs.com/",
+    "http://gimletmedia.com/",
+]
+
+[markdown]
+# Whether to do syntax highlighting
+# Theme can be customised by setting the `highlight_theme` variable to a theme supported by Zola
+highlight_code = true
+
+# extra_syntaxes = ["syntaxes"]
+
+# highlight_theme = "gruvbox-dark"
+highlight_theme = "css"
+render_emoji = true
+
+[extra]
+menu = [
+    { name = "blog", url = "blog", trailing_slash = true },
+    # { name = "categories", url = "categories", trailing_slash = true },
+    { name = "technology", url = "topic/technology", trailing_slash = true },
+    # { name = "projects", url = "projects", trailing_slash = true },
+    { name = "tags", url = "tags", trailing_slash = true },
+    { name = "archive", url = "archive", trailing_slash = true },
+]
+
+quick_navigation_buttons = false
+show_previous_next_article_links = false
+invert_previous_next_article_links = false
+
+socials = [
+    { name = "github", url = "https://github.com/jerusdp/", icon = "github" },
+    { name = "linkedin", url = "https://www.linkedin.com/in/russellj/", icon = "linkedin" },
+    { name = "bluesky", url = "https://bsky.app/profile/jerus.bsky.social", icon = "bluesky" },
+]
+
+footer_menu = [
+    {url = "about", name = "about", trailing_slash = true},
+    {url = "privacy", name = "privacy", trailing_slash = true},
+    {url = "sitemap.xml", name = "sitemap", trailing_slash = false},
+    {url = "https://www.jrussell.ie", name = "external link", trailing_slash = true},
+]
+
+copyright = "© $CURRENT_YEAR Jeremiah Russell $SEPARATOR Unless otherwise noted, the content in this website is available under the [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license."
+
+show_reading_time = true
+
+email = "amVycnlAanJ1c3NlbGwuaWU="
+mermaid = true
+
+# Custom security headers. What urls should your website be able to connect to?
+# You need to specify the CSP and the URLs associated with the directive.
+# Useful if you want to load remote content safely (embed YouTube videos, which needs frame-src, for example).
+# Default directive is self.
+# Default config, allows for https remote images and embedding YouTube and Vimeo content.
+# This configuration (along with the right webserver settings) gets an A+ in Mozilla's Observatory: https://observatory.mozilla.org
+# Note: to use a Zola built-in syntax highlighting theme, allow unsafe-inline for style-src.
+allowed_domains = [
+    { directive = "font-src", domains = ["'self'", "data:"] },
+    { directive = "img-src", domains = ["'self'", "https://*", "data:"] },
+    { directive = "media-src", domains = ["'self'", "https://cdn.jsdelivr.net/"] },
+    { directive = "script-src", domains = ["'self'"] },
+    { directive = "style-src", domains = ["'self'"] },
+    { directive = "frame-src", domains = ["player.vimeo.com", "https://www.youtube-nocookie.com"] },
+]
+
+# Enable the CSP directives configured (or default).
+# Can be set at page or section levels, following the hierarchy: page > section > config. See: https://welpo.github.io/tabi/blog/mastering-tabi-settings/#settings-hierarchy
+enable_csp = true
+
+# Font subsetting configuration.
+# This feature helps prevent text flashing in Firefox when using custom fonts.
+# See: https://welpo.github.io/tabi/blog/custom-font-subset/
+# Enable or disable font subsetting completely, both built-in and custom subsets.
+enable_subset = true
+# Use a custom subset of characters for the header.
+# If true, tabi will load the `static/custom_subset.css` file.
+# If false, tabi will use the default language-specific subset (English or Spanish).
+custom_subset = true
+
+[extra.webmentions]
+enabled = true
+# Specify the domain registered with webmention.io.
+domain = "www.jrussell.ie"
+
+# The HTML ID for the object to fill in with the webmention data.
+# Defaults to "webmentions"
+# id = "webmentions"
+
+# data configuration for the webmention.min.js script
+# The base URL to use for this page. Defaults to window.location
+# page_url = ""
+# Additional URLs to check, separated by |s
+# add_urls 
+
+# The maximum number of words to render in reply mentions.
+wordcount = 20
+
+# The maximum number of mentions to retrieve. Defaults to 30.
+# max_webmentions 
+
+# By default, Webmentions render using the mf2 'url' element, which plays
+# nicely with webmention bridges (such as brid.gy and telegraph)
+# but allows certain spoofing attacks. If you would like to prevent
+# spoofing, set this to a non-empty string (e.g. "true").
+# prevent_spoofing 
+
+# What to order the responses by; defaults to 'published'. See
+# https://github.com/aaronpk/webmention.io#api
+# sort_by 
+
+# The order to sort the responses by; defaults to 'up' (i.e. oldest
+# first). See https://github.com/aaronpk/webmention.io#api
+# sort_dir 
+
+# If set to a non-empty string (e.g. "true"), will display comment-type responses
+# (replies/mentions/etc.) as being part of the reactions
+# (favourites/bookmarks/etc.) instead of in a separate comment list.
+# comments_are_reactions = "true"
