@@ -39,6 +39,7 @@ async fn main() -> Result<()> {
                 CIExit::Released => log::info!("Created GitHub Release"),
                 CIExit::Label(pr) => log::info!("Rebased PR request #{}", pr),
                 CIExit::NoLabel => log::info!("No label required"),
+                CIExit::DraftedForBluesky => log::info!("Drafted for Bluesky"),
                 CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
             };
             Ok(())
