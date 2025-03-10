@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs, io::BufReader, path::Path};
+use std::{ffi::OsString, fmt::Display, fs, io::BufReader, path::Path};
 
 use bsky_sdk::{
     agent::config::Config as BskyConfig, api::app::bsky::feed::post::RecordData, BskyAgent,
@@ -7,9 +7,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct BskyPost {
+    pub post: RecordData,
+    pub filename: OsString,
+}
+
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Poster {
-    bsky_posts: Vec<RecordData>,
+    bsky_posts: Vec<BskyPost>,
 }
 
 impl Poster {
@@ -30,7 +36,11 @@ impl Poster {
                 let file_path = file.path();
                 let post = fs::File::open(file_path)?;
                 let reader = BufReader::new(post);
-                let bsky_post = serde_json::from_reader(reader)?;
+                let post = serde_json::from_reader(reader)?;
+                let bsky_post = BskyPost {
+                    post,
+                    filename: file_name.into(),
+                };
                 bsky_posts.push(bsky_post);
             }
         }
@@ -64,19 +74,49 @@ impl Poster {
 
         log::info!("Bluesky login successful!");
 
-        for post in &self.bsky_posts {
-            log::debug!("Post: {}", post.text.clone());
-            match agent.create_record(post.clone()).await {
-                Ok(res) => {
-                    log::debug!("Post validation status: {:#?}", res.validation_status);
-                    log::info!("Posted to Bluesky!");
-                }
-                Err(e) => {
+        let ci = check_for_ci();
+
+        for bsky_post in &self.bsky_posts {
+            log::debug!("Post: {}", bsky_post.post.text.clone());
+
+            if ci {
+                log::debug!("Post validation: `{:?}`", "Pretending for CI");
+
+                log::debug!("Deleting related file: {:?}", bsky_post.filename);
+                fs::remove_file(&bsky_post.filename)?;
+
+                log::info!(
+                    "Successfully posted `{}` to Bluesky and deleted the source file `{}`!",
+                    bsky_post.post.text,
+                    bsky_post.filename.to_string_lossy().to_string()
+                );
+            } else {
+                let result = agent.create_record(bsky_post.post.clone()).await;
+
+                if result.is_err() {
+                    let e = result.unwrap_err();
                     log::error!("Error posting to Bluesky: {}", e);
-                }
-            }
+                    continue;
+                };
+
+                let output = result.unwrap();
+                log::debug!("Post validation: `{:?}`", output.validation_status.as_ref());
+
+                log::debug!("Deleting related file: {:?}", bsky_post.filename);
+                fs::remove_file(&bsky_post.filename)?;
+
+                log::info!(
+                    "Successfully posted `{}` to Bluesky and deleted the source file `{}`!",
+                    bsky_post.post.text,
+                    bsky_post.filename.to_string_lossy().to_string()
+                );
+            };
         }
 
         Ok(())
     }
+}
+
+fn check_for_ci() -> bool {
+    std::env::var("CI").is_ok()
 }
