@@ -224,7 +224,7 @@ jobs:
 
       #       bin/pcu << parameters.pcu_verbosity >> bsky --filter blog
       - run:
-          name: Test bsky directory
+          name: Draft bsky directory
           command: |
             set -ex
 
@@ -234,6 +234,16 @@ jobs:
             ls -la
             ls -la bluesky
             cat bluesky/$(ls bluesky)
+
+      - run:
+          name: Post bsky directory
+          command: |
+            set -ex
+
+            ls -la bluesky
+            bin/pcu << parameters.pcu_verbosity >> bsky tests post
+            ls -la bluesky
+
       - run:
           name: Test bsky file
           command: |
@@ -246,6 +256,15 @@ jobs:
             ls -la
             ls -la bluesky
             cat bluesky/$(ls bluesky)
+
+      - run:
+          name: Post bsky directory
+          command: |
+            set -ex
+
+            ls -la bluesky
+            bin/pcu << parameters.pcu_verbosity >> bsky tests post
+            ls -la bluesky
 
 workflows:
   check_last_commit:
