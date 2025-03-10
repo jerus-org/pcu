@@ -1,5 +1,5 @@
-mod build;
 mod commands;
+mod draft;
 mod front_matter;
 mod poster;
 
@@ -10,10 +10,10 @@ use std::{
     path::PathBuf,
 };
 
-use build::Builder;
 use clap::Parser;
 use commands::Cmd;
 use config::Config;
+use draft::Draft;
 use front_matter::FrontMatter;
 use poster::Poster;
 use regex::Regex;
@@ -83,9 +83,9 @@ impl Bsky {
         let pw = settings.get::<String>("bsky_password")?;
 
         match self.cmd {
-            Cmd::Build => {
+            Cmd::Draft => {
                 let path = self.filter.clone().unwrap_or_default();
-                Builder::new_with_path(&path)?
+                Draft::new_with_path(&path)?
                     .add_posts(&mut front_matters)?
                     .process_posts()
                     .await?
