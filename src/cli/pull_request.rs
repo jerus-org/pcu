@@ -2,13 +2,12 @@ use std::env;
 
 use crate::{
     cli::{Commands, GitOps},
-    Sign, UpdateFromPr,
+    Error, Sign, UpdateFromPr,
 };
 
 use super::CIExit;
 
 use clap::Parser;
-use color_eyre::Result;
 use keep_a_changelog::ChangeKind;
 use owo_colors::{OwoColorize, Style};
 
@@ -28,7 +27,7 @@ pub struct Pr {
 }
 
 impl Pr {
-    pub async fn run_pull_request(&self, sign: Sign) -> Result<CIExit> {
+    pub async fn run_pull_request(&self, sign: Sign) -> Result<CIExit, Error> {
         let branch = env::var("CIRCLE_BRANCH");
         let branch = branch.unwrap_or("main".to_string());
         log::trace!("Branch: {branch:?}");
@@ -118,7 +117,7 @@ impl Pr {
                     log::info!("Cannot psh non-fastforwardable reference, presuming change made already in parallel job.");
                     Ok(CIExit::UnChanged)
                 } else {
-                    Err(e.into())
+                    Err(e)
                 }
             }
         }
