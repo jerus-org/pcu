@@ -1,4 +1,5 @@
-use color_eyre::Result;
+use crate::Error;
+use bsky_sdk::api::app::bsky::feed::post::RecordData;
 use serde::Deserialize;
 
 // +++
@@ -26,10 +27,11 @@ pub struct FrontMatter {
     pub description: String,
     pub taxonomies: Taxonomies,
     pub filename: Option<String>,
+    pub bluesky_post: Option<RecordData>,
 }
 
 impl FrontMatter {
-    pub fn from_toml(toml: &str) -> Result<Self> {
+    pub fn from_toml(toml: &str) -> Result<Self, Error> {
         let front_matter = toml::from_str::<FrontMatter>(toml)?;
         Ok(front_matter)
     }
