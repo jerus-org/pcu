@@ -230,7 +230,7 @@ jobs:
 
             mkdir -p bluesky
 
-            bin/pcu << parameters.pcu_verbosity >> bsky tests
+            bin/pcu << parameters.pcu_verbosity >> bsky tests draft
             ls -la
             ls -la bluesky
       - run:
@@ -241,7 +241,7 @@ jobs:
             rm -rf bluesky
             mkdir -p bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky tests/bsky-test-blog.md
+            bin/pcu << parameters.pcu_verbosity >> bsky tests/bsky-test-blog.md draft
             ls -la
             ls -la bluesky
 
