@@ -13,12 +13,12 @@ use crate::Error;
 use super::front_matter::FrontMatter;
 
 #[derive(Clone, Default)]
-pub struct Builder {
+pub struct Draft {
     blog_posts: Vec<FrontMatter>,
     base_url: String,
     path: String,
 }
-impl Builder {
+impl Draft {
     // pub fn new() -> Result<Self, Error> {
     //     let site_config = SiteConfig::new()?;
 
@@ -38,7 +38,7 @@ impl Builder {
             "".to_string()
         };
 
-        Ok(Builder {
+        Ok(Draft {
             base_url: site_config.base_url(),
             path,
             ..Default::default()
