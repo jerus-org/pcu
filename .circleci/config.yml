@@ -228,13 +228,22 @@ jobs:
           command: |
             set -ex
 
+            mkdir -p bluesky
+
             bin/pcu << parameters.pcu_verbosity >> bsky tests
+            ls -la
+            ls -la bluesky
       - run:
           name: Test bsky file
           command: |
             set -ex
 
+            rm -rf bluesky
+            mkdir -p bluesky  
+
             bin/pcu << parameters.pcu_verbosity >> bsky tests/bsky-test-blog.md
+            ls -la
+            ls -la bluesky
 
 workflows:
   check_last_commit:
