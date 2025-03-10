@@ -1,7 +1,8 @@
+use crate::Error;
+
 use super::{CIExit, Commands, GitOps};
 
 use clap::Parser;
-use color_eyre::Result;
 
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
@@ -49,7 +50,7 @@ impl Label {
         None
     }
 
-    pub async fn run_label(&self) -> Result<CIExit> {
+    pub async fn run_label(&self) -> Result<CIExit, Error> {
         let client = Commands::Label(self.clone()).get_client().await?;
 
         let pr_number = client
