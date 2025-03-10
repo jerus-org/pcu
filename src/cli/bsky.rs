@@ -1,3 +1,5 @@
+mod build;
+mod commands;
 mod front_matter;
 mod poster;
 
@@ -8,8 +10,9 @@ use std::{
     path::PathBuf,
 };
 
+use build::Builder;
 use clap::Parser;
-use color_eyre::Result;
+use commands::Cmd;
 use config::Config;
 use front_matter::FrontMatter;
 use poster::Poster;
@@ -18,6 +21,8 @@ use regex::Regex;
 use crate::{Client, Error};
 
 use super::{CIExit, Commands};
+
+const BSKY_POSTS_DIR: &str = "bluesky";
 
 /// Configuration for the Bsky command
 #[derive(Debug, Parser, Clone)]
@@ -42,10 +47,13 @@ pub struct Bsky {
     /// filter for files containing blog posts to broadcast on Bluesky
     #[arg(short, long)]
     pub filter: Option<String>,
+    /// Command to execute
+    #[command(subcommand)]
+    pub cmd: Cmd,
 }
 
 impl Bsky {
-    pub async fn run(&self) -> Result<CIExit> {
+    pub async fn run(&self) -> Result<CIExit, Error> {
         let (client, settings) = self.setup_client().await?;
 
         let changed_files = if let Some(path) = &self.path {
@@ -73,10 +81,23 @@ impl Bsky {
 
         let id = settings.get::<String>("bsky_id")?;
         let pw = settings.get::<String>("bsky_password")?;
-        let dir = self.filter.as_deref().unwrap_or_default();
 
-        let poster = Poster::new(front_matters, id, pw, dir).await?;
-        poster.post_to_bluesky().await?;
+        match self.cmd {
+            Cmd::Build => {
+                let path = self.filter.clone().unwrap_or_default();
+                Builder::new_with_path(&path)?
+                    .add_posts(&mut front_matters)?
+                    .process_posts()
+                    .await?
+                    .write_posts()?;
+            }
+            Cmd::Post => {
+                Poster::new()?
+                    .load(BSKY_POSTS_DIR)?
+                    .post_to_bluesky(id, pw)
+                    .await?;
+            }
+        }
 
         // TODO: For each blog, extract the title, description, and tags
         // TODO: For each blog, create a Bluesky post
@@ -84,7 +105,7 @@ impl Bsky {
         Ok(CIExit::PostedToBluesky)
     }
 
-    async fn setup_client(&self) -> Result<(Client, Config)> {
+    async fn setup_client(&self) -> Result<(Client, Config), Error> {
         if let Some(owner) = &self.owner {
             log::info!("Owner: {owner}");
             env::set_var("OWNER", owner);
@@ -115,10 +136,10 @@ impl Bsky {
     /// Get the file from the path and return a list of files
     /// The path may be a single file or a directory containing files
     /// Only files ending in `.md` will be returned
-    fn get_files_from_path(&self, path: &str) -> Result<Vec<String>> {
+    fn get_files_from_path(&self, path: &str) -> Result<Vec<String>, Error> {
         let path = PathBuf::from(path);
         if !path.exists() {
-            return Err(Error::PathNotFound(path.to_string_lossy().to_string()).into());
+            return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
         };
 
         if path.is_file() {
@@ -128,8 +149,7 @@ impl Bsky {
                 Err(Error::FileExtensionInvalid(
                     path.to_string_lossy().to_string(),
                     ".md".to_string(),
-                )
-                .into())
+                ))
             }
         } else if path.is_dir() {
             let paths = fs::read_dir(path)?;
@@ -145,7 +165,7 @@ impl Bsky {
             }
             return Ok(files);
         } else {
-            return Err(Error::PathNotFound(path.to_string_lossy().to_string()).into());
+            return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
         }
     }
 
@@ -158,7 +178,7 @@ impl Bsky {
         &self,
         client: &Client,
         settings: &Config,
-    ) -> Result<Vec<String>> {
+    ) -> Result<Vec<String>, Error> {
         log::trace!("branch: {:?}", settings.get::<String>("branch"));
         let pcu_branch: String = settings
             .get("branch")
@@ -201,7 +221,7 @@ impl Bsky {
         Ok(filtered_files)
     }
 
-    fn get_frontmatter(&self, filename: &str) -> Result<FrontMatter> {
+    fn get_frontmatter(&self, filename: &str) -> Result<FrontMatter, Error> {
         let mut file = File::open(filename)?;
         let mut file_contents = String::new();
         file.read_to_string(&mut file_contents)?;
