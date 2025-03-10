@@ -30,6 +30,7 @@ pub enum CIExit {
     Released,
     Label(String),
     NoLabel,
+    DraftedForBluesky,
     PostedToBluesky,
 }
 
