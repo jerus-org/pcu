@@ -14,6 +14,12 @@ pub enum Error {
 
     #[error("{0}")]
     GpgError(String),
+    #[error("No bluesky identifier provided")]
+    NoBlueskyIdentifier,
+    #[error("No bluesky password provided")]
+    NoBlueskyPassword,
+    #[error("Future capacity is too large")]
+    FutureCapacityTooLarge,
     #[error("Path not found: {0}")]
     PathNotFound(String),
     #[error("File extension invalid (must be `{1}`): {0}")]
@@ -73,7 +79,15 @@ pub enum Error {
     #[error("regex error says: {0:?}")]
     Regex(#[from] RegexError),
     #[error("cargo_toml error says: {0:?}")]
-    Toml(#[from] cargo_toml::Error),
+    CargoToml(#[from] cargo_toml::Error),
+    #[error("toml deserialisation error says: {0:?}")]
+    Toml(#[from] toml::de::Error),
+    #[error("bsky_sdk error says: {0:?}")]
+    BskySdk(#[from] bsky_sdk::Error),
+    #[error("bsky_sdk create_session error says: {0:?}")]
+    BlueskyLoginError(String),
+    #[error("serde_json create_session error says: {0:?}")]
+    SerdeJsonError(#[from] serde_json::error::Error),
 }
 
 #[derive(Debug)]
