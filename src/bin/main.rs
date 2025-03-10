@@ -41,15 +41,11 @@ async fn main() -> Result<()> {
                 CIExit::NoLabel => log::info!("No label required"),
                 CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
             };
+            Ok(())
         }
-        Err(e) => {
-            return Err(e);
-        }
-    };
-
-    Ok(())
+        Err(e) => Err(e.into()),
+    }
 }
-
 fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {
     let env = Env::new()
         .filter_or(LOG_ENV_VAR, "off")
