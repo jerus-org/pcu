@@ -79,9 +79,6 @@ impl Bsky {
 
         log::debug!("Front matters: {front_matters:#?}");
 
-        let id = settings.get::<String>("bsky_id")?;
-        let pw = settings.get::<String>("bsky_password")?;
-
         match self.cmd {
             Cmd::Draft => {
                 let path = self.filter.clone().unwrap_or_default();
@@ -90,19 +87,21 @@ impl Bsky {
                     .process_posts()
                     .await?
                     .write_posts()?;
+                Ok(CIExit::DraftedForBluesky)
             }
             Cmd::Post => {
+                let id = settings.get::<String>("bsky_id")?;
+                let pw = settings.get::<String>("bsky_password")?;
                 Poster::new()?
                     .load(BSKY_POSTS_DIR)?
                     .post_to_bluesky(id, pw)
                     .await?;
+                Ok(CIExit::PostedToBluesky)
             }
         }
 
         // TODO: For each blog, extract the title, description, and tags
         // TODO: For each blog, create a Bluesky post
-
-        Ok(CIExit::PostedToBluesky)
     }
 
     async fn setup_client(&self) -> Result<(Client, Config), Error> {
