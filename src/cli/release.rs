@@ -1,11 +1,10 @@
 use std::{fs, path::Path};
 
-use crate::{Client, GitOps, MakeRelease, Sign, Workspace};
+use crate::{Client, Error, GitOps, MakeRelease, Sign, Workspace};
 
 use super::{CIExit, Commands};
 
 use clap::Parser;
-use color_eyre::Result;
 use owo_colors::{OwoColorize, Style};
 
 #[derive(Debug, Parser, Clone)]
@@ -28,7 +27,7 @@ pub struct Release {
 }
 
 impl Release {
-    pub async fn run_release(self, sign: Sign) -> Result<CIExit> {
+    pub async fn run_release(self, sign: Sign) -> Result<CIExit, Error> {
         let client = Commands::Release(self.clone()).get_client().await?;
 
         if self.workspace {
@@ -43,7 +42,7 @@ impl Release {
         self.release_semver(client, sign).await
     }
 
-    async fn release_workspace(&self, client: Client) -> Result<CIExit> {
+    async fn release_workspace(&self, client: Client) -> Result<CIExit, Error> {
         let path = Path::new("./Cargo.toml");
         let workspace = Workspace::new(path).unwrap();
 
@@ -65,7 +64,7 @@ impl Release {
         Ok(CIExit::Released)
     }
 
-    async fn release_package(self, client: Client) -> Result<CIExit> {
+    async fn release_package(self, client: Client) -> Result<CIExit, Error> {
         let rel_package = self.package.unwrap();
         log::info!("Running release for package: {}", rel_package);
 
@@ -95,7 +94,7 @@ impl Release {
         Ok(CIExit::Released)
     }
 
-    async fn release_semver(self, mut client: Client, sign: Sign) -> Result<CIExit> {
+    async fn release_semver(self, mut client: Client, sign: Sign) -> Result<CIExit, Error> {
         let Some(version) = self.semver else {
             log::error!("Semver required to update changelog");
             return Ok(CIExit::UnChanged);
