@@ -547,7 +547,7 @@ mod tests {
         #[case] pr_url: Option<&str>,
         #[case] expected_kind: ChangeKind,
         #[case] expected_description: &str,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         get_test_logger();
 
         let mut pr_title = PrTitle::parse(title).unwrap();
@@ -565,10 +565,8 @@ mod tests {
         Ok(())
     }
 
-    use color_eyre::Result;
-
     #[rstest]
-    fn test_update_change_log_added() -> Result<()> {
+    fn test_update_change_log_added() -> Result<(), Error> {
         get_test_logger();
 
         let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
@@ -613,7 +611,7 @@ mod tests {
     }
 
     #[rstest]
-    fn test_update_change_log_added_issue_172() -> Result<()> {
+    fn test_update_change_log_added_issue_172() -> Result<(), Error> {
         get_test_logger();
 
         let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
