@@ -27,7 +27,7 @@ impl Poster {
     where
         P: AsRef<Path> + Display,
     {
-        let files = fs::read_dir(directory)?;
+        let files = fs::read_dir(&directory)?;
         let mut bsky_posts = Vec::new();
         for file in files {
             let file = file?;
@@ -37,10 +37,8 @@ impl Poster {
                 let post = fs::File::open(file_path)?;
                 let reader = BufReader::new(post);
                 let post = serde_json::from_reader(reader)?;
-                let bsky_post = BskyPost {
-                    post,
-                    filename: file_name.into(),
-                };
+                let filename: OsString = format!("{}/{}", directory, file_name).into();
+                let bsky_post = BskyPost { post, filename };
                 bsky_posts.push(bsky_post);
             }
         }
