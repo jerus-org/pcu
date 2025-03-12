@@ -20,20 +20,21 @@ pub struct CmdDraft {
     #[arg(short, long)]
     pub filter: Option<String>,
     /// Optional path to file or directory of blog post(s) to process
-    path: Option<String>,
+    pub path: Option<String>,
 }
 
 impl CmdDraft {
-    pub fn path(&self) -> Option<String> {
-        self.path.clone()
-    }
-
     pub async fn run(&self, client: &Client, settings: &Config) -> Result<CIExit, Error> {
-        let changed_files = if let Some(path) = &self.path {
+        let path = &self.path.clone().unwrap_or_default();
+
+        let filter = &self.filter.clone().unwrap_or_default();
+
+        let changed_files = if path != &String::new() {
             log::info!("Path: {path}");
             self.get_files_from_path(path)?
         } else {
-            self.get_filtered_changed_files(client, settings).await?
+            self.get_filtered_changed_files(client, settings, filter)
+                .await?
         };
         log::debug!("Changed files: {changed_files:#?}");
 
@@ -52,7 +53,12 @@ impl CmdDraft {
 
         log::debug!("Front matters: {front_matters:#?}");
 
-        let path = self.filter.clone().unwrap_or_default();
+        let path = if path.is_empty() {
+            filter.to_string()
+        } else {
+            path.to_string()
+        };
+
         Draft::new_with_path(&path)?
             .add_posts(&mut front_matters)?
             .process_posts()
@@ -106,6 +112,7 @@ impl CmdDraft {
         &self,
         client: &Client,
         settings: &Config,
+        filter: &str,
     ) -> Result<Vec<String>, Error> {
         log::trace!("branch: {:?}", settings.get::<String>("branch"));
         let pcu_branch: String = settings
@@ -131,7 +138,7 @@ impl CmdDraft {
         changed_files = files.iter().map(|f| f.filename.clone()).collect::<Vec<_>>();
         log::debug!("Changed files: {changed_files:#?}");
 
-        let re = if let Some(filter) = &self.filter {
+        let re = if !filter.is_empty() {
             log::info!("Filtering filenames containing: {filter}");
             let regex_str = format!(r"^.+{filter}.+\.md$");
             Regex::new(&regex_str).unwrap()
