@@ -224,6 +224,17 @@ jobs:
 
       #       bin/pcu << parameters.pcu_verbosity >> bsky --filter blog
       - run:
+          name: Draft bsky blog directory
+          command: |
+            set -ex
+
+            mkdir -p bluesky
+
+            bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky/blog
+            ls -la
+            ls -la bluesky
+            cat bluesky/$(ls bluesky)
+      - run:
           name: Draft bsky directory
           command: |
             set -ex
