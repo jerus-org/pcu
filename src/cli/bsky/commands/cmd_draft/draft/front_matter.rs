@@ -26,7 +26,8 @@ pub struct FrontMatter {
     pub title: String,
     pub description: String,
     pub taxonomies: Taxonomies,
-    pub filename: Option<String>,
+    pub basename: Option<String>,
+    pub path: Option<String>,
     pub bluesky_post: Option<RecordData>,
 }
 
