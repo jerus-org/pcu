@@ -85,7 +85,7 @@ impl Draft {
                 "{}/{}{}/index.html",
                 self.base_url,
                 self.path,
-                blog_post.filename.as_ref().unwrap()
+                blog_post.basename.as_ref().unwrap()
             );
             log::debug!("Post link: {post_link}");
 
@@ -130,7 +130,7 @@ impl Draft {
                 continue;
             };
 
-            let Some(filename) = &blog_post.filename else {
+            let Some(filename) = &blog_post.basename else {
                 log::warn!("No filename found for blog post: {}", blog_post.title);
                 continue;
             };
