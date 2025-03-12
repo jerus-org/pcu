@@ -230,7 +230,7 @@ jobs:
 
             mkdir -p bluesky
 
-            bin/pcu << parameters.pcu_verbosity >> bsky tests draft
+            bin/pcu << parameters.pcu_verbosity >> bsky draft tests 
             ls -la
             ls -la bluesky
             cat bluesky/$(ls bluesky)
@@ -241,7 +241,7 @@ jobs:
             set -ex
 
             ls -la bluesky
-            bin/pcu << parameters.pcu_verbosity >> bsky tests post
+            bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
 
       - run:
@@ -252,7 +252,7 @@ jobs:
             rm -rf bluesky
             mkdir -p bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky tests/bsky-test-blog.md draft
+            bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky-test-blog.md
             ls -la
             ls -la bluesky
             cat bluesky/$(ls bluesky)
@@ -263,7 +263,7 @@ jobs:
             set -ex
 
             ls -la bluesky
-            bin/pcu << parameters.pcu_verbosity >> bsky tests post
+            bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
 
 workflows:
