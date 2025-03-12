@@ -3,7 +3,7 @@ mod draft;
 use std::{
     env,
     fs::{self, File},
-    io::Read,
+    io::{BufRead, BufReader},
     path::PathBuf,
 };
 
@@ -165,19 +165,28 @@ impl CmdDraft {
     }
 
     fn get_frontmatter(&self, filename: &str) -> Result<FrontMatter, Error> {
-        let mut file = File::open(filename)?;
-        let mut file_contents = String::new();
-        file.read_to_string(&mut file_contents)?;
-        log::debug!("File contents: {file_contents}");
-        let lines: Vec<String> = file_contents.lines().map(|l| l.to_string()).collect();
-        log::debug!("Lines: {lines:#?}");
+        // let mut file = File::open(filename)?;
+        // let mut file_contents = String::new();
+
+        // // Read file line by line
+
+        // file.read_to_string(&mut file_contents)?;
+        // log::debug!("File contents: {file_contents}");
+        // let lines: Vec<String> = file_contents.lines().map(|l| l.to_string()).collect();
+        // log::debug!("Lines: {lines:#?}");
+
+        let file = File::open(filename)?;
+        let reader = BufReader::new(file);
+
+        // // Read file line by line
+        // let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
+        // log::debug!("Lines: {lines:#?}");
 
         let mut front_str = String::new();
-
         let mut quit = false;
 
-        for line in lines {
-            if line.starts_with("+++") && quit {
+        for line in reader.lines().map_while(Result::ok) {
+            if line.starts_with("+++") & quit {
                 break;
             } else if line.starts_with("+++") {
                 quit = true;
