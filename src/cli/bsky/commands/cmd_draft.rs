@@ -44,13 +44,16 @@ impl CmdDraft {
         for filename in changed_files {
             log::info!("File: {filename}");
             match self.get_frontmatter(&filename, first) {
-                Ok(front_matter) => front_matters.push(front_matter),
+                Ok(front_matter) => {
+                    front_matters.push(front_matter);
+                    first = false;
+                }
                 Err(e) => {
                     log::error!("Error: {e}");
+                    first = false;
                     continue;
                 }
             }
-            first = false;
         }
 
         log::debug!(
