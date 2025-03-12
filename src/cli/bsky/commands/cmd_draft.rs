@@ -51,7 +51,15 @@ impl CmdDraft {
             }
         }
 
-        log::debug!("Front matters: {front_matters:#?}");
+        log::debug!(
+            "Front matters ({}): {front_matters:#?}",
+            front_matters.len()
+        );
+
+        if front_matters.is_empty() {
+            log::info!("No front matters found");
+            return Ok(CIExit::DraftedForBluesky);
+        }
 
         let path = if path.is_empty() {
             filter.to_string()
