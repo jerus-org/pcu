@@ -1,5 +1,6 @@
 +++
 title = "Influences - updated January 2025"
+description = "A list of my influences as updated in January 2025"
 date = 2025-01-10
 updated = 2025-01-17
 draft = false
