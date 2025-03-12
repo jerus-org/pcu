@@ -4,7 +4,7 @@ use std::{
     env,
     fs::{self, File},
     io::{BufRead, BufReader},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use clap::Parser;
@@ -39,16 +39,18 @@ impl CmdDraft {
         log::debug!("Changed files: {changed_files:#?}");
 
         let mut front_matters = Vec::new();
+        let mut first = true;
 
         for filename in changed_files {
             log::info!("File: {filename}");
-            match self.get_frontmatter(&filename) {
+            match self.get_frontmatter(&filename, first) {
                 Ok(front_matter) => front_matters.push(front_matter),
                 Err(e) => {
                     log::error!("Error: {e}");
                     continue;
                 }
             }
+            first = false;
         }
 
         log::debug!(
@@ -164,23 +166,9 @@ impl CmdDraft {
         Ok(filtered_files)
     }
 
-    fn get_frontmatter(&self, filename: &str) -> Result<FrontMatter, Error> {
-        // let mut file = File::open(filename)?;
-        // let mut file_contents = String::new();
-
-        // // Read file line by line
-
-        // file.read_to_string(&mut file_contents)?;
-        // log::debug!("File contents: {file_contents}");
-        // let lines: Vec<String> = file_contents.lines().map(|l| l.to_string()).collect();
-        // log::debug!("Lines: {lines:#?}");
-
+    fn get_frontmatter(&self, filename: &str, first: bool) -> Result<FrontMatter, Error> {
         let file = File::open(filename)?;
         let reader = BufReader::new(file);
-
-        // // Read file line by line
-        // let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
-        // log::debug!("Lines: {lines:#?}");
 
         let mut front_str = String::new();
         let mut quit = false;
@@ -194,14 +182,23 @@ impl CmdDraft {
             } else {
                 front_str.push_str(&line);
                 front_str.push('\n');
-                log::debug!("Front matter: {front_str} and quit: {quit}");
+                if first {
+                    log::debug!("Front matter:\n {front_str}\n ... and quit: {quit}");
+                }
             }
         }
+
+        log::debug!("Front matter string:\n {front_str}");
+
+        let file_path = Path::new(filename);
+        log::debug!("File path in PATH: {file_path:?}");
 
         let mut front_matter = FrontMatter::from_toml(&front_str)?;
         let basename = filename.split('/').last().unwrap().to_string();
         let basename = basename.split('.').next().unwrap().to_string();
-        log::trace!("Basename: {basename}");
+        log::debug!("Basename: {basename}");
+        log::debug!("Full filename: {filename}");
+        log::debug!("Front matter: {front_matter:#?}");
         front_matter.filename = Some(basename);
 
         Ok(front_matter)
