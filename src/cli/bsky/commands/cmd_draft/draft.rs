@@ -1,3 +1,6 @@
+mod front_matter;
+mod site_config;
+
 use std::fs::File;
 
 use bsky_sdk::{
@@ -5,12 +8,11 @@ use bsky_sdk::{
     rich_text::RichText,
 };
 
-mod site_config;
+pub use front_matter::FrontMatter;
 use site_config::SiteConfig;
 
+use super::super::super::BSKY_POSTS_DIR;
 use crate::Error;
-
-use super::front_matter::FrontMatter;
 
 #[derive(Clone, Default)]
 pub struct Draft {
@@ -138,7 +140,7 @@ impl Draft {
 
             let post_file = format!(
                 "{}/{}.post",
-                super::BSKY_POSTS_DIR,
+                BSKY_POSTS_DIR,
                 filename.trim_end_matches(".md")
             );
             log::debug!("Post file: {}", post_file);
