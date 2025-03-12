@@ -167,6 +167,7 @@ impl CmdDraft {
     }
 
     fn get_frontmatter(&self, filename: &str, first: bool) -> Result<FrontMatter, Error> {
+        log::debug!("Reading front matter from: {filename} with flag first: {first}");
         let file = File::open(filename)?;
         let reader = BufReader::new(file);
 
