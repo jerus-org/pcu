@@ -231,14 +231,13 @@ jobs:
             mkdir -p bluesky
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky/blog
-            ls -la
             ls -la bluesky
-            cat bluesky/$(ls bluesky)
       - run:
           name: Draft bsky directory
           command: |
             set -ex
 
+            rm -rf bluesky
             mkdir -p bluesky
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft tests 
