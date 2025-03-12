@@ -1,5 +1,6 @@
 +++
 title = "Update and Release"
+description = "A description of the update and release workflow"
 date = 2025-01-17
 updated = 2025-02-12
 draft = false

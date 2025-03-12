@@ -1,0 +1,42 @@
+{
+  "createdAt": "2025-03-12T17:22:37.491920Z",
+  "facets": [
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#link",
+          "uri": "https://www.jrussell.ie/tests/bsky/blog/influences-jan-2025/index.html"
+        }
+      ],
+      "index": {
+        "byteEnd": 177,
+        "byteStart": 107
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "podcasts"
+        }
+      ],
+      "index": {
+        "byteEnd": 95,
+        "byteStart": 86
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "insights"
+        }
+      ],
+      "index": {
+        "byteEnd": 105,
+        "byteStart": 96
+      }
+    }
+  ],
+  "text": "Influences - updated January 2025\n\nA list of my influences as updated in January 2025 #podcasts #insights\n\nhttps://www.jrussell.ie/tests/bsky/blog/influences-jan-2025/index.html"
+}
