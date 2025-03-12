@@ -4,7 +4,7 @@ use std::{
     env,
     fs::{self, File},
     io::{BufRead, BufReader},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use clap::Parser;
@@ -194,17 +194,73 @@ impl CmdDraft {
 
         log::debug!("Front matter string:\n {front_str}");
 
-        let file_path = Path::new(filename);
-        log::debug!("File path in PATH: {file_path:?}");
-
         let mut front_matter = FrontMatter::from_toml(&front_str)?;
-        let basename = filename.split('/').last().unwrap().to_string();
-        let basename = basename.split('.').next().unwrap().to_string();
+
+        let (path, basename) = get_path_and_basename(filename);
+        // let basename = filename.split('/').last().unwrap().to_string();
+        // let basename = basename.split('.').next().unwrap().to_string();
         log::debug!("Basename: {basename}");
         log::debug!("Full filename: {filename}");
         log::debug!("Front matter: {front_matter:#?}");
-        front_matter.filename = Some(basename);
+        front_matter.basename = Some(basename);
+        front_matter.path = Some(path);
 
         Ok(front_matter)
+    }
+}
+
+fn get_path_and_basename(path: &str) -> (String, String) {
+    let (path, filename) = split_return_last_and_rest(path.to_string(), '/');
+    let (basename, _ext) = split_return_last_and_rest(filename, '.');
+
+    (path, basename)
+}
+
+fn split_return_last_and_rest(s: String, pat: char) -> (String, String) {
+    let parts = s.split(pat).collect::<Vec<_>>();
+
+    (
+        parts[..parts.len() - 1].join(&String::from(pat)),
+        parts.last().unwrap().to_string(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_path_and_filename_basic() {
+        let result = get_path_and_basename("folder/subfolder/file.txt");
+        assert_eq!(result.0, "folder/subfolder");
+        assert_eq!(result.1, "file");
+    }
+
+    #[test]
+    fn test_get_path_and_filename_root() {
+        let result = get_path_and_basename("file.txt");
+        assert_eq!(result.0, "");
+        assert_eq!(result.1, "file");
+    }
+
+    #[test]
+    fn test_get_path_and_filename_nested() {
+        let result = get_path_and_basename("a/b/c/d/file.txt");
+        assert_eq!(result.0, "a/b/c/d");
+        assert_eq!(result.1, "file");
+    }
+
+    #[test]
+    fn test_get_path_and_filename_with_dots() {
+        let result = get_path_and_basename("path/to/my.file.with.dots.txt");
+        assert_eq!(result.0, "path/to");
+        assert_eq!(result.1, "my.file.with.dots");
+    }
+
+    #[test]
+    fn test_get_path_and_filename_trailing_slash() {
+        let result = get_path_and_basename("path/to/file/");
+        assert_eq!(result.0, "path/to/file");
+        assert_eq!(result.1, "");
     }
 }
