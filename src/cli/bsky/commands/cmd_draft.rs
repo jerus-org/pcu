@@ -84,36 +84,37 @@ impl CmdDraft {
     /// The path may be a single file or a directory containing files
     /// Only files ending in `.md` will be returned
     fn get_files_from_path(&self, path: &str) -> Result<Vec<String>, Error> {
-        let path = PathBuf::from(path);
-        if !path.exists() {
-            return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
-        };
+        get_files(path)
+        // let path = PathBuf::from(path);
+        // if !path.exists() {
+        //     return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
+        // };
 
-        if path.is_file() {
-            if path.extension().unwrap_or_default() == "md" {
-                Ok(vec![path.to_string_lossy().to_string()])
-            } else {
-                Err(Error::FileExtensionInvalid(
-                    path.to_string_lossy().to_string(),
-                    ".md".to_string(),
-                ))
-            }
-        } else if path.is_dir() {
-            let paths = fs::read_dir(path)?;
-            let mut files = Vec::new();
-            for path in paths {
-                let path = path?.path();
-                if path.is_dir() {
-                    // files.append(&mut self.get_files_from_path(&path.to_string_lossy())?);
-                    continue;
-                } else if path.is_file() && path.extension().unwrap_or_default() == "md" {
-                    files.push(path.to_string_lossy().to_string());
-                }
-            }
-            return Ok(files);
-        } else {
-            return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
-        }
+        // if path.is_file() {
+        //     if path.extension().unwrap_or_default() == "md" {
+        //         Ok(vec![path.to_string_lossy().to_string()])
+        //     } else {
+        //         Err(Error::FileExtensionInvalid(
+        //             path.to_string_lossy().to_string(),
+        //             ".md".to_string(),
+        //         ))
+        //     }
+        // } else if path.is_dir() {
+        //     let paths = fs::read_dir(path)?;
+        //     let mut files = Vec::new();
+        //     for path in paths {
+        //         let path = path?.path();
+        //         if path.is_dir() {
+        //             // files.append(&mut self.get_files_from_path(&path.to_string_lossy())?);
+        //             continue;
+        //         } else if path.is_file() && path.extension().unwrap_or_default() == "md" {
+        //             files.push(path.to_string_lossy().to_string());
+        //         }
+        //     }
+        //     return Ok(files);
+        // } else {
+        //     return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
+        // }
     }
 
     /// Filter for Markdown files containing blog posts
@@ -225,6 +226,43 @@ fn split_return_last_and_rest(s: String, pat: char) -> (String, String) {
     )
 }
 
+/// Get the file from the path and return a list of files
+/// The path may be a single file or a directory containing files
+/// Only files ending in `.md` will be returned
+fn get_files(path: &str) -> Result<Vec<String>, Error> {
+    let path = PathBuf::from(path);
+    if !path.exists() {
+        return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
+    };
+
+    if path.is_file() {
+        if path.extension().unwrap_or_default() == "md" {
+            Ok(vec![path.to_string_lossy().to_string()])
+        } else {
+            Err(Error::FileExtensionInvalid(
+                path.to_string_lossy().to_string(),
+                ".md".to_string(),
+            ))
+        }
+    } else if path.is_dir() {
+        let paths = fs::read_dir(path)?;
+        let mut files = Vec::new();
+        for entry in paths {
+            let entry_path = entry?.path();
+            log::debug!("Entry path: {:?}", entry_path);
+            if entry_path.is_dir() {
+                get_files(entry_path.to_str().unwrap())?;
+                continue;
+            } else if entry_path.is_file() && entry_path.extension().unwrap_or_default() == "md" {
+                files.push(entry_path.to_string_lossy().to_string());
+            }
+        }
+        return Ok(files);
+    } else {
+        return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -262,5 +300,87 @@ mod tests {
         let result = get_path_and_basename("path/to/file/");
         assert_eq!(result.0, "path/to/file");
         assert_eq!(result.1, "");
+    }
+
+    use crate::cli::bsky::commands::cmd_draft::get_files;
+    use crate::Error;
+    use std::fs;
+    // use std::path::PathBuf;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_get_files_single_markdown_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.md");
+        fs::write(&file_path, "test content").unwrap();
+
+        let result = get_files(file_path.to_str().unwrap());
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            vec![file_path.to_string_lossy().to_string()]
+        );
+    }
+
+    #[test]
+    fn test_get_files_non_markdown_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.txt");
+        fs::write(&file_path, "test content").unwrap();
+
+        let result = get_files(file_path.to_str().unwrap());
+        assert!(matches!(result, Err(Error::FileExtensionInvalid(_, _))));
+    }
+
+    #[test]
+    fn test_get_files_directory_with_markdown_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let md_file1 = temp_dir.path().join("test1.md");
+        let md_file2 = temp_dir.path().join("test2.md");
+        let txt_file = temp_dir.path().join("test.txt");
+
+        fs::write(&md_file1, "content1").unwrap();
+        fs::write(&md_file2, "content2").unwrap();
+        fs::write(&txt_file, "content3").unwrap();
+
+        let result = get_files(temp_dir.path().to_str().unwrap());
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        assert_eq!(files.len(), 2);
+        assert!(files.contains(&md_file1.to_string_lossy().to_string()));
+        assert!(files.contains(&md_file2.to_string_lossy().to_string()));
+    }
+
+    #[test]
+    fn test_get_files_empty_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = get_files(temp_dir.path().to_str().unwrap());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_get_files_nonexistent_path() {
+        let result = get_files("/nonexistent/path");
+        assert!(matches!(result, Err(Error::PathNotFound(_))));
+    }
+
+    #[test]
+    fn test_get_files_nested_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let nested_dir = temp_dir.path().join("nested");
+        fs::create_dir(&nested_dir).unwrap();
+
+        let md_file1 = temp_dir.path().join("test1.md");
+        let md_file2 = nested_dir.join("test2.md");
+
+        fs::write(&md_file1, "content1").unwrap();
+        fs::write(&md_file2, "content2").unwrap();
+
+        let result = get_files(temp_dir.path().to_str().unwrap());
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        assert_eq!(files.len(), 1);
+        assert!(files.contains(&md_file1.to_string_lossy().to_string()));
     }
 }
