@@ -79,7 +79,7 @@ impl Draft {
 
     pub async fn process_posts(&mut self) -> Result<&mut Self, Error> {
         for blog_post in &mut self.blog_posts {
-            log::info!("Blog post: {blog_post:#?}");
+            log::trace!("Blog post: {blog_post:#?}");
 
             let post_link = format!(
                 "{}/{}{}/index.html",
@@ -101,7 +101,7 @@ impl Draft {
 
             let rt = RichText::new_with_detect_facets(&post_text).await?;
 
-            log::debug!("Rich text: {rt:#?}");
+            log::trace!("Rich text: {rt:#?}");
 
             let record_data = RecordData {
                 created_at: Datetime::now(),
