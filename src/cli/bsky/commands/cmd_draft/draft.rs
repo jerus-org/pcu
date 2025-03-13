@@ -135,7 +135,7 @@ impl Draft {
                 continue;
             };
 
-            log::info!("Bluesky post: {bluesky_post:#?}");
+            log::trace!("Bluesky post: {bluesky_post:#?}");
             log::debug!("Post filename: {}", filename);
 
             let post_file = format!(
