@@ -408,12 +408,12 @@ jobs:
       # Start with the test setup workspace
       - attach_workspace:
           at: .
-      - run:
-          name: Create test file
-          command: |
-            set -ex
-            echo "test" > tests/bsky/blog/test.md
-            ls -la tests/bsky/blog
+      # - run:
+      #     name: Create test file
+      #     command: |
+      #       set -ex
+      #       echo "test" > tests/bsky/blog/test.md
+      #       ls -la tests/bsky/blog
       # - run:
       #     name: Test bsky filter
       #     command: |
