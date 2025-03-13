@@ -251,7 +251,8 @@ fn get_files(path: &str) -> Result<Vec<String>, Error> {
             let entry_path = entry?.path();
             log::debug!("Entry path: {:?}", entry_path);
             if entry_path.is_dir() {
-                get_files(entry_path.to_str().unwrap())?;
+                let mut subdir_files = get_files(entry_path.to_str().unwrap())?;
+                files.append(&mut subdir_files);
                 continue;
             } else if entry_path.is_file() && entry_path.extension().unwrap_or_default() == "md" {
                 files.push(entry_path.to_string_lossy().to_string());
