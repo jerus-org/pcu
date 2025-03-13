@@ -64,7 +64,13 @@ commands:
           command: |
             set -ex
 
-            result=$(pcu <<parameters.pcu_verbosity>> pr --early-exit --push <<parameters.pcu_push>>)
+            if [ true == << parameters.pcu_push >> ]; then
+              push="--push"
+            else
+             push=""
+            fi
+
+            result=$(pcu <<parameters.pcu_verbosity>> pr --early-exit $push)
             if [ "$result" == << parameters.pcu_halt_signal >> ]; then
               export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
               BODY='{"branch":"'
