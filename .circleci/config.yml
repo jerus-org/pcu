@@ -161,7 +161,7 @@ jobs:
         description: "Custom pull request colour."
       pcu_push:
         type: boolean
-        default: "true"
+        default: true
         description: "Optional flag to allow the push to fail"
       pcu_allow_push_fail:
         type: enum
