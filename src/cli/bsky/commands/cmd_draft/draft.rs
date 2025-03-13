@@ -82,9 +82,9 @@ impl Draft {
             log::trace!("Blog post: {blog_post:#?}");
 
             let post_dir = if let Some(path) = blog_post.path.as_ref() {
-                path
+                format!("{}{}", path, "/")
             } else {
-                ""
+                String::new()
             };
 
             let post_link = format!(
