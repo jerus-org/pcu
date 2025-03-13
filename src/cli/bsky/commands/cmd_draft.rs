@@ -12,7 +12,7 @@ use config::Config;
 use draft::{Draft, FrontMatter};
 use regex::Regex;
 
-use crate::{CIExit, Client, Error};
+use crate::{CIExit, Client, Error, GitOps, Sign};
 
 #[derive(Debug, Parser, Clone)]
 pub struct CmdDraft {
@@ -80,6 +80,12 @@ impl CmdDraft {
             .process_posts()
             .await?
             .write_posts()?;
+
+        let sign = Sign::Gpg;
+        // Commit the posts to the git repo
+        let commit_message = "chore: add drafted bluesky posts to git repo";
+        client.commit_staged(sign, commit_message, "", None)?;
+
         Ok(CIExit::DraftedForBluesky)
     }
 
