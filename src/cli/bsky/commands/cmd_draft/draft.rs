@@ -115,7 +115,7 @@ impl Draft {
                 text: rt.text,
             };
 
-            log::info!("{:?}", record_data);
+            log::trace!("{:?}", record_data);
 
             blog_post.bluesky_post = Some(record_data);
         }
