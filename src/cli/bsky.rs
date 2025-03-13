@@ -44,7 +44,7 @@ impl Bsky {
 
         match self.cmd.clone() {
             Cmd::Draft(draft_args) => draft_args.run(&client, &settings).await,
-            Cmd::Post(post_args) => post_args.run(&settings).await,
+            Cmd::Post(post_args) => post_args.run(&client, &settings).await,
         }
 
         // TODO: For each blog, extract the title, description, and tags
