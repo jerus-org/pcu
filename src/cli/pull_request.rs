@@ -2,7 +2,7 @@ use std::env;
 
 use crate::{
     cli::{Commands, GitOps},
-    Error, Sign, UpdateFromPr,
+    Client, Error, Sign, UpdateFromPr,
 };
 
 use super::CIExit;
@@ -21,8 +21,11 @@ pub struct Pr {
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
+    /// Attempt to push the changes to the remote repository
+    #[clap(short = 'u', long, default_value_t = false)]
+    pub push: bool,
     /// Allow git push to fail. Allows the case of two parallel updates where the second push would fail.
-    #[clap(short, long, default_value_t = false)]
+    #[clap(short, long, default_value_t = true)]
     pub allow_push_fail: bool,
 }
 
@@ -93,13 +96,26 @@ impl Pr {
             crate::cli::print_changelog(client.changelog_as_str(), client.line_limit())
         );
 
+        // Commit the change log
         let commit_message = "chore: update changelog for pr";
-
         client
             .commit_changed_files(sign, commit_message, &self.prefix, None)
             .await?;
 
-        log::info!("Push the commit");
+        // Push the change log (and other commits)
+        if self.push {
+            self.push_the_commit(client)?;
+        };
+
+        Ok(CIExit::Updated)
+    }
+
+    fn push_the_commit(&self, client: Client) -> Result<CIExit, Error> {
+        if log::log_enabled!(log::Level::Trace) {
+            log::trace!("*** Push the commit ***");
+        } else {
+            log::info!("Push the commit");
+        }
         log::trace!("tag_opt: None and no_push: false");
 
         let res = client.push_commit(&self.prefix, None, false);
