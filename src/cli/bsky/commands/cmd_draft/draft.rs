@@ -81,10 +81,16 @@ impl Draft {
         for blog_post in &mut self.blog_posts {
             log::trace!("Blog post: {blog_post:#?}");
 
+            let post_dir = if let Some(path) = blog_post.path.as_ref() {
+                path
+            } else {
+                ""
+            };
+
             let post_link = format!(
                 "{}/{}{}/index.html",
                 self.base_url,
-                self.path,
+                post_dir,
                 blog_post.basename.as_ref().unwrap()
             );
             log::debug!("Post link: {post_link}");
