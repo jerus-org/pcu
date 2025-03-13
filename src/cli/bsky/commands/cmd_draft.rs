@@ -42,8 +42,8 @@ impl CmdDraft {
         let mut first = true;
 
         for filename in changed_files {
-            log::info!("File: {filename}");
-            match self.get_frontmatter(&filename, first) {
+            log::info!("File: {filename:?}");
+            match self.get_frontmatter(&filename.0, first) {
                 Ok(front_matter) => {
                     front_matters.push(front_matter);
                     first = false;
@@ -56,10 +56,12 @@ impl CmdDraft {
             }
         }
 
-        log::debug!(
+        log::trace!(
             "Front matters ({}): {front_matters:#?}",
             front_matters.len()
         );
+
+        log::info!("{} front matters found.", front_matters.len());
 
         if front_matters.is_empty() {
             log::info!("No front matters found");
@@ -83,7 +85,7 @@ impl CmdDraft {
     /// Get the file from the path and return a list of files
     /// The path may be a single file or a directory containing files
     /// Only files ending in `.md` will be returned
-    fn get_files_from_path(&self, path: &str) -> Result<Vec<String>, Error> {
+    fn get_files_from_path(&self, path: &str) -> Result<Vec<(String, String)>, Error> {
         get_files(path)
         // let path = PathBuf::from(path);
         // if !path.exists() {
@@ -127,7 +129,7 @@ impl CmdDraft {
         client: &Client,
         settings: &Config,
         filter: &str,
-    ) -> Result<Vec<String>, Error> {
+    ) -> Result<Vec<(String, String)>, Error> {
         log::trace!("branch: {:?}", settings.get::<String>("branch"));
         let pcu_branch: String = settings
             .get("branch")
@@ -149,7 +151,10 @@ impl CmdDraft {
             log::warn!("No files found in compare");
             return Ok(changed_files);
         };
-        changed_files = files.iter().map(|f| f.filename.clone()).collect::<Vec<_>>();
+        changed_files = files
+            .iter()
+            .map(|f| get_path_and_basename(f.filename.clone().as_str()))
+            .collect::<Vec<_>>();
         log::debug!("Changed files: {changed_files:#?}");
 
         let re = if !filter.is_empty() {
@@ -162,7 +167,7 @@ impl CmdDraft {
 
         let filtered_files = changed_files
             .iter()
-            .filter(|f| re.is_match(f))
+            .filter(|f| re.is_match(&f.0))
             .cloned()
             .collect::<Vec<_>>();
         log::trace!("Filtered files: {filtered_files:#?}");
@@ -193,7 +198,7 @@ impl CmdDraft {
             }
         }
 
-        log::debug!("Front matter string:\n {front_str}");
+        log::trace!("Front matter string:\n {front_str}");
 
         let mut front_matter = FrontMatter::from_toml(&front_str)?;
 
@@ -229,15 +234,19 @@ fn split_return_last_and_rest(s: String, pat: char) -> (String, String) {
 /// Get the file from the path and return a list of files
 /// The path may be a single file or a directory containing files
 /// Only files ending in `.md` will be returned
-fn get_files(path: &str) -> Result<Vec<String>, Error> {
+fn get_files(path: &str) -> Result<Vec<(String, String)>, Error> {
     let path = PathBuf::from(path);
+    log::debug!("get_files path: {:?}", path);
     if !path.exists() {
         return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
     };
 
     if path.is_file() {
         if path.extension().unwrap_or_default() == "md" {
-            Ok(vec![path.to_string_lossy().to_string()])
+            Ok(vec![(
+                path.to_string_lossy().to_string(),
+                get_path_and_basename(path.to_str().unwrap()).0,
+            )])
         } else {
             Err(Error::FileExtensionInvalid(
                 path.to_string_lossy().to_string(),
@@ -245,7 +254,7 @@ fn get_files(path: &str) -> Result<Vec<String>, Error> {
             ))
         }
     } else if path.is_dir() {
-        let paths = fs::read_dir(path)?;
+        let paths = fs::read_dir(&path)?;
         let mut files = Vec::new();
         for entry in paths {
             let entry_path = entry?.path();
@@ -255,7 +264,10 @@ fn get_files(path: &str) -> Result<Vec<String>, Error> {
                 files.append(&mut subdir_files);
                 continue;
             } else if entry_path.is_file() && entry_path.extension().unwrap_or_default() == "md" {
-                files.push(entry_path.to_string_lossy().to_string());
+                files.push((
+                    entry_path.to_string_lossy().to_string(),
+                    path.to_string_lossy().to_string(),
+                ));
             }
         }
         return Ok(files);
@@ -315,11 +327,16 @@ mod tests {
         let file_path = temp_dir.path().join("test.md");
         fs::write(&file_path, "test content").unwrap();
 
+        println!("File path: {:?}", file_path);
         let result = get_files(file_path.to_str().unwrap());
+        println!("Result: {:#?}", result);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
-            vec![file_path.to_string_lossy().to_string()]
+            vec![(
+                file_path.to_string_lossy().to_string(),
+                temp_dir.path().to_string_lossy().to_string()
+            )]
         );
     }
 
@@ -336,9 +353,24 @@ mod tests {
     #[test]
     fn test_get_files_directory_with_markdown_files() {
         let temp_dir = TempDir::new().unwrap();
-        let md_file1 = temp_dir.path().join("test1.md");
-        let md_file2 = temp_dir.path().join("test2.md");
-        let txt_file = temp_dir.path().join("test.txt");
+        let file1 = "test1.md".to_string();
+        let file2 = "test2.md".to_string();
+        let file3 = "test.txt".to_string();
+
+        let md_file1 = temp_dir.path().join(&file1);
+        let md_file2 = temp_dir.path().join(&file2);
+        let txt_file = temp_dir.path().join(&file3);
+
+        let expected = vec![
+            (
+                md_file1.to_string_lossy().to_string(),
+                temp_dir.path().to_string_lossy().to_string(),
+            ),
+            (
+                md_file2.to_string_lossy().to_string(),
+                temp_dir.path().to_string_lossy().to_string(),
+            ),
+        ];
 
         fs::write(&md_file1, "content1").unwrap();
         fs::write(&md_file2, "content2").unwrap();
@@ -347,9 +379,9 @@ mod tests {
         let result = get_files(temp_dir.path().to_str().unwrap());
         assert!(result.is_ok());
         let files = result.unwrap();
+        println!("Files: {:?}", files);
         assert_eq!(files.len(), 2);
-        assert!(files.contains(&md_file1.to_string_lossy().to_string()));
-        assert!(files.contains(&md_file2.to_string_lossy().to_string()));
+        assert_eq!(files, expected);
     }
 
     #[test]
@@ -381,7 +413,14 @@ mod tests {
         let result = get_files(temp_dir.path().to_str().unwrap());
         assert!(result.is_ok());
         let files = result.unwrap();
-        assert_eq!(files.len(), 1);
-        assert!(files.contains(&md_file1.to_string_lossy().to_string()));
+        assert_eq!(files.len(), 2);
+        assert!(files.contains(&(
+            md_file1.to_string_lossy().to_string(),
+            temp_dir.path().to_string_lossy().to_string()
+        )));
+        assert!(files.contains(&(
+            md_file2.to_string_lossy().to_string(),
+            nested_dir.as_path().to_string_lossy().to_string()
+        )));
     }
 }
