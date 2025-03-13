@@ -1,5 +1,6 @@
 +++
 title = "First post - what and why!"
+description = "First post and introduction to the blog"
 date = 2021-11-05
 draft = false
 
