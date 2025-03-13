@@ -42,14 +42,15 @@ impl CmdDraft {
         let mut first = true;
 
         for filename in changed_files {
-            log::info!("File: {filename:?}");
+            log::info!("File and path: {filename:?}");
             match self.get_frontmatter(&filename.0, first) {
-                Ok(front_matter) => {
+                Ok(mut front_matter) => {
+                    front_matter.path = Some(filename.1);
                     front_matters.push(front_matter);
                     first = false;
                 }
                 Err(e) => {
-                    log::error!("Error: {e}");
+                    log::warn!("Error: {e}");
                     first = false;
                     continue;
                 }
