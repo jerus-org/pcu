@@ -6,7 +6,7 @@ use color_eyre::Result;
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 
-use pcu::cli::{CIExit, Cli, Commands};
+use pcu::{CIExit, Cli, Commands};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -26,6 +26,7 @@ async fn main() -> Result<()> {
         Commands::Push(push_args) => push_args.run_push().await,
         Commands::Label(label_args) => label_args.run_label().await,
         Commands::Release(rel_args) => rel_args.run_release(sign).await,
+        Commands::Bsky(rel_args) => rel_args.run().await,
     };
 
     match res {
@@ -38,16 +39,14 @@ async fn main() -> Result<()> {
                 CIExit::Released => log::info!("Created GitHub Release"),
                 CIExit::Label(pr) => log::info!("Rebased PR request #{}", pr),
                 CIExit::NoLabel => log::info!("No label required"),
+                CIExit::DraftedForBluesky => log::info!("Drafted for Bluesky"),
+                CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
             };
+            Ok(())
         }
-        Err(e) => {
-            return Err(e);
-        }
-    };
-
-    Ok(())
+        Err(e) => Err(e.into()),
+    }
 }
-
 fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {
     let env = Env::new()
         .filter_or(LOG_ENV_VAR, "off")

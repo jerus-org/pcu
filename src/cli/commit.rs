@@ -1,7 +1,6 @@
-use crate::Sign;
+use crate::{Error, Sign};
 
 use clap::Parser;
-use color_eyre::Result;
 
 use super::{CIExit, Commands, GitOps};
 
@@ -31,7 +30,7 @@ impl Commit {
         None
     }
 
-    pub async fn run_commit(&self, sign: Sign) -> Result<CIExit> {
+    pub async fn run_commit(&self, sign: Sign) -> Result<CIExit, Error> {
         let client = Commands::Commit(self.clone()).get_client().await?;
 
         client

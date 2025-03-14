@@ -6,7 +6,8 @@ use std::{
 
 use clap::ValueEnum;
 use git2::{
-    BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, StatusOptions,
+    BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, Status,
+    StatusOptions,
 };
 use log::log_enabled;
 use octocrate::repos::list_tags::Query;
@@ -33,9 +34,9 @@ pub trait GitOps {
     fn branch_status(&self) -> Result<String, Error>;
     fn branch_list(&self) -> Result<String, Error>;
     fn repo_status(&self) -> Result<String, Error>;
-    fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
-    fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
-    fn stage_files(&self, files: Vec<String>) -> Result<(), Error>;
+    fn repo_files_not_staged(&self) -> Result<Vec<(String, Status)>, Error>;
+    fn repo_files_staged(&self) -> Result<Vec<(String, Status)>, Error>;
+    fn stage_files(&self, files: Vec<(String, Status)>) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn commit_changed_files(
         &self,
@@ -150,44 +151,72 @@ impl GitOps for Client {
     }
 
     /// Report a list of the files that have not been staged
-    fn repo_files_not_staged(&self) -> Result<Vec<String>, Error> {
+    fn repo_files_not_staged(&self) -> Result<Vec<(String, Status)>, Error> {
         let mut options = StatusOptions::new();
-        options.show(git2::StatusShow::Workdir);
-        options.include_untracked(true);
+        options
+            .show(git2::StatusShow::Workdir)
+            .include_untracked(true)
+            .recurse_untracked_dirs(true);
+        log::trace!("Options: Show Workdir, include untracked, recurse ignored dirs");
+
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
         log::trace!("Repo status length: {:?}", statuses.len());
+        if log::log_enabled!(log::Level::Trace) {
+            for status in statuses.iter() {
+                for status in status.status() {
+                    log::trace!("Status: {:?}", status);
+                }
+            }
+        }
 
-        let files: Vec<String> = statuses
+        let files: Vec<(String, Status)> = statuses
             .iter()
-            .map(|s| s.path().unwrap_or_default().to_string())
+            .map(|s| (s.path().unwrap_or_default().to_string(), s.status()))
             .collect();
+
+        log::trace!("Files: {:#?}", files);
 
         Ok(files)
     }
 
     /// Report a list of the files that have not been staged
-    fn repo_files_staged(&self) -> Result<Vec<String>, Error> {
+    fn repo_files_staged(&self) -> Result<Vec<(String, Status)>, Error> {
         let mut options = StatusOptions::new();
-        options.show(git2::StatusShow::Index);
-        options.include_untracked(true);
+        options
+            .show(git2::StatusShow::Index)
+            .include_untracked(true)
+            .recurse_untracked_dirs(true);
+        log::trace!("Options: Show Index, include untracked, recurse ignored dirs");
+
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
         log::trace!("Repo status length: {:?}", statuses.len());
 
-        let files: Vec<String> = statuses
+        let files: Vec<(String, Status)> = statuses
             .iter()
-            .map(|s| s.path().unwrap_or_default().to_string())
+            .map(|s| (s.path().unwrap_or_default().to_string(), s.status()))
             .collect();
 
         Ok(files)
     }
 
-    fn stage_files(&self, files: Vec<String>) -> Result<(), Error> {
+    fn stage_files(&self, files: Vec<(String, Status)>) -> Result<(), Error> {
         let mut index = self.git_repo.index()?;
 
         for file in files {
-            index.add_path(Path::new(&file))?;
+            match file.1 {
+                Status::INDEX_NEW
+                | Status::INDEX_MODIFIED
+                | Status::WT_NEW
+                | Status::WT_MODIFIED => {
+                    index.add_path(Path::new(&file.0))?;
+                }
+                Status::INDEX_DELETED | Status::WT_DELETED => {
+                    index.remove_path(Path::new(&file.0))?;
+                }
+                _ => {}
+            }
         }
 
         index.write()?;
@@ -223,7 +252,10 @@ impl GitOps for Client {
         log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
         log::debug!("Branch status: {}", self.branch_status()?);
 
-        log::info!("Commit the staged changes");
+        log::info!(
+            "Commit the staged changes with commit message: {}",
+            commit_message
+        );
 
         self.commit_staged(sign, commit_message, prefix, tag_opt)?;
 
@@ -247,11 +279,15 @@ impl GitOps for Client {
     ) -> Result<(), Error> {
         log::trace!("Commit staged with sign {sign:?}");
 
-        let commit_message = if !self.commit_message.is_empty() {
-            &self.commit_message.clone()
-        } else if !commit_message.is_empty() {
+        log::trace!("Checking commit message: `{commit_message}`");
+        let commit_message = if !commit_message.is_empty() {
+            log::trace!("Using commit message passed to the function");
             commit_message
+        } else if !self.commit_message.is_empty() {
+            log::trace!("Using commit message set in the calling struct");
+            &self.commit_message.clone()
         } else {
+            log::trace!("Using default commit message");
             DEFAULT_COMMIT_MESSAGE
         };
 

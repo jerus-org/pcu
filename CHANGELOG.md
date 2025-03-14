@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.34] - 2025-03-08
 
+### Added
+
+- ✨ add Bsky command for posting to Bluesky(pr [#479])
+
 ### Changed
 
 - 🔧 chore(structure)-reorganize directory structure(pr [#485])

@@ -75,7 +75,7 @@ impl PullRequest {
                 format!("https://github.com/{}/{}", parts[3], parts[4]),
             ))
         } else {
-            Err(Error::UknownPullRequestFormat(pull_request.to_string()))
+            Err(Error::UnknownPullRequestFormat(pull_request.to_string()))
         }
     }
 }

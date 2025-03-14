@@ -1,9 +1,11 @@
+mod bsky;
 mod commit;
 mod label;
 mod pull_request;
 mod push;
 mod release;
 
+use bsky::Bsky;
 use commit::Commit;
 use label::Label;
 use pull_request::Pr;
@@ -12,11 +14,11 @@ use release::Release;
 
 use std::{env, fmt::Display, fs};
 
+use crate::{Client, Error, GitOps, Sign};
+
 use clap::{Parser, Subcommand};
 use color_eyre::Result;
 use config::Config;
-
-use crate::{Client, Error, GitOps, Sign};
 
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
@@ -28,6 +30,8 @@ pub enum CIExit {
     Released,
     Label(String),
     NoLabel,
+    DraftedForBluesky,
+    PostedToBluesky,
 }
 
 #[derive(Parser, Debug)]
@@ -60,6 +64,8 @@ Apply a label to a pull request.
 In default use applies the `rebase` label to the pull request with 
 the lowest number submitted by the `renovate` user")]
     Label(Label),
+    /// Post summaries and link to new or changed blog posts to bluesky
+    Bsky(Bsky),
 }
 
 impl Display for Commands {
@@ -70,6 +76,7 @@ impl Display for Commands {
             Commands::Commit(_) => write!(f, "commit"),
             Commands::Push(_) => write!(f, "push"),
             Commands::Label(_) => write!(f, "label"),
+            Commands::Bsky(_) => write!(f, "bluesky"),
         }
     }
 }
@@ -77,7 +84,7 @@ impl Display for Commands {
 impl Commands {
     async fn get_client(&self) -> Result<Client, Error> {
         let settings = self.get_settings()?;
-        let client = Client::new_with(settings).await?;
+        let client = Client::new_with(&settings).await?;
 
         Ok(client)
     }
@@ -115,6 +122,37 @@ impl Commands {
             Commands::Label(_) => settings
                 .set_override("commit_message", "chore: update changelog for release")?
                 .set_override("command", "label")?,
+            Commands::Bsky(_) => settings.set_override("command", "bsky")?,
+        };
+
+        settings = if let Commands::Bsky(bsky) = self {
+            if let Some(_owner) = &bsky.owner {
+                settings.set_override("username", "OWNER")?
+            } else {
+                settings
+            }
+        } else {
+            settings
+        };
+
+        settings = if let Commands::Bsky(bsky) = self {
+            if let Some(_repo) = &bsky.repo {
+                settings.set_override("reponame", "REPO")?
+            } else {
+                settings
+            }
+        } else {
+            settings
+        };
+
+        settings = if let Commands::Bsky(bsky) = self {
+            if let Some(_branch) = &bsky.branch {
+                settings.set_override("branch", "BRANCH")?
+            } else {
+                settings
+            }
+        } else {
+            settings
         };
 
         settings = if let Ok(pat) = env::var(GITHUB_PAT) {

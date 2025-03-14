@@ -1,7 +1,8 @@
+use crate::Error;
+
 use super::{CIExit, Commands, GitOps};
 
 use clap::Parser;
-use color_eyre::Result;
 use owo_colors::{OwoColorize, Style};
 
 /// Configuration for the Push command
@@ -26,7 +27,7 @@ impl Push {
         None
     }
 
-    pub async fn run_push(&self) -> Result<CIExit> {
+    pub async fn run_push(&self) -> Result<CIExit, Error> {
         let client = Commands::Push(self.clone()).get_client().await?;
 
         log::info!("Push the commit");
