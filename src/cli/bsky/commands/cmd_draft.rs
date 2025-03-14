@@ -84,7 +84,9 @@ impl CmdDraft {
         let sign = Sign::Gpg;
         // Commit the posts to the git repo
         let commit_message = "chore: add drafted bluesky posts to git repo";
-        client.commit_staged(sign, commit_message, "", None)?;
+        client
+            .commit_changed_files(sign, commit_message, "", None)
+            .await?;
 
         Ok(CIExit::DraftedForBluesky)
     }

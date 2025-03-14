@@ -23,7 +23,9 @@ impl CmdPost {
         // Commit to remove the posts successfully sent to Bluesky
         let sign = Sign::Gpg;
         let commit_message = "chore: remove posts that were sent to Bluesky";
-        client.commit_staged(sign, commit_message, "", None)?;
+        client
+            .commit_changed_files(sign, commit_message, "", None)
+            .await?;
 
         Ok(CIExit::PostedToBluesky)
     }
