@@ -430,6 +430,8 @@ jobs:
             bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky/blog
             ls -la bluesky
             git status
+            git diff --stat --staged origin/$(git branch --show-current)
+
       - run:
           name: Draft bsky directory
           command: |
@@ -443,6 +445,7 @@ jobs:
             ls -la bluesky
             cat $(ls -d bluesky/*)
             git status
+            git diff --stat --staged origin/$(git branch --show-current)
 
       - run:
           name: Post bsky directory
@@ -453,6 +456,7 @@ jobs:
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
             git status
+            git diff --stat --staged origin/$(git branch --show-current)
 
       - run:
           name: Test bsky file
@@ -467,6 +471,7 @@ jobs:
             ls -la bluesky
             cat bluesky/$(ls bluesky)
             git status
+            git diff --stat --staged origin/$(git branch --show-current)
 
       - run:
           name: Post bsky directory
@@ -477,6 +482,7 @@ jobs:
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
             git status
+            git diff --stat --staged origin/$(git branch --show-current)
 
 workflows:
   check_last_commit:
