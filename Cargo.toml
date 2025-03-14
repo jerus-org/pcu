@@ -14,13 +14,13 @@ categories = ["development-tools::build-utils", "command-line-utilities"]
 
 [dependencies]
 bsky-sdk = "0.1.16"
-cargo_toml = "0.21.0"
+cargo_toml = "0.22.1"
 chrono = "0.4.40"
-clap = "4.5.31"
+clap = "4.5.32"
 clap-verbosity-flag = "3.0.2"
 color-eyre = "0.6.3"
-config = "0.15.9"
-env_logger = "0.11.6"
+config = "0.15.11"
+env_logger = "0.11.7"
 git2 = "0.20.0"
 gql_client = "1.0.7"
 keep-a-changelog = "0.1.4"
@@ -35,11 +35,11 @@ octocrate = { version = "2.2.0", features = [
 ], default-features = false }
 owo-colors = "4.2.0"
 regex = "1.11.1"
-serde = { version = "1.0.218", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
-tempfile = "3.18.0"
+tempfile = "3.19.0"
 thiserror = "2.0.12"
-tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 toml = "0.8.20"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["std", "env-filter"] }
@@ -47,7 +47,7 @@ url = "2.5.3"
 
 [dev-dependencies]
 rstest = "0.25.0"
-uuid = { version = "1.15.1", features = ["v4"] }
+uuid = { version = "1.16.0", features = ["v4"] }
 
 [lib]
 name = "pcu"

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- deps: update rust crate env_logger to 0.11.7(pr [#505])
+- deps: update rust crate clap to 4.5.32(pr [#503])
+- deps: update rust crate config to 0.15.11(pr [#504])
+- deps: update rust crate serde to 1.0.219(pr [#506])
+- deps: update rust crate cargo_toml to 0.22.1(pr [#507])
+- deps: update rust crate tokio to 1.44.1(pr [#508])
+- deps: update rust crate uuid to 1.16.0(pr [#509])
+
 ## [0.4.34] - 2025-03-08
 
 ### Added
@@ -1185,6 +1197,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#500]: https://github.com/jerus-org/pcu/pull/500
 [#501]: https://github.com/jerus-org/pcu/pull/501
 [#502]: https://github.com/jerus-org/pcu/pull/502
+[#505]: https://github.com/jerus-org/pcu/pull/505
+[#503]: https://github.com/jerus-org/pcu/pull/503
+[#504]: https://github.com/jerus-org/pcu/pull/504
+[#506]: https://github.com/jerus-org/pcu/pull/506
+[#507]: https://github.com/jerus-org/pcu/pull/507
+[#508]: https://github.com/jerus-org/pcu/pull/508
+[#509]: https://github.com/jerus-org/pcu/pull/509
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.34...HEAD
 [0.4.34]: https://github.com/jerus-org/pcu/compare/v0.4.33...v0.4.34
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
 [0.4.32]: https://github.com/jerus-org/pcu/compare/v0.4.31...v0.4.32
