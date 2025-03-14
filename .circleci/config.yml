@@ -377,7 +377,7 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> push ${no_push}
 
-  test-bsky:
+  test-bsky-blog-directory:
     executor: rust-env
     parameters:
       ssh_fingerprint:
@@ -408,18 +408,6 @@ jobs:
       # Start with the test setup workspace
       - attach_workspace:
           at: .
-      # - run:
-      #     name: Create test file
-      #     command: |
-      #       set -ex
-      #       echo "test" > tests/bsky/blog/test.md
-      #       ls -la tests/bsky/blog
-      # - run:
-      #     name: Test bsky filter
-      #     command: |
-      #       set -ex
-
-      #       bin/pcu << parameters.pcu_verbosity >> bsky --filter blog
       - run:
           name: Draft bsky blog directory
           command: |
@@ -429,8 +417,47 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky/blog
             ls -la bluesky
-            git status
-            git diff --stat --staged origin/$(git branch --show-current)
+
+      - run:
+          name: Post bsky blog directory
+          command: |
+            set -ex
+
+            ls -la bluesky
+            bin/pcu << parameters.pcu_verbosity >> bsky post
+            ls -la bluesky
+
+  test-bsky-directory:
+    executor: rust-env
+    parameters:
+      ssh_fingerprint:
+        type: string
+        description: |
+          The fingerprint of the ssh key to use
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      pcu_no_push:
+        type: boolean
+        default: false
+        description: "Whether or not prevent final push of commit"
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      # Start with the test setup workspace
+      - attach_workspace:
+          at: .
 
       - run:
           name: Draft bsky directory
@@ -445,7 +472,6 @@ jobs:
             ls -la bluesky
             cat $(ls -d bluesky/*)
             git status
-            git diff --stat --staged origin/$(git branch --show-current)
 
       - run:
           name: Post bsky directory
@@ -456,7 +482,38 @@ jobs:
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
             git status
-            git diff --stat --staged origin/$(git branch --show-current)
+
+  test-bsky-file:
+    executor: rust-env
+    parameters:
+      ssh_fingerprint:
+        type: string
+        description: |
+          The fingerprint of the ssh key to use
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      pcu_no_push:
+        type: boolean
+        default: false
+        description: "Whether or not prevent final push of commit"
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+      - toolkit/gpg_key
+      - toolkit/git_config
+      # Start with the test setup workspace
+      - attach_workspace:
+          at: .
 
       - run:
           name: Test bsky file
@@ -471,10 +528,9 @@ jobs:
             ls -la bluesky
             cat bluesky/$(ls bluesky)
             git status
-            git diff --stat --staged origin/$(git branch --show-current)
 
       - run:
-          name: Post bsky directory
+          name: Post bsky file
           command: |
             set -ex
 
@@ -482,7 +538,6 @@ jobs:
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
             git status
-            git diff --stat --staged origin/$(git branch --show-current)
 
 workflows:
   check_last_commit:
@@ -560,7 +615,29 @@ workflows:
             - pcu-app
           requires:
             - test-setup
-      - test-bsky:
+      - test-bsky-blog-directory:
+          ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          pcu_verbosity: "-vvvv"
+          pcu_no_push: true
+          context:
+            - release
+            - bot-check
+            - pcu-app
+            - bluesky
+          requires:
+            - test-setup
+      - test-bsky-directory:
+          ssh_fingerprint: << pipeline.parameters.fingerprint >>
+          pcu_verbosity: "-vvvv"
+          pcu_no_push: true
+          context:
+            - release
+            - bot-check
+            - pcu-app
+            - bluesky
+          requires:
+            - test-setup
+      - test-bsky-file:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
@@ -579,7 +656,9 @@ workflows:
           requires:
             - test-push
             - test-commit
-            - test-bsky
+            - test-bsky-blog-directory
+            - test-bsky-directory
+            - test-bsky-file
           context:
             - release
             - bot-check
