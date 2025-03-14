@@ -152,8 +152,12 @@ impl GitOps for Client {
     /// Report a list of the files that have not been staged
     fn repo_files_not_staged(&self) -> Result<Vec<String>, Error> {
         let mut options = StatusOptions::new();
-        options.show(git2::StatusShow::Workdir);
-        options.include_untracked(true);
+        options
+            .show(git2::StatusShow::Workdir)
+            .include_untracked(true)
+            .recurse_untracked_dirs(true);
+        log::trace!("Options: Show Workdir, include untracked, recurse ignored dirs");
+
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
         log::trace!("Repo status length: {:?}", statuses.len());
@@ -169,8 +173,12 @@ impl GitOps for Client {
     /// Report a list of the files that have not been staged
     fn repo_files_staged(&self) -> Result<Vec<String>, Error> {
         let mut options = StatusOptions::new();
-        options.show(git2::StatusShow::Index);
-        options.include_untracked(true);
+        options
+            .show(git2::StatusShow::Index)
+            .include_untracked(true)
+            .recurse_untracked_dirs(true);
+        log::trace!("Options: Show Index, include untracked, recurse ignored dirs");
+
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
         log::trace!("Repo status length: {:?}", statuses.len());
@@ -223,7 +231,10 @@ impl GitOps for Client {
         log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
         log::debug!("Branch status: {}", self.branch_status()?);
 
-        log::info!("Commit the staged changes");
+        log::info!(
+            "Commit the staged changes with commit message: {}",
+            commit_message
+        );
 
         self.commit_staged(sign, commit_message, prefix, tag_opt)?;
 
@@ -247,11 +258,15 @@ impl GitOps for Client {
     ) -> Result<(), Error> {
         log::trace!("Commit staged with sign {sign:?}");
 
-        let commit_message = if !self.commit_message.is_empty() {
-            &self.commit_message.clone()
-        } else if !commit_message.is_empty() {
+        log::trace!("Checking commit message: `{commit_message}`");
+        let commit_message = if !commit_message.is_empty() {
+            log::trace!("Using commit message passed to the function");
             commit_message
+        } else if !self.commit_message.is_empty() {
+            log::trace!("Using commit message set in the calling struct");
+            &self.commit_message.clone()
         } else {
+            log::trace!("Using default commit message");
             DEFAULT_COMMIT_MESSAGE
         };
 
