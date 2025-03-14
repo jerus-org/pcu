@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - deps: update rust crate env_logger to 0.11.7(pr [#505])
 - deps: update rust crate clap to 4.5.32(pr [#503])
+- deps: update rust crate config to 0.15.11(pr [#504])
 
 ## [0.4.34] - 2025-03-08
 
@@ -1190,6 +1191,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#502]: https://github.com/jerus-org/pcu/pull/502
 [#505]: https://github.com/jerus-org/pcu/pull/505
 [#503]: https://github.com/jerus-org/pcu/pull/503
+[#504]: https://github.com/jerus-org/pcu/pull/504
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.34...HEAD
 [0.4.34]: https://github.com/jerus-org/pcu/compare/v0.4.33...v0.4.34
 [0.4.33]: https://github.com/jerus-org/pcu/compare/v0.4.32...v0.4.33
