@@ -6,7 +6,8 @@ use std::{
 
 use clap::ValueEnum;
 use git2::{
-    BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, StatusOptions,
+    BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, Status,
+    StatusOptions,
 };
 use log::log_enabled;
 use octocrate::repos::list_tags::Query;
@@ -33,9 +34,9 @@ pub trait GitOps {
     fn branch_status(&self) -> Result<String, Error>;
     fn branch_list(&self) -> Result<String, Error>;
     fn repo_status(&self) -> Result<String, Error>;
-    fn repo_files_not_staged(&self) -> Result<Vec<String>, Error>;
-    fn repo_files_staged(&self) -> Result<Vec<String>, Error>;
-    fn stage_files(&self, files: Vec<String>) -> Result<(), Error>;
+    fn repo_files_not_staged(&self) -> Result<Vec<(String, Status)>, Error>;
+    fn repo_files_staged(&self) -> Result<Vec<(String, Status)>, Error>;
+    fn stage_files(&self, files: Vec<(String, Status)>) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn commit_changed_files(
         &self,
@@ -150,7 +151,7 @@ impl GitOps for Client {
     }
 
     /// Report a list of the files that have not been staged
-    fn repo_files_not_staged(&self) -> Result<Vec<String>, Error> {
+    fn repo_files_not_staged(&self) -> Result<Vec<(String, Status)>, Error> {
         let mut options = StatusOptions::new();
         options
             .show(git2::StatusShow::Workdir)
@@ -161,22 +162,26 @@ impl GitOps for Client {
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
         log::trace!("Repo status length: {:?}", statuses.len());
-        for status in statuses.iter() {
-            for status in status.status() {
-                log::trace!("Status: {:?}", status);
+        if log::log_enabled!(log::Level::Trace) {
+            for status in statuses.iter() {
+                for status in status.status() {
+                    log::trace!("Status: {:?}", status);
+                }
             }
         }
 
-        let files: Vec<String> = statuses
+        let files: Vec<(String, Status)> = statuses
             .iter()
-            .map(|s| s.path().unwrap_or_default().to_string())
+            .map(|s| (s.path().unwrap_or_default().to_string(), s.status()))
             .collect();
+
+        log::trace!("Files: {:#?}", files);
 
         Ok(files)
     }
 
     /// Report a list of the files that have not been staged
-    fn repo_files_staged(&self) -> Result<Vec<String>, Error> {
+    fn repo_files_staged(&self) -> Result<Vec<(String, Status)>, Error> {
         let mut options = StatusOptions::new();
         options
             .show(git2::StatusShow::Index)
@@ -188,19 +193,30 @@ impl GitOps for Client {
 
         log::trace!("Repo status length: {:?}", statuses.len());
 
-        let files: Vec<String> = statuses
+        let files: Vec<(String, Status)> = statuses
             .iter()
-            .map(|s| s.path().unwrap_or_default().to_string())
+            .map(|s| (s.path().unwrap_or_default().to_string(), s.status()))
             .collect();
 
         Ok(files)
     }
 
-    fn stage_files(&self, files: Vec<String>) -> Result<(), Error> {
+    fn stage_files(&self, files: Vec<(String, Status)>) -> Result<(), Error> {
         let mut index = self.git_repo.index()?;
 
         for file in files {
-            index.add_path(Path::new(&file))?;
+            match file.1 {
+                Status::INDEX_NEW
+                | Status::INDEX_MODIFIED
+                | Status::WT_NEW
+                | Status::WT_MODIFIED => {
+                    index.add_path(Path::new(&file.0))?;
+                }
+                Status::INDEX_DELETED | Status::WT_DELETED => {
+                    index.remove_path(Path::new(&file.0))?;
+                }
+                _ => {}
+            }
         }
 
         index.write()?;
