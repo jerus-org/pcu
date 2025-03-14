@@ -556,7 +556,7 @@ workflows:
             - test-setup
       - test-bsky:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
-          pcu_verbosity: "-vvv"
+          pcu_verbosity: "-vvvv"
           pcu_no_push: true
           context:
             - release
