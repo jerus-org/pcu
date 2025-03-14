@@ -161,6 +161,11 @@ impl GitOps for Client {
         let statuses = self.git_repo.statuses(Some(&mut options))?;
 
         log::trace!("Repo status length: {:?}", statuses.len());
+        for status in statuses.iter() {
+            for status in status.status() {
+                log::trace!("Status: {:?}", status);
+            }
+        }
 
         let files: Vec<String> = statuses
             .iter()
