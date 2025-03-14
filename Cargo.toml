@@ -43,7 +43,7 @@ url = "2.5.3"
 
 [dev-dependencies]
 rstest = "0.25.0"
-uuid = { version = "1.15.1", features = ["v4"] }
+uuid = { version = "1.16.0", features = ["v4"] }
 
 [lib]
 name = "pcu"
