@@ -429,6 +429,7 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky/blog
             ls -la bluesky
+            git status
       - run:
           name: Draft bsky directory
           command: |
@@ -441,6 +442,7 @@ jobs:
             ls -la
             ls -la bluesky
             cat $(ls -d bluesky/*)
+            git status
 
       - run:
           name: Post bsky directory
@@ -450,6 +452,7 @@ jobs:
             ls -la bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
+            git status
 
       - run:
           name: Test bsky file
@@ -463,6 +466,7 @@ jobs:
             ls -la
             ls -la bluesky
             cat bluesky/$(ls bluesky)
+            git status
 
       - run:
           name: Post bsky directory
@@ -472,10 +476,6 @@ jobs:
             ls -la bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
-      - run:
-          name: Check git status
-          command: |
-            set -ex
             git status
 
 workflows:
