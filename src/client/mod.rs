@@ -88,7 +88,7 @@ impl Client {
             Client::get_github_apis(settings, &owner, &repo).await?;
 
         log::trace!("Executing for command: {}", &cmd);
-        let (branch, pull_request) = if &cmd == "pr" {
+        let (branch, pull_request) = if &cmd == "pr" || &cmd == "push" {
             // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
             log::trace!("branch: {:?}", settings.get::<String>("branch"));
             let pcu_branch: String = settings
