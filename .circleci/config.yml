@@ -466,11 +466,6 @@ workflows:
             - release
             - bot-check
             - pcu-app
-          post-steps:
-            - persist_to_workspace:
-                root: .
-                paths:
-                  - CHANGELOG.md
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           # update_pcu: true
@@ -486,9 +481,6 @@ workflows:
             - pcu-app
           requires:
             - toolkit/update_changelog
-          pre-steps:
-            - attach_workspace:
-                at: .
           pcu_verbosity: "-vvvv"
 
   on_success:
