@@ -472,6 +472,7 @@ workflows:
           # install_me: true
           pcu_verbosity: "-vvvv"
           pcu_push: false
+
       - toolkit/push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
@@ -482,6 +483,7 @@ workflows:
           requires:
             - toolkit/update_changelog
           pcu_verbosity: "-vvvv"
+          changelog_updated: true
 
   on_success:
     when:
