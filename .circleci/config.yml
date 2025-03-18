@@ -484,6 +484,7 @@ workflows:
             - toolkit/update_changelog
           pcu_verbosity: "-vvvv"
           changelog_updated: true
+          install_me: true
 
   on_success:
     when:
