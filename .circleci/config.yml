@@ -21,7 +21,7 @@ parameters:
     description: "If true, the release pipeline will be executed."
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@2.1.0
+  toolkit: jerus-org/circleci-toolkit@2.2.0
 
 executors:
   rust-env:
@@ -31,204 +31,7 @@ executors:
     docker:
       - image: jerusdp/ci-rust:base
 
-commands:
-  pipeline_pcu_check:
-    description: >
-      Makes a post request to https://circleci.com/api/v2/pipeline/continue to
-      continue a setup workflow.
-
-    parameters:
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-      pcu_halt_signal:
-        type: string
-        default: "halt"
-        description: "String representing the halt signal"
-      pcu_push:
-        type: boolean
-        default: true
-        description: "Push the commits to the remote repository"
-      api_token_key:
-        type: env_var_name
-        default: TOKEN
-        description: "The api token to use"
-      branch:
-        type: env_var_name
-        default: CIRCLE_BRANCH
-        description: "The branch for the pipeline"
-    steps:
-      - run:
-          name: Update change or redirect to success pipeline
-          command: |
-            set -ex
-
-            if [ true == << parameters.pcu_push >> ]; then
-              push="--push"
-            else
-             push=""
-            fi
-
-            result=$(pcu <<parameters.pcu_verbosity>> pr --early-exit $push)
-            if [ "$result" == << parameters.pcu_halt_signal >> ]; then
-              export PROJECT_SLUG="gh/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-              BODY='{"branch":"'
-              BODY+=${<< parameters.branch >>}
-              BODY+='","parameters":{"success-flag":true}}'
-              echo $BODY
-              curl -u ${CIRCLE_TOKEN}: \
-                -X POST \
-                --header 'content-type: application/json' \
-                -d $BODY \
-                https://circleci.com/api/v2/project/$PROJECT_SLUG/pipeline
-            fi
-
 jobs:
-  update_changelog:
-    description: >
-      Update the changelog based on the pull request
-
-    executor:
-      name: rust-env
-
-    parameters:
-      min_rust_version:
-        type: string
-        description: "The minimum version of the rust compiler to use"
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
-      gpg_key:
-        type: env_var_name
-        default: BOT_GPG_KEY
-        description: "The base64 encoded GPG key"
-      gpg_trust:
-        type: env_var_name
-        default: BOT_TRUST
-        description: "The trust associated with the GPG key"
-      user_email:
-        type: env_var_name
-        default: BOT_USER_EMAIL
-        description: "The user email associated with the GPG key"
-      user_name:
-        type: env_var_name
-        default: BOT_USER_NAME
-        description: "The user name associated with the GPG key"
-      sign_key:
-        type: env_var_name
-        default: BOT_SIGN_KEY
-        description: "The GPG key id associated with the GPG key"
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-      pcu_halt_signal:
-        type: string
-        default: "halt"
-        description: "The verbosity of the pcu command"
-      update_log_option:
-        type: enum
-        enum: ["halt", "pipeline"]
-        default: "pipeline"
-        description: "The option to halt or continue with new pipeline when a change log does not need to be updated"
-      update_pcu:
-        type: boolean
-        default: false
-        description: "Update pcu to the latest code from the git repo"
-      install_me:
-        type: boolean
-        default: false
-        description: "Install the current crate as a binary"
-      install_me_path:
-        type: string
-        default: "."
-        description: "The path to the crate to install"
-      label_option:
-        type: boolean
-        default: false
-        description: "Apply a label to the oldest open PR created by the specified author"
-      pcu_author:
-        type: string
-        default: ""
-        description: "Custom pull request author."
-      pcu_label:
-        type: string
-        default: ""
-        description: "Custom pull request label."
-      pcu_desc:
-        type: string
-        default: ""
-        description: "Custom pull request description."
-      pcu_colour:
-        type: string
-        default: ""
-        description: "Custom pull request colour."
-      pcu_push:
-        type: boolean
-        default: true
-        description: "Optional flag to allow the push to fail"
-      pcu_allow_push_fail:
-        type: enum
-        enum:
-          - ""
-          - "--allow-push-fail"
-        default: ""
-        description: "Optional flag to allow the push to fail"
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - when:
-          condition: << parameters.update_pcu >>
-          steps:
-            - toolkit/install_latest_pcu
-      - when:
-          condition: << parameters.install_me >>
-          steps:
-            - toolkit/install_me:
-                path_to_crate: << parameters.install_me_path >>
-      - run:
-          name: pcu version
-          command: |
-            pcu --version
-      - when:
-          condition:
-            equal: [halt, << parameters.update_log_option >>]
-          steps:
-            - toolkit/update_log:
-                pcu_verbosity: <<parameters.pcu_verbosity>>
-                pcu_halt_signal: <<parameters.pcu_halt_signal>>
-                pcu_allow_push_fail: <<parameters.pcu_allow_push_fail>>
-      - when:
-          condition:
-            equal: [true, << parameters.label_option >>]
-          steps:
-            - toolkit/label_pr:
-                pcu_verbosity: <<parameters.pcu_verbosity>>
-                pcu_author: <<parameters.pcu_author>>
-                pcu_label: <<parameters.pcu_label>>
-                pcu_desc: <<parameters.pcu_desc>>
-                pcu_colour: <<parameters.pcu_colour>>
-      - when:
-          condition:
-            equal: [pipeline, << parameters.update_log_option >>]
-          steps:
-            - pipeline_pcu_check:
-                pcu_verbosity: <<parameters.pcu_verbosity>>
-                pcu_halt_signal: <<parameters.pcu_halt_signal>>
-                pcu_push: <<parameters.pcu_push>>
-
   test-setup:
     executor: rust-env
     parameters:
@@ -652,7 +455,7 @@ workflows:
       - toolkit/security:
           context: SonarCloud
           ignore_advisories: "RUSTSEC-2025-0007"
-      - update_changelog:
+      - toolkit/update_changelog:
           requires:
             - test-push
             - test-commit
@@ -677,7 +480,7 @@ workflows:
             - bot-check
             - pcu-app
           requires:
-            - update_changelog
+            - toolkit/update_changelog
 
   on_success:
     when:
