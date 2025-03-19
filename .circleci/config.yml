@@ -21,7 +21,7 @@ parameters:
     description: "If true, the release pipeline will be executed."
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@2.4.0
+  toolkit: jerus-org/circleci-toolkit@2.5.0
 
 executors:
   rust-env:
@@ -473,7 +473,7 @@ workflows:
           pcu_verbosity: "-vvvv"
           pcu_push: false
 
-      - toolkit/push:
+      - toolkit/commit_and_push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           context:
@@ -484,6 +484,7 @@ workflows:
             - toolkit/update_changelog
           pcu_verbosity: "-vvvv"
           changelog_updated: true
+          pcu_commit_message: "chore: update changelog for pr"
           install_me: true
 
   on_success:
