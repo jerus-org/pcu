@@ -96,14 +96,14 @@ impl Pr {
             crate::cli::print_changelog(client.changelog_as_str(), client.line_limit())
         );
 
-        // Commit the change log
-        let commit_message = "chore: update changelog for pr";
-        client
-            .commit_changed_files(sign, commit_message, &self.prefix, None)
-            .await?;
-
-        // Push the change log (and other commits)
         if self.push {
+            // Commit the change log
+            let commit_message = "chore: update changelog for pr";
+            client
+                .commit_changed_files(sign, commit_message, &self.prefix, None)
+                .await?;
+
+            // Push the change log (and other commits)
             self.push_the_commit(client)?;
         };
 
