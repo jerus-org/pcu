@@ -33,6 +33,9 @@ pub struct Bsky {
     /// file with application private key for access to the repository
     #[arg(short, long)]
     pub pk: Option<String>,
+    /// directory to store the Bluesky posts
+    #[arg(short, long, default_value_t = BSKY_POSTS_DIR.to_string())]
+    pub store: String,
     /// Command to execute
     #[command(subcommand)]
     pub cmd: Cmd,
