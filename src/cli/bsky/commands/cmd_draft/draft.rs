@@ -139,7 +139,6 @@ impl Draft {
             std::fs::create_dir_all(self.store.clone())?;
         }
 
-
         for blog_post in &self.blog_posts {
             let Some(bluesky_post) = &blog_post.bluesky_post else {
                 log::warn!("No Bluesky post found for blog post: {}", blog_post.title);
@@ -154,11 +153,7 @@ impl Draft {
             log::trace!("Bluesky post: {bluesky_post:#?}");
             log::debug!("Post filename: {}", filename);
 
-            let post_file = format!(
-                "{}/{}.post",
-                self.store,
-                filename.trim_end_matches(".md")
-            );
+            let post_file = format!("{}/{}.post", self.store, filename.trim_end_matches(".md"));
             log::debug!("Post file: {}", post_file);
 
             let file = File::create(post_file)?;
