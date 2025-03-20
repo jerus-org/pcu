@@ -11,7 +11,6 @@ use bsky_sdk::{
 pub use front_matter::FrontMatter;
 use site_config::SiteConfig;
 
-use super::super::super::BSKY_POSTS_DIR;
 use crate::Error;
 
 #[derive(Clone, Default)]
@@ -19,6 +18,7 @@ pub struct Draft {
     blog_posts: Vec<FrontMatter>,
     base_url: String,
     path: String,
+    store: String,
 }
 impl Draft {
     // pub fn new() -> Result<Self, Error> {
@@ -129,7 +129,16 @@ impl Draft {
         Ok(self)
     }
 
+    pub fn add_store(&mut self, store: &str) -> Result<&mut Self, Error> {
+        self.store = store.to_string();
+        Ok(self)
+    }
     pub fn write_posts(&self) -> Result<(), Error> {
+        // create store directory if it doesn't exist
+        if !std::path::Path::new(&self.store).exists() {
+            std::fs::create_dir_all(self.store.clone())?;
+        }
+
         for blog_post in &self.blog_posts {
             let Some(bluesky_post) = &blog_post.bluesky_post else {
                 log::warn!("No Bluesky post found for blog post: {}", blog_post.title);
@@ -144,11 +153,7 @@ impl Draft {
             log::trace!("Bluesky post: {bluesky_post:#?}");
             log::debug!("Post filename: {}", filename);
 
-            let post_file = format!(
-                "{}/{}.post",
-                BSKY_POSTS_DIR,
-                filename.trim_end_matches(".md")
-            );
+            let post_file = format!("{}/{}.post", self.store, filename.trim_end_matches(".md"));
             log::debug!("Post file: {}", post_file);
 
             let file = File::create(post_file)?;
