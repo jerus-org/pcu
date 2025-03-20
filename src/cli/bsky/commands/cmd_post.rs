@@ -14,10 +14,7 @@ impl CmdPost {
         let id = settings.get::<String>("bsky_id")?;
         let pw = settings.get::<String>("bsky_password")?;
         let store = settings.get::<String>("store")?;
-        Poster::new()?
-            .load(store)?
-            .post_to_bluesky(id, pw)
-            .await?;
+        Poster::new()?.load(store)?.post_to_bluesky(id, pw).await?;
 
         // Commit to remove the posts successfully sent to Bluesky
         let sign = Sign::Gpg;
