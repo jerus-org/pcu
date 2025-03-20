@@ -96,36 +96,6 @@ impl CmdDraft {
     /// Only files ending in `.md` will be returned
     fn get_files_from_path(&self, path: &str) -> Result<Vec<(String, String)>, Error> {
         get_files(path)
-        // let path = PathBuf::from(path);
-        // if !path.exists() {
-        //     return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
-        // };
-
-        // if path.is_file() {
-        //     if path.extension().unwrap_or_default() == "md" {
-        //         Ok(vec![path.to_string_lossy().to_string()])
-        //     } else {
-        //         Err(Error::FileExtensionInvalid(
-        //             path.to_string_lossy().to_string(),
-        //             ".md".to_string(),
-        //         ))
-        //     }
-        // } else if path.is_dir() {
-        //     let paths = fs::read_dir(path)?;
-        //     let mut files = Vec::new();
-        //     for path in paths {
-        //         let path = path?.path();
-        //         if path.is_dir() {
-        //             // files.append(&mut self.get_files_from_path(&path.to_string_lossy())?);
-        //             continue;
-        //         } else if path.is_file() && path.extension().unwrap_or_default() == "md" {
-        //             files.push(path.to_string_lossy().to_string());
-        //         }
-        //     }
-        //     return Ok(files);
-        // } else {
-        //     return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
-        // }
     }
 
     /// Filter for Markdown files containing blog posts
