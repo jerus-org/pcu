@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 👷 ci(circleci)-update toolkit orb and streamline config(pr [#510])
+- ♻️ refactor(cmd_draft)-clean up get_files_from_path function(pr [#511])
 
 ## [0.4.35] - 2025-03-15
 
@@ -1211,6 +1212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#508]: https://github.com/jerus-org/pcu/pull/508
 [#509]: https://github.com/jerus-org/pcu/pull/509
 [#510]: https://github.com/jerus-org/pcu/pull/510
+[#511]: https://github.com/jerus-org/pcu/pull/511
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.35...HEAD
 [0.4.35]: https://github.com/jerus-org/pcu/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/jerus-org/pcu/compare/v0.4.33...v0.4.34
