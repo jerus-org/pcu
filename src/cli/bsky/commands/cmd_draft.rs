@@ -79,6 +79,7 @@ impl CmdDraft {
             .add_posts(&mut front_matters)?
             .process_posts()
             .await?
+            .add_store(&settings.get_string("store")?)?
             .write_posts()?;
 
         let sign = Sign::Gpg;

@@ -122,7 +122,10 @@ impl Commands {
             Commands::Label(_) => settings
                 .set_override("commit_message", "chore: update changelog for release")?
                 .set_override("command", "label")?,
-            Commands::Bsky(_) => settings.set_override("command", "bsky")?,
+            Commands::Bsky(bsky) => settings
+                .set_override("commit_message", "chore: add Bluesky posts to repository")?
+                .set_override("store", bsky.store.clone())?
+                .set_override("command", "bsky")?
         };
 
         settings = if let Commands::Bsky(bsky) = self {
