@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 👷 ci(circleci)-update toolkit orb and streamline config(pr [#510])
 - ♻️ refactor(cmd_draft)-clean up get_files_from_path function(pr [#511])
 
+### Fixed
+
+- deps: update rust crate git2 to 0.20.1(pr [#513])
+
 ## [0.4.35] - 2025-03-15
 
 ### Fixed
@@ -1218,6 +1222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#510]: https://github.com/jerus-org/pcu/pull/510
 [#511]: https://github.com/jerus-org/pcu/pull/511
 [#512]: https://github.com/jerus-org/pcu/pull/512
+[#513]: https://github.com/jerus-org/pcu/pull/513
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.35...HEAD
 [0.4.35]: https://github.com/jerus-org/pcu/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/jerus-org/pcu/compare/v0.4.33...v0.4.34
