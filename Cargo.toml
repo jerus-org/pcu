@@ -37,7 +37,7 @@ owo-colors = "4.2.0"
 regex = "1.11.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
-tempfile = "3.19.0"
+tempfile = "3.19.1"
 thiserror = "2.0.12"
 tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 toml = "0.8.20"
