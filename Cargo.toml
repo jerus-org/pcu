@@ -21,7 +21,7 @@ clap-verbosity-flag = "3.0.2"
 color-eyre = "0.6.3"
 config = "0.15.11"
 env_logger = "0.11.7"
-git2 = "0.20.0"
+git2 = "0.20.1"
 gql_client = "1.0.7"
 keep-a-changelog = "0.1.4"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
