@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate git2 to 0.20.1(pr [#513])
+- deps: update rust crate tempfile to 3.19.1(pr [#514])
 
 ## [0.4.35] - 2025-03-15
 
@@ -1223,6 +1224,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#511]: https://github.com/jerus-org/pcu/pull/511
 [#512]: https://github.com/jerus-org/pcu/pull/512
 [#513]: https://github.com/jerus-org/pcu/pull/513
+[#514]: https://github.com/jerus-org/pcu/pull/514
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.35...HEAD
 [0.4.35]: https://github.com/jerus-org/pcu/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/jerus-org/pcu/compare/v0.4.33...v0.4.34
