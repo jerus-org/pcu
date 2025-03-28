@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- deps: update rust crate clap to 4.5.34(pr [#516])
+
 ## [0.4.36] - 2025-03-22
 
 ### Added
@@ -1227,6 +1233,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#513]: https://github.com/jerus-org/pcu/pull/513
 [#514]: https://github.com/jerus-org/pcu/pull/514
 [#515]: https://github.com/jerus-org/pcu/pull/515
+[#516]: https://github.com/jerus-org/pcu/pull/516
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.36...HEAD
 [0.4.36]: https://github.com/jerus-org/pcu/compare/v0.4.35...v0.4.36
 [0.4.35]: https://github.com/jerus-org/pcu/compare/v0.4.34...v0.4.35
 [0.4.34]: https://github.com/jerus-org/pcu/compare/v0.4.33...v0.4.34
