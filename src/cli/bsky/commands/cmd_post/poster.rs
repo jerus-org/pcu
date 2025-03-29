@@ -86,7 +86,7 @@ impl Poster {
                 log::info!(
                     "Successfully posted `{}` to Bluesky and deleted the source file `{}`!",
                     bsky_post.post.text,
-                    bsky_post.filename.to_string_lossy().to_string()
+                    bsky_post.filename.to_string_lossy()
                 );
             } else {
                 let result = agent.create_record(bsky_post.post.clone()).await;
@@ -110,7 +110,7 @@ impl Poster {
                         .text
                         .split_terminator('\n')
                         .collect::<Vec<&str>>()[0],
-                    bsky_post.filename.to_string_lossy().to_string()
+                    bsky_post.filename.to_string_lossy()
                 );
             };
         }
