@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate clap to 4.5.35(pr [#519])
 - deps: update rust crate env_logger to 0.11.8(pr [#520])
 
+### Security
+
+- Dependencies: bump openssl from 0.10.71 to 0.10.72 in the cargo group across 1 directory(pr [#521])
+
 ## [0.4.37] - 2025-03-29
 
 ### Fixed
@@ -1247,6 +1251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#518]: https://github.com/jerus-org/pcu/pull/518
 [#519]: https://github.com/jerus-org/pcu/pull/519
 [#520]: https://github.com/jerus-org/pcu/pull/520
+[#521]: https://github.com/jerus-org/pcu/pull/521
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.37...HEAD
 [0.4.37]: https://github.com/jerus-org/pcu/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/jerus-org/pcu/compare/v0.4.35...v0.4.36
