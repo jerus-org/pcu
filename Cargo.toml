@@ -13,7 +13,7 @@ include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
 categories = ["development-tools::build-utils", "command-line-utilities"]
 
 [dependencies]
-bsky-sdk = "0.1.16"
+bsky-sdk = "0.1.18"
 cargo_toml = "0.22.1"
 chrono = "0.4.40"
 clap = "4.5.34"
