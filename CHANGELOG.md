@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- 👷 ci(circleci)-add tools job to CI configuration(pr [#523])
+
 ## [0.4.38] - 2025-04-05
 
 ### Fixed
@@ -1247,6 +1253,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#518]: https://github.com/jerus-org/pcu/pull/518
 [#519]: https://github.com/jerus-org/pcu/pull/519
 [#520]: https://github.com/jerus-org/pcu/pull/520
+[#523]: https://github.com/jerus-org/pcu/pull/523
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.38...HEAD
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
 [0.4.37]: https://github.com/jerus-org/pcu/compare/v0.4.36...v0.4.37
 [0.4.36]: https://github.com/jerus-org/pcu/compare/v0.4.35...v0.4.36
