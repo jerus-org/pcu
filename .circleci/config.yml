@@ -342,6 +342,21 @@ jobs:
             ls -la bluesky
             git status
 
+  tools:
+    executor: rust-env
+    steps:
+      - run:
+          name: Run tools
+          command: |
+            set -ex
+            nextsv --version
+            pcu --version
+            wasmtime --version
+            wasmpack --version
+            cargo release --version
+            cargo audit --version
+            git --version
+
 workflows:
   check_last_commit:
     when:
@@ -510,6 +525,7 @@ workflows:
         - not: << pipeline.parameters.success-flag >>
         - not: << pipeline.parameters.validation-flag >>
     jobs:
+      - tools
       - toolkit/save_next_version:
           min_rust_version: << pipeline.parameters.min-rust-version >>
 
