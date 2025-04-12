@@ -524,6 +524,7 @@ workflows:
             - <<  pipeline.parameters.release-flag >>
         - not: << pipeline.parameters.success-flag >>
         - not: << pipeline.parameters.validation-flag >>
+        - <<  pipeline.parameters.release-flag >>
     jobs:
       - tools
       - toolkit/save_next_version:
