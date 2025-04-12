@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 👷 ci(circleci)-add tools job to CI configuration(pr [#523])
+- 👷 ci(circleci)-update workflow conditions(pr [#524])
 
 ## [0.4.38] - 2025-04-05
 
@@ -1254,6 +1255,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#519]: https://github.com/jerus-org/pcu/pull/519
 [#520]: https://github.com/jerus-org/pcu/pull/520
 [#523]: https://github.com/jerus-org/pcu/pull/523
+[#524]: https://github.com/jerus-org/pcu/pull/524
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.38...HEAD
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
 [0.4.37]: https://github.com/jerus-org/pcu/compare/v0.4.36...v0.4.37
