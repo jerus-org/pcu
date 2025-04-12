@@ -351,8 +351,6 @@ jobs:
             set -ex
             nextsv --version
             pcu --version
-            wasmtime --version
-            wasmpack --version
             cargo release --version
             cargo audit --version
             git --version
