@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- 🔧 chore(ci)-remove unused version checks in CircleCI config(pr [#525])
+
 ## [0.4.39] - 2025-04-12
 
 ### Changed
@@ -1256,6 +1262,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#520]: https://github.com/jerus-org/pcu/pull/520
 [#523]: https://github.com/jerus-org/pcu/pull/523
 [#524]: https://github.com/jerus-org/pcu/pull/524
+[#525]: https://github.com/jerus-org/pcu/pull/525
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.39...HEAD
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
 [0.4.37]: https://github.com/jerus-org/pcu/compare/v0.4.36...v0.4.37
