@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 🔧 chore(ci)-remove unused version checks in CircleCI config(pr [#525])
 
+### Fixed
+
+- deps: update rust crate clap to 4.5.36(pr [#526])
+
 ## [0.4.39] - 2025-04-12
 
 ### Changed
@@ -1263,6 +1267,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#523]: https://github.com/jerus-org/pcu/pull/523
 [#524]: https://github.com/jerus-org/pcu/pull/524
 [#525]: https://github.com/jerus-org/pcu/pull/525
+[#526]: https://github.com/jerus-org/pcu/pull/526
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.39...HEAD
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
