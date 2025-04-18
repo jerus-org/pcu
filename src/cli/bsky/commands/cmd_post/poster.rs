@@ -72,12 +72,13 @@ impl Poster {
 
         log::info!("Bluesky login successful!");
 
-        let ci = check_for_ci();
+        let testing = check_for_testing();
+        log::debug!("Testing: {:?}", testing);
 
         for bsky_post in &self.bsky_posts {
             log::debug!("Post: {}", bsky_post.post.text.clone());
 
-            if ci {
+            if testing {
                 log::debug!("Post validation: `{:?}`", "Pretending for CI");
 
                 log::debug!("Deleting related file: {:?}", bsky_post.filename);
@@ -119,6 +120,6 @@ impl Poster {
     }
 }
 
-fn check_for_ci() -> bool {
-    std::env::var("CI").is_ok()
+fn check_for_testing() -> bool {
+    std::env::var("TESTING").is_ok()
 }

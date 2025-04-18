@@ -21,7 +21,7 @@ parameters:
     description: "If true, the release pipeline will be executed."
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@2.8.1
+  toolkit: jerus-org/circleci-toolkit@2.8.3
 
 executors:
   rust-env:
@@ -226,6 +226,7 @@ jobs:
           command: |
             set -ex
 
+            export TESTING=true
             ls -la bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
@@ -281,6 +282,7 @@ jobs:
           command: |
             set -ex
 
+            export TESTING=true
             ls -la bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
@@ -337,6 +339,7 @@ jobs:
           command: |
             set -ex
 
+            export TESTING=true
             ls -la bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
             ls -la bluesky
