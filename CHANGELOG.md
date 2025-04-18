@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate clap to 4.5.36(pr [#526])
+- deps: update rust crate tokio to 1.44.2(pr [#527])
 
 ## [0.4.39] - 2025-04-12
 
@@ -1268,6 +1269,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#524]: https://github.com/jerus-org/pcu/pull/524
 [#525]: https://github.com/jerus-org/pcu/pull/525
 [#526]: https://github.com/jerus-org/pcu/pull/526
+[#527]: https://github.com/jerus-org/pcu/pull/527
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.39...HEAD
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
