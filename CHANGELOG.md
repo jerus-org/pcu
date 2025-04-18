@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 🔧 chore(ci)-remove unused version checks in CircleCI config(pr [#525])
+- ♻️ refactor(cli)-replace CI check with testing check(pr [#529])
 
 ### Fixed
 
@@ -1272,6 +1273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#526]: https://github.com/jerus-org/pcu/pull/526
 [#527]: https://github.com/jerus-org/pcu/pull/527
 [#528]: https://github.com/jerus-org/pcu/pull/528
+[#529]: https://github.com/jerus-org/pcu/pull/529
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.39...HEAD
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
