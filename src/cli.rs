@@ -32,6 +32,7 @@ pub enum CIExit {
     NoLabel,
     DraftedForBluesky,
     PostedToBluesky,
+    NoFilesToProcess,
 }
 
 #[derive(Parser, Debug)]
