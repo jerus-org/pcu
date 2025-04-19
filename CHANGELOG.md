@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ✨ add fail_on_missing option to CmdPost(pr [#530])
+
 ### Changed
 
 - 🔧 chore(ci)-remove unused version checks in CircleCI config(pr [#525])
@@ -1274,6 +1278,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#527]: https://github.com/jerus-org/pcu/pull/527
 [#528]: https://github.com/jerus-org/pcu/pull/528
 [#529]: https://github.com/jerus-org/pcu/pull/529
+[#530]: https://github.com/jerus-org/pcu/pull/530
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.39...HEAD
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
