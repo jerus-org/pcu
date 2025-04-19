@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
                 CIExit::NoLabel => log::info!("No label required"),
                 CIExit::DraftedForBluesky => log::info!("Drafted for Bluesky"),
                 CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
+                CIExit::NoFilesToProcess => log::info!("No files to process"),
             };
             Ok(())
         }
