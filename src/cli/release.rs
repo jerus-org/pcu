@@ -128,7 +128,11 @@ impl Release {
             log::info!("Push the commit");
             log::trace!("tag_opt: {:?} and no_push: {:?}", Some(&version), false);
 
-            client.push_commit(&self.prefix, Some(&version), false)?;
+            let bot_user_name =
+                std::env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
+            log::debug!("Using bot user name: {}", bot_user_name);
+
+            client.push_commit(&self.prefix, Some(&version), false, &bot_user_name)?;
             let hdr_style = Style::new().bold().underline();
             log::debug!("{}", "Check Push".style(hdr_style));
             log::debug!("Branch status: {}", client.branch_status()?);

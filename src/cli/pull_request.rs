@@ -118,7 +118,10 @@ impl Pr {
         }
         log::trace!("tag_opt: None and no_push: false");
 
-        let res = client.push_commit(&self.prefix, None, false);
+        let bot_user_name = std::env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
+        log::debug!("Using bot user name: {}", bot_user_name);
+
+        let res = client.push_commit(&self.prefix, None, false, &bot_user_name);
         let hdr_style = Style::new().bold().underline();
         log::debug!("{}", "Check Push".style(hdr_style));
         log::debug!("Branch status: {}", client.branch_status()?);
