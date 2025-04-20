@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - ✨ add fail_on_missing option to CmdPost(pr [#530])
+- ✨ add bot user name for push_commit(pr [#531])
 
 ### Changed
 
@@ -1279,6 +1280,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#528]: https://github.com/jerus-org/pcu/pull/528
 [#529]: https://github.com/jerus-org/pcu/pull/529
 [#530]: https://github.com/jerus-org/pcu/pull/530
+[#531]: https://github.com/jerus-org/pcu/pull/531
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.39...HEAD
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
