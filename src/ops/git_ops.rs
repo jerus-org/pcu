@@ -52,7 +52,13 @@ pub trait GitOps {
         prefix: &str,
         tag: Option<&str>,
     ) -> Result<(), Error>;
-    fn push_commit(&self, prefix: &str, version: Option<&str>, no_push: bool) -> Result<(), Error>;
+    fn push_commit(
+        &self,
+        prefix: &str,
+        version: Option<&str>,
+        no_push: bool,
+        bot_user_name: &str,
+    ) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn label_next_pr(
         &self,
@@ -390,13 +396,24 @@ impl GitOps for Client {
         Ok(())
     }
 
-    fn push_commit(&self, prefix: &str, version: Option<&str>, no_push: bool) -> Result<(), Error> {
+    fn push_commit(
+        &self,
+        prefix: &str,
+        version: Option<&str>,
+        no_push: bool,
+        bot_user_name: &str,
+    ) -> Result<(), Error> {
         log::trace!("version: {version:?} and no_push: {no_push}");
         let mut remote = self.git_repo.find_remote("origin")?;
         log::trace!("Pushing changes to {:?}", remote.name());
         let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(|_url, username_from_url, _allowed_types| {
-            Cred::ssh_key_from_agent(username_from_url.unwrap())
+
+        callbacks.credentials(move |_url, username_from_url, _allowed_types| {
+            if let Some(username_from_url) = username_from_url {
+                Cred::ssh_key_from_agent(username_from_url)
+            } else {
+                Cred::username(bot_user_name)
+            }
         });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
@@ -436,7 +453,6 @@ impl GitOps for Client {
 
         Ok(())
     }
-
     /// Rebase the next pr of dependency updates if any
     #[instrument(skip(self))]
     async fn label_next_pr(
