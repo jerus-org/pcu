@@ -410,9 +410,11 @@ impl GitOps for Client {
 
         callbacks.credentials(move |_url, username_from_url, _allowed_types| {
             if let Some(username_from_url) = username_from_url {
+                log::trace!("Using username from url: {}", username_from_url);
                 Cred::ssh_key_from_agent(username_from_url)
             } else {
-                Cred::username(bot_user_name)
+                log::trace!("Using ssh key from bot user name: {}", bot_user_name);
+                Cred::ssh_key_from_agent(bot_user_name)
             }
         });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
