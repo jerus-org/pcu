@@ -6,9 +6,9 @@ use std::{
 
 use clap::ValueEnum;
 use git2::{
-    BranchType, Cred, Direction, Oid, PushOptions, RemoteCallbacks, Signature, Status,
-    StatusOptions,
+    BranchType, Direction, Oid, PushOptions, RemoteCallbacks, Signature, Status, StatusOptions,
 };
+use git2_credentials::CredentialHandler;
 use log::log_enabled;
 use octocrate::repos::list_tags::Query;
 use owo_colors::{OwoColorize, Style};
@@ -401,7 +401,7 @@ impl GitOps for Client {
         prefix: &str,
         version: Option<&str>,
         no_push: bool,
-        bot_user_name: &str,
+        _bot_user_name: &str,
     ) -> Result<(), Error> {
         log::trace!("version: {version:?} and no_push: {no_push}");
         let mut remote = self.git_repo.find_remote("origin")?;
@@ -423,7 +423,6 @@ impl GitOps for Client {
         //         cred
         //     }
         // });
-        log::trace!("callbacks: {:?}", callbacks);
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
 
