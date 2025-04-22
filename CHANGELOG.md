@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 🔧 chore(ci)-remove unused version checks in CircleCI config(pr [#525])
 - ♻️ refactor(cli)-replace CI check with testing check(pr [#529])
+- 📦 build(dependencies)-update Cargo dependencies(pr [#534])
 
 ### Fixed
 
@@ -1285,6 +1286,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#531]: https://github.com/jerus-org/pcu/pull/531
 [#532]: https://github.com/jerus-org/pcu/pull/532
 [#533]: https://github.com/jerus-org/pcu/pull/533
+[#534]: https://github.com/jerus-org/pcu/pull/534
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.39...HEAD
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
 [0.4.38]: https://github.com/jerus-org/pcu/compare/v0.4.37...v0.4.38
