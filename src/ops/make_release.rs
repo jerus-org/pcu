@@ -48,25 +48,40 @@ impl MakeRelease for Client {
         let commit = Self::get_commitish_for_tag(self, &tag).await?;
         log::trace!("Commit: {:#?}", commit);
 
-        let release_request = octocrate::repos::create_release::Request {
-            body: Some(release_notes.body.to_string()),
-            discussion_category_name: None,
-            draft: Some(false),
-            generate_release_notes: Some(false),
-            make_latest: Some(RequestMakeLatest::True),
-            name: Some(release_notes.name.to_string()),
-            prerelease: Some(false),
-            tag_name: tag,
-            target_commitish: Some(commit),
-        };
+        // let release_request = octocrate::repos::create_release::Request {
+        //     body: Some(release_notes.body.to_string()),
+        //     discussion_category_name: None,
+        //     draft: Some(false),
+        //     generate_release_notes: Some(false),
+        //     make_latest: Some(RequestMakeLatest::True),
+        //     name: Some(release_notes.name.to_string()),
+        //     prerelease: Some(false),
+        //     tag_name: tag,
+        //     target_commitish: Some(commit),
+        // };
 
-        let release = self
+        let release_request = octocrate::repos::create_release::Request::builder()
+            .body(release_notes.body.to_string())
+            .make_latest(RequestMakeLatest::True)
+            .name(release_notes.name.to_string())
+            .tag_name(tag)
+            .target_commitish(commit)
+            .build();
+
+        let release = match self
             .github_rest
             .repos
             .create_release(self.owner(), self.repo())
             .body(&release_request)
             .send()
-            .await?;
+            .await
+        {
+            Ok(release) => release,
+            Err(e) => {
+                log::error!("Error creating release: {e}");
+                return Err(e.into());
+            }
+        };
 
         log::trace!("Release: {:#?}", release);
 

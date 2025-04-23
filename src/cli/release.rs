@@ -53,7 +53,7 @@ impl Release {
                 let prefix = format!("{}-{}", package.name, self.prefix);
                 let version = package.version;
                 let tag = format!("{prefix}{version}");
-                if !client.tag_exists(&tag) {
+                if !client.tag_exists(&tag).await {
                     log::error!("Tag does not exist: {tag}");
                 } else {
                     log::info!("Tag already exists: {tag}, attempt to make release");
@@ -82,7 +82,8 @@ impl Release {
                 let prefix = format!("{}-{}", package.name, self.prefix);
                 let version = package.version;
                 let tag = format!("{prefix}{version}");
-                if !client.tag_exists(&tag) {
+                log::trace!("Checking for tag `{tag}` to make release against.");
+                if !client.tag_exists(&tag).await {
                     log::error!("Tag does not exist: {tag}");
                 } else {
                     log::info!("Tag already exists: {tag}, attempt to make release");
