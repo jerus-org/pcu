@@ -14,8 +14,8 @@ use octocrate::repos::list_tags::Query;
 use owo_colors::{OwoColorize, Style};
 use tracing::instrument;
 
-use crate::client::graphql::GraphQLGetOpenPRs;
 use crate::client::graphql::GraphQLLabelPR;
+use crate::client::graphql::{GraphQLGetOpenPRs, GraphQLGetTag};
 use crate::Client;
 use crate::Error;
 
@@ -68,7 +68,8 @@ pub trait GitOps {
         colour: Option<&str>,
     ) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
-    fn tag_exists(&self, tag: &str) -> bool;
+    #[allow(async_fn_in_trait)]
+    async fn tag_exists(&self, tag: &str) -> bool;
     #[allow(async_fn_in_trait)]
     async fn get_commitish_for_tag(&self, version: &str) -> Result<String, Error>;
 }
@@ -84,20 +85,24 @@ impl GitOps for Client {
         Ok(())
     }
 
-    fn tag_exists(&self, tag: &str) -> bool {
-        let names = self.git_repo.tag_names(Some(tag));
+    // fn tag_exists(&self, tag: &str) -> bool {
+    //     let names = self.git_repo.tag_names(Some(tag));
 
-        if names.is_err() {
-            return false;
-        };
+    //     if names.is_err() {
+    //         return false;
+    //     };
 
-        let names = names.unwrap();
+    //     let names = names.unwrap();
 
-        if names.is_empty() {
-            return false;
-        }
+    //     if names.is_empty() {
+    //         return false;
+    //     }
 
-        true
+    //     true
+    // }
+
+    async fn tag_exists(&self, tag: &str) -> bool {
+        self.get_tag(tag).await.is_ok()
     }
 
     async fn get_commitish_for_tag(&self, tag: &str) -> Result<String, Error> {
