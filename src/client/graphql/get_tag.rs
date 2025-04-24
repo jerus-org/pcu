@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 use crate::{Client, Error, GraphQLWrapper};
@@ -7,7 +8,7 @@ use tracing::instrument;
 
 pub(crate) trait GraphQLGetTag {
     #[allow(async_fn_in_trait)]
-    async fn get_tag(&self, tag: &str) -> Result<Target, Error>;
+    async fn get_tag(&self, tag: &str) -> Result<TagTarget, Error>;
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -27,16 +28,33 @@ struct Repository {
 
 #[derive(Deserialize, Debug, Clone)]
 struct References {
-    target: Target,
+    target: TagTarget,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Target {
+pub(crate) struct TagTarget {
     #[serde(rename = "__typename")]
     typename: String,
     name: String,
     message: String,
     tagger: Tagger,
+    commit: Option<Commit>,
+    target: Option<CommitTarget>,
+}
+
+impl TagTarget {
+    pub fn commit_sha(&self) -> Option<String> {
+        let mut sha = None;
+        if let Some(commit) = &self.commit {
+            sha = Some(commit.oid.clone());
+        }
+
+        if let Some(target) = &self.target {
+            sha = Some(target.oid.clone());
+        }
+
+        sha
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -44,6 +62,28 @@ pub(crate) struct Tagger {
     name: String,
     email: String,
     date: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct Commit {
+    oid: String,
+    #[serde(rename = "committedDate")]
+    committed_date: NaiveDateTime,
+    author: Author,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct Author {
+    name: String,
+    email: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct CommitTarget {
+    oid: String,
+    #[serde(rename = "committedDate")]
+    committed_date: NaiveDateTime,
+    author: Author,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -55,7 +95,7 @@ struct Vars {
 
 impl GraphQLGetTag for Client {
     #[instrument(skip(self))]
-    async fn get_tag(&self, tag: &str) -> Result<Target, Error> {
+    async fn get_tag(&self, tag: &str) -> Result<TagTarget, Error> {
         let query = r#"
                     query ($owner: String!, $name: String!, $tag: String!) {
                 repository(owner: $owner, name: $name) {
@@ -69,6 +109,25 @@ impl GraphQLGetTag for Client {
                           name
                           email
                           date
+                        }
+                        target {
+                            ... on Commit {
+                              oid
+                              committedDate
+                              author {
+                                name
+                                email
+                              }
+                            }
+                          }
+                        }
+                        ... on Commit {
+                          oid
+                          committedDate
+                          author {
+                            name
+                            email
+                          }
                         }
                       }
                     }

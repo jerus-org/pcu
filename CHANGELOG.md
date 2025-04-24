@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - ✨ add get_tag functionality(pr [#538])
+- ✨ enhance get_tag with commit details(pr [#539])
 
 ## [0.4.40] - 2025-04-22
 
@@ -1298,6 +1299,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#535]: https://github.com/jerus-org/pcu/pull/535
 [#537]: https://github.com/jerus-org/pcu/pull/537
 [#538]: https://github.com/jerus-org/pcu/pull/538
+[#539]: https://github.com/jerus-org/pcu/pull/539
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.40...HEAD
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39

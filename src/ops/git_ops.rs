@@ -10,7 +10,7 @@ use git2::{
 };
 use git2_credentials::CredentialHandler;
 use log::log_enabled;
-use octocrate::repos::list_tags::Query;
+// use octocrate::repos::list_tags::Query;
 use owo_colors::{OwoColorize, Style};
 use tracing::instrument;
 
@@ -113,43 +113,52 @@ impl GitOps for Client {
             self.repo()
         );
 
-        let mut page_number = 1;
-        let mut more_pages = true;
-        while more_pages {
-            let query = Query {
-                per_page: Some(50),
-                page: Some(page_number),
-            };
+        let tags = self.get_tag(tag).await?;
 
-            let page = self
-                .github_rest
-                .repos
-                .list_tags(self.owner(), self.repo())
-                .query(&query)
-                .send_with_response()
-                .await?;
-
-            for t in page.data {
-                log::trace!("Tag: {}", t.name);
-                if t.name == tag {
-                    return Ok(t.commit.sha);
-                }
-            }
-
-            if let Some(link) = page.headers.get("link") {
-                if let Ok(link) = link.to_str() {
-                    if !link.contains("rel=\"next\"") {
-                        more_pages = false
-                    };
-                }
-            } else {
-                more_pages = false;
-            }
-
-            page_number += 1;
+        if let Some(commit_id) = tags.commit_sha() {
+            log::trace!("Commit id: {commit_id}");
+            Ok(commit_id)
+        } else {
+            Err(Error::TagNotFound(tag.to_string()))
         }
 
-        Err(Error::TagNotFound(tag.to_string()))
+        // let mut page_number = 1;
+        // let mut more_pages = true;
+        // while more_pages {
+        //     let query = Query {
+        //         per_page: Some(50),
+        //         page: Some(page_number),
+        //     };
+
+        //     let page = self
+        //         .github_rest
+        //         .repos
+        //         .list_tags(self.owner(), self.repo())
+        //         .query(&query)
+        //         .send_with_response()
+        //         .await?;
+
+        //     for t in page.data {
+        //         log::trace!("Tag: {}", t.name);
+        //         if t.name == tag {
+        //             return Ok(t.commit.sha);
+        //         }
+        //     }
+
+        //     if let Some(link) = page.headers.get("link") {
+        //         if let Ok(link) = link.to_str() {
+        //             if !link.contains("rel=\"next\"") {
+        //                 more_pages = false
+        //             };
+        //         }
+        //     } else {
+        //         more_pages = false;
+        //     }
+
+        //     page_number += 1;
+        // }
+
+        // Err(Error::TagNotFound(tag.to_string()))
     }
 
     /// Report the status of the git repo in a human readable format
