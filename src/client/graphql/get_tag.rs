@@ -133,9 +133,7 @@ impl GraphQLGetTag for Client {
                       }
                     }
                   }
-                }
-            }
-            "#;
+                }"#;
 
         let tag = format!("refs/tags/{tag}");
 

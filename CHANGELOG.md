@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - ♻️ refactor(logging)-replace tracing with log(pr [#542])
+- 💄 style(graphql)-fix indentation in get_tag query(pr [#543])
 
 ### Fixed
 
@@ -1312,6 +1313,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#540]: https://github.com/jerus-org/pcu/pull/540
 [#541]: https://github.com/jerus-org/pcu/pull/541
 [#542]: https://github.com/jerus-org/pcu/pull/542
+[#543]: https://github.com/jerus-org/pcu/pull/543
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.40...HEAD
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
