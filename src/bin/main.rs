@@ -55,8 +55,13 @@ fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {
 
     let mut builder = env_logger::Builder::from_env(env);
 
+    builder.filter_module("pcu::cli", *level);
+    builder.filter_module("pcu::client", *level);
+    builder.filter_module("pcu::client::graphql", *level);
+    builder.filter_module("pcu::client::graphql::get_tag", *level);
+    builder.filter_module("pcu::ops", *level);
+    builder.filter_module("pcu::utilities", *level);
     builder.filter_module("pcu", *level);
-    builder.filter_module("pcu_lib", *level);
     builder.format_timestamp_secs();
 
     builder
