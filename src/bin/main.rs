@@ -80,5 +80,5 @@ fn get_tracing(level: log::LevelFilter) {
     let _ = tracing::subscriber::set_global_default(log_subscriber)
         .map_err(|_| eprintln!("Unable to set global default subscriber!"));
 
-    tracing::info!("Initialised logging to console at {level}");
+    log::info!("Initialised logging to console at {level}");
 }
