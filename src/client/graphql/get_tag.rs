@@ -6,7 +6,7 @@ use crate::{Client, Error, GraphQLWrapper};
 
 use tracing::instrument;
 
-pub(crate) trait GraphQLGetTag {
+pub trait GraphQLGetTag {
     #[allow(async_fn_in_trait)]
     async fn get_tag(&self, tag: &str) -> Result<TagTarget, Error>;
 }
@@ -96,6 +96,7 @@ struct Vars {
 impl GraphQLGetTag for Client {
     #[instrument(skip(self))]
     async fn get_tag(&self, tag: &str) -> Result<TagTarget, Error> {
+        log::trace!("In get_tag checking for existence of tag: {tag}");
         let query = r#"
                     query ($owner: String!, $name: String!, $tag: String!) {
                 repository(owner: $owner, name: $name) {
