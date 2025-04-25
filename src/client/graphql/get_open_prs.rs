@@ -62,7 +62,7 @@ pub(crate) struct PrItem {
 impl GraphQLGetOpenPRs for Client {
     #[instrument(skip(self))]
     async fn get_open_pull_requests(&self) -> Result<Vec<PrItem>, Error> {
-        tracing::trace!("get_open_pull_requests");
+        log::trace!("get_open_pull_requests");
         let query = r#"
         query($owner:String!, $name:String!){
             repository(owner: $owner, name: $name) {
@@ -89,11 +89,11 @@ impl GraphQLGetOpenPRs for Client {
             .query_with_vars_unwrap::<Data, Vars>(query, vars)
             .await;
 
-        tracing::trace!("data_res: {:?}", data_res);
+        log::trace!("data_res: {:?}", data_res);
 
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
-        tracing::trace!("data: {:?}", data);
+        log::trace!("data: {:?}", data);
 
         let edges = data
             .repository

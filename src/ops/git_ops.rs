@@ -484,7 +484,7 @@ impl GitOps for Client {
         desc: Option<&str>,
         colour: Option<&str>,
     ) -> Result<Option<String>, Error> {
-        tracing::debug!("Rebase next PR");
+        log::debug!("Rebase next PR");
 
         let prs = self.get_open_pull_requests().await?;
 
@@ -492,7 +492,7 @@ impl GitOps for Client {
             return Ok(None);
         };
 
-        tracing::trace!("Found {:?} open PRs", prs);
+        log::trace!("Found {:?} open PRs", prs);
 
         // filter to PRs created by a specific login
         let login = if let Some(login) = author {
@@ -504,16 +504,16 @@ impl GitOps for Client {
         let mut prs: Vec<_> = prs.iter().filter(|pr| pr.login == login).collect();
 
         if prs.is_empty() {
-            tracing::trace!("Found no open PRs for {login}");
+            log::trace!("Found no open PRs for {login}");
             return Ok(None);
         };
 
-        tracing::trace!("Found {:?} open PRs for {login}", prs);
+        log::trace!("Found {:?} open PRs for {login}", prs);
 
         prs.sort_by(|a, b| a.number.cmp(&b.number));
         let next_pr = &prs[0];
 
-        tracing::trace!("Next PR: {}", next_pr.number);
+        log::trace!("Next PR: {}", next_pr.number);
 
         self.add_label_to_pr(next_pr.number, label, desc, colour)
             .await?;

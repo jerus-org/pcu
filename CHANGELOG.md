@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ enhance get_tag with commit details(pr [#539])
 - ✨ enhance logging configuration(pr [#541])
 
+### Changed
+
+- ♻️ refactor(logging)-replace tracing with log(pr [#542])
+
 ### Fixed
 
 - deps: update rust crate clap to 4.5.37(pr [#540])
@@ -1307,6 +1311,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#539]: https://github.com/jerus-org/pcu/pull/539
 [#540]: https://github.com/jerus-org/pcu/pull/540
 [#541]: https://github.com/jerus-org/pcu/pull/541
+[#542]: https://github.com/jerus-org/pcu/pull/542
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.40...HEAD
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
