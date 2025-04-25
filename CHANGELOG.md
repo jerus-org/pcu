@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add get_tag functionality(pr [#538])
 - ✨ enhance get_tag with commit details(pr [#539])
 - ✨ enhance logging configuration(pr [#541])
+- ✨ update committed_date to DateTime<Utc>(pr [#544])
 
 ### Changed
 
@@ -1314,6 +1315,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#541]: https://github.com/jerus-org/pcu/pull/541
 [#542]: https://github.com/jerus-org/pcu/pull/542
 [#543]: https://github.com/jerus-org/pcu/pull/543
+[#544]: https://github.com/jerus-org/pcu/pull/544
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.40...HEAD
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
