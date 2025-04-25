@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{Client, Error, GraphQLWrapper};
@@ -68,7 +68,7 @@ pub(crate) struct Tagger {
 pub(crate) struct Commit {
     oid: String,
     #[serde(rename = "committedDate")]
-    committed_date: NaiveDateTime,
+    committed_date: DateTime<Utc>,
     author: Author,
 }
 
@@ -82,7 +82,7 @@ pub(crate) struct Author {
 pub(crate) struct CommitTarget {
     oid: String,
     #[serde(rename = "committedDate")]
-    committed_date: NaiveDateTime,
+    committed_date: DateTime<Utc>,
     author: Author,
 }
 
@@ -157,5 +157,19 @@ impl GraphQLGetTag for Client {
         log::trace!("data: {:?}", data);
 
         Ok(data.repository._ref.target)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        let response = r#"{"repository":{"ref":{"target":{"__typename":"Tag","name":"hcaptcha-v3.0.20","message":"hcaptcha-v3.0.20\n","tagger":{"name":"*********","email":"********************************************","date":"2025-04-25T13:51:33Z"},"target":{"oid":"3b674fb22448380cdca0d620f2814088320dcef3","committedDate":"2025-04-25T13:50:45Z","author":{"name":"*********","email":"********************************************"}}}}}}"#;
+
+        let data: GetTag = serde_json::from_str(response).unwrap();
+
+        assert_eq!(data.repository._ref.target.name, "hcaptcha-v3.0.20");
     }
 }
