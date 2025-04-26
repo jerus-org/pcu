@@ -36,9 +36,15 @@ impl Release {
         };
 
         if self.package.is_some() {
+            log::info!("Running release for package");
             return self.release_package(client).await;
         }
 
+        if self.semver.is_none() {
+            log::error!("Semver is required for release");
+            return Err(Error::MissingSemver);
+        }
+        log::info!("Running release for semver (requires semver to be set)");
         self.release_semver(client, sign).await
     }
 
