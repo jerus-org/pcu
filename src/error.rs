@@ -36,6 +36,8 @@ pub enum Error {
     NoUnreleasedSection,
     #[error("Command not set")]
     CommandNotSet,
+    #[error("Semver needs to be set for release")]
+    MissingSemver,
     #[error("Tag not found {0:?}")]
     TagNotFound(String),
     #[error("Invalid version string")]
