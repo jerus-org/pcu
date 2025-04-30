@@ -3,8 +3,10 @@ use std::{fs, path::Path};
 use crate::{Client, Error, GitOps, MakeRelease, Sign, Workspace};
 
 use super::{CIExit, Commands};
+mod mode;
 
 use clap::Parser;
+use mode::Mode;
 use owo_colors::{OwoColorize, Style};
 
 #[derive(Debug, Parser, Clone)]
@@ -18,37 +20,27 @@ pub struct Release {
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
-    /// Process packages in the workspace
-    #[clap(short, long, default_value_t = false)]
-    pub workspace: bool,
-    /// Release specific workspace package
+    /// Specific package to release
     #[clap(short = 'k', long)]
     pub package: Option<String>,
+    #[command(subcommand)]
+    pub mode: Mode,
 }
 
 impl Release {
     pub async fn run_release(self, sign: Sign) -> Result<CIExit, Error> {
         let client = Commands::Release(self.clone()).get_client().await?;
 
-        if self.workspace {
-            log::info!("Running release for workspace");
-            return self.release_workspace(client).await;
-        };
-
-        if self.package.is_some() {
-            log::info!("Running release for package");
-            return self.release_package(client).await;
+        match self.mode {
+            Mode::Version => self.release_semver(client, sign).await,
+            Mode::Package => self.release_package(client).await,
+            Mode::Workspace => self.release_workspace(client).await,
+            Mode::Current => self.release_current(client).await,
         }
-
-        if self.semver.is_none() {
-            log::error!("Semver is required for release");
-            return Err(Error::MissingSemver);
-        }
-        log::info!("Running release for semver (requires semver to be set)");
-        self.release_semver(client, sign).await
     }
 
     async fn release_workspace(&self, client: Client) -> Result<CIExit, Error> {
+        //     log::info!("Running release for workspace");
         let path = Path::new("./Cargo.toml");
         let workspace = Workspace::new(path).unwrap();
 
@@ -71,7 +63,48 @@ impl Release {
     }
 
     async fn release_package(self, client: Client) -> Result<CIExit, Error> {
-        let rel_package = self.package.unwrap();
+        log::info!("Running release for package");
+
+        let Some(rel_package) = self.package else {
+            log::error!("No package specified");
+            return Err(Error::NoPackageSpecified);
+        };
+        log::info!("Running release for package: {}", rel_package);
+
+        let path = Path::new("./Cargo.toml");
+        let workspace = Workspace::new(path).unwrap();
+
+        let packages = workspace.packages();
+
+        if let Some(packages) = packages {
+            for package in packages {
+                log::debug!("Found workspace package: {}", package.name);
+                if package.name != rel_package {
+                    continue;
+                }
+                let prefix = format!("{}-{}", package.name, self.prefix);
+                let version = package.version;
+                let tag = format!("{prefix}{version}");
+                log::trace!("Checking for tag `{tag}` to make release against.");
+                if !client.tag_exists(&tag).await {
+                    log::error!("Tag does not exist: {tag}");
+                } else {
+                    log::info!("Tag already exists: {tag}, attempt to make release");
+                    client.make_release(&prefix, &version).await?;
+                }
+                break;
+            }
+        }
+        Ok(CIExit::Released)
+    }
+
+    async fn release_current(self, client: Client) -> Result<CIExit, Error> {
+        log::info!("Running release for package");
+
+        let Some(rel_package) = self.package else {
+            log::error!("No package specified");
+            return Err(Error::NoPackageSpecified);
+        };
         log::info!("Running release for package: {}", rel_package);
 
         let path = Path::new("./Cargo.toml");
@@ -102,6 +135,11 @@ impl Release {
     }
 
     async fn release_semver(self, mut client: Client, sign: Sign) -> Result<CIExit, Error> {
+        if self.semver.is_none() {
+            log::error!("Semver is required for release");
+            return Err(Error::MissingSemver);
+        }
+        log::info!("Running release for semver (requires semver to be set)");
         let Some(version) = self.semver else {
             log::error!("Semver required to update changelog");
             return Ok(CIExit::UnChanged);

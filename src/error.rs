@@ -38,6 +38,8 @@ pub enum Error {
     CommandNotSet,
     #[error("Semver needs to be set for release")]
     MissingSemver,
+    #[error("No package specified for the release")]
+    NoPackageSpecified,
     #[error("Tag not found {0:?}")]
     TagNotFound(String),
     #[error("Invalid version string")]
