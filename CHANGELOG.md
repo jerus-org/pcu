@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ✨ BREAKING: add mode-based release management(pr [#546])
 
+### Changed
+
+- ♻️ refactor(cli)-simplify release mode handling(pr [#547])
+
 ### Fixed
 
 - 🐛 release: add semver requirement check(pr [#545])
@@ -1328,6 +1332,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#544]: https://github.com/jerus-org/pcu/pull/544
 [#545]: https://github.com/jerus-org/pcu/pull/545
 [#546]: https://github.com/jerus-org/pcu/pull/546
+[#547]: https://github.com/jerus-org/pcu/pull/547
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.41...HEAD
 [0.4.41]: https://github.com/jerus-org/pcu/compare/v0.4.40...v0.4.41
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
