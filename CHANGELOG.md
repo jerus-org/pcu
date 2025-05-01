@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - ♻️ refactor(cli)-simplify release mode handling(pr [#547])
+- 👷 ci(circleci)-add remove_ssh_key parameter to release workflow(pr [#548])
 
 ### Fixed
 
@@ -1333,6 +1334,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#545]: https://github.com/jerus-org/pcu/pull/545
 [#546]: https://github.com/jerus-org/pcu/pull/546
 [#547]: https://github.com/jerus-org/pcu/pull/547
+[#548]: https://github.com/jerus-org/pcu/pull/548
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.41...HEAD
 [0.4.41]: https://github.com/jerus-org/pcu/compare/v0.4.40...v0.4.41
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
