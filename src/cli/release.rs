@@ -11,18 +11,12 @@ use owo_colors::{OwoColorize, Style};
 
 #[derive(Debug, Parser, Clone)]
 pub struct Release {
-    /// Semantic version number for the release
-    #[arg(short, long)]
-    pub semver: Option<String>,
     /// Update the changelog by renaming the unreleased section with the version number
     #[arg(short, long, default_value_t = false)]
     pub update_changelog: bool,
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
-    /// Specific package to release
-    #[clap(short = 'k', long)]
-    pub package: Option<String>,
     #[command(subcommand)]
     pub mode: Mode,
 }
@@ -32,10 +26,10 @@ impl Release {
         let client = Commands::Release(self.clone()).get_client().await?;
 
         match self.mode {
-            Mode::Version => self.release_semver(client, sign).await,
-            Mode::Package => self.release_package(client).await,
+            Mode::Version(_) => self.release_version(client, sign).await,
+            Mode::Package(_) => self.release_package(client).await,
             Mode::Workspace => self.release_workspace(client).await,
-            Mode::Current => self.release_current(client).await,
+            Mode::Current(_) => self.release_current(client).await,
         }
     }
 
@@ -62,13 +56,14 @@ impl Release {
         Ok(CIExit::Released)
     }
 
-    async fn release_package(self, client: Client) -> Result<CIExit, Error> {
+    async fn release_package(&self, client: Client) -> Result<CIExit, Error> {
         log::info!("Running release for package");
-
-        let Some(rel_package) = self.package else {
+        let Mode::Package(ref package) = self.mode else {
             log::error!("No package specified");
             return Err(Error::NoPackageSpecified);
         };
+
+        let rel_package = package.package.to_string();
         log::info!("Running release for package: {}", rel_package);
 
         let path = Path::new("./Cargo.toml");
@@ -79,7 +74,7 @@ impl Release {
         if let Some(packages) = packages {
             for package in packages {
                 log::debug!("Found workspace package: {}", package.name);
-                if package.name != rel_package {
+                if package.name != *rel_package {
                     continue;
                 }
                 let prefix = format!("{}-{}", package.name, self.prefix);
@@ -101,11 +96,20 @@ impl Release {
     async fn release_current(self, client: Client) -> Result<CIExit, Error> {
         log::info!("Running release for package");
 
-        let Some(rel_package) = self.package else {
-            log::error!("No package specified");
-            return Err(Error::NoPackageSpecified);
+        let specific_package = {
+            if let Mode::Current(ref current) = self.mode {
+                if let Some(ref rel_package) = current.package {
+                    log::info!("Running release for package: {}", rel_package);
+                    Some(rel_package.to_string())
+                } else {
+                    log::warn!("No package specified");
+                    None
+                }
+            } else {
+                log::warn!("No current configuration specified");
+                None
+            }
         };
-        log::info!("Running release for package: {}", rel_package);
 
         let path = Path::new("./Cargo.toml");
         let workspace = Workspace::new(path).unwrap();
@@ -115,8 +119,10 @@ impl Release {
         if let Some(packages) = packages {
             for package in packages {
                 log::debug!("Found workspace package: {}", package.name);
-                if package.name != rel_package {
-                    continue;
+                if let Some(ref specific_pkg) = specific_package {
+                    if package.name != *specific_pkg {
+                        continue;
+                    }
                 }
                 let prefix = format!("{}-{}", package.name, self.prefix);
                 let version = package.version;
@@ -133,19 +139,14 @@ impl Release {
         }
         Ok(CIExit::Released)
     }
-
-    async fn release_semver(self, mut client: Client, sign: Sign) -> Result<CIExit, Error> {
-        if self.semver.is_none() {
+    async fn release_version(self, mut client: Client, sign: Sign) -> Result<CIExit, Error> {
+        let Mode::Version(ref version) = self.mode else {
             log::error!("Semver is required for release");
             return Err(Error::MissingSemver);
-        }
-        log::info!("Running release for semver (requires semver to be set)");
-        let Some(version) = self.semver else {
-            log::error!("Semver required to update changelog");
-            return Ok(CIExit::UnChanged);
         };
 
-        log::trace!("Running release {version}");
+        let version = version.version.to_string();
+        log::info!("Running version release for release {}", version);
         log::trace!(
             "PR ID: {} - Owner: {} - Repo: {}",
             client.pr_number(),
