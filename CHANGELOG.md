@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - deps: update rust crate bsky-sdk to 0.1.19(pr [#550])
 - deps: update rust crate chrono to 0.4.41(pr [#551])
+- deps: update rust crate toml to 0.8.22(pr [#552])
 
 ## [0.4.42] - 2025-05-01
 
@@ -1351,6 +1352,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#554]: https://github.com/jerus-org/pcu/pull/554
 [#550]: https://github.com/jerus-org/pcu/pull/550
 [#551]: https://github.com/jerus-org/pcu/pull/551
+[#552]: https://github.com/jerus-org/pcu/pull/552
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.42...HEAD
 [0.4.42]: https://github.com/jerus-org/pcu/compare/v0.4.41...v0.4.42
 [0.4.41]: https://github.com/jerus-org/pcu/compare/v0.4.40...v0.4.41
