@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - 🐛 release: add semver requirement check(pr [#545])
+- deps: update dependency toolkit to v2.10.7(pr [#553])
 
 ## [0.4.41] - 2025-04-26
 
@@ -1337,6 +1338,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#547]: https://github.com/jerus-org/pcu/pull/547
 [#548]: https://github.com/jerus-org/pcu/pull/548
 [#549]: https://github.com/jerus-org/pcu/pull/549
+[#553]: https://github.com/jerus-org/pcu/pull/553
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.41...HEAD
 [0.4.41]: https://github.com/jerus-org/pcu/compare/v0.4.40...v0.4.41
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
