@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- 👷 ci(circleci)-simplify release workflow configuration(pr [#554])
+
+## [0.4.42] - 2025-05-01
+
 ### Added
 
 - ✨ BREAKING: add mode-based release management(pr [#546])
@@ -1337,7 +1343,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#547]: https://github.com/jerus-org/pcu/pull/547
 [#548]: https://github.com/jerus-org/pcu/pull/548
 [#549]: https://github.com/jerus-org/pcu/pull/549
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.41...HEAD
+[#554]: https://github.com/jerus-org/pcu/pull/554
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.42...HEAD
+[0.4.42]: https://github.com/jerus-org/pcu/compare/v0.4.41...v0.4.42
 [0.4.41]: https://github.com/jerus-org/pcu/compare/v0.4.40...v0.4.41
 [0.4.40]: https://github.com/jerus-org/pcu/compare/v0.4.39...v0.4.40
 [0.4.39]: https://github.com/jerus-org/pcu/compare/v0.4.38...v0.4.39
