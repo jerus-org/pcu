@@ -15,7 +15,7 @@ categories = ["development-tools::build-utils", "command-line-utilities"]
 [dependencies]
 bsky-sdk = "0.1.19"
 cargo_toml = "0.22.1"
-chrono = "0.4.40"
+chrono = "0.4.41"
 clap = "4.5.37"
 clap-verbosity-flag = "3.0.2"
 color-eyre = "0.6.3"
