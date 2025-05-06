@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 👷 ci(circleci)-simplify release workflow configuration(pr [#554])
+- 👷 ci(circleci)-update circleci-toolkit orb version(pr [#555])
 
 ### Fixed
 
@@ -1353,6 +1354,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#550]: https://github.com/jerus-org/pcu/pull/550
 [#551]: https://github.com/jerus-org/pcu/pull/551
 [#552]: https://github.com/jerus-org/pcu/pull/552
+[#555]: https://github.com/jerus-org/pcu/pull/555
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.42...HEAD
 [0.4.42]: https://github.com/jerus-org/pcu/compare/v0.4.41...v0.4.42
 [0.4.41]: https://github.com/jerus-org/pcu/compare/v0.4.40...v0.4.41
