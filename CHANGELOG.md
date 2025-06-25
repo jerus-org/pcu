@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate gql_client to 1.0.8(pr [#564])
 - deps: update rust crate owo-colors to 4.2.2(pr [#565])
 - deps: update rust crate toml to 0.8.23(pr [#566])
+- deps: update rust crate url to 2.5.4(pr [#567])
 
 ## [0.4.44] - 2025-05-28
 
@@ -1385,6 +1386,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#564]: https://github.com/jerus-org/pcu/pull/564
 [#565]: https://github.com/jerus-org/pcu/pull/565
 [#566]: https://github.com/jerus-org/pcu/pull/566
+[#567]: https://github.com/jerus-org/pcu/pull/567
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.44...HEAD
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jerus-org/pcu/compare/v0.4.42...v0.4.43
