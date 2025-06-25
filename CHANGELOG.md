@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate clap-verbosity-flag to 3.0.3(pr [#561])
 - deps: update rust crate color-eyre to 0.6.5(pr [#562])
 - deps: update rust crate git2 to 0.20.2(pr [#563])
+- deps: update rust crate gql_client to 1.0.8(pr [#564])
 
 ## [0.4.44] - 2025-05-28
 
@@ -1379,6 +1380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#561]: https://github.com/jerus-org/pcu/pull/561
 [#562]: https://github.com/jerus-org/pcu/pull/562
 [#563]: https://github.com/jerus-org/pcu/pull/563
+[#564]: https://github.com/jerus-org/pcu/pull/564
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.44...HEAD
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jerus-org/pcu/compare/v0.4.42...v0.4.43
