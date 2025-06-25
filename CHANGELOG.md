@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate bsky-sdk to 0.1.20(pr [#559])
+- deps: update rust crate clap to 4.5.40(pr [#560])
 
 ## [0.4.44] - 2025-05-28
 
@@ -1371,6 +1372,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#556]: https://github.com/jerus-org/pcu/pull/556
 [#558]: https://github.com/jerus-org/pcu/pull/558
 [#559]: https://github.com/jerus-org/pcu/pull/559
+[#560]: https://github.com/jerus-org/pcu/pull/560
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.44...HEAD
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jerus-org/pcu/compare/v0.4.42...v0.4.43
