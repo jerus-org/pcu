@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Upgrade-toolkit-orb-to-version-2.11.0-for-latest-features-and-fixes(pr [#568])
+
 ## [0.4.45] - 2025-06-28
 
 ### Fixed
@@ -1387,6 +1393,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#565]: https://github.com/jerus-org/pcu/pull/565
 [#566]: https://github.com/jerus-org/pcu/pull/566
 [#567]: https://github.com/jerus-org/pcu/pull/567
+[#568]: https://github.com/jerus-org/pcu/pull/568
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.45...HEAD
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jerus-org/pcu/compare/v0.4.42...v0.4.43
