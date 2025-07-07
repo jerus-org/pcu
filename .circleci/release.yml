@@ -32,6 +32,7 @@ jobs:
             cargo release --version
             cargo audit --version
             git --version
+            l ~/.ssh
 
 workflows:
   release:
