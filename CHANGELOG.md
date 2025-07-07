@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(cli)-rename option for pull request handling(pr [#572])
 - 🔧 chore(ci)-update release workflow(pr [#573])
 - 👷 ci(circleci)-fix ssh directory listing command(pr [#574])
+- 🔧 chore(ci)-update release.yml configuration(pr [#575])
 
 ## [0.4.45] - 2025-06-28
 
@@ -1409,6 +1410,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#572]: https://github.com/jerus-org/pcu/pull/572
 [#573]: https://github.com/jerus-org/pcu/pull/573
 [#574]: https://github.com/jerus-org/pcu/pull/574
+[#575]: https://github.com/jerus-org/pcu/pull/575
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.45...HEAD
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
