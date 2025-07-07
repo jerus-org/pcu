@@ -45,7 +45,10 @@ async fn main() -> Result<()> {
             };
             Ok(())
         }
-        Err(e) => Err(e.into()),
+        Err(e) => {
+            log::error!("Error: {e}");
+            Err(e.into())
+        }
     }
 }
 fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {

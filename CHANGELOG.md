@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ✨ add hide_no_pull_request option to Pr(pr [#570])
+
 ### Changed
 
 - Upgrade-toolkit-orb-to-version-2.11.0-for-latest-features-and-fixes(pr [#568])
@@ -1396,6 +1400,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#567]: https://github.com/jerus-org/pcu/pull/567
 [#568]: https://github.com/jerus-org/pcu/pull/568
 [#569]: https://github.com/jerus-org/pcu/pull/569
+[#570]: https://github.com/jerus-org/pcu/pull/570
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.45...HEAD
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
