@@ -29,7 +29,7 @@ pub struct Pr {
     pub allow_push_fail: bool,
     /// Hide pull request failure. Exits with success status even if no pull request was found in CI environment.
     #[clap(long, default_value_t = false)]
-    pub hide_no_pull_request: bool,
+    pub allow_no_pull_request: bool,
 }
 
 impl Pr {
@@ -53,7 +53,7 @@ impl Pr {
             Err(e) => {
                 match e {
                     Error::EnvVarPullRequestNotFound => {
-                        if self.hide_no_pull_request {
+                        if self.allow_no_pull_request {
                             return Ok(CIExit::UnChanged);
                         } else {
                             log::error!("Error getting client: {e}");
