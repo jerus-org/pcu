@@ -57,7 +57,7 @@ impl Client {
         let cmd = settings
             .get::<String>("command")
             .map_err(|_| Error::CommandNotSet)?;
-        log::trace!("cmd: {:?}", cmd);
+        log::trace!("cmd: {cmd:?}");
 
         // Use the username config settings to direct to the appropriate CI environment variable to find the owner
         log::trace!("owner: {:?}", settings.get::<String>("username"));
@@ -109,7 +109,7 @@ impl Client {
             let pull_request = None;
             (branch, pull_request)
         };
-        log::trace!("branch: {:?} and pull_request: {:?}", branch, pull_request);
+        log::trace!("branch: {branch:?} and pull_request: {pull_request:?}");
 
         // Use the log config setting to set the default change log file name
         log::trace!("log: {:?}", settings.get::<String>("log"));
@@ -144,7 +144,7 @@ impl Client {
         let prefix = settings
             .get("version_prefix")
             .unwrap_or_else(|_| "v".to_string());
-        let repo_url = Some(format!("{}{}/{}", svs_root, owner, repo));
+        let repo_url = Some(format!("{svs_root}{owner}/{repo}"));
         let changelog_parse_options = ChangelogParseOptions {
             url: repo_url,
             head: Some("HEAD".to_string()),
@@ -226,7 +226,7 @@ impl Client {
             }
         };
 
-        let auth = format!("Bearer {}", token);
+        let auth = format!("Bearer {token}");
 
         let headers = HashMap::from([
             ("X-Github-Next-Global-ID", "1"),

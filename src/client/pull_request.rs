@@ -27,7 +27,7 @@ impl PullRequest {
         let command: String = settings.get("command").map_err(|_| Error::CommandNotSet)?;
 
         // If the command is not pr then return None
-        log::trace!("command: {:?}", command);
+        log::trace!("command: {command:?}");
         if command != "pr" {
             return Ok(None);
         }
@@ -37,18 +37,12 @@ impl PullRequest {
         let pcu_pull_request: String = settings
             .get("pull_request")
             .map_err(|_| Error::EnvVarPullRequestNotSet)?;
-        log::trace!("pcu_pull_request: {:?}", pcu_pull_request);
+        log::trace!("pcu_pull_request: {pcu_pull_request:?}");
         let pull_request =
             env::var(pcu_pull_request).map_err(|_| Error::EnvVarPullRequestNotFound)?;
 
         let (owner, repo, pr_number, repo_url) = PullRequest::get_keys(&pull_request)?;
-        log::debug!(
-            "Owner: {}, repo: {}, pr_number: {}, repo_url: {}",
-            owner,
-            repo,
-            pr_number,
-            repo_url
-        );
+        log::debug!("Owner: {owner}, repo: {repo}, pr_number: {pr_number}, repo_url: {repo_url}");
         let pr_number = pr_number.parse::<i64>()?;
 
         log::debug!("********* Using GraphQL");

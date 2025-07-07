@@ -25,7 +25,7 @@ impl CmdPost {
                 if self.fail_on_missing {
                     return Err(e);
                 } else {
-                    log::warn!("{}", e);
+                    log::warn!("{e}");
                     return Ok(CIExit::NoFilesToProcess);
                 }
             }

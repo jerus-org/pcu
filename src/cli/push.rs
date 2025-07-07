@@ -38,7 +38,7 @@ impl Push {
         );
 
         let bot_user_name = std::env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
-        log::debug!("Using bot user name: {}", bot_user_name);
+        log::debug!("Using bot user name: {bot_user_name}");
 
         client.push_commit(&self.prefix, self.tag_opt(), self.no_push, &bot_user_name)?;
         let hdr_style = Style::new().bold().underline();

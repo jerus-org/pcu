@@ -37,7 +37,7 @@ impl Poster {
                 let post = fs::File::open(file_path)?;
                 let reader = BufReader::new(post);
                 let post = serde_json::from_reader(reader)?;
-                let filename: OsString = format!("{}/{}", directory, file_name).into();
+                let filename: OsString = format!("{directory}/{file_name}").into();
                 let bsky_post = BskyPost { post, filename };
                 bsky_posts.push(bsky_post);
             }
@@ -73,7 +73,7 @@ impl Poster {
         log::info!("Bluesky login successful!");
 
         let testing = check_for_testing();
-        log::debug!("Testing: {:?}", testing);
+        log::debug!("Testing: {testing:?}");
 
         for bsky_post in &self.bsky_posts {
             log::debug!("Post: {}", bsky_post.post.text.clone());
@@ -94,7 +94,7 @@ impl Poster {
 
                 if result.is_err() {
                     let e = result.unwrap_err();
-                    log::error!("Error posting to Bluesky: {}", e);
+                    log::error!("Error posting to Bluesky: {e}");
                     continue;
                 };
 

@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
                 CIExit::Committed => log::info!("Changed files committed"),
                 CIExit::Pushed(s) => log::info!("{s}"),
                 CIExit::Released => log::info!("Created GitHub Release"),
-                CIExit::Label(pr) => log::info!("Rebased PR request #{}", pr),
+                CIExit::Label(pr) => log::info!("Rebased PR request #{pr}"),
                 CIExit::NoLabel => log::info!("No label required"),
                 CIExit::DraftedForBluesky => log::info!("Drafted for Bluesky"),
                 CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
@@ -68,8 +68,8 @@ fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {
 }
 
 fn get_tracing(level: log::LevelFilter) {
-    let filter_pcu = EnvFilter::from(format!("pcu={}", level));
-    let filter_pcu_lib = EnvFilter::from(format!("pcu_lib={}", level));
+    let filter_pcu = EnvFilter::from(format!("pcu={level}"));
+    let filter_pcu_lib = EnvFilter::from(format!("pcu_lib={level}"));
 
     let log_subscriber = tracing_subscriber::FmtSubscriber::builder()
         .pretty()

@@ -216,7 +216,7 @@ fn split_return_last_and_rest(s: String, pat: char) -> (String, String) {
 /// Only files ending in `.md` will be returned
 fn get_files(path: &str) -> Result<Vec<(String, String)>, Error> {
     let path = PathBuf::from(path);
-    log::debug!("get_files path: {:?}", path);
+    log::debug!("get_files path: {path:?}");
     if !path.exists() {
         return Err(Error::PathNotFound(path.to_string_lossy().to_string()));
     };
@@ -238,7 +238,7 @@ fn get_files(path: &str) -> Result<Vec<(String, String)>, Error> {
         let mut files = Vec::new();
         for entry in paths {
             let entry_path = entry?.path();
-            log::debug!("Entry path: {:?}", entry_path);
+            log::debug!("Entry path: {entry_path:?}");
             if entry_path.is_dir() {
                 let mut subdir_files = get_files(entry_path.to_str().unwrap())?;
                 files.append(&mut subdir_files);
@@ -307,9 +307,9 @@ mod tests {
         let file_path = temp_dir.path().join("test.md");
         fs::write(&file_path, "test content").unwrap();
 
-        println!("File path: {:?}", file_path);
+        println!("File path: {file_path:?}");
         let result = get_files(file_path.to_str().unwrap());
-        println!("Result: {:#?}", result);
+        println!("Result: {result:#?}");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
@@ -359,7 +359,7 @@ mod tests {
         let result = get_files(temp_dir.path().to_str().unwrap());
         assert!(result.is_ok());
         let files = result.unwrap();
-        println!("Files: {:?}", files);
+        println!("Files: {files:?}");
         assert_eq!(files.len(), 2);
         assert_eq!(files, expected);
     }

@@ -143,18 +143,18 @@ impl GraphQLGetTag for Client {
             tag,
         };
 
-        log::trace!("vars: {:?}", vars);
+        log::trace!("vars: {vars:?}");
 
         let data_res = self
             .github_graphql
             .query_with_vars_unwrap::<GetTag, Vars>(query, vars)
             .await;
 
-        log::trace!("data_res: {:?}", data_res);
+        log::trace!("data_res: {data_res:?}");
 
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
-        log::trace!("data: {:?}", data);
+        log::trace!("data: {data:?}");
 
         Ok(data.repository._ref.target)
     }

@@ -34,8 +34,8 @@ impl Draft {
         let site_config = SiteConfig::new()?;
 
         let path = if !path.is_empty() {
-            log::debug!("Path to blog files: `{}`", path);
-            format!("{}/", path)
+            log::debug!("Path to blog files: `{path}`");
+            format!("{path}/")
         } else {
             "".to_string()
         };
@@ -50,8 +50,8 @@ impl Draft {
     #[allow(dead_code)]
     pub fn add_path(&mut self, path: &str) -> Result<&mut Self, Error> {
         let path = if !path.is_empty() {
-            log::debug!("Path to blog files: `{}`", path);
-            format!("{}/", path)
+            log::debug!("Path to blog files: `{path}`");
+            format!("{path}/")
         } else {
             "".to_string()
         };
@@ -121,7 +121,7 @@ impl Draft {
                 text: rt.text,
             };
 
-            log::trace!("{:?}", record_data);
+            log::trace!("{record_data:?}");
 
             blog_post.bluesky_post = Some(record_data);
         }
@@ -151,10 +151,10 @@ impl Draft {
             };
 
             log::trace!("Bluesky post: {bluesky_post:#?}");
-            log::debug!("Post filename: {}", filename);
+            log::debug!("Post filename: {filename}");
 
             let post_file = format!("{}/{}.post", self.store, filename.trim_end_matches(".md"));
-            log::debug!("Post file: {}", post_file);
+            log::debug!("Post file: {post_file}");
 
             let file = File::create(post_file)?;
 
