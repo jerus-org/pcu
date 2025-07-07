@@ -25,8 +25,11 @@ pub struct Pr {
     #[clap(short = 'u', long, default_value_t = false)]
     pub push: bool,
     /// Allow git push to fail. Allows the case of two parallel updates where the second push would fail.
-    #[clap(short, long, default_value_t = true)]
+    #[clap(long, default_value_t = true)]
     pub allow_push_fail: bool,
+    /// Hide pull request failure. Exits with success status even if no pull request was found in CI environment.
+    #[clap(long, default_value_t = false)]
+    pub hide_no_pull_request: bool,
 }
 
 impl Pr {
@@ -45,7 +48,25 @@ impl Pr {
         }
 
         log::trace!("*** Get Client ***");
-        let mut client = Commands::Pr(self.clone()).get_client().await?;
+        let mut client = match Commands::Pr(self.clone()).get_client().await {
+            Ok(client) => client,
+            Err(e) => {
+                match e {
+                    Error::EnvVarPullRequestNotFound => {
+                        if self.hide_no_pull_request {
+                            return Ok(CIExit::UnChanged);
+                        } else {
+                            log::error!("Error getting client: {e}");
+                            return Err(e);
+                        }
+                    }
+                    _ => {
+                        log::error!("Error getting client: {e}");
+                        return Err(e);
+                    }
+                };
+            }
+        };
 
         log::info!(
             "On the `{}` branch, so time to get to work!",
