@@ -89,11 +89,11 @@ impl GraphQLGetOpenPRs for Client {
             .query_with_vars_unwrap::<Data, Vars>(query, vars)
             .await;
 
-        log::trace!("data_res: {:?}", data_res);
+        log::trace!("data_res: {data_res:?}");
 
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
-        log::trace!("data: {:?}", data);
+        log::trace!("data: {data:?}");
 
         let edges = data
             .repository

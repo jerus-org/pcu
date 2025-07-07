@@ -19,7 +19,7 @@ impl MakeRelease for Client {
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
 
         let total_releases = change_log.releases().len();
-        log::debug!("total_releases: {:?}", total_releases);
+        log::debug!("total_releases: {total_releases:?}");
 
         change_log.release_unreleased(version).unwrap();
 
@@ -42,11 +42,11 @@ impl MakeRelease for Client {
         };
 
         let release_notes = changelog.release_notes(prefix, version)?;
-        log::trace!("Release notes: {:#?}", release_notes);
+        log::trace!("Release notes: {release_notes:#?}");
 
         let tag = format!("{prefix}{version}");
         let commit = Self::get_commitish_for_tag(self, &tag).await?;
-        log::trace!("Commit: {:#?}", commit);
+        log::trace!("Commit: {commit:#?}");
 
         // let release_request = octocrate::repos::create_release::Request {
         //     body: Some(release_notes.body.to_string()),
@@ -83,7 +83,7 @@ impl MakeRelease for Client {
             }
         };
 
-        log::trace!("Release: {:#?}", release);
+        log::trace!("Release: {release:#?}");
 
         Ok(())
     }

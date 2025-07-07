@@ -65,16 +65,16 @@ impl GraphQLLabelPR for Client {
         colour: Option<&str>,
     ) -> Result<(), Error> {
         let label_id = self.get_or_create_label_id(label, desc, colour).await?;
-        log::trace!("label_id: {:?}", label_id);
+        log::trace!("label_id: {label_id:?}");
 
         let pr_id = self.get_pull_request_id(pr_number).await?;
-        log::trace!("pr_id: {:?}", pr_id);
+        log::trace!("pr_id: {pr_id:?}");
 
         let vars = Vars {
             label_id: label_id.to_string(),
             pr_id: pr_id.to_string(),
         };
-        log::trace!("vars: {:?}", vars);
+        log::trace!("vars: {vars:?}");
 
         let mutation = r#"
             mutation ($pr_id: ID!, $label_id: ID!) {
@@ -97,11 +97,11 @@ impl GraphQLLabelPR for Client {
             .query_with_vars_unwrap::<Data, Vars>(mutation, vars)
             .await;
 
-        log::trace!("data_res: {:?}", data_res);
+        log::trace!("data_res: {data_res:?}");
 
         let data = data_res.map_err(GraphQLWrapper::from)?;
 
-        log::trace!("data: {:?}", data);
+        log::trace!("data: {data:?}");
 
         Ok(())
     }

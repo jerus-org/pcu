@@ -13,10 +13,10 @@ impl ReleaseUnreleased for Changelog {
     ///
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error> {
         let url = self.url();
-        log::debug!("Changelog url: {:?}", url);
+        log::debug!("Changelog url: {url:?}");
 
         let anchor = version.to_string();
-        log::debug!("anchor: {:?}", anchor);
+        log::debug!("anchor: {anchor:?}");
         let repo_url = self.url().clone().unwrap();
 
         let url = format!(
@@ -34,7 +34,7 @@ impl ReleaseUnreleased for Changelog {
             anchor
         );
 
-        log::debug!("url: {:?}", url);
+        log::debug!("url: {url:?}");
 
         let Some(unreleased) = self.get_unreleased_mut() else {
             return Err(Error::NoUnreleasedSection);
@@ -42,18 +42,18 @@ impl ReleaseUnreleased for Changelog {
 
         let version = Version::parse(version).map_err(|e| Error::InvalidVersion(e.to_string()))?;
 
-        log::debug!("version: {:?}", version);
+        log::debug!("version: {version:?}");
         unreleased.set_version(version);
 
         let today =
             NaiveDate::from_ymd_opt(Utc::now().year(), Utc::now().month(), Utc::now().day());
 
-        log::debug!("today: {:?}", today);
+        log::debug!("today: {today:?}");
         if let Some(today) = today {
             unreleased.set_date(today);
         };
 
-        log::debug!("unreleased: {:?}", unreleased);
+        log::debug!("unreleased: {unreleased:?}");
 
         self.add_link(anchor, url);
 
@@ -123,7 +123,7 @@ mod tests {
         let new_version = "0.1.2";
 
         let total_releases = changelog.releases().len();
-        log::debug!("total_releases: {:?}", total_releases);
+        log::debug!("total_releases: {total_releases:?}");
 
         // test
         changelog.release_unreleased(new_version).unwrap();
@@ -131,7 +131,7 @@ mod tests {
         // verify
 
         let releases = changelog.releases();
-        log::debug!("releases: {:?}", releases);
+        log::debug!("releases: {releases:?}");
 
         let new_latest_version = releases
             .first()
@@ -143,7 +143,7 @@ mod tests {
             })
             .unwrap_or_else(|| "0.0.0".to_string());
 
-        log::debug!("new_latest_version: {:?}", new_latest_version);
+        log::debug!("new_latest_version: {new_latest_version:?}");
 
         assert_eq!(total_releases, releases.len());
         assert!(changelog.get_unreleased().is_none());

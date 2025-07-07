@@ -64,7 +64,7 @@ impl Release {
         };
 
         let rel_package = package.package.to_string();
-        log::info!("Running release for package: {}", rel_package);
+        log::info!("Running release for package: {rel_package}");
 
         let path = Path::new("./Cargo.toml");
         let workspace = Workspace::new(path).unwrap();
@@ -99,7 +99,7 @@ impl Release {
         let specific_package = {
             if let Mode::Current(ref current) = self.mode {
                 if let Some(ref rel_package) = current.package {
-                    log::info!("Running release for package: {}", rel_package);
+                    log::info!("Running release for package: {rel_package}");
                     Some(rel_package.to_string())
                 } else {
                     log::warn!("No package specified");
@@ -146,14 +146,14 @@ impl Release {
         };
 
         let version = version.version.to_string();
-        log::info!("Running version release for release {}", version);
+        log::info!("Running version release for release {version}");
         log::trace!(
             "PR ID: {} - Owner: {} - Repo: {}",
             client.pr_number(),
             client.owner(),
             client.repo()
         );
-        log::trace!("Signing: {:?}", sign);
+        log::trace!("Signing: {sign:?}");
         log::trace!("Update changelog flag: {}", self.update_changelog);
 
         if self.update_changelog {
@@ -176,7 +176,7 @@ impl Release {
 
             let bot_user_name =
                 std::env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
-            log::debug!("Using bot user name: {}", bot_user_name);
+            log::debug!("Using bot user name: {bot_user_name}");
 
             client.push_commit(&self.prefix, Some(&version), false, &bot_user_name)?;
             let hdr_style = Style::new().bold().underline();

@@ -58,7 +58,7 @@ impl Pr {
             client.repo()
         );
 
-        log::trace!("Full client: {:#?}", client);
+        log::trace!("Full client: {client:#?}");
         let title = client.title();
 
         log::debug!("Pull Request Title: {title}");
@@ -119,7 +119,7 @@ impl Pr {
         log::trace!("tag_opt: None and no_push: false");
 
         let bot_user_name = std::env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
-        log::debug!("Using bot user name: {}", bot_user_name);
+        log::debug!("Using bot user name: {bot_user_name}");
 
         let res = client.push_commit(&self.prefix, None, false, &bot_user_name);
         let hdr_style = Style::new().bold().underline();

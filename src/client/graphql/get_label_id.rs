@@ -102,40 +102,40 @@ impl GraphQLGetLabel for Client {
             label: label.clone(),
         };
 
-        log::trace!("vars: {:?}", vars);
+        log::trace!("vars: {vars:?}");
 
         let data_res = self
             .github_graphql
             .query_with_vars_unwrap::<Data, Vars>(query, vars)
             .await;
 
-        log::trace!("data_res: {:?}", data_res);
+        log::trace!("data_res: {data_res:?}");
 
         let label_id = if data_res.is_err() {
-            log::trace!("label `{}` not found", label);
+            log::trace!("label `{label}` not found");
 
             let repo_id_res = self.get_repository_id().await;
 
-            log::trace!("repo_id_res: {:?}", repo_id_res);
+            log::trace!("repo_id_res: {repo_id_res:?}");
 
             let repo_id = repo_id_res?;
 
-            log::trace!("repo_id: {:?}", repo_id);
+            log::trace!("repo_id: {repo_id:?}");
 
             let id_res = self.create_label(&repo_id, &label, &colour, &desc).await;
-            log::trace!("id_res: {:?}", id_res);
+            log::trace!("id_res: {id_res:?}");
 
             let id = id_res?;
-            log::debug!("label_id: {:?}", id);
+            log::debug!("label_id: {id:?}");
 
             id
         } else {
             let data = data_res.map_err(GraphQLWrapper::from)?;
-            log::debug!("data: {:?}", data);
+            log::debug!("data: {data:?}");
             data.repository.label.id
         };
 
-        log::trace!("label_id: {:?}", label_id);
+        log::trace!("label_id: {label_id:?}");
 
         Ok(label_id)
     }

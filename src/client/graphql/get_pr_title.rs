@@ -59,11 +59,11 @@ pub(crate) async fn get_pull_request_title(
         .query_with_vars_unwrap::<Data, Vars>(query, vars)
         .await;
 
-    log::trace!("data_res: {:?}", data_res);
+    log::trace!("data_res: {data_res:?}");
 
     let data = data_res.map_err(GraphQLWrapper::from)?;
 
-    log::trace!("data: {:?}", data);
+    log::trace!("data: {data:?}");
 
     let title = data.repository.pull_request.title;
 

@@ -185,7 +185,7 @@ impl GitOps for Client {
         if log::log_enabled!(log::Level::Trace) {
             for status in statuses.iter() {
                 for status in status.status() {
-                    log::trace!("Status: {:?}", status);
+                    log::trace!("Status: {status:?}");
                 }
             }
         }
@@ -195,7 +195,7 @@ impl GitOps for Client {
             .map(|s| (s.path().unwrap_or_default().to_string(), s.status()))
             .collect();
 
-        log::trace!("Files: {:#?}", files);
+        log::trace!("Files: {files:#?}");
 
         Ok(files)
     }
@@ -256,7 +256,7 @@ impl GitOps for Client {
 
         let files_in_workdir = self.repo_files_not_staged()?;
 
-        log::debug!("WorkDir files:\n\t{:?}", files_in_workdir);
+        log::debug!("WorkDir files:\n\t{files_in_workdir:?}");
         log::debug!("Staged files:\n\t{:?}", self.repo_files_staged()?);
         log::debug!("Branch status: {}", self.branch_status()?);
 
@@ -269,13 +269,10 @@ impl GitOps for Client {
 
         let files_staged_for_commit = self.repo_files_staged()?;
 
-        log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
+        log::debug!("Staged files:\n\t{files_staged_for_commit:?}");
         log::debug!("Branch status: {}", self.branch_status()?);
 
-        log::info!(
-            "Commit the staged changes with commit message: {}",
-            commit_message
-        );
+        log::info!("Commit the staged changes with commit message: {commit_message}");
 
         self.commit_staged(sign, commit_message, prefix, tag_opt)?;
 
@@ -284,7 +281,7 @@ impl GitOps for Client {
 
         let files_staged_for_commit = self.repo_files_staged()?;
 
-        log::debug!("Staged files:\n\t{:?}", files_staged_for_commit);
+        log::debug!("Staged files:\n\t{files_staged_for_commit:?}");
         log::debug!("Branch status: {}", self.branch_status()?);
 
         Ok(())
@@ -344,7 +341,7 @@ impl GitOps for Client {
                 log::trace!("Signature short: {short_sign}");
 
                 let gpg_args = vec!["--status-fd", "2", "-bsau", signature.as_str()];
-                log::trace!("gpg args: {:?}", gpg_args);
+                log::trace!("gpg args: {gpg_args:?}");
 
                 let mut cmd = Command::new("gpg");
                 cmd.args(gpg_args)
@@ -357,7 +354,7 @@ impl GitOps for Client {
                 let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
                 log::trace!("Secured access to stdin");
 
-                log::trace!("Input for signing:\n-----\n{}\n-----", commit_str);
+                log::trace!("Input for signing:\n-----\n{commit_str}\n-----");
 
                 stdin.write_all(commit_str.as_bytes())?;
                 log::trace!("writing complete");
@@ -369,7 +366,7 @@ impl GitOps for Client {
 
                 if !output.status.success() {
                     let stderr = String::from_utf8_lossy(&output.stderr);
-                    log::trace!("stderr: {}", stderr);
+                    log::trace!("stderr: {stderr}");
                     return Err(Error::Stdout(stderr.to_string()));
                 }
 
@@ -385,7 +382,7 @@ impl GitOps for Client {
 
                 let commit_signature = std::str::from_utf8(&output.stdout)?;
 
-                log::trace!("secured signed commit:\n{}", commit_signature);
+                log::trace!("secured signed commit:\n{commit_signature}");
 
                 let commit_id =
                     self.git_repo
@@ -463,7 +460,7 @@ impl GitOps for Client {
             push_refs.push(&tag_ref);
         };
 
-        log::trace!("Push refs: {:?}", push_refs);
+        log::trace!("Push refs: {push_refs:?}");
         let mut call_backs = RemoteCallbacks::new();
         call_backs.push_transfer_progress(progress_bar);
         let mut push_opts = PushOptions::new();
@@ -492,7 +489,7 @@ impl GitOps for Client {
             return Ok(None);
         };
 
-        log::trace!("Found {:?} open PRs", prs);
+        log::trace!("Found {prs:?} open PRs");
 
         // filter to PRs created by a specific login
         let login = if let Some(login) = author {
@@ -508,7 +505,7 @@ impl GitOps for Client {
             return Ok(None);
         };
 
-        log::trace!("Found {:?} open PRs for {login}", prs);
+        log::trace!("Found {prs:?} open PRs for {login}");
 
         prs.sort_by(|a, b| a.number.cmp(&b.number));
         let next_pr = &prs[0];
@@ -534,7 +531,7 @@ impl GitOps for Client {
                 branch_type
             );
         }
-        output = format!("{}\n", output);
+        output = format!("{output}\n");
 
         Ok(output)
     }
@@ -558,10 +555,7 @@ impl GitOps for Client {
 
         let (ahead, behind) = self.git_repo.graph_ahead_behind(local, remote)?;
 
-        let output = format!(
-            "Your branch is {} commits ahead and {} commits behind\n",
-            ahead, behind
-        );
+        let output = format!("Your branch is {ahead} commits ahead and {behind} commits behind\n");
 
         Ok(output)
     }
@@ -572,16 +566,16 @@ fn progress_bar(current: usize, total: usize, bytes: usize) {
 
     let percent = percent as u8;
 
-    log::trace!("Calculated percent: {}", percent);
+    log::trace!("Calculated percent: {percent}");
 
     match percent {
-        10 => log::trace!("{}%", percent),
-        25 => log::trace!("{}%", percent),
-        40 => log::trace!("{}%", percent),
-        55 => log::trace!("{}%", percent),
-        80 => log::trace!("{}%", percent),
-        95 => log::trace!("{}%", percent),
-        100 => log::trace!("{}%", percent),
+        10 => log::trace!("{percent}%"),
+        25 => log::trace!("{percent}%"),
+        40 => log::trace!("{percent}%"),
+        55 => log::trace!("{percent}%"),
+        80 => log::trace!("{percent}%"),
+        95 => log::trace!("{percent}%"),
+        100 => log::trace!("{percent}%"),
         _ => {}
     }
 
@@ -606,7 +600,7 @@ fn list_tags() {
     let out_string = String::from_utf8_lossy(&stdout);
 
     let files = out_string.split_terminator("\n").collect::<Vec<&str>>();
-    log::trace!("Files: {:#?}", files);
+    log::trace!("Files: {files:#?}");
 }
 
 // This function print out an output similar to git's status command in long
@@ -637,11 +631,10 @@ fn print_long(statuses: &git2::Statuses) -> String {
         };
         if !header {
             output = format!(
-                "{}\n\
+                "{output}\n\
                 # Changes to be committed:
                 #   (use \"git reset HEAD <file>...\" to unstage)
-                #",
-                output
+                #"
             );
             header = true;
         }
@@ -671,7 +664,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
     if header {
         changes_in_index = true;
-        output = format!("{}\n", output);
+        output = format!("{output}\n");
     }
     header = false;
 
@@ -726,7 +719,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
     if header {
         changed_in_workdir = true;
-        output = format!("{}\n#\n", output);
+        output = format!("{output}\n#\n");
     }
     header = false;
 
@@ -737,8 +730,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
     {
         if !header {
             output = format!(
-                "{}# Untracked files\n#   (use \"git add <file>...\" to include in what will be committed)\n#",
-                output
+                "{output}# Untracked files\n#   (use \"git add <file>...\" to include in what will be committed)\n#"
             );
             header = true;
         }
@@ -754,8 +746,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
     {
         if !header {
             output = format!(
-                "{}\n# Ignored files\n#   (use \"git add -f <file>...\" to include in what will be committed)\n#",
-                output
+                "{output}\n# Ignored files\n#   (use \"git add -f <file>...\" to include in what will be committed)\n#"
             );
             header = true;
         }
@@ -765,10 +756,9 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
     if !changes_in_index && changed_in_workdir {
         output = format!(
-            "{}\n
+            "{output}\n
             no changes added to commit (use \"git add\" and/or \
-            \"git commit -a\")",
-            output
+            \"git commit -a\")"
         );
     }
 
