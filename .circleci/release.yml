@@ -32,7 +32,6 @@ jobs:
             cargo release --version
             cargo audit --version
             git --version
-            ls ~/.ssh
 
 workflows:
   release:
@@ -44,3 +43,4 @@ workflows:
             - bot-check
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
+          remove_ssh_key: false
