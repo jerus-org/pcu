@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Upgrade-toolkit-orb-to-version-2.11.0-for-latest-features-and-fixes(pr [#568])
+- ♻️ refactor(logging)-use format strings for logging(pr [#569])
 
 ## [0.4.45] - 2025-06-28
 
@@ -1394,6 +1395,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#566]: https://github.com/jerus-org/pcu/pull/566
 [#567]: https://github.com/jerus-org/pcu/pull/567
 [#568]: https://github.com/jerus-org/pcu/pull/568
+[#569]: https://github.com/jerus-org/pcu/pull/569
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.45...HEAD
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
