@@ -52,7 +52,7 @@ impl Pr {
             Ok(client) => client,
             Err(e) => {
                 match e {
-                    Error::EnvVarPullRequestNotFound => {
+                    Error::EnvVarPullRequestNotSet => {
                         if self.allow_no_pull_request {
                             return Ok(CIExit::UnChanged);
                         } else {
