@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(ci)-update release.yml configuration(pr [#575])
 - 📝 docs(CHANGELOG)-update changelog for unreleased changes(pr [#576])
 
+### Fixed
+
+- 🐛 cli: correct error handling for pull request(pr [#577])
+
 ## [0.4.45] - 2025-06-28
 
 ### Added
@@ -1418,6 +1422,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#574]: https://github.com/jerus-org/pcu/pull/574
 [#575]: https://github.com/jerus-org/pcu/pull/575
 [#576]: https://github.com/jerus-org/pcu/pull/576
+[#577]: https://github.com/jerus-org/pcu/pull/577
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.45...HEAD
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.45
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.44...v0.4.45
