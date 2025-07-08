@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Simplify release workflow configuration(pr [#571])
+- ♻️ refactor(cli)-rename option for pull request handling(pr [#572])
+- 🔧 chore(ci)-update release workflow(pr [#573])
+- 👷 ci(circleci)-fix ssh directory listing command(pr [#574])
+- 🔧 chore(ci)-update release.yml configuration(pr [#575])
+- 📝 docs(CHANGELOG)-update changelog for unreleased changes(pr [#576])
+
+## [0.4.45] - 2025-06-28
+
 ### Added
 
 - ✨ add hide_no_pull_request option to Pr(pr [#570])
@@ -15,11 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Upgrade-toolkit-orb-to-version-2.11.0-for-latest-features-and-fixes(pr [#568])
 - ♻️ refactor(logging)-use format strings for logging(pr [#569])
-- Simplify release workflow configuration(pr [#571])
-- ♻️ refactor(cli)-rename option for pull request handling(pr [#572])
-- 🔧 chore(ci)-update release workflow(pr [#573])
-- 👷 ci(circleci)-fix ssh directory listing command(pr [#574])
-- 🔧 chore(ci)-update release.yml configuration(pr [#575])
 
 ## [0.4.45] - 2025-06-28
 
@@ -1411,7 +1417,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#573]: https://github.com/jerus-org/pcu/pull/573
 [#574]: https://github.com/jerus-org/pcu/pull/574
 [#575]: https://github.com/jerus-org/pcu/pull/575
+[#576]: https://github.com/jerus-org/pcu/pull/576
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.45...HEAD
+[0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.45
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jerus-org/pcu/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jerus-org/pcu/compare/v0.4.42...v0.4.43
