@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- ♻️ refactor(cli)-improve error handling for pull request(pr [#579])
+
 ### Fixed
 
 - 🐛 cli: change default for allow_no_pull_request to true(pr [#578])
@@ -1430,6 +1434,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#576]: https://github.com/jerus-org/pcu/pull/576
 [#577]: https://github.com/jerus-org/pcu/pull/577
 [#578]: https://github.com/jerus-org/pcu/pull/578
+[#579]: https://github.com/jerus-org/pcu/pull/579
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.48...HEAD
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
 [0.4.45]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.45
