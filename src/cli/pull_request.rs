@@ -55,12 +55,12 @@ impl Pr {
             Ok(client) => client,
             Err(e) => {
                 match e {
-                    Error::EnvVarPullRequestNotSet => {
+                    Error::EnvVarPullRequestNotFound => {
                         if self.allow_no_pull_request {
-                            log::info!("No pull request found in CI environment");
+                            log::debug!("early exit allowed even though no pull request found in CI environment");
                             return Ok(CIExit::UnChanged);
                         } else {
-                            log::error!("Error getting client: {e}");
+                            log::debug!("pull request not found and not allowed");
                             return Err(e);
                         }
                     }
