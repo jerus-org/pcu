@@ -28,7 +28,7 @@ pub struct Pr {
     #[clap(long, default_value_t = true)]
     pub allow_push_fail: bool,
     /// Hide pull request failure. Exits with success status even if no pull request was found in CI environment.
-    #[clap(long, default_value_t = false)]
+    #[clap(long, default_value_t = true)]
     pub allow_no_pull_request: bool,
 }
 
@@ -48,12 +48,16 @@ impl Pr {
         }
 
         log::trace!("*** Get Client ***");
-        let mut client = match Commands::Pr(self.clone()).get_client().await {
+        let client_res = Commands::Pr(self.clone()).get_client().await;
+        log::trace!("client_res: {client_res:?}");
+        log::trace!("allow_no_pull_request: {}", self.allow_no_pull_request);
+        let mut client = match client_res {
             Ok(client) => client,
             Err(e) => {
                 match e {
                     Error::EnvVarPullRequestNotSet => {
                         if self.allow_no_pull_request {
+                            log::info!("No pull request found in CI environment");
                             return Ok(CIExit::UnChanged);
                         } else {
                             log::error!("Error getting client: {e}");

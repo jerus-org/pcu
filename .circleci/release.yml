@@ -9,7 +9,7 @@ parameters:
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@2.11.0
+  toolkit: jerus-org/circleci-toolkit@2.12.1
 
 executors:
   rust-env:
