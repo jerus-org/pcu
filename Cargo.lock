@@ -2020,7 +2020,7 @@ checksum = "df94ce210e5bc13cb6651479fa48d14f601d9858cfe0467f43ae157023b938d3"
 
 [[package]]
 name = "pcu"
-version = "0.4.48"
+version = "0.4.49"
 dependencies = [
  "bsky-sdk",
  "cargo_toml",
