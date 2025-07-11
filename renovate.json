@@ -9,6 +9,12 @@
   "schedule": [
     "* 0-5 24 * *"
   ],
+  "hostRules": [
+    {
+      "matchHost": "circleci.com",
+      "authType": "Token-Only"
+    }
+  ],
   "packageRules": [
     {
       "matchPackageNames": [
