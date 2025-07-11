@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 🔧 chore(config)-add host rules for circleci in renovate(pr [#580])
+- 🔧 chore(config)-update renovate configuration to inherit settings(pr [#581])
 
 ## [0.4.49] - 2025-07-10
 
@@ -1442,6 +1443,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#578]: https://github.com/jerus-org/pcu/pull/578
 [#579]: https://github.com/jerus-org/pcu/pull/579
 [#580]: https://github.com/jerus-org/pcu/pull/580
+[#581]: https://github.com/jerus-org/pcu/pull/581
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
