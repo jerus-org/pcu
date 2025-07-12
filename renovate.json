@@ -9,7 +9,7 @@
   "schedule": [
     "* 0-5 24 * *"
   ],
-  "inheritConfig": true,
-  "inheritConfigFileName": "default.json",
-  "inheritConfigRepoName": "jerusdp/renovate-config"
+  "extends": [
+    "github>jerusdp/renovate-config/default.json"
+  ]
 }
