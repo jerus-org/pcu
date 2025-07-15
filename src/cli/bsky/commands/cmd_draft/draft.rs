@@ -98,8 +98,14 @@ impl Draft {
             let post_text = format!(
                 "{}\n\n{} #{}\n\n{}",
                 blog_post.title,
-                blog_post.description,
-                blog_post.taxonomies.tags.join(" #"),
+                blog_post
+                    .extra
+                    .as_ref()
+                    .map_or_else(|| blog_post.description.as_str(), |e| e.bluesky.as_str()),
+                blog_post
+                    .taxonomies
+                    .as_ref()
+                    .map_or(String::new(), |tax| tax.tags.join(" #")),
                 post_link
             );
 
