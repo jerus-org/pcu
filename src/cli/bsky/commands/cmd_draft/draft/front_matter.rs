@@ -22,10 +22,17 @@ pub struct Taxonomies {
 }
 
 #[derive(Default, Debug, Clone, Deserialize)]
+pub struct Extra {
+    #[allow(dead_code)]
+    pub bluesky: String,
+}
+
+#[derive(Default, Debug, Clone, Deserialize)]
 pub struct FrontMatter {
     pub title: String,
     pub description: String,
     pub taxonomies: Taxonomies,
+    pub extra: Option<Extra>,
     pub basename: Option<String>,
     pub path: Option<String>,
     pub bluesky_post: Option<RecordData>,
