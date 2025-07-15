@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- 🔧 chore(config)-add host rules for circleci in renovate(pr [#580])
+- 🔧 chore(config)-add host rules for CircleCI in renovate(pr [#580])
 - 🔧 chore(config)-update renovate configuration to inherit settings(pr [#581])
 - 🔧 chore(renovate)-update configuration to extend from remote(pr [#582])
 - 🔧 chore(config)-update renovate configuration path(pr [#584])
@@ -133,7 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(cli)-replace CI check with testing check(pr [#529])
 - 📦 build(dependencies)-update Cargo dependencies(pr [#534])
 - 👷 ci(circleci)-separate release workflow into its own config(pr [#535])
-- Revert 👷 ci(circleci)  separate release workflow into its own config(pr [#537])
+- Revert 👷 ci(circleci)- separate release workflow into its own config(pr [#537])
 
 ### Fixed
 
@@ -282,7 +282,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- 👷 ci(circleci): enhance CircleCI config with new job dependencies  and trigger(pr [#464])
+- 👷 ci(circleci): enhance CircleCI config with new job dependencies and trigger(pr [#464])
 
 ### Fixed
 
@@ -606,7 +606,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - label_pr: simplify GraphQL mutation parameters for labeling PRs(pr [#325])
 - remove unused fields 'name' and 'color' from Label struct in label_pr.rs(pr [#326])
 - graphql: correct trace log message from vars to mutation in label_pr.rs(pr [#327])
-- label_pr: replace id with name in Label struct and GraphQL query(pr [#328])
+- label_pr: replace ID with name in Label struct and GraphQL query(pr [#328])
 - graphql: correct label_id type in mutation from String to ID(pr [#329])
 - correct typo in GraphQL mutation query in label_pr.rs(pr [#330])
 - correct typos in GraphQL mutation for adding labels to PR(pr [#331])
@@ -620,7 +620,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - add push_commit method and refactor branch method to branch_or_main(pr [#286])
-- add commit and reduce to push to push only(pr [#288])
+- add commit and reduce to push only(pr [#288])
 - add semver option to Push struct and tag_opt method(pr [#289])
 - fallback to graphql client for fetching pull request title(pr [#291])
 - better organisation of code(pr [#294])
@@ -667,7 +667,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add pcu-app to context in workflows configuration(pr [#273])
 - add line limit parameter to print_changelog function(pr [#275])
 - add config for line limit(pr [#277])
-- use ansi_term for styled console output(pr [#279])
+- use ANSI_term for styled console output(pr [#279])
 
 ### Changed
 
@@ -690,7 +690,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- chore-track get committish(pr [#263])
+- chore-track get commitish(pr [#263])
 
 ### Fixed
 
@@ -751,7 +751,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- refactor-extract repeated code into commands set_senmver, make_cargo_release, make_github_release(pr [#229])
+- refactor-extract repeated code into commands set_semver, make_cargo_release, make_github_release(pr [#229])
 
 ## [0.1.22] - 2024-07-25
 
@@ -892,7 +892,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add support for generating repository URL from PR URL(pr [#167])
 - add support for parsing changelog with repository URL in ChangelogParseOptions(pr [#168])
 - print message when changelog updated(pr [#176])
-- add early_exit flag for signaling an early exit(pr [#177])
+- add early_exit flag for signalling an early exit(pr [#177])
 
 ### Changed
 
@@ -981,7 +981,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ci: add step to remove original SSH key from agent(pr [#142](https://github.com/jerus-org/pcu/pull/142))
 - chore-add pre-release configuration for versioning and changelog updates(pr [#143](https://github.com/jerus-org/pcu/pull/143))
 - docs-update changelog with new unreleased changes(pr [#145](https://github.com/jerus-org/pcu/pull/145))
-- chore-remove  cargo release  comment replacements(pr [#147](https://github.com/jerus-org/pcu/pull/147))
+- chore-remove cargo release comment replacements(pr [#147](https://github.com/jerus-org/pcu/pull/147))
 - chore-update unreleased with version and date(pr [#148](https://github.com/jerus-org/pcu/pull/148))
 - chore-remove failing replacements(pr [#149](https://github.com/jerus-org/pcu/pull/149))
 
@@ -1027,7 +1027,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-add pull request template to .github directory(pr [#120](https://github.com/jerus-org/pcu/pull/120))
 - chore-add log level check before updating changelog(pr [#125](https://github.com/jerus-org/pcu/pull/125))
 - chore-add default values required by client module(pr [#133](https://github.com/jerus-org/pcu/pull/133))
-- refactor-migrate const to  settings(pr [#135](https://github.com/jerus-org/pcu/pull/135))
+- refactor-migrate const to settings(pr [#135](https://github.com/jerus-org/pcu/pull/135))
 - ci-customise release to make the first release v0.1.0(pr [#137](https://github.com/jerus-org/pcu/pull/137))
 - chore-manual update of changelog waiting on fix to message(pr [#139](https://github.com/jerus-org/pcu/pull/139))
 - chore-prepare for release by committing lock file (pr [#140](https://github.com/jerus-org/pcu/pull/140))
