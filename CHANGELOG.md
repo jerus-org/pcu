@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ✨ enhance post text with extra field(pr [#586])
+
 ### Changed
 
 - 🔧 chore(config)-add host rules for CircleCI in renovate(pr [#580])
@@ -1450,6 +1454,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#582]: https://github.com/jerus-org/pcu/pull/582
 [#584]: https://github.com/jerus-org/pcu/pull/584
 [#585]: https://github.com/jerus-org/pcu/pull/585
+[#586]: https://github.com/jerus-org/pcu/pull/586
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
