@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(config)-update renovate configuration to inherit settings(pr [#581])
 - 🔧 chore(renovate)-update configuration to extend from remote(pr [#582])
 - 🔧 chore(config)-update renovate configuration path(pr [#584])
+- 🔧 chore(renovate)-update renovate configuration(pr [#585])
 
 ## [0.4.49] - 2025-07-10
 
@@ -1448,6 +1449,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#581]: https://github.com/jerus-org/pcu/pull/581
 [#582]: https://github.com/jerus-org/pcu/pull/582
 [#584]: https://github.com/jerus-org/pcu/pull/584
+[#585]: https://github.com/jerus-org/pcu/pull/585
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
