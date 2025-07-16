@@ -96,7 +96,7 @@ impl Draft {
             log::debug!("Post link: {post_link}");
 
             let post_text = format!(
-                "{}\n\n{} #{}\n\n{}",
+                "{}\n\n{} {}\n\n{}",
                 blog_post.title,
                 blog_post
                     .extra
