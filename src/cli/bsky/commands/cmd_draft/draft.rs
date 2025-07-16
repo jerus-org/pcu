@@ -12,8 +12,6 @@ pub use front_matter::FrontMatter;
 use site_config::SiteConfig;
 
 use crate::Error;
-use std::fs;
-use std::path::Path;
 
 #[derive(Clone, Default)]
 pub struct Draft {
@@ -176,6 +174,8 @@ impl Draft {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, path::Path};
+
     use super::*;
 
     fn create_front_matter(title: &str, basename: &str) -> FrontMatter {
@@ -223,8 +223,10 @@ mod tests {
 
     #[test]
     fn test_write_posts_creates_files() {
-        let mut draft = Draft::default();
-        draft.store = "test_store".to_string();
+        let mut draft = Draft {
+            store: "test_store".to_string(),
+            ..Default::default()
+        };
         let mut fm = create_front_matter("Title", "file1");
         fm.bluesky_post = Some(RecordData {
             created_at: Datetime::now(),

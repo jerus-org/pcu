@@ -39,11 +39,9 @@ impl Taxonomies {
             let hashtag = if formatted_tag.starts_with('#') {
                 formatted_tag
             } else {
-                format!("#{}", formatted_tag)
+                format!("#{formatted_tag}")
             };
             hashtags.push(hashtag);
-
-
         }
 
         hashtags
@@ -151,13 +149,7 @@ mod tests {
         let hashtags = taxonomies.hashtags();
         assert_eq!(
             hashtags,
-            vec![
-                "#Rust",
-                "#BlueSky",
-                "#AlreadyHashtag",
-                "#MultiWordTag",
-                "#"
-            ]
+            vec!["#Rust", "#BlueSky", "#AlreadyHashtag", "#MultiWordTag", "#"]
         );
     }
 
@@ -193,5 +185,4 @@ mod tests {
         let hashtags = taxonomies.hashtags();
         assert_eq!(hashtags, Vec::<String>::new());
     }
-
 }
