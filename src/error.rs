@@ -5,12 +5,17 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Error {
     /// Unable to acquire the child process' standard input to write the commit data for signing
-    #[error("Failed to acquire standard input handler")]
+    #[error("failed to acquire standard input handler")]
     Stdin,
 
     /// Unable to retrieve the signed data from the child process
-    #[error("Failed to get output of signing process call: {0}")]
+    #[error("failed to get output of signing process call: {0}")]
     Stdout(String),
+
+    #[error("bluesky post for {0} contains too many characters: {1}")]
+    PostTooCharacters(String, usize),
+    #[error("bluesky post for {0} contains too many graphemes: {1}")]
+    PostTooManyGraphemes(String, usize),
 
     #[error("{0}")]
     GpgError(String),
@@ -84,7 +89,7 @@ pub enum Error {
     Regex(#[from] RegexError),
     #[error("cargo_toml error says: {0:?}")]
     CargoToml(#[from] cargo_toml::Error),
-    #[error("toml deserialisation error says: {0:?}")]
+    #[error("toml deserialization error says: {0:?}")]
     Toml(#[from] toml::de::Error),
     #[error("bsky_sdk error says: {0:?}")]
     BskySdk(#[from] bsky_sdk::Error),
