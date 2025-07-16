@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(config)-update renovate configuration path(pr [#584])
 - 🔧 chore(renovate)-update renovate configuration(pr [#585])
 
+### Fixed
+
+- 🐛 draft: remove hashtag from post text format(pr [#588])
+
 ## [0.4.49] - 2025-07-10
 
 ### Changed
@@ -1457,6 +1461,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#585]: https://github.com/jerus-org/pcu/pull/585
 [#586]: https://github.com/jerus-org/pcu/pull/586
 [#587]: https://github.com/jerus-org/pcu/pull/587
+[#588]: https://github.com/jerus-org/pcu/pull/588
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
