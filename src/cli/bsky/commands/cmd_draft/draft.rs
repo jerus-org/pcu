@@ -81,35 +81,9 @@ impl Draft {
         for blog_post in &mut self.blog_posts {
             log::trace!("Blog post: {blog_post:#?}");
 
-            let post_dir = if let Some(path) = blog_post.path.as_ref() {
-                format!("{}{}", path, "/")
-            } else {
-                String::new()
-            };
+            let post_text = blog_post.build_post_text(self.base_url.as_str())?;
 
-            let post_link = format!(
-                "{}/{}{}/index.html",
-                self.base_url,
-                post_dir,
-                blog_post.basename.as_ref().unwrap()
-            );
-            log::debug!("Post link: {post_link}");
-
-            let post_text = format!(
-                "{}\n\n{} {}\n\n{}",
-                blog_post.title,
-                blog_post
-                    .extra
-                    .as_ref()
-                    .map_or_else(|| blog_post.description.as_str(), |e| e.bluesky.as_str()),
-                blog_post
-                    .taxonomies
-                    .as_ref()
-                    .map_or(String::new(), |tax| tax.hashtags().join(" ")),
-                post_link
-            );
-
-            log::debug!("Post text: {post_text}");
+            log::trace!("Post text: {post_text}");
 
             let rt = RichText::new_with_detect_facets(&post_text).await?;
 
