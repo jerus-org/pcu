@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - ✨ enhance post text with extra field(pr [#586])
+- ✨ add hashtag formatting to taxonomies(pr [#587])
 
 ### Changed
 
@@ -1455,6 +1456,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#584]: https://github.com/jerus-org/pcu/pull/584
 [#585]: https://github.com/jerus-org/pcu/pull/585
 [#586]: https://github.com/jerus-org/pcu/pull/586
+[#587]: https://github.com/jerus-org/pcu/pull/587
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48

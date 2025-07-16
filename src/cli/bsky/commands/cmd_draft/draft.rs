@@ -105,7 +105,7 @@ impl Draft {
                 blog_post
                     .taxonomies
                     .as_ref()
-                    .map_or(String::new(), |tax| tax.tags.join(" #")),
+                    .map_or(String::new(), |tax| tax.hashtags().join(" ")),
                 post_link
             );
 
@@ -169,5 +169,82 @@ impl Draft {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fs, path::Path};
+
+    use super::*;
+
+    fn create_front_matter(title: &str, basename: &str) -> FrontMatter {
+        FrontMatter {
+            title: title.to_string(),
+            basename: Some(basename.to_string()),
+            description: "desc".to_string(),
+            path: Some("blog".to_string()),
+            extra: None,
+            taxonomies: None,
+            bluesky_post: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_process_posts_sets_bluesky_post() {
+        let mut draft = Draft::default();
+        let mut posts = vec![create_front_matter("Title", "file1")];
+        draft.add_posts(&mut posts).unwrap();
+        draft.process_posts().await.unwrap();
+        assert!(draft.blog_posts[0].bluesky_post.is_some());
+    }
+
+    #[test]
+    fn test_add_path_sets_path() {
+        let mut draft = Draft::default();
+        draft.add_path("blog").unwrap();
+        assert_eq!(draft.path, "blog/");
+    }
+
+    #[test]
+    fn test_add_store_sets_store() {
+        let mut draft = Draft::default();
+        draft.add_store("store_dir").unwrap();
+        assert_eq!(draft.store, "store_dir");
+    }
+
+    #[test]
+    fn test_add_posts_appends_posts() {
+        let mut draft = Draft::default();
+        let mut posts = vec![create_front_matter("Title", "file1")];
+        draft.add_posts(&mut posts).unwrap();
+        assert_eq!(draft.blog_posts.len(), 1);
+    }
+
+    #[test]
+    fn test_write_posts_creates_files() {
+        let mut draft = Draft {
+            store: "test_store".to_string(),
+            ..Default::default()
+        };
+        let mut fm = create_front_matter("Title", "file1");
+        fm.bluesky_post = Some(RecordData {
+            created_at: Datetime::now(),
+            embed: None,
+            entities: None,
+            facets: None,
+            labels: None,
+            langs: None,
+            reply: None,
+            tags: None,
+            text: "text".to_string(),
+        });
+        draft.blog_posts.push(fm);
+
+        draft.write_posts().unwrap();
+        let post_file = "test_store/file1.post";
+        assert!(Path::new(post_file).exists());
+        fs::remove_file(post_file).unwrap();
+        fs::remove_dir("test_store").unwrap();
     }
 }

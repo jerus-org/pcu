@@ -21,6 +21,33 @@ pub struct Taxonomies {
     pub tags: Vec<String>,
 }
 
+impl Taxonomies {
+    pub fn hashtags(&self) -> Vec<String> {
+        let mut hashtags = vec![];
+        for tag in &self.tags {
+            // convert tag to hashtag by capitalising the first letter of each word, removing the spaces and prefixing with a # if required
+            let formatted_tag = tag
+                .split_whitespace()
+                .map(|word| {
+                    let mut chars = word.chars();
+                    match chars.next() {
+                        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                        None => String::new(),
+                    }
+                })
+                .collect::<String>();
+            let hashtag = if formatted_tag.starts_with('#') {
+                formatted_tag
+            } else {
+                format!("#{formatted_tag}")
+            };
+            hashtags.push(hashtag);
+        }
+
+        hashtags
+    }
+}
+
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct Extra {
     #[allow(dead_code)]
@@ -107,5 +134,55 @@ mod tests {
         "#;
         let result = FrontMatter::from_toml(toml);
         assert!(result.is_err());
+    }
+    #[test]
+    fn test_hashtags_formatting() {
+        let taxonomies = Taxonomies {
+            tags: vec![
+                "rust".to_string(),
+                "blue sky".to_string(),
+                "#AlreadyHashtag".to_string(),
+                "multi word tag".to_string(),
+                "".to_string(),
+            ],
+        };
+        let hashtags = taxonomies.hashtags();
+        assert_eq!(
+            hashtags,
+            vec!["#Rust", "#BlueSky", "#AlreadyHashtag", "#MultiWordTag", "#"]
+        );
+    }
+
+    #[test]
+    fn test_front_matter_with_basename_and_path() {
+        let toml = r#"
+            title = "With Path"
+            description = "Has basename and path"
+            basename = "post1"
+            path = "/blog/post1.md"
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert_eq!(fm.basename.as_deref(), Some("post1"));
+        assert_eq!(fm.path.as_deref(), Some("/blog/post1.md"));
+    }
+
+    #[test]
+    fn test_front_matter_empty_toml() {
+        let toml = r#"
+            title = "Extra Test"
+            description = "Has extra field"
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert_eq!(fm.title, "Extra Test");
+        assert_eq!(fm.description, "Has extra field");
+        assert!(fm.taxonomies.is_none());
+        assert!(fm.extra.is_none());
+    }
+
+    #[test]
+    fn test_taxonomies_empty_tags() {
+        let taxonomies = Taxonomies { tags: vec![] };
+        let hashtags = taxonomies.hashtags();
+        assert_eq!(hashtags, Vec::<String>::new());
     }
 }
