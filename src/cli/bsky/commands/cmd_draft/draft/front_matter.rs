@@ -1,6 +1,7 @@
 use crate::Error;
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
 use serde::Deserialize;
+use unicode_segmentation::UnicodeSegmentation;
 
 // +++
 // title = "Blue Sky Test Blog"
@@ -69,6 +70,81 @@ impl FrontMatter {
     pub fn from_toml(toml: &str) -> Result<Self, Error> {
         let front_matter = toml::from_str::<FrontMatter>(toml)?;
         Ok(front_matter)
+    }
+
+    pub fn build_post_text(&self, base_url: &str) -> Result<String, Error> {
+        let post_dir = if let Some(path) = self.path.as_ref() {
+            format!("{}{}", path, "/")
+        } else {
+            String::new()
+        };
+
+        let post_link = format!(
+            "{}/{}{}/index.html",
+            base_url,
+            post_dir,
+            self.basename.as_ref().unwrap()
+        );
+        log::debug!("Post link: {post_link}");
+        log::debug!(
+            "Length of post link: {} characters and {} graphemes",
+            post_link.len(),
+            post_link.graphemes(true).count()
+        );
+        log::debug!(
+            "Length of title: {} characters and {} graphemes",
+            self.title.len(),
+            self.title.graphemes(true).count()
+        );
+        log::debug!(
+            "Length of description: {} characters and {} graphemes",
+            self.description.len(),
+            self.description.graphemes(true).count()
+        );
+        log::debug!(
+            "Length of bluesky: {} characters and {} graphemes",
+            self.extra.as_ref().map_or(0, |e| e.bluesky.len()),
+            self.extra
+                .as_ref()
+                .map_or(0, |e| e.bluesky.graphemes(true).count())
+        );
+        log::debug!(
+            "Length of tag contents: {} characters and {} graphemes",
+            self.taxonomies
+                .as_ref()
+                .map_or(0, |e| e.tags.join("#").len() + 1),
+            self.taxonomies
+                .as_ref()
+                .map_or(0, |e| e.tags.join("#").graphemes(true).count() + 1)
+        );
+
+        let post_text = format!(
+            "{}\n\n{} {}\n\n{}",
+            self.title,
+            self.extra
+                .as_ref()
+                .map_or_else(|| self.description.as_str(), |e| e.bluesky.as_str()),
+            self.taxonomies
+                .as_ref()
+                .map_or(String::new(), |tax| tax.hashtags().join(" ")),
+            post_link
+        );
+
+        if post_text.len() > 300 {
+            return Err(Error::PostTooCharacters(
+                self.title.clone(),
+                post_text.len(),
+            ));
+        }
+
+        if post_text.graphemes(true).count() > 300 {
+            return Err(Error::PostTooManyGraphemes(
+                self.title.clone(),
+                post_text.graphemes(true).count(),
+            ));
+        }
+
+        Ok(post_text)
     }
 }
 

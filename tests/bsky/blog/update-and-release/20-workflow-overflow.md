@@ -8,6 +8,10 @@ draft = false
 [taxonomies]
 topic = ["Technology"]
 tags = ["devsecops", "software", "circleci", "security", "practices"]
+
+[extra]
+bluesky = "Covering the key steps involved, from identification of updates through automated testing and release."
+
 +++
 <!-- markdownlint-disable MD003 MD024 MD033-->
 
@@ -71,8 +75,8 @@ section Pub
 
 {% end %}
 
-The gantt chart shows the schedule of the release cycle. The development phase starts on day 1 on the cycle and and ends on day 5. The dependency updates are scheduled for day 5 and the release workflow runs on day 6.
+The gantt chart shows the schedule of the release cycle. The development phase starts on day 1 on the cycle and ends on day 5. The dependency updates are scheduled for day 5 and the release workflow runs on day 6.
 
-The final day of the seven day cycle is for rest (or remediation is required).
+The final day of the seven-day cycle is for rest (or remediation is required).
 
 For most of the libraries and tools under development day one starts at the beginning of the week on Monday. However, some weeks are shifted to account for dependencies, particularly the packaging of the docker container for CI which is released on Tuesdays to update with the tools as release in the previous week's work.
