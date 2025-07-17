@@ -20,6 +20,16 @@ pub struct Push {
 }
 
 impl Push {
+    pub fn new_with(semver: Option<String>, no_push: bool, mut prefix: String) -> Self {
+        if prefix.is_empty() {
+            prefix = "v".to_string();
+        }
+        Self {
+            semver,
+            no_push,
+            prefix,
+        }
+    }
     pub fn tag_opt(&self) -> Option<&str> {
         if let Some(semver) = &self.semver {
             return Some(semver);
