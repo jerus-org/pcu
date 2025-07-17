@@ -342,7 +342,7 @@ mod tests {
         let md_file2 = temp_dir.path().join(&file2);
         let txt_file = temp_dir.path().join(&file3);
 
-        let expected = vec![
+        let expected = [
             (
                 md_file1.to_string_lossy().to_string(),
                 temp_dir.path().to_string_lossy().to_string(),
@@ -362,7 +362,8 @@ mod tests {
         let files = result.unwrap();
         println!("Files: {files:?}");
         assert_eq!(files.len(), 2);
-        assert_eq!(files, expected);
+        assert!(files.contains(&expected[0]));
+        assert!(files.contains(&expected[1]));
     }
 
     #[test]
