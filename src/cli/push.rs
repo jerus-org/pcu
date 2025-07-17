@@ -20,6 +20,17 @@ pub struct Push {
 }
 
 impl Push {
+    pub fn new_with(semver: Option<String>, no_push: bool, mut prefix: String) -> Self {
+        if prefix.is_empty() {
+            prefix = "v".to_string();
+        }
+        Self {
+            semver,
+            no_push,
+            prefix,
+        }
+    }
+
     pub fn tag_opt(&self) -> Option<&str> {
         if let Some(semver) = &self.semver {
             return Some(semver);
@@ -54,5 +65,35 @@ impl Push {
                 "Changed files committed and push dry run completed for logging.".to_string(),
             ))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_with_empty_prefix() {
+        let push = Push::new_with(Some("1.0.0".to_string()), false, "".to_string());
+        assert_eq!(push.prefix, "v");
+        assert_eq!(push.semver, Some("1.0.0".to_string()));
+        assert!(!push.no_push);
+    }
+
+    #[test]
+    fn test_new_with_custom_prefix() {
+        let push = Push::new_with(None, true, "ver-".to_string());
+        assert_eq!(push.prefix, "ver-");
+        assert_eq!(push.semver, None);
+        assert!(push.no_push);
+    }
+
+    #[test]
+    fn test_tag_opt() {
+        let push = Push::new_with(Some("2.0.0".to_string()), false, "v".to_string());
+        assert_eq!(push.tag_opt(), Some("2.0.0"));
+
+        let push_no_semver = Push::new_with(None, false, "v".to_string());
+        assert_eq!(push_no_semver.tag_opt(), None);
     }
 }
