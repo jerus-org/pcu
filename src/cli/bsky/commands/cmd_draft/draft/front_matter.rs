@@ -12,7 +12,12 @@ use unicode_segmentation::UnicodeSegmentation;
 //
 // [taxonomies]
 // topic = ["Technology"]
+// description = "A blog post to test the processing of blog posts for posting to Bluesky."
 // tags = ["bluesky", "testing", "test only", "ci"]
+//
+// [extra]
+// bluesky.description = "This is a test blog post for Bluesky."
+// bluesky.tags = ["bluesky", "testing", "test only", "ci"]
 // +++
 //
 
@@ -52,7 +57,13 @@ impl Taxonomies {
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct Extra {
     #[allow(dead_code)]
-    pub bluesky: String,
+    pub bluesky: Bluesky,
+}
+
+#[derive(Default, Debug, Clone, Deserialize)]
+pub struct Bluesky {
+    pub description: String,
+    pub tags: Vec<String>,
 }
 
 #[derive(Default, Debug, Clone, Deserialize)]
@@ -64,6 +75,8 @@ pub struct FrontMatter {
     pub basename: Option<String>,
     pub path: Option<String>,
     pub bluesky_post: Option<RecordData>,
+    pub post_link: Option<String>,
+    pub post_short_link: Option<String>,
 }
 
 impl FrontMatter {
@@ -72,24 +85,28 @@ impl FrontMatter {
         Ok(front_matter)
     }
 
-    pub fn build_post_text(&self, base_url: &str) -> Result<String, Error> {
+    pub fn build_post_text(&mut self, base_url: &str) -> Result<String, Error> {
         let post_dir = if let Some(path) = self.path.as_ref() {
             format!("{}{}", path, "/")
         } else {
             String::new()
         };
 
-        let post_link = format!(
-            "{}/{}{}/index.html",
-            base_url,
-            post_dir,
-            self.basename.as_ref().unwrap()
-        );
-        log::debug!("Post link: {post_link}");
+        self.get_post_link(base_url, &post_dir);
+        self.get_short_post_link(base_url, &post_dir);
+
+        log::debug!("Post link: {}", self.post_link.as_ref().unwrap());
         log::debug!(
             "Length of post link: {} characters and {} graphemes",
-            post_link.len(),
-            post_link.graphemes(true).count()
+            self.post_link.as_ref().unwrap().len(),
+            self.post_link.as_ref().unwrap().graphemes(true).count()
+        );
+        log::debug!(
+            "Length of post short link: {} characters and {} graphemes",
+            self.post_short_link.as_ref().map_or(0, |link| link.len()),
+            self.post_short_link
+                .as_ref()
+                .map_or(0, |link| link.graphemes(true).count())
         );
         log::debug!(
             "Length of title: {} characters and {} graphemes",
@@ -102,11 +119,13 @@ impl FrontMatter {
             self.description.graphemes(true).count()
         );
         log::debug!(
-            "Length of bluesky: {} characters and {} graphemes",
-            self.extra.as_ref().map_or(0, |e| e.bluesky.len()),
+            "Length of bluesky description: {} characters and {} graphemes",
             self.extra
                 .as_ref()
-                .map_or(0, |e| e.bluesky.graphemes(true).count())
+                .map_or(0, |e| e.bluesky.description.len()),
+            self.extra
+                .as_ref()
+                .map_or(0, |e| e.bluesky.description.graphemes(true).count())
         );
         log::debug!(
             "Length of tag contents: {} characters and {} graphemes",
@@ -117,17 +136,30 @@ impl FrontMatter {
                 .as_ref()
                 .map_or(0, |e| e.tags.join("#").graphemes(true).count() + 1)
         );
+        log::debug!(
+            "Length of bluesky tag contents: {} characters and {} graphemes",
+            self.extra
+                .as_ref()
+                .map_or(0, |e| e.bluesky.tags.join("#").len() + 1),
+            self.extra
+                .as_ref()
+                .map_or(0, |e| e.bluesky.tags.join("#").graphemes(true).count() + 1)
+        );
 
         let post_text = format!(
             "{}\n\n{} {}\n\n{}",
             self.title,
-            self.extra
-                .as_ref()
-                .map_or_else(|| self.description.as_str(), |e| e.bluesky.as_str()),
+            self.extra.as_ref().map_or_else(
+                || self.description.as_str(),
+                |e| e.bluesky.description.as_str()
+            ),
             self.taxonomies
                 .as_ref()
                 .map_or(String::new(), |tax| tax.hashtags().join(" ")),
-            post_link
+            self.post_short_link.as_ref().map_or_else(
+                || self.post_link.as_ref().unwrap().to_string(),
+                |link| link.to_string()
+            )
         );
 
         if post_text.len() > 300 {
@@ -145,6 +177,24 @@ impl FrontMatter {
         }
 
         Ok(post_text)
+    }
+
+    fn get_post_link(&mut self, base_url: &str, post_dir: &str) {
+        self.post_link = Some(format!(
+            "{}/{}{}/index.html",
+            base_url,
+            post_dir,
+            self.basename.as_ref().unwrap()
+        ));
+    }
+
+    fn get_short_post_link(&mut self, base_url: &str, post_dir: &str) {
+        let post_link = format!("/{post_dir}{}/", self.basename.as_ref().unwrap());
+        let ts = chrono::Utc::now().timestamp();
+        let link = post_link.encode_utf16().sum::<u16>();
+        let short_link = base62::encode(ts as u64 + link as u64);
+
+        self.post_short_link = Some(format!("{base_url}/s/{short_link}"));
     }
 }
 
@@ -187,7 +237,7 @@ mod tests {
         assert_eq!(fm.title, "Extra Test");
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
         assert!(fm.extra.is_some());
-        assert_eq!(fm.extra.unwrap().bluesky, "extra_value");
+        assert_eq!(fm.extra.unwrap().bluesky.description, "extra_value");
     }
 
     #[test]
