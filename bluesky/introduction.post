@@ -1,0 +1,30 @@
+{
+  "createdAt": "2025-07-17T06:46:00.799885Z",
+  "facets": [
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#link",
+          "uri": "https://www.jrussell.ie/tests/bsky/blog/introduction/index.html"
+        }
+      ],
+      "index": {
+        "byteEnd": 143,
+        "byteStart": 80
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "FirstPost"
+        }
+      ],
+      "index": {
+        "byteEnd": 78,
+        "byteStart": 68
+      }
+    }
+  ],
+  "text": "First post - what and why!\n\nFirst post and introduction to the blog #FirstPost\n\nhttps://www.jrussell.ie/tests/bsky/blog/introduction/index.html"
+}

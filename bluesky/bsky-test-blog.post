@@ -1,0 +1,66 @@
+{
+  "createdAt": "2025-07-17T06:46:00.675356Z",
+  "facets": [
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#link",
+          "uri": "https://www.jrussell.ie/tests/bsky-test-blog/index.html"
+        }
+      ],
+      "index": {
+        "byteEnd": 182,
+        "byteStart": 127
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Bluesky"
+        }
+      ],
+      "index": {
+        "byteEnd": 101,
+        "byteStart": 93
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Testing"
+        }
+      ],
+      "index": {
+        "byteEnd": 110,
+        "byteStart": 102
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Test-only"
+        }
+      ],
+      "index": {
+        "byteEnd": 121,
+        "byteStart": 111
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Ci"
+        }
+      ],
+      "index": {
+        "byteEnd": 125,
+        "byteStart": 122
+      }
+    }
+  ],
+  "text": "Blue Sky Test Blog\n\nA blog post to test the processing of blog posts for posting to Bluesky. #Bluesky #Testing #Test-only #Ci\n\nhttps://www.jrussell.ie/tests/bsky-test-blog/index.html"
+}

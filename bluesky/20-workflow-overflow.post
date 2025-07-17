@@ -1,0 +1,78 @@
+{
+  "createdAt": "2025-07-17T06:46:00.916904Z",
+  "facets": [
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#link",
+          "uri": "https://www.jrussell.ie/tests/bsky/blog/update-and-release/20-workflow-overflow/index.html"
+        }
+      ],
+      "index": {
+        "byteEnd": 272,
+        "byteStart": 182
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Devsecops"
+        }
+      ],
+      "index": {
+        "byteEnd": 139,
+        "byteStart": 129
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Software"
+        }
+      ],
+      "index": {
+        "byteEnd": 149,
+        "byteStart": 140
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Circleci"
+        }
+      ],
+      "index": {
+        "byteEnd": 159,
+        "byteStart": 150
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Security"
+        }
+      ],
+      "index": {
+        "byteEnd": 169,
+        "byteStart": 160
+      }
+    },
+    {
+      "features": [
+        {
+          "$type": "app.bsky.richtext.facet#tag",
+          "tag": "Practices"
+        }
+      ],
+      "index": {
+        "byteEnd": 180,
+        "byteStart": 170
+      }
+    }
+  ],
+  "text": "Overview of Our Workflow\n\nCovering the key steps involved, from identification of updates through automated testing and release. #Devsecops #Software #Circleci #Security #Practices\n\nhttps://www.jrussell.ie/tests/bsky/blog/update-and-release/20-workflow-overflow/index.html"
+}
