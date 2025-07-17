@@ -86,6 +86,37 @@ impl FrontMatter {
             self.basename.as_ref().unwrap()
         );
         log::debug!("Post link: {post_link}");
+        log::debug!(
+            "Length of post link: {} characters and {} graphemes",
+            post_link.len(),
+            post_link.graphemes(true).count()
+        );
+        log::debug!(
+            "Length of title: {} characters and {} graphemes",
+            self.title.len(),
+            self.title.graphemes(true).count()
+        );
+        log::debug!(
+            "Length of description: {} characters and {} graphemes",
+            self.description.len(),
+            self.description.graphemes(true).count()
+        );
+        log::debug!(
+            "Length of bluesky: {} characters and {} graphemes",
+            self.extra.as_ref().map_or(0, |e| e.bluesky.len()),
+            self.extra
+                .as_ref()
+                .map_or(0, |e| e.bluesky.graphemes(true).count())
+        );
+        log::debug!(
+            "Length of tag contents: {} characters and {} graphemes",
+            self.taxonomies
+                .as_ref()
+                .map_or(0, |e| e.tags.join("#").len() + 1),
+            self.taxonomies
+                .as_ref()
+                .map_or(0, |e| e.tags.join("#").graphemes(true).count() + 1)
+        );
 
         let post_text = format!(
             "{}\n\n{} {}\n\n{}",

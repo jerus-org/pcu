@@ -12,9 +12,9 @@ pub enum Error {
     #[error("failed to get output of signing process call: {0}")]
     Stdout(String),
 
-    #[error("bluesky post for {0} contains too many characters: {1}")]
+    #[error("bluesky post for `{0}` contains too many characters: {1}")]
     PostTooCharacters(String, usize),
-    #[error("bluesky post for {0} contains too many graphemes: {1}")]
+    #[error("bluesky post for `{0}` contains too many graphemes: {1}")]
     PostTooManyGraphemes(String, usize),
 
     #[error("{0}")]
