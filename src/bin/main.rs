@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         Commands::Push(push_args) => push_args.run_push().await,
         Commands::Label(label_args) => label_args.run_label().await,
         Commands::Release(rel_args) => rel_args.run_release(sign).await,
-        Commands::Bsky(rel_args) => rel_args.run().await,
+        Commands::Bsky(bsky_args) => bsky_args.run().await,
     };
 
     match res {
