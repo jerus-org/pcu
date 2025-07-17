@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add hashtag formatting to taxonomies(pr [#587])
 - ✨ add build_post_text method for post generation(pr [#589])
 - ✨ add automatic push after commit in cmd_post(pr [#590])
+- ✨ add redirect functionality to draft command(pr [#591])
 
 ### Changed
 
@@ -1466,6 +1467,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#588]: https://github.com/jerus-org/pcu/pull/588
 [#589]: https://github.com/jerus-org/pcu/pull/589
 [#590]: https://github.com/jerus-org/pcu/pull/590
+[#591]: https://github.com/jerus-org/pcu/pull/591
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
