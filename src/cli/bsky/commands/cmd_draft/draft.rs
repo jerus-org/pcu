@@ -170,13 +170,14 @@ impl Draft {
                 continue;
             };
 
-            let filename = format!("s/{post_short_link}.html");
-            log::debug!("Redirect page filename: {filename}");
+            log::debug!("Redirect page filename: {post_short_link}");
 
-            let mut file = File::create(filename)?;
+            let mut file = File::create(post_short_link)?;
 
             let redirector = redirector::Redirector::new(post_link);
-            write!(file, "{redirector}")?;
+            file.write_all(redirector.to_string().as_bytes())?;
+            file.sync_all()?;
+            log::debug!("Redirect page written to: {post_short_link}");
         }
 
         Ok(())
@@ -187,7 +188,16 @@ impl Draft {
 mod tests {
     use std::{fs, path::Path};
 
+    use log::LevelFilter;
+
     use super::*;
+
+    fn get_test_logger() {
+        let mut builder = env_logger::Builder::new();
+        builder.filter(None, LevelFilter::Debug);
+        builder.format_timestamp_secs().format_module_path(false);
+        let _ = builder.try_init();
+    }
 
     fn create_front_matter(title: &str, basename: &str) -> FrontMatter {
         FrontMatter {
@@ -236,6 +246,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_write_posts_creates_files() {
+        get_test_logger();
+
         let mut draft = Draft {
             store: "test_store".to_string(),
             ..Default::default()
@@ -264,7 +276,7 @@ mod tests {
         let post_file = "test_store/file1.post";
         let short_link = psl;
         assert!(Path::new(post_file).exists());
-        assert!(Path::new(&format!("s/{short_link}.html")).exists());
+        assert!(Path::new(&short_link).exists());
         fs::remove_file(post_file).unwrap();
         fs::remove_dir("test_store").unwrap();
     }
