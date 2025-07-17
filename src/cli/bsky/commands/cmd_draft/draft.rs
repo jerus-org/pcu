@@ -1,7 +1,9 @@
 mod front_matter;
+mod redirector;
 mod site_config;
 
 use std::fs::File;
+use std::io::Write;
 
 use bsky_sdk::{
     api::{app::bsky::feed::post::RecordData, types::string::Datetime},
@@ -113,7 +115,8 @@ impl Draft {
         self.store = store.to_string();
         Ok(self)
     }
-    pub fn write_posts(&self) -> Result<(), Error> {
+
+    pub fn write_posts(&self) -> Result<&Self, Error> {
         // create store directory if it doesn't exist
         if !std::path::Path::new(&self.store).exists() {
             std::fs::create_dir_all(self.store.clone())?;
@@ -142,6 +145,40 @@ impl Draft {
             file.sync_all()?;
         }
 
+        Ok(self)
+    }
+
+    pub fn write_redirects(&self) -> Result<(), Error> {
+        // create store directory if it doesn't exist
+        if !std::path::Path::new("s").exists() {
+            std::fs::create_dir_all("s")?;
+        }
+
+        for blog_post in &self.blog_posts {
+            let Some(post_link) = &blog_post.post_link else {
+                log::warn!(
+                    "No post short link found for blog post: {}",
+                    blog_post.title
+                );
+                continue;
+            };
+            let Some(post_short_link) = &blog_post.post_short_link else {
+                log::warn!(
+                    "No post short link found for blog post: {}",
+                    blog_post.title
+                );
+                continue;
+            };
+
+            let filename = format!("s/{post_short_link}.html");
+            log::debug!("Redirect page filename: {filename}");
+
+            let mut file = File::create(filename)?;
+
+            let redirector = redirector::Redirector::new(post_link);
+            write!(file, "{redirector}")?;
+        }
+
         Ok(())
     }
 }
@@ -161,6 +198,8 @@ mod tests {
             extra: None,
             taxonomies: None,
             bluesky_post: None,
+            post_link: None,
+            post_short_link: None,
         }
     }
 
@@ -195,8 +234,8 @@ mod tests {
         assert_eq!(draft.blog_posts.len(), 1);
     }
 
-    #[test]
-    fn test_write_posts_creates_files() {
+    #[tokio::test]
+    async fn test_write_posts_creates_files() {
         let mut draft = Draft {
             store: "test_store".to_string(),
             ..Default::default()
@@ -214,10 +253,18 @@ mod tests {
             text: "text".to_string(),
         });
         draft.blog_posts.push(fm);
-
+        draft.process_posts().await.unwrap();
+        let psl = draft.blog_posts[0]
+            .post_short_link
+            .as_ref()
+            .unwrap()
+            .clone();
         draft.write_posts().unwrap();
+        draft.write_redirects().unwrap();
         let post_file = "test_store/file1.post";
+        let short_link = psl;
         assert!(Path::new(post_file).exists());
+        assert!(Path::new(&format!("s/{short_link}.html")).exists());
         fs::remove_file(post_file).unwrap();
         fs::remove_dir("test_store").unwrap();
     }
