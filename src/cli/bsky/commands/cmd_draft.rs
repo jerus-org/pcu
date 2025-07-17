@@ -80,7 +80,8 @@ impl CmdDraft {
             .process_posts()
             .await?
             .add_store(&settings.get_string("store")?)?
-            .write_posts()?;
+            .write_posts()?
+            .write_redirects()?;
 
         let sign = Sign::Gpg;
         // Commit the posts to the git repo
@@ -373,8 +374,8 @@ mod tests {
     }
 
     #[test]
-    fn test_get_files_nonexistent_path() {
-        let result = get_files("/nonexistent/path");
+    fn test_get_files_non_existent_path() {
+        let result = get_files("/non-existent/path");
         assert!(matches!(result, Err(Error::PathNotFound(_))));
     }
 
