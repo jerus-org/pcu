@@ -4,7 +4,7 @@ use clap::Parser;
 use config::Config;
 use poster::Poster;
 
-use crate::{CIExit, Client, Error, GitOps, Sign};
+use crate::{cli::push::Push, CIExit, Client, Error, GitOps, Sign};
 
 #[derive(Debug, Parser, Clone)]
 pub struct CmdPost {
@@ -37,6 +37,11 @@ impl CmdPost {
         let commit_message = "chore: remove posts that were sent to Bluesky";
         client
             .commit_changed_files(sign, commit_message, "", None)
+            .await?;
+
+        // Push the commit as it only exists until the program exits
+        Push::new_with(None, false, "v".to_string())
+            .run_push()
             .await?;
 
         Ok(CIExit::PostedToBluesky)
