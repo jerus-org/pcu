@@ -62,8 +62,8 @@ pub struct Extra {
 
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct Bluesky {
-    pub description: String,
-    pub tags: Vec<String>,
+    pub description: Option<String>,
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Default, Debug, Clone, Deserialize)]
@@ -93,7 +93,7 @@ impl FrontMatter {
         };
 
         self.get_post_link(base_url, &post_dir);
-        self.get_short_post_link(base_url, &post_dir);
+        self.get_short_post_link(&post_dir);
 
         log::debug!("Post link: {}", self.post_link.as_ref().unwrap());
         log::debug!(
@@ -120,12 +120,16 @@ impl FrontMatter {
         );
         log::debug!(
             "Length of bluesky description: {} characters and {} graphemes",
-            self.extra
+            self.extra.as_ref().map_or(0, |e| e
+                .bluesky
+                .description
                 .as_ref()
-                .map_or(0, |e| e.bluesky.description.len()),
-            self.extra
+                .map_or(0, |s| s.len())),
+            self.extra.as_ref().map_or(0, |e| e
+                .bluesky
+                .description
                 .as_ref()
-                .map_or(0, |e| e.bluesky.description.graphemes(true).count())
+                .map_or(0, |s| s.graphemes(true).count()))
         );
         log::debug!(
             "Length of tag contents: {} characters and {} graphemes",
@@ -138,12 +142,18 @@ impl FrontMatter {
         );
         log::debug!(
             "Length of bluesky tag contents: {} characters and {} graphemes",
+            self.extra.as_ref().map_or(0, |e| e
+                .bluesky
+                .tags
+                .as_ref()
+                .map_or(0, |tags| tags.join("#").len() + 1)),
             self.extra
                 .as_ref()
-                .map_or(0, |e| e.bluesky.tags.join("#").len() + 1),
-            self.extra
-                .as_ref()
-                .map_or(0, |e| e.bluesky.tags.join("#").graphemes(true).count() + 1)
+                .map_or(0, |e| e.bluesky.tags.as_ref().map_or(0, |tags| tags
+                    .join("#")
+                    .graphemes(true)
+                    .count()
+                    + 1))
         );
 
         let post_text = format!(
@@ -151,7 +161,11 @@ impl FrontMatter {
             self.title,
             self.extra.as_ref().map_or_else(
                 || self.description.as_str(),
-                |e| e.bluesky.description.as_str()
+                |e| e
+                    .bluesky
+                    .description
+                    .as_deref()
+                    .unwrap_or(&self.description)
             ),
             self.taxonomies
                 .as_ref()
@@ -188,19 +202,28 @@ impl FrontMatter {
         ));
     }
 
-    fn get_short_post_link(&mut self, base_url: &str, post_dir: &str) {
-        let post_link = format!("/{post_dir}{}/", self.basename.as_ref().unwrap());
+    fn get_short_post_link(&mut self, post_dir: &str) {
+        let post_link = format!("{post_dir}{}/", self.basename.as_ref().unwrap());
         let ts = chrono::Utc::now().timestamp();
         let link = post_link.encode_utf16().sum::<u16>();
         let short_link = base62::encode(ts as u64 + link as u64);
 
-        self.post_short_link = Some(format!("{base_url}/s/{short_link}"));
+        self.post_short_link = Some(format!("s/{short_link}.html"));
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use log::LevelFilter;
+
     use super::*;
+
+    fn get_test_logger() {
+        let mut builder = env_logger::Builder::new();
+        builder.filter(None, LevelFilter::Debug);
+        builder.format_timestamp_secs().format_module_path(false);
+        let _ = builder.try_init();
+    }
 
     #[test]
     fn test_from_toml_basic() {
@@ -223,6 +246,8 @@ mod tests {
 
     #[test]
     fn test_from_toml_with_extra() {
+        get_test_logger();
+
         let toml = r#"
             title = "Extra Test"
             description = "Has extra field"
@@ -231,13 +256,16 @@ mod tests {
             tags = ["extra"]
 
             [extra]
-            bluesky = "extra_value"
+            bluesky.description = "extra_value"
         "#;
         let fm = FrontMatter::from_toml(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
         assert!(fm.extra.is_some());
-        assert_eq!(fm.extra.unwrap().bluesky.description, "extra_value");
+        assert_eq!(
+            fm.extra.unwrap().bluesky.description,
+            Some("extra_value".to_string())
+        );
     }
 
     #[test]
