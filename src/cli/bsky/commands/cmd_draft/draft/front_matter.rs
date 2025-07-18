@@ -1,6 +1,9 @@
+use std::cmp::max;
+
 use crate::Error;
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
-use serde::Deserialize;
+use serde::{Deserialize /* Deserializer */};
+use toml::value::Datetime;
 use unicode_segmentation::UnicodeSegmentation;
 
 // +++
@@ -83,6 +86,10 @@ impl Bluesky {
 pub struct FrontMatter {
     pub title: String,
     pub description: String,
+    pub date: Option<Datetime>,
+    pub updated: Option<Datetime>,
+    #[serde(default)]
+    pub draft: bool,
     pub taxonomies: Option<Taxonomies>,
     pub extra: Option<Extra>,
     pub bluesky: Option<Bluesky>,
@@ -139,6 +146,19 @@ impl FrontMatter {
         }
 
         Vec::new()
+    }
+
+    pub fn most_recent_date(&self) -> Datetime {
+        match (self.date.is_some(), self.updated.is_some()) {
+            (false, false) => Datetime {
+                date: None,
+                time: None,
+                offset: None,
+            },
+            (true, false) => self.date.unwrap(),
+            (false, true) => self.updated.unwrap(),
+            (true, true) => max(self.date.unwrap(), self.updated.unwrap()),
+        }
     }
 
     pub fn build_post_text(&mut self, base_url: &str) -> Result<String, Error> {
@@ -455,5 +475,226 @@ mod tests {
         let taxonomies = Taxonomies { tags: vec![] };
         let hashtags = taxonomies.hashtags();
         assert_eq!(hashtags, Vec::<String>::new());
+    }
+
+    #[test]
+    fn test_most_recent_date_no_dates() {
+        let fm = FrontMatter {
+            title: "Test".to_string(),
+            description: "Test".to_string(),
+            date: None,
+            updated: None,
+            ..Default::default()
+        };
+        let result = fm.most_recent_date();
+        assert!(result.date.is_none());
+        assert!(result.time.is_none());
+        assert!(result.offset.is_none());
+    }
+
+    #[test]
+    fn test_most_recent_date_only_date() {
+        let date = Datetime {
+            date: Some(toml::value::Date {
+                year: 2025,
+                month: 1,
+                day: 1,
+            }),
+            time: None,
+            offset: None,
+        };
+        let fm = FrontMatter {
+            title: "Test".to_string(),
+            description: "Test".to_string(),
+            date: Some(date),
+            updated: None,
+            ..Default::default()
+        };
+        let result = fm.most_recent_date();
+        assert_eq!(result, date);
+    }
+
+    #[test]
+    fn test_most_recent_date_only_updated() {
+        let updated = Datetime {
+            date: Some(toml::value::Date {
+                year: 2025,
+                month: 1,
+                day: 2,
+            }),
+            time: None,
+            offset: None,
+        };
+        let fm = FrontMatter {
+            title: "Test".to_string(),
+            description: "Test".to_string(),
+            date: None,
+            updated: Some(updated),
+            ..Default::default()
+        };
+        let result = fm.most_recent_date();
+        assert_eq!(result, updated);
+    }
+
+    #[test]
+    fn test_most_recent_date_both_dates_updated_newer() {
+        let date = Datetime {
+            date: Some(toml::value::Date {
+                year: 2025,
+                month: 1,
+                day: 1,
+            }),
+            time: None,
+            offset: None,
+        };
+        let updated = Datetime {
+            date: Some(toml::value::Date {
+                year: 2025,
+                month: 1,
+                day: 2,
+            }),
+            time: None,
+            offset: None,
+        };
+        let fm = FrontMatter {
+            title: "Test".to_string(),
+            description: "Test".to_string(),
+            date: Some(date),
+            updated: Some(updated),
+            ..Default::default()
+        };
+        let result = fm.most_recent_date();
+        assert_eq!(result, updated);
+    }
+
+    #[test]
+    fn test_most_recent_date_both_dates_date_newer() {
+        let date = Datetime {
+            date: Some(toml::value::Date {
+                year: 2025,
+                month: 1,
+                day: 2,
+            }),
+            time: None,
+            offset: None,
+        };
+        let updated = Datetime {
+            date: Some(toml::value::Date {
+                year: 2025,
+                month: 1,
+                day: 1,
+            }),
+            time: None,
+            offset: None,
+        };
+        let fm = FrontMatter {
+            title: "Test".to_string(),
+            description: "Test".to_string(),
+            date: Some(date),
+            updated: Some(updated),
+            ..Default::default()
+        };
+        let result = fm.most_recent_date();
+        assert_eq!(result, date);
+    }
+
+    #[test]
+    fn test_date_from_toml_basic() {
+        let toml = r#"
+            title = "Date Test"
+            description = "Basic date test"
+            date = 2025-01-17
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert!(fm.date.is_some());
+        let date = fm.date.unwrap();
+        assert_eq!(date.date.unwrap().year, 2025);
+        assert_eq!(date.date.unwrap().month, 1);
+        assert_eq!(date.date.unwrap().day, 17);
+        assert!(date.time.is_none());
+        assert!(date.offset.is_none());
+    }
+
+    #[test]
+    fn test_date_from_toml_with_time() {
+        let toml = r#"
+            title = "DateTime Test"
+            description = "Date with time test"
+            date = 2025-01-17T15:30:00Z
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert!(fm.date.is_some());
+        let date = fm.date.unwrap();
+        assert_eq!(date.date.unwrap().year, 2025);
+        assert_eq!(date.date.unwrap().month, 1);
+        assert_eq!(date.date.unwrap().day, 17);
+        assert!(date.time.is_some());
+        assert_eq!(date.time.unwrap().hour, 15);
+        assert_eq!(date.time.unwrap().minute, 30);
+        assert_eq!(date.time.unwrap().second, 0);
+        assert!(date.offset.is_some());
+    }
+
+    #[test]
+    fn test_date_from_toml_with_timezone() {
+        let toml = r#"
+            title = "Timezone Test"
+            description = "Date with timezone test"
+            date = 2025-01-17T15:30:00+02:00
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert!(fm.date.is_some());
+        let date = fm.date.unwrap();
+        assert_eq!(date.date.unwrap().year, 2025);
+        assert_eq!(date.date.unwrap().month, 1);
+        assert_eq!(date.date.unwrap().day, 17);
+        assert!(date.time.is_some());
+        assert_eq!(date.time.unwrap().hour, 15);
+        assert_eq!(date.time.unwrap().minute, 30);
+        assert!(date.offset.is_some());
+        assert_eq!(
+            date.offset.unwrap(),
+            toml::value::Offset::Custom { minutes: 120 }
+        );
+    }
+
+    #[test]
+    fn test_invalid_date_format() {
+        let toml = r#"
+            title = "Invalid Date"
+            description = "Invalid date format test"
+            date = "not-a-date"
+        "#;
+        let result = FrontMatter::from_toml(toml);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_date_comparison() {
+        let toml = r#"
+            title = "Date Comparison"
+            description = "Testing date comparison"
+            date = 2025-01-17T15:30:00Z
+            updated = 2025-01-18T15:30:00Z
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert!(fm.date.is_some());
+        assert!(fm.updated.is_some());
+        let most_recent = fm.most_recent_date();
+        assert_eq!(most_recent.date.unwrap().day, 18);
+    }
+
+    #[test]
+    fn test_date_with_microseconds() {
+        let toml = r#"
+            title = "Microseconds Test"
+            description = "Date with microseconds test"
+            date = 2025-01-17T15:30:00.123456Z
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert!(fm.date.is_some());
+        let date = fm.date.unwrap();
+        assert_eq!(date.date.unwrap().year, 2025);
+        assert_eq!(date.time.unwrap().nanosecond, 123456000);
     }
 }

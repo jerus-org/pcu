@@ -21,10 +21,59 @@ pub struct CmdDraft {
     pub filter: Option<String>,
     /// Optional path to file or directory of blog post(s) to process
     pub path: Option<String>,
+    /// Optional date to from which to process blog post(s)
+    /// Date format: YYYY-MM-DD
+    #[arg(short, long)]
+    pub date: Option<toml::value::Datetime>,
+    /// Allow bluesky posts for draft blog posts
+    #[arg(long, default_value_t = false)]
+    pub allow_draft: bool,
 }
 
 impl CmdDraft {
     pub async fn run(&self, client: &Client, settings: &Config) -> Result<CIExit, Error> {
+        // find the changed file in the git repo
+
+        let changed_files = self.get_changed_files(client, settings).await?;
+
+        let mut front_matters = self.get_front_matters(&changed_files)?;
+
+        if front_matters.is_empty() {
+            log::info!("No front matters found");
+            return Ok(CIExit::DraftedForBluesky);
+        }
+
+        // Filter front matters by date if specified
+        if let Some(date) = &self.date {
+            log::info!("Filtering front matters by date: {date}");
+            front_matters.retain(|fm| fm.most_recent_date() >= *date);
+        }
+
+        // Remove draft posts unless allow_draft is true
+        if !self.allow_draft {
+            log::info!("Filtering out draft posts");
+            front_matters.retain(|fm| !fm.draft);
+        }
+
+        self.draft_posts_and_redirects(settings, &mut front_matters)
+            .await?;
+
+        let sign = Sign::Gpg;
+        // Commit the posts to the git repo
+        let commit_message = "chore: add drafted bluesky posts to git repo";
+        client
+            .commit_changed_files(sign, commit_message, "", None)
+            .await?;
+
+        Ok(CIExit::DraftedForBluesky)
+    }
+
+    /// Get the changed files from the git repo
+    async fn get_changed_files(
+        &self,
+        client: &Client,
+        settings: &Config,
+    ) -> Result<Vec<(String, String)>, Error> {
         let path = &self.path.clone().unwrap_or_default();
 
         let filter = &self.filter.clone().unwrap_or_default();
@@ -38,6 +87,13 @@ impl CmdDraft {
         };
         log::debug!("Changed files: {changed_files:#?}");
 
+        Ok(changed_files)
+    }
+
+    fn get_front_matters(
+        &self,
+        changed_files: &[(String, String)],
+    ) -> Result<Vec<FrontMatter>, Error> {
         let mut front_matters = Vec::new();
         let mut first = true;
 
@@ -45,7 +101,7 @@ impl CmdDraft {
             log::info!("File and path: {filename:?}");
             match self.get_frontmatter(&filename.0, first) {
                 Ok(mut front_matter) => {
-                    front_matter.path = Some(filename.1);
+                    front_matter.path = Some(filename.1.clone());
                     front_matters.push(front_matter);
                     first = false;
                 }
@@ -64,33 +120,29 @@ impl CmdDraft {
 
         log::info!("{} front matters found.", front_matters.len());
 
-        if front_matters.is_empty() {
-            log::info!("No front matters found");
-            return Ok(CIExit::DraftedForBluesky);
-        }
+        Ok(front_matters)
+    }
 
-        let path = if path.is_empty() {
-            filter.to_string()
+    async fn draft_posts_and_redirects(
+        &self,
+        settings: &Config,
+        front_matters: &mut Vec<FrontMatter>,
+    ) -> Result<(), Error> {
+        let path = if self.path.clone().unwrap_or_default().is_empty() {
+            self.filter.clone().unwrap_or_default()
         } else {
-            path.to_string()
+            self.path.clone().unwrap_or_default()
         };
 
         Draft::new_with_path(&path)?
-            .add_posts(&mut front_matters)?
+            .add_posts(front_matters)?
             .process_posts()
             .await?
             .add_store(&settings.get_string("store")?)?
             .write_posts()?
             .write_redirects()?;
 
-        let sign = Sign::Gpg;
-        // Commit the posts to the git repo
-        let commit_message = "chore: add drafted bluesky posts to git repo";
-        client
-            .commit_changed_files(sign, commit_message, "", None)
-            .await?;
-
-        Ok(CIExit::DraftedForBluesky)
+        Ok(())
     }
 
     /// Get the file from the path and return a list of files

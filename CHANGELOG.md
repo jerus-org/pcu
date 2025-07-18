@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add redirect functionality to draft command(pr [#591])
 - ✨ add logging for post details(pr [#592])
 - ✨ enhance bluesky integration(pr [#593])
+- ✨ add date handling and comparison(pr [#594])
 
 ### Changed
 
@@ -1472,6 +1473,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#591]: https://github.com/jerus-org/pcu/pull/591
 [#592]: https://github.com/jerus-org/pcu/pull/592
 [#593]: https://github.com/jerus-org/pcu/pull/593
+[#594]: https://github.com/jerus-org/pcu/pull/594
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
