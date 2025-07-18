@@ -202,8 +202,11 @@ mod tests {
     fn create_front_matter(title: &str, basename: &str) -> FrontMatter {
         FrontMatter {
             title: title.to_string(),
-            basename: Some(basename.to_string()),
             description: "desc".to_string(),
+            date: None,
+            updated: None,
+            draft: false,
+            basename: Some(basename.to_string()),
             path: Some("blog".to_string()),
             extra: None,
             bluesky: None,
