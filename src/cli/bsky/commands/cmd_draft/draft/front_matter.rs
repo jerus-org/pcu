@@ -28,6 +28,10 @@ pub struct Taxonomies {
 }
 
 impl Taxonomies {
+    pub fn tags(&self) -> Vec<String> {
+        self.tags.clone()
+    }
+
     pub fn hashtags(&self) -> Vec<String> {
         let mut hashtags = vec![];
         for tag in &self.tags {
@@ -57,7 +61,7 @@ impl Taxonomies {
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct Extra {
     #[allow(dead_code)]
-    pub bluesky: Bluesky,
+    pub bluesky: Option<Bluesky>,
 }
 
 #[derive(Default, Debug, Clone, Deserialize)]
@@ -66,12 +70,22 @@ pub struct Bluesky {
     pub tags: Option<Vec<String>>,
 }
 
+impl Bluesky {
+    pub fn description(&self) -> &str {
+        self.description.as_deref().unwrap_or("")
+    }
+
+    pub fn tags(&self) -> Vec<String> {
+        self.tags.clone().unwrap_or_default()
+    }
+}
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct FrontMatter {
     pub title: String,
     pub description: String,
     pub taxonomies: Option<Taxonomies>,
     pub extra: Option<Extra>,
+    pub bluesky: Option<Bluesky>,
     pub basename: Option<String>,
     pub path: Option<String>,
     pub bluesky_post: Option<RecordData>,
@@ -83,6 +97,48 @@ impl FrontMatter {
     pub fn from_toml(toml: &str) -> Result<Self, Error> {
         let front_matter = toml::from_str::<FrontMatter>(toml)?;
         Ok(front_matter)
+    }
+
+    fn bluesky_description(&self) -> &str {
+        if self.bluesky.is_some() {
+            return self.bluesky.as_ref().unwrap().description();
+        }
+
+        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky.is_some() {
+            return self
+                .extra
+                .as_ref()
+                .unwrap()
+                .bluesky
+                .as_ref()
+                .unwrap()
+                .description();
+        }
+
+        &self.description
+    }
+
+    fn bluesky_tags(&self) -> Vec<String> {
+        if self.bluesky.is_some() {
+            return self.bluesky.as_ref().unwrap().tags();
+        }
+
+        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky.is_some() {
+            return self
+                .extra
+                .as_ref()
+                .unwrap()
+                .bluesky
+                .as_ref()
+                .unwrap()
+                .tags();
+        }
+
+        if self.taxonomies.is_some() {
+            return self.taxonomies.as_ref().unwrap().tags();
+        }
+
+        Vec::new()
     }
 
     pub fn build_post_text(&mut self, base_url: &str) -> Result<String, Error> {
@@ -102,14 +158,7 @@ impl FrontMatter {
         let post_text = format!(
             "{}\n\n{} {}\n\n{}",
             self.title,
-            self.extra.as_ref().map_or_else(
-                || self.description.as_str(),
-                |e| e
-                    .bluesky
-                    .description
-                    .as_deref()
-                    .unwrap_or(&self.description)
-            ),
+            self.bluesky_description(),
             self.taxonomies
                 .as_ref()
                 .map_or(String::new(), |tax| tax.hashtags().join(" ")),
@@ -180,16 +229,8 @@ impl FrontMatter {
         );
         log::debug!(
             "Length of bluesky description: {} characters and {} graphemes",
-            self.extra.as_ref().map_or(0, |e| e
-                .bluesky
-                .description
-                .as_ref()
-                .map_or(0, |s| s.len())),
-            self.extra.as_ref().map_or(0, |e| e
-                .bluesky
-                .description
-                .as_ref()
-                .map_or(0, |s| s.graphemes(true).count()))
+            self.bluesky_description().len(),
+            self.bluesky_description().graphemes(true).count()
         );
         log::debug!(
             "Length of tag contents: {} characters and {} graphemes",
@@ -202,18 +243,22 @@ impl FrontMatter {
         );
         log::debug!(
             "Length of bluesky tag contents: {} characters and {} graphemes",
-            self.extra.as_ref().map_or(0, |e| e
-                .bluesky
-                .tags
-                .as_ref()
-                .map_or(0, |tags| tags.join("#").len() + 1)),
-            self.extra
-                .as_ref()
-                .map_or(0, |e| e.bluesky.tags.as_ref().map_or(0, |tags| tags
-                    .join("#")
-                    .graphemes(true)
-                    .count()
-                    + 1))
+            {
+                let tags = self.bluesky_tags();
+                if tags.is_empty() {
+                    0
+                } else {
+                    tags.join("#").len() + 1
+                }
+            },
+            {
+                let tags = self.bluesky_tags();
+                if tags.is_empty() {
+                    0
+                } else {
+                    tags.join("#").graphemes(true).count() + 1
+                }
+            }
         );
     }
 }
@@ -269,8 +314,74 @@ mod tests {
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
-            fm.extra.unwrap().bluesky.description,
+            fm.extra.unwrap().bluesky.unwrap().description,
             Some("extra_value".to_string())
+        );
+    }
+
+    #[test]
+    fn test_from_toml_with_extra_bluesky() {
+        get_test_logger();
+
+        let toml = r#"
+            title = "Extra Test"
+            description = "Has extra field"
+
+            [taxonomies]
+            tags = ["extra"]
+
+            [extra]
+
+            [extra.bluesky]
+            description = "extra_value"
+            tags = ["extra_tag"]
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert_eq!(fm.title, "Extra Test");
+        assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
+        assert!(fm.extra.is_some());
+        assert_eq!(
+            fm.extra
+                .as_ref()
+                .unwrap()
+                .bluesky
+                .as_ref()
+                .unwrap()
+                .description,
+            Some("extra_value".to_string())
+        );
+        assert_eq!(
+            fm.extra.as_ref().unwrap().bluesky.as_ref().unwrap().tags,
+            Some(vec!["extra_tag".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_from_toml_with_bluesky() {
+        get_test_logger();
+
+        let toml = r#"
+            title = "Extra Test"
+            description = "Has extra field"
+
+            [taxonomies]
+            tags = ["extra"]
+
+            [bluesky]
+            description = "extra_value"
+            tags = ["extra_tag"]
+        "#;
+        let fm = FrontMatter::from_toml(toml).unwrap();
+        assert_eq!(fm.title, "Extra Test");
+        assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
+        assert!(fm.bluesky.is_some());
+        assert_eq!(
+            fm.bluesky.as_ref().unwrap().description,
+            Some("extra_value".to_string())
+        );
+        assert_eq!(
+            fm.bluesky.as_ref().unwrap().tags,
+            Some(vec!["extra_tag".to_string()])
         );
     }
 
