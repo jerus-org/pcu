@@ -95,6 +95,66 @@ impl FrontMatter {
         self.get_post_link(base_url, &post_dir);
         self.get_short_post_link(&post_dir);
 
+        if log::log_enabled!(log::Level::Debug) {
+            self.log_post_details();
+        }
+
+        let post_text = format!(
+            "{}\n\n{} {}\n\n{}",
+            self.title,
+            self.extra.as_ref().map_or_else(
+                || self.description.as_str(),
+                |e| e
+                    .bluesky
+                    .description
+                    .as_deref()
+                    .unwrap_or(&self.description)
+            ),
+            self.taxonomies
+                .as_ref()
+                .map_or(String::new(), |tax| tax.hashtags().join(" ")),
+            self.post_short_link.as_ref().map_or_else(
+                || self.post_link.as_ref().unwrap().to_string(),
+                |link| link.to_string()
+            )
+        );
+
+        if post_text.len() > 300 {
+            return Err(Error::PostTooCharacters(
+                self.title.clone(),
+                post_text.len(),
+            ));
+        }
+
+        if post_text.graphemes(true).count() > 300 {
+            return Err(Error::PostTooManyGraphemes(
+                self.title.clone(),
+                post_text.graphemes(true).count(),
+            ));
+        }
+
+        Ok(post_text)
+    }
+
+    fn get_post_link(&mut self, base_url: &str, post_dir: &str) {
+        self.post_link = Some(format!(
+            "{}/{}{}/index.html",
+            base_url,
+            post_dir,
+            self.basename.as_ref().unwrap()
+        ));
+    }
+
+    fn get_short_post_link(&mut self, post_dir: &str) {
+        let post_link = format!("{post_dir}{}/", self.basename.as_ref().unwrap());
+        let ts = chrono::Utc::now().timestamp();
+        let link = post_link.encode_utf16().sum::<u16>();
+        let short_link = base62::encode(ts as u64 + link as u64);
+
+        self.post_short_link = Some(format!("s/{short_link}.html"));
+    }
+
+    fn log_post_details(&self) {
         log::debug!("Post link: {}", self.post_link.as_ref().unwrap());
         log::debug!(
             "Length of post link: {} characters and {} graphemes",
@@ -155,60 +215,6 @@ impl FrontMatter {
                     .count()
                     + 1))
         );
-
-        let post_text = format!(
-            "{}\n\n{} {}\n\n{}",
-            self.title,
-            self.extra.as_ref().map_or_else(
-                || self.description.as_str(),
-                |e| e
-                    .bluesky
-                    .description
-                    .as_deref()
-                    .unwrap_or(&self.description)
-            ),
-            self.taxonomies
-                .as_ref()
-                .map_or(String::new(), |tax| tax.hashtags().join(" ")),
-            self.post_short_link.as_ref().map_or_else(
-                || self.post_link.as_ref().unwrap().to_string(),
-                |link| link.to_string()
-            )
-        );
-
-        if post_text.len() > 300 {
-            return Err(Error::PostTooCharacters(
-                self.title.clone(),
-                post_text.len(),
-            ));
-        }
-
-        if post_text.graphemes(true).count() > 300 {
-            return Err(Error::PostTooManyGraphemes(
-                self.title.clone(),
-                post_text.graphemes(true).count(),
-            ));
-        }
-
-        Ok(post_text)
-    }
-
-    fn get_post_link(&mut self, base_url: &str, post_dir: &str) {
-        self.post_link = Some(format!(
-            "{}/{}{}/index.html",
-            base_url,
-            post_dir,
-            self.basename.as_ref().unwrap()
-        ));
-    }
-
-    fn get_short_post_link(&mut self, post_dir: &str) {
-        let post_link = format!("{post_dir}{}/", self.basename.as_ref().unwrap());
-        let ts = chrono::Utc::now().timestamp();
-        let link = post_link.encode_utf16().sum::<u16>();
-        let short_link = base62::encode(ts as u64 + link as u64);
-
-        self.post_short_link = Some(format!("s/{short_link}.html"));
     }
 }
 
