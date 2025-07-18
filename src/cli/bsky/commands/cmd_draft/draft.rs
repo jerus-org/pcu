@@ -206,6 +206,7 @@ mod tests {
             description: "desc".to_string(),
             path: Some("blog".to_string()),
             extra: None,
+            bluesky: None,
             taxonomies: None,
             bluesky_post: None,
             post_link: None,
