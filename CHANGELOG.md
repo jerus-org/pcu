@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(renovate)-update configuration to extend from remote(pr [#582])
 - 🔧 chore(config)-update renovate configuration path(pr [#584])
 - 🔧 chore(renovate)-update renovate configuration(pr [#585])
+- ♻️ refactor(front_matter)-modularize and streamline code structure(pr [#596])
 
 ### Fixed
 
@@ -1476,6 +1477,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#593]: https://github.com/jerus-org/pcu/pull/593
 [#594]: https://github.com/jerus-org/pcu/pull/594
 [#595]: https://github.com/jerus-org/pcu/pull/595
+[#596]: https://github.com/jerus-org/pcu/pull/596
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
