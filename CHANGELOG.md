@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - 🐛 draft: remove hashtag from post text format(pr [#588])
+- 🐛 front_matter: correct post link formatting(pr [#595])
 
 ## [0.4.49] - 2025-07-10
 
@@ -1474,6 +1475,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#592]: https://github.com/jerus-org/pcu/pull/592
 [#593]: https://github.com/jerus-org/pcu/pull/593
 [#594]: https://github.com/jerus-org/pcu/pull/594
+[#595]: https://github.com/jerus-org/pcu/pull/595
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
