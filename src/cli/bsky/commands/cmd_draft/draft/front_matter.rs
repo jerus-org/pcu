@@ -208,7 +208,7 @@ impl FrontMatter {
     fn get_post_link(&mut self, base_url: &str, post_dir: &str) {
         self.post_link = Some(format!(
             "{}/{}{}/index.html",
-            base_url,
+            base_url.trim_end_matches('/'),
             post_dir,
             self.basename.as_ref().unwrap()
         ));
