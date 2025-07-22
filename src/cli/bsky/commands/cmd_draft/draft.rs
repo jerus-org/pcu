@@ -1,9 +1,7 @@
 mod front_matter;
-mod redirector;
 mod site_config;
 
 use std::fs::File;
-use std::io::Write;
 
 use bsky_sdk::{
     api::{app::bsky::feed::post::RecordData, types::string::Datetime},
@@ -23,15 +21,6 @@ pub struct Draft {
     store: String,
 }
 impl Draft {
-    // pub fn new() -> Result<Self, Error> {
-    //     let site_config = SiteConfig::new()?;
-
-    //     Ok(Builder {
-    //         base_url: site_config.base_url(),
-    //         ..Default::default()
-    //     })
-    // }
-
     pub fn new_with_path(path: &str) -> Result<Self, Error> {
         let site_config = SiteConfig::new()?;
 
@@ -63,10 +52,6 @@ impl Draft {
     }
 
     pub fn add_posts(&mut self, blog_posts: &mut Vec<FrontMatter>) -> Result<&mut Self, Error> {
-        // if isize::MAX < (self.blog_posts.capacity() + blog_posts.capacity()) as isize {
-        //     return Err(Error::FutureCapacityTooLarge);
-        // }
-
         let a_size = self.blog_posts.capacity() as isize;
         let b_size = blog_posts.capacity() as isize;
 
@@ -147,41 +132,6 @@ impl Draft {
 
         Ok(self)
     }
-
-    pub fn write_redirects(&self) -> Result<(), Error> {
-        // create store directory if it doesn't exist
-        if !std::path::Path::new("s").exists() {
-            std::fs::create_dir_all("s")?;
-        }
-
-        for blog_post in &self.blog_posts {
-            let Some(post_link) = &blog_post.post_link else {
-                log::warn!(
-                    "No post short link found for blog post: {}",
-                    blog_post.title
-                );
-                continue;
-            };
-            let Some(post_short_link) = &blog_post.post_short_link else {
-                log::warn!(
-                    "No post short link found for blog post: {}",
-                    blog_post.title
-                );
-                continue;
-            };
-
-            log::debug!("Redirect page filename: {post_short_link}");
-
-            let mut file = File::create(post_short_link)?;
-
-            let redirector = redirector::Redirector::new(post_link);
-            file.write_all(redirector.to_string().as_bytes())?;
-            file.sync_all()?;
-            log::debug!("Redirect page written to: {post_short_link}");
-        }
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -199,31 +149,25 @@ mod tests {
         let _ = builder.try_init();
     }
 
-    fn create_front_matter(title: &str, basename: &str) -> FrontMatter {
+    fn create_front_matter(title: &str, basename: &str, short_store: &str) -> FrontMatter {
         FrontMatter {
             title: title.to_string(),
             description: "desc".to_string(),
-            date: None,
-            updated: None,
-            draft: false,
             basename: Some(basename.to_string()),
             path: Some("blog".to_string()),
-            extra: None,
-            bluesky: None,
-            taxonomies: None,
-            bluesky_post: None,
-            post_link: None,
-            post_short_link: None,
+            short_link_store: Some(short_store.to_string()),
+            ..Default::default()
         }
     }
 
     #[tokio::test]
     async fn test_process_posts_sets_bluesky_post() {
         let mut draft = Draft::default();
-        let mut posts = vec![create_front_matter("Title", "file1")];
+        let mut posts = vec![create_front_matter("Title", "file1", "store1")];
         draft.add_posts(&mut posts).unwrap();
         draft.process_posts().await.unwrap();
         assert!(draft.blog_posts[0].bluesky_post.is_some());
+        fs::remove_dir_all("store1").unwrap();
     }
 
     #[test]
@@ -243,7 +187,7 @@ mod tests {
     #[test]
     fn test_add_posts_appends_posts() {
         let mut draft = Draft::default();
-        let mut posts = vec![create_front_matter("Title", "file1")];
+        let mut posts = vec![create_front_matter("Title", "file2", "store2")];
         draft.add_posts(&mut posts).unwrap();
         assert_eq!(draft.blog_posts.len(), 1);
     }
@@ -256,7 +200,7 @@ mod tests {
             store: "test_store".to_string(),
             ..Default::default()
         };
-        let mut fm = create_front_matter("Title", "file1");
+        let mut fm = create_front_matter("Title", "file3", "store3");
         fm.bluesky_post = Some(RecordData {
             created_at: Datetime::now(),
             embed: None,
@@ -276,12 +220,12 @@ mod tests {
             .unwrap()
             .clone();
         draft.write_posts().unwrap();
-        draft.write_redirects().unwrap();
-        let post_file = "test_store/file1.post";
+        let post_file = "test_store/file3.post";
         let short_link = psl;
         assert!(Path::new(post_file).exists());
         assert!(Path::new(&short_link).exists());
         fs::remove_file(post_file).unwrap();
         fs::remove_dir("test_store").unwrap();
+        fs::remove_dir_all("store3").unwrap();
     }
 }
