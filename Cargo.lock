@@ -1649,6 +1649,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "link-bridge"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa6b7ddb4a75dc897842dcd2324baa3ed4dc69d23c336fcbf6c8d4eb0a0d91e1"
+dependencies = [
+ "base62",
+ "chrono",
+ "once_cell",
+ "regex",
+ "serde_json",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1916,9 +1930,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.21.1"
+version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d75b0bedcc4fe52caa0e03d9f1151a323e4aa5e2d78ba3580400cd3c9e2bc4bc"
+checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "openssl"
@@ -2044,6 +2058,7 @@ dependencies = [
  "git2_credentials",
  "gql_client",
  "keep-a-changelog",
+ "link-bridge",
  "log",
  "named-colour",
  "octocrate",
@@ -2677,9 +2692,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.140"
+version = "1.0.141"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
+checksum = "30b9eff21ebe718216c6ec64e1d9ac57087aad11efc64e32002bce4a0d4c03d3"
 dependencies = [
  "itoa",
  "memchr",
