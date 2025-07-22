@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add logging for post details(pr [#592])
 - ✨ enhance bluesky integration(pr [#593])
 - ✨ add date handling and comparison(pr [#594])
+- ✨ add short link store support(pr [#597])
 
 ### Changed
 
@@ -1478,6 +1479,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#594]: https://github.com/jerus-org/pcu/pull/594
 [#595]: https://github.com/jerus-org/pcu/pull/595
 [#596]: https://github.com/jerus-org/pcu/pull/596
+[#597]: https://github.com/jerus-org/pcu/pull/597
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
