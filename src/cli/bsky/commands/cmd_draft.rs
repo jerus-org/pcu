@@ -139,8 +139,7 @@ impl CmdDraft {
             .process_posts()
             .await?
             .add_store(&settings.get_string("store")?)?
-            .write_posts()?
-            .write_redirects()?;
+            .write_posts()?;
 
         Ok(())
     }

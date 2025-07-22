@@ -97,6 +97,8 @@ pub enum Error {
     BlueskyLoginError(String),
     #[error("serde_json create_session error says: {0:?}")]
     SerdeJsonError(#[from] serde_json::error::Error),
+    #[error("link-bridge error says: {0:?}")]
+    RedirectorError(#[from] link_bridge::RedirectorError),
 }
 
 #[derive(Debug)]

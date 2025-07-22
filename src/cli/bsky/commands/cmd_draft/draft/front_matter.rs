@@ -2,6 +2,7 @@ use std::cmp::max;
 
 use crate::Error;
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
+use link_bridge::Redirector;
 use serde::{Deserialize /* Deserializer */};
 use toml::value::Datetime;
 use unicode_segmentation::UnicodeSegmentation;
@@ -48,6 +49,7 @@ pub struct FrontMatter {
     pub bluesky_post: Option<RecordData>,
     pub post_link: Option<String>,
     pub post_short_link: Option<String>,
+    pub short_link_store: Option<String>,
 }
 
 impl FrontMatter {
@@ -119,7 +121,7 @@ impl FrontMatter {
         };
 
         self.get_post_link(base_url, &post_dir);
-        self.get_short_post_link(&post_dir);
+        self.get_short_post_link(&post_dir)?;
 
         if log::log_enabled!(log::Level::Debug) {
             self.log_post_details();
@@ -164,13 +166,23 @@ impl FrontMatter {
         ));
     }
 
-    fn get_short_post_link(&mut self, post_dir: &str) {
+    fn get_short_post_link(&mut self, post_dir: &str) -> Result<(), Error> {
         let post_link = format!("{post_dir}{}/", self.basename.as_ref().unwrap());
-        let ts = chrono::Utc::now().timestamp();
-        let link = post_link.encode_utf16().sum::<u16>();
-        let short_link = base62::encode(ts as u64 + link as u64);
+        let mut redirect = Redirector::new(post_link)?;
+        if let Some(redirect_path) = self.short_link_store.as_ref() {
+            redirect.set_path(redirect_path);
+        } else {
+            redirect.set_path("static/s");
+        }
+        let short_link = redirect.write_redirect()?;
 
-        self.post_short_link = Some(format!("s/{short_link}.html"));
+        self.post_short_link = Some(short_link);
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    fn set_short_link_store<S: ToString>(&mut self, store: S) {
+        self.short_link_store = Some(store.to_string());
     }
 
     fn log_post_details(&self) {
