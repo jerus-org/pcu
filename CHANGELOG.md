@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(config)-update renovate configuration path(pr [#584])
 - 🔧 chore(renovate)-update renovate configuration(pr [#585])
 - ♻️ refactor(front_matter)-modularize and streamline code structure(pr [#596])
+- 🔧 chore(cli)-add debug log for site configuration(pr [#599])
 
 ### Fixed
 
@@ -1482,6 +1483,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#596]: https://github.com/jerus-org/pcu/pull/596
 [#597]: https://github.com/jerus-org/pcu/pull/597
 [#598]: https://github.com/jerus-org/pcu/pull/598
+[#599]: https://github.com/jerus-org/pcu/pull/599
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
