@@ -120,8 +120,7 @@ impl FrontMatter {
             String::new()
         };
 
-        self.get_post_link(base_url, &post_dir);
-        self.get_short_post_link(&post_dir)?;
+        self.get_links(base_url, &post_dir)?;
 
         if log::log_enabled!(log::Level::Debug) {
             self.log_post_details();
@@ -157,24 +156,23 @@ impl FrontMatter {
         Ok(post_text)
     }
 
-    fn get_post_link(&mut self, base_url: &str, post_dir: &str) {
+    fn get_links(&mut self, base_url: &str, post_dir: &str) -> Result<(), Error> {
         log::debug!(
             "Building link with {base_url}, {post_dir} and {}",
             self.basename.as_ref().unwrap()
         );
-        self.post_link = Some(format!(
-            "{}/{}{}/index.html",
-            base_url.trim_end_matches('/'),
+
+        let post_link = format!(
+            "/{}{}/index.html",
             post_dir.trim_start_matches("content/"),
             self.basename.as_ref().unwrap()
-        ));
-    }
+        );
 
-    fn get_short_post_link(&mut self, post_dir: &str) -> Result<(), Error> {
-        let post_link = format!("{post_dir}{}/", self.basename.as_ref().unwrap());
+        self.post_link = Some(post_link.clone());
+
         let mut redirect = Redirector::new(post_link)?;
         if let Some(redirect_path) = self.short_link_store.as_ref() {
-            log::debug!("redirect plat set as `{redirect_path}`");
+            log::debug!("redirect path set as `{redirect_path}`");
             redirect.set_path(redirect_path);
         } else {
             log::debug!("redirect path set to default (`static/s`)");
@@ -183,7 +181,12 @@ impl FrontMatter {
         let short_link = redirect.write_redirect()?;
         log::debug!("redirect written and short link returned: {short_link}");
 
-        self.post_short_link = Some(short_link);
+        self.post_short_link = Some(format!(
+            "{}/{}{}/index.html",
+            base_url.trim_end_matches('/'),
+            post_dir.trim_start_matches("content/"),
+            self.basename.as_ref().unwrap()
+        ));
         Ok(())
     }
 
