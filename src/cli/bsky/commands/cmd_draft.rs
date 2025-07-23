@@ -7,10 +7,12 @@ use std::{
     path::PathBuf,
 };
 
+use chrono::{Datelike, Utc};
 use clap::Parser;
 use config::Config;
 use draft::{Draft, FrontMatter};
 use regex::Regex;
+use toml::from_str;
 
 use crate::{CIExit, Client, Error, GitOps, Sign};
 
@@ -21,8 +23,9 @@ pub struct CmdDraft {
     pub filter: Option<String>,
     /// Optional path to file or directory of blog post(s) to process
     pub path: Option<String>,
-    /// Optional date to from which to process blog post(s)
+    /// Optional date from which to process blog post(s)
     /// Date format: YYYY-MM-DD
+    /// Default: Current date
     #[arg(short, long)]
     pub date: Option<toml::value::Datetime>,
     /// Allow bluesky posts for draft blog posts
@@ -47,6 +50,12 @@ impl CmdDraft {
         if let Some(date) = &self.date {
             log::info!("Filtering front matters by date: {date}");
             front_matters.retain(|fm| fm.most_recent_date() >= *date);
+        } else {
+            // Filter front matters by current date
+            let now = Utc::now();
+            let date_string = format!("{}-{:02}-{:02}", now.year(), now.month(), now.day());
+            let current_date = from_str(&date_string).unwrap();
+            front_matters.retain(|fm| fm.most_recent_date() >= current_date);
         }
 
         // Remove draft posts unless allow_draft is true
