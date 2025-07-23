@@ -218,7 +218,7 @@ jobs:
 
             mkdir -p bluesky
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky/blog
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2021-11-05 tests/bsky/blog
             ls -la bluesky
 
       - run:
