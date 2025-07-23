@@ -23,6 +23,7 @@ pub struct Draft {
 impl Draft {
     pub fn new_with_path(path: &str) -> Result<Self, Error> {
         let site_config = SiteConfig::new()?;
+        log::debug!("Site config: {site_config:?}");
 
         let path = if !path.is_empty() {
             log::debug!("Path to blog files: `{path}`");
