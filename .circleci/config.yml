@@ -328,7 +328,7 @@ jobs:
             rm -rf bluesky
             mkdir -p bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft tests/bsky-test-blog.md
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 tests/bsky-test-blog.md 
             ls -la
             ls -la bluesky
             cat bluesky/$(ls bluesky)
