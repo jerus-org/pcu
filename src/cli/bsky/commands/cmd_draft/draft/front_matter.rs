@@ -174,11 +174,14 @@ impl FrontMatter {
         let post_link = format!("{post_dir}{}/", self.basename.as_ref().unwrap());
         let mut redirect = Redirector::new(post_link)?;
         if let Some(redirect_path) = self.short_link_store.as_ref() {
+            log::debug!("redirect plat set as `{redirect_path}`");
             redirect.set_path(redirect_path);
         } else {
+            log::debug!("redirect path set to default (`static/s`)");
             redirect.set_path("static/s");
         }
         let short_link = redirect.write_redirect()?;
+        log::debug!("redirect written and short link returned: {short_link}");
 
         self.post_short_link = Some(short_link);
         Ok(())
