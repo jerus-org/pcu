@@ -144,10 +144,13 @@ impl CmdDraft {
         front_matters: &mut Vec<FrontMatter>,
     ) -> Result<(), Error> {
         let path = if self.path.clone().unwrap_or_default().is_empty() {
+            log::trace!("path is empty");
             self.filter.clone().unwrap_or_default()
         } else {
+            log::trace!("path has been set");
             self.path.clone().unwrap_or_default()
         };
+        log::debug!("Path set to {path}");
 
         Draft::new_with_path(&path)?
             .add_posts(front_matters)?
