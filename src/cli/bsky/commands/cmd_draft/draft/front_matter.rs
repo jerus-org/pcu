@@ -158,10 +158,14 @@ impl FrontMatter {
     }
 
     fn get_post_link(&mut self, base_url: &str, post_dir: &str) {
+        log::debug!(
+            "Building link with {base_url}, {post_dir} and {}",
+            self.basename.as_ref().unwrap()
+        );
         self.post_link = Some(format!(
             "{}/{}{}/index.html",
             base_url.trim_end_matches('/'),
-            post_dir,
+            post_dir.trim_start_matches("content/"),
             self.basename.as_ref().unwrap()
         ));
     }

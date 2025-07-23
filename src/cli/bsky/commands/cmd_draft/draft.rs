@@ -67,8 +67,8 @@ impl Draft {
 
     pub async fn process_posts(&mut self) -> Result<&mut Self, Error> {
         for blog_post in &mut self.blog_posts {
-            log::trace!("Blog post: {blog_post:#?}");
-
+            log::info!("Blog post: {blog_post:#?}");
+            log::debug!("Building post text with base url {}", self.base_url);
             let post_text = blog_post.build_post_text(self.base_url.as_str())?;
 
             log::trace!("Post text: {post_text}");
