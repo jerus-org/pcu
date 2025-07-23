@@ -12,7 +12,7 @@ use clap::Parser;
 use config::Config;
 use draft::{Draft, FrontMatter};
 use regex::Regex;
-use toml::from_str;
+use serde::Deserialize;
 
 use crate::{CIExit, Client, Error, GitOps, Sign};
 
@@ -53,9 +53,15 @@ impl CmdDraft {
         } else {
             // Filter front matters by current date
             let now = Utc::now();
-            let date_string = format!("{}-{:02}-{:02}", now.year(), now.month(), now.day());
-            let current_date = from_str(&date_string).unwrap();
-            front_matters.retain(|fm| fm.most_recent_date() >= current_date);
+            let date_string = format!("date = {}-{:02}-{:02}", now.year(), now.month(), now.day());
+
+            #[derive(Debug, Deserialize)]
+            struct Current {
+                date: toml::value::Datetime,
+            }
+            let current_date: Current = toml::from_str(&date_string).unwrap();
+
+            front_matters.retain(|fm| fm.most_recent_date() >= current_date.date);
         }
 
         // Remove draft posts unless allow_draft is true
