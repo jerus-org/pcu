@@ -46,7 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate tokio to 1.46.1(pr [#609])
 - deps: update rust crate toml to 0.9.2(pr [#610])
 - deps: update rust crate uuid to 1.17.0(pr [#611])
-- Correct-short-link-formatting🐛 front_matter: correct short link formatting(pr [#613])
 
 ## [0.4.49] - 2025-07-10
 
