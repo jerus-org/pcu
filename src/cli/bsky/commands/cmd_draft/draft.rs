@@ -124,7 +124,17 @@ impl Draft {
                 continue;
             };
 
-            let postname = base62::encode(post_link.encode_utf16().sum::<u16>());
+            let postname = format!(
+                "{}{}{}",
+                base62::encode(post_link.encode_utf16().sum::<u16>()),
+                base62::encode(filename.encode_utf16().sum::<u16>()),
+                base62::encode(
+                    post_link
+                        .trim_end_matches(filename)
+                        .encode_utf16()
+                        .sum::<u16>()
+                )
+            );
 
             log::trace!("Bluesky post: {bluesky_post:#?}");
             log::debug!("Post filename: {filename} as {postname}");
@@ -230,7 +240,17 @@ mod tests {
             .clone();
         draft.write_posts().unwrap();
         let post_file = draft.blog_posts[0].post_link.as_ref().unwrap();
-        let post_file = base62::encode(post_file.encode_utf16().sum::<u16>());
+        let post_file = format!(
+            "{}{}{}",
+            base62::encode(post_file.encode_utf16().sum::<u16>()),
+            base62::encode("file3".encode_utf16().sum::<u16>()),
+            base62::encode(
+                post_file
+                    .trim_end_matches("file3")
+                    .encode_utf16()
+                    .sum::<u16>()
+            )
+        );
         let post_file = format!("test_store/{post_file}.post");
         log::debug!("Post file: {post_file}");
 
