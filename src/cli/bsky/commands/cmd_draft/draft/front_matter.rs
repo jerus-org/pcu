@@ -168,9 +168,7 @@ impl FrontMatter {
             self.basename.as_ref().unwrap()
         );
 
-        self.post_link = Some(post_link.clone());
-
-        let mut redirect = Redirector::new(post_link)?;
+        let mut redirect = Redirector::new(&post_link)?;
         if let Some(redirect_path) = self.short_link_store.as_ref() {
             log::debug!("redirect path set as `{redirect_path}`");
             redirect.set_path(redirect_path);
@@ -181,6 +179,7 @@ impl FrontMatter {
         let short_link = redirect.write_redirect()?;
         log::debug!("redirect written and short link returned: {short_link}");
 
+        self.post_link = Some(post_link);
         self.post_short_link = Some(format!(
             "{}/{}{}/index.html",
             base_url.trim_end_matches('/'),
