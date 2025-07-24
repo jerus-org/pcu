@@ -229,13 +229,15 @@ mod tests {
             .unwrap()
             .clone();
         draft.write_posts().unwrap();
-        let post_file = "test_store/file3.post";
+        let post_file = draft.blog_posts[0].post_link.as_ref().unwrap();
+        let post_file = base62::encode(post_file.encode_utf16().sum::<u16>());
+        let post_file = format!("test_store/{post_file}.post");
         log::debug!("Post file: {post_file}");
 
         let short_link = psl.trim_start_matches('/');
         log::debug!("short link: {short_link}");
 
-        assert!(Path::new(post_file).exists());
+        assert!(Path::new(&post_file).exists());
         assert!(Path::new(&short_link).exists());
         fs::remove_file(post_file).unwrap();
         fs::remove_dir("test_store").unwrap();
