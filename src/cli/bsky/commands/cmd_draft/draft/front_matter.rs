@@ -186,7 +186,11 @@ impl FrontMatter {
         log::debug!("redirect written and short link returned: {short_link}");
 
         self.post_link = Some(post_link);
-        self.post_short_link = Some(format!("{}/{}", base_url.trim_end_matches('/'), short_link,));
+        self.post_short_link = Some(format!(
+            "{}/{}",
+            base_url.trim_end_matches('/'),
+            short_link.trim_start_matches("static/"),
+        ));
         Ok(())
     }
 
