@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🐛 cli: enhance logging for draft command(pr [#600])
 - deps: update rust crate clap to 4.5.41(pr [#603])
 - deps: update rust crate config to 0.15.13(pr [#604])
+- deps: update rust crate named-colour to 0.3.22(pr [#605])
 
 ## [0.4.49] - 2025-07-10
 
@@ -1494,6 +1495,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#602]: https://github.com/jerus-org/pcu/pull/602
 [#603]: https://github.com/jerus-org/pcu/pull/603
 [#604]: https://github.com/jerus-org/pcu/pull/604
+[#605]: https://github.com/jerus-org/pcu/pull/605
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
