@@ -158,34 +158,35 @@ impl FrontMatter {
 
     fn get_links(&mut self, base_url: &str, post_dir: &str) -> Result<(), Error> {
         log::debug!(
-            "Building link with {base_url}, {post_dir} and {}",
+            "Building link with `{base_url}`, `{post_dir}` and `{}`",
             self.basename.as_ref().unwrap()
         );
 
         let post_link = format!(
-            "/{}{}/index.html",
-            post_dir.trim_start_matches("content/"),
+            "/{}/{}",
+            {
+                let link_dir = post_dir.trim_start_matches("content/");
+                link_dir.trim_end_matches("/")
+            },
             self.basename.as_ref().unwrap()
         );
 
         let mut redirect = Redirector::new(&post_link)?;
-        if let Some(redirect_path) = self.short_link_store.as_ref() {
+
+        let redirect_path = if let Some(redirect_path) = self.short_link_store.as_ref() {
             log::debug!("redirect path set as `{redirect_path}`");
-            redirect.set_path(redirect_path);
+            redirect_path
         } else {
             log::debug!("redirect path set to default (`static/s`)");
-            redirect.set_path("static/s");
-        }
+            "static/s"
+        };
+        redirect.set_path(redirect_path);
+
         let short_link = redirect.write_redirect()?;
         log::debug!("redirect written and short link returned: {short_link}");
 
         self.post_link = Some(post_link);
-        self.post_short_link = Some(format!(
-            "{}/{}{}/index.html",
-            base_url.trim_end_matches('/'),
-            post_dir.trim_start_matches("content/"),
-            self.basename.as_ref().unwrap()
-        ));
+        self.post_short_link = Some(format!("{}/{}", base_url.trim_end_matches('/'), short_link,));
         Ok(())
     }
 
