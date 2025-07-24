@@ -119,10 +119,17 @@ impl Draft {
                 continue;
             };
 
-            log::trace!("Bluesky post: {bluesky_post:#?}");
-            log::debug!("Post filename: {filename}");
+            let Some(post_link) = blog_post.post_link.as_ref() else {
+                log::warn!("No post link found for blog post `{}`", blog_post.title);
+                continue;
+            };
 
-            let post_file = format!("{}/{}.post", self.store, filename.trim_end_matches(".md"));
+            let postname = base62::encode(post_link.encode_utf16().sum::<u16>());
+
+            log::trace!("Bluesky post: {bluesky_post:#?}");
+            log::debug!("Post filename: {filename} as {postname}");
+
+            let post_file = format!("{}/{}.post", self.store, postname);
             log::debug!("Post file: {post_file}");
 
             let file = File::create(post_file)?;
