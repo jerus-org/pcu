@@ -215,6 +215,7 @@ mod tests {
         });
         draft.blog_posts.push(fm);
         draft.process_posts().await.unwrap();
+
         let psl = draft.blog_posts[0]
             .post_short_link
             .as_ref()
@@ -222,7 +223,11 @@ mod tests {
             .clone();
         draft.write_posts().unwrap();
         let post_file = "test_store/file3.post";
-        let short_link = psl;
+        log::debug!("Post file: {post_file}");
+
+        let short_link = psl.trim_start_matches('/');
+        log::debug!("short link: {short_link}");
+
         assert!(Path::new(post_file).exists());
         assert!(Path::new(&short_link).exists());
         fs::remove_file(post_file).unwrap();
