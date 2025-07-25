@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add short link store support(pr [#597])
 - ✨ add default date filtering for draft command(pr [#598])
 - ✨ enhance postname generation logic(pr [#614])
+- ✨ add release flag to cmd_post(pr [#616])
 
 ### Changed
 
@@ -1515,6 +1516,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#613]: https://github.com/jerus-org/pcu/pull/613
 [#614]: https://github.com/jerus-org/pcu/pull/614
 [#615]: https://github.com/jerus-org/pcu/pull/615
+[#616]: https://github.com/jerus-org/pcu/pull/616
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
