@@ -13,6 +13,9 @@ pub struct CmdPost {
     /// Fail if the files to process are missing
     #[arg(short, long)]
     pub fail_on_missing: bool,
+    /// Executing in release contet so execute push even if requested by CI
+    #[arg(short, long)]
+    pub release: bool,
 }
 
 impl CmdPost {
@@ -41,7 +44,7 @@ impl CmdPost {
             .commit_changed_files(sign, commit_message, "", None)
             .await?;
 
-        if env::var("CI").is_ok() {
+        if env::var("CI").is_ok() && !self.release {
             log::info!("Running in CI, skipping push to remote");
             return Ok(CIExit::DraftedForBluesky);
         }
