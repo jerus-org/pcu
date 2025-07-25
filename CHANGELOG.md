@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(cli)-add debug log for site configuration(pr [#599])
 - 📝 docs(front_matter)-add debug logs for redirect process(pr [#601])
 - ♻️ refactor(front_matter)-consolidate link generation methods(pr [#602])
+- 📦 build(dependencies)-update link-bridge version(pr [#615])
 
 ### Fixed
 
@@ -1513,6 +1514,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#613]: https://github.com/jerus-org/pcu/pull/613
 [#613]: https://github.com/jerus-org/pcu/pull/613
 [#614]: https://github.com/jerus-org/pcu/pull/614
+[#615]: https://github.com/jerus-org/pcu/pull/615
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
