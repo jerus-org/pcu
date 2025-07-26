@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🐛 front_matter: correct short link formatting(pr [#613])
 - 🐛 front_matter: correct error handling for post length(pr [#617])
 - 🐛 front_matter: correct method call for tag retrieval(pr [#618])
+- 🐛 cli: correct basehead format in draft command(pr [#619])
 
 ## [0.4.49] - 2025-07-10
 
@@ -1521,6 +1522,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#616]: https://github.com/jerus-org/pcu/pull/616
 [#617]: https://github.com/jerus-org/pcu/pull/617
 [#618]: https://github.com/jerus-org/pcu/pull/618
+[#619]: https://github.com/jerus-org/pcu/pull/619
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.49...HEAD
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
