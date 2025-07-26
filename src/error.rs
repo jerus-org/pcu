@@ -13,7 +13,7 @@ pub enum Error {
     Stdout(String),
 
     #[error("bluesky post for `{0}` contains too many characters: {1}")]
-    PostTooCharacters(String, usize),
+    PostTooManyCharacters(String, usize),
     #[error("bluesky post for `{0}` contains too many graphemes: {1}")]
     PostTooManyGraphemes(String, usize),
 
