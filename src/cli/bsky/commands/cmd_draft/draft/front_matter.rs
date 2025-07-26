@@ -130,9 +130,7 @@ impl FrontMatter {
             "{}\n\n{} {}\n\n{}",
             self.title,
             self.bluesky_description(),
-            self.taxonomies
-                .as_ref()
-                .map_or(String::new(), |tax| tax.hashtags().join(" ")),
+            self.bluesky_tags().join(" "),
             self.post_short_link.as_ref().map_or_else(
                 || self.post_link.as_ref().unwrap().to_string(),
                 |link| link.to_string()
@@ -140,7 +138,7 @@ impl FrontMatter {
         );
 
         if post_text.len() > 300 {
-            return Err(Error::PostTooCharacters(
+            return Err(Error::PostTooManyCharacters(
                 self.title.clone(),
                 post_text.len(),
             ));
