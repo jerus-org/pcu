@@ -11,10 +11,9 @@ impl Taxonomies {
         self.tags.clone()
     }
 
-    #[allow(dead_code)]
     pub fn hashtags(&self) -> Vec<String> {
         let mut hashtags = vec![];
-        for tag in &self.tags {
+        for tag in &self.tags() {
             // convert tag to hashtag by capitalising the first letter of each word, removing the spaces and prefixing with a # if required
             let formatted_tag = tag
                 .split_whitespace()
