@@ -11,6 +11,7 @@ impl Taxonomies {
         self.tags.clone()
     }
 
+    #[allow(dead_code)]
     pub fn hashtags(&self) -> Vec<String> {
         let mut hashtags = vec![];
         for tag in &self.tags {
