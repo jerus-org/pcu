@@ -79,7 +79,7 @@ impl FrontMatter {
 
     fn bluesky_tags(&self) -> Vec<String> {
         if self.bluesky.is_some() {
-            return self.bluesky.as_ref().unwrap().tags();
+            return self.bluesky.as_ref().unwrap().hashtags();
         }
 
         if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky.is_some() {
@@ -90,11 +90,11 @@ impl FrontMatter {
                 .bluesky
                 .as_ref()
                 .unwrap()
-                .tags();
+                .hashtags();
         }
 
         if self.taxonomies.is_some() {
-            return self.taxonomies.as_ref().unwrap().tags();
+            return self.taxonomies.as_ref().unwrap().hashtags();
         }
 
         Vec::new()
