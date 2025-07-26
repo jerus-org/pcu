@@ -185,7 +185,7 @@ impl CmdDraft {
             .get("branch")
             .map_err(|_| Error::EnvVarBranchNotSet)?;
         let branch = env::var(pcu_branch).map_err(|_| Error::EnvVarBranchNotFound)?;
-        let basehead = format!("main...{branch}");
+        let basehead = format!("main..{branch}");
 
         log::info!("Basehead: {basehead}");
 
@@ -195,7 +195,7 @@ impl CmdDraft {
             .compare_commits(client.owner(), client.repo(), &basehead)
             .send()
             .await?;
-
+        log::trace!("Commit comparison: {compare:?}");
         let mut changed_files = Vec::new();
         let Some(files) = compare.files else {
             log::warn!("No files found in compare");
