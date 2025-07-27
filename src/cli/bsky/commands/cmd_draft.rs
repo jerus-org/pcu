@@ -89,17 +89,22 @@ impl CmdDraft {
         client: &Client,
         settings: &Config,
     ) -> Result<Vec<(String, String)>, Error> {
-        let path = &self.path.clone().unwrap_or_default();
-
-        let filter = &self.filter.clone().unwrap_or_default();
-
-        let changed_files = if path != &String::new() {
-            log::info!("Path: {path}");
-            self.get_files_from_path(path)?
-        } else {
-            self.get_filtered_changed_files(client, settings, filter)
-                .await?
+        let mut changed_files = Vec::new();
+        if let Some(path) = &self.path.clone() {
+            log::info!("using path `{path}` to get changed files");
+            let mut cf = self.get_files_from_path(path)?;
+            changed_files.append(&mut cf);
         };
+
+        if let Some(filter) = &self.filter.clone() {
+            log::info!("Using filter `{filter}` to get changed files");
+            let mut cf = self
+                .get_filtered_changed_files(client, settings, filter)
+                .await?;
+
+            changed_files.append(&mut cf);
+        };
+
         log::debug!("Changed files: {changed_files:#?}");
 
         Ok(changed_files)
@@ -205,7 +210,7 @@ impl CmdDraft {
             .iter()
             .map(|f| get_path_and_basename(f.filename.clone().as_str()))
             .collect::<Vec<_>>();
-        log::debug!("Changed files: {changed_files:#?}");
+        log::debug!("Filtered Changed files: {changed_files:#?}");
 
         let re = if !filter.is_empty() {
             log::info!("Filtering filenames containing: {filter}");
