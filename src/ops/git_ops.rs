@@ -304,9 +304,10 @@ impl GitOps for Client {
             log::debug!("WorkDir files:\n\t{:?}", self.repo_files_not_staged()?);
             let files_staged_for_commit = self.repo_files_staged()?;
             log::debug!("Staged files:\n\t{files_staged_for_commit:?}");
+            log::info!("Branch status: {}", self.branch_status()?);
+        } else {
+            log::info!("No files to commit")
         }
-
-        log::info!("Branch status: {}", self.branch_status()?);
 
         Ok(())
     }
