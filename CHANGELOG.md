@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(cmd_draft)-rename methods and variables for clarity(pr [#621])
 - 💄 style(cmd_draft)-update log level for front matter(pr [#622])
 
+### Fixed
+
+- 🐛 git_ops: handle empty file lists during staging and committing(pr [#624])
+
 ## [0.4.50] - 2025-07-28
 
 ### Added
@@ -1539,6 +1543,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#621]: https://github.com/jerus-org/pcu/pull/621
 [#622]: https://github.com/jerus-org/pcu/pull/622
 [#623]: https://github.com/jerus-org/pcu/pull/623
+[#624]: https://github.com/jerus-org/pcu/pull/624
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.50...HEAD
 [0.4.50]: https://github.com/jerus-org/pcu/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49

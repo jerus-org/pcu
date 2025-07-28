@@ -41,7 +41,10 @@ impl Push {
     pub async fn run_push(&self) -> Result<CIExit, Error> {
         let client = Commands::Push(self.clone()).get_client().await?;
 
-        if client.branch_status()?.ahead == 0 {
+        let branch_status = client.branch_status()?;
+        log::debug!("Branch status report: {branch_status}");
+
+        if branch_status.ahead == 0 {
             return Ok(CIExit::NothingToPush);
         };
 
