@@ -35,39 +35,36 @@ pub struct CmdDraft {
 
 impl CmdDraft {
     pub async fn run(&self, client: &Client, settings: &Config) -> Result<CIExit, Error> {
-        // find the changed file in the git repo
+        // find the potential file in the git repo
+        let potential_files = self.get_potential_files(client, settings).await?;
 
-        let changed_files = self.get_changed_files(client, settings).await?;
-
-        let mut front_matters = self.get_front_matters(&changed_files)?;
+        let mut front_matters = self.get_front_matters(&potential_files)?;
 
         if front_matters.is_empty() {
             log::info!("No front matters found");
             return Ok(CIExit::DraftedForBluesky);
         }
 
-        // Filter front matters by date if specified
         if let Some(date) = &self.date {
-            log::info!("Filtering front matters by date: {date}");
             front_matters.retain(|fm| fm.most_recent_date() >= *date);
+            log::info!(
+                "Retained `{}` front matters after filtering by `{date}`",
+                front_matters.len()
+            );
         } else {
-            // Filter front matters by current date
-            let now = Utc::now();
-            let date_string = format!("date = {}-{:02}-{:02}", now.year(), now.month(), now.day());
-
-            #[derive(Debug, Deserialize)]
-            struct Current {
-                date: toml::value::Datetime,
-            }
-            let current_date: Current = toml::from_str(&date_string).unwrap();
-
-            front_matters.retain(|fm| fm.most_recent_date() >= current_date.date);
+            front_matters.retain(|fm| fm.most_recent_date() >= CmdDraft::today());
+            log::info!(
+                "Retained `{}` front matters after filtering by today's date",
+                front_matters.len()
+            );
         }
 
-        // Remove draft posts unless allow_draft is true
         if !self.allow_draft {
-            log::info!("Filtering out draft posts");
             front_matters.retain(|fm| !fm.draft);
+            log::info!(
+                "Retained `{}` front matters after removing drafts",
+                front_matters.len()
+            );
         }
 
         self.draft_posts_and_redirects(settings, &mut front_matters)
@@ -83,41 +80,53 @@ impl CmdDraft {
         Ok(CIExit::DraftedForBluesky)
     }
 
-    /// Get the changed files from the git repo
-    async fn get_changed_files(
+    fn today() -> toml::value::Datetime {
+        let now = Utc::now();
+        let date_string = format!("date = {}-{:02}-{:02}", now.year(), now.month(), now.day());
+
+        #[derive(Debug, Deserialize)]
+        struct Current {
+            #[allow(dead_code)]
+            date: toml::value::Datetime,
+        }
+        let current_date: Current = toml::from_str(&date_string).unwrap();
+        current_date.date
+    }
+
+    /// Get the potential files from the git repo
+    async fn get_potential_files(
         &self,
         client: &Client,
         settings: &Config,
     ) -> Result<Vec<(String, String)>, Error> {
-        let mut changed_files = Vec::new();
+        let mut potential_files = Vec::new();
         if let Some(path) = &self.path.clone() {
-            log::info!("using path `{path}` to get changed files");
-            let mut cf = self.get_files_from_path(path)?;
-            changed_files.append(&mut cf);
+            log::info!("using path `{path}` to get potential files");
+            let mut files_from_path = self.get_files_from_path(path)?;
+            potential_files.append(&mut files_from_path);
         };
 
         if let Some(filter) = &self.filter.clone() {
-            log::info!("Using filter `{filter}` to get changed files");
-            let mut cf = self
-                .get_filtered_changed_files(client, settings, filter)
-                .await?;
+            log::info!("Using filter `{filter}` to get potential files");
+            let mut files_from_filter =
+                self.get_files_from_filter(client, settings, filter).await?;
 
-            changed_files.append(&mut cf);
+            potential_files.append(&mut files_from_filter);
         };
+        log::info!("Found `{}` potential files", potential_files.len());
+        log::trace!("Returning Changed files: {potential_files:#?}");
 
-        log::debug!("Changed files: {changed_files:#?}");
-
-        Ok(changed_files)
+        Ok(potential_files)
     }
 
     fn get_front_matters(
         &self,
-        changed_files: &[(String, String)],
+        in_scope_files: &[(String, String)],
     ) -> Result<Vec<FrontMatter>, Error> {
         let mut front_matters = Vec::new();
         let mut first = true;
 
-        for filename in changed_files {
+        for filename in in_scope_files {
             log::info!("File and path: {filename:?}");
             match self.get_frontmatter(&filename.0, first) {
                 Ok(mut front_matter) => {
@@ -138,7 +147,7 @@ impl CmdDraft {
             front_matters.len()
         );
 
-        log::info!("{} front matters found.", front_matters.len());
+        log::info!("Total of `{}` front matters found.", front_matters.len());
 
         Ok(front_matters)
     }
@@ -148,14 +157,8 @@ impl CmdDraft {
         settings: &Config,
         front_matters: &mut Vec<FrontMatter>,
     ) -> Result<(), Error> {
-        let path = if self.path.clone().unwrap_or_default().is_empty() {
-            log::trace!("path is empty");
-            self.filter.clone().unwrap_or_default()
-        } else {
-            log::trace!("path has been set");
-            self.path.clone().unwrap_or_default()
-        };
-        log::debug!("Path set to {path}");
+        let path = self.path.clone().unwrap_or_default();
+        log::debug!("Path set to `{path}`");
 
         Draft::new_with_path(&path)?
             .add_posts(front_matters)?
@@ -179,7 +182,7 @@ impl CmdDraft {
     /// Markdown files are filtered based on ending with ".md" and blog
     /// files are identified based on the filter string specified
     /// at the command line.
-    async fn get_filtered_changed_files(
+    async fn get_files_from_filter(
         &self,
         client: &Client,
         settings: &Config,
@@ -201,16 +204,16 @@ impl CmdDraft {
             .send()
             .await?;
         log::trace!("Commit comparison: {compare:?}");
-        let mut changed_files = Vec::new();
+        let mut filtered_files = Vec::new();
         let Some(files) = compare.files else {
             log::warn!("No files found in compare");
-            return Ok(changed_files);
+            return Ok(filtered_files);
         };
-        changed_files = files
+        filtered_files = files
             .iter()
             .map(|f| get_path_and_basename(f.filename.clone().as_str()))
             .collect::<Vec<_>>();
-        log::debug!("Filtered Changed files: {changed_files:#?}");
+        log::debug!("Filtered Changed files: {filtered_files:#?}");
 
         let re = if !filter.is_empty() {
             log::info!("Filtering filenames containing: {filter}");
@@ -220,7 +223,7 @@ impl CmdDraft {
             Regex::new(r"^.+\.md$").unwrap()
         };
 
-        let filtered_files = changed_files
+        let filtered_files = filtered_files
             .iter()
             .filter(|f| re.is_match(&f.0))
             .cloned()
@@ -258,11 +261,9 @@ impl CmdDraft {
         let mut front_matter = FrontMatter::from_toml(&front_str)?;
 
         let (path, basename) = get_path_and_basename(filename);
-        // let basename = filename.split('/').last().unwrap().to_string();
-        // let basename = basename.split('.').next().unwrap().to_string();
         log::debug!("Basename: {basename}");
         log::debug!("Full filename: {filename}");
-        log::debug!("Front matter: {front_matter:#?}");
+        log::trace!("Front matter: {front_matter:#?}");
         front_matter.basename = Some(basename);
         front_matter.path = Some(path);
 
