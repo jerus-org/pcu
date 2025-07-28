@@ -42,6 +42,7 @@ async fn main() -> Result<()> {
                 CIExit::DraftedForBluesky => log::info!("Drafted for Bluesky"),
                 CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
                 CIExit::NoFilesToProcess => log::info!("No files to process"),
+                CIExit::NothingToPush => log::info!("No commits to push"),
             };
             Ok(())
         }
