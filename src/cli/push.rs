@@ -41,6 +41,10 @@ impl Push {
     pub async fn run_push(&self) -> Result<CIExit, Error> {
         let client = Commands::Push(self.clone()).get_client().await?;
 
+        if client.branch_status()?.ahead == 0 {
+            return Ok(CIExit::NothingToPush);
+        };
+
         log::info!("Push the commit");
         log::trace!(
             "tag_opt: {:?} and no_push: {:?}",
