@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ♻️ refactor(cmd_draft)-rename methods and variables for clarity(pr [#621])
 - 💄 style(cmd_draft)-update log level for front matter(pr [#622])
+- ♻️ refactor(cli)-modify changelog commit logic(pr [#626])
 
 ### Fixed
 
@@ -1546,6 +1547,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#623]: https://github.com/jerus-org/pcu/pull/623
 [#624]: https://github.com/jerus-org/pcu/pull/624
 [#625]: https://github.com/jerus-org/pcu/pull/625
+[#626]: https://github.com/jerus-org/pcu/pull/626
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.50...HEAD
 [0.4.50]: https://github.com/jerus-org/pcu/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
