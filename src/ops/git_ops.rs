@@ -285,7 +285,9 @@ impl GitOps for Client {
 
         log::info!("Stage the changes for commit");
 
-        self.stage_files(files_in_workdir)?;
+        if !files_in_workdir.is_empty() {
+            self.stage_files(files_in_workdir)?;
+        }
 
         log::debug!("{}", "Check Staged".style(hdr_style));
         log::debug!("WorkDir files:\n\t{:?}", self.repo_files_not_staged()?);
@@ -295,17 +297,16 @@ impl GitOps for Client {
         log::debug!("Staged files:\n\t{files_staged_for_commit:?}");
         log::debug!("Branch status: {}", self.branch_status()?);
 
-        log::info!("Commit the staged changes with commit message: {commit_message}");
+        if !files_staged_for_commit.is_empty() {
+            log::info!("Commit the staged changes with commit message: {commit_message}");
+            self.commit_staged(sign, commit_message, prefix, tag_opt)?;
+            log::debug!("{}", "Check Committed".style(hdr_style));
+            log::debug!("WorkDir files:\n\t{:?}", self.repo_files_not_staged()?);
+            let files_staged_for_commit = self.repo_files_staged()?;
+            log::debug!("Staged files:\n\t{files_staged_for_commit:?}");
+        }
 
-        self.commit_staged(sign, commit_message, prefix, tag_opt)?;
-
-        log::debug!("{}", "Check Committed".style(hdr_style));
-        log::debug!("WorkDir files:\n\t{:?}", self.repo_files_not_staged()?);
-
-        let files_staged_for_commit = self.repo_files_staged()?;
-
-        log::debug!("Staged files:\n\t{files_staged_for_commit:?}");
-        log::debug!("Branch status: {}", self.branch_status()?);
+        log::info!("Branch status: {}", self.branch_status()?);
 
         Ok(())
     }
