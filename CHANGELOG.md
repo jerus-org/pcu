@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - ✨ add check for nothing to push in push command(pr [#623])
+- ✨ enhance logging with branch status and commit info(pr [#625])
 
 ### Changed
 
@@ -1544,6 +1545,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#622]: https://github.com/jerus-org/pcu/pull/622
 [#623]: https://github.com/jerus-org/pcu/pull/623
 [#624]: https://github.com/jerus-org/pcu/pull/624
+[#625]: https://github.com/jerus-org/pcu/pull/625
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.50...HEAD
 [0.4.50]: https://github.com/jerus-org/pcu/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
