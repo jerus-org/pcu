@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     io::Write,
     path::Path,
     process::{Command, Stdio},
@@ -30,8 +31,30 @@ pub enum Sign {
     None,
 }
 
+#[derive(Debug, Default)]
+pub struct BranchReport {
+    pub ahead: usize,
+    pub behind: usize,
+}
+
+impl Display for BranchReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BranchReport {
+                ahead: 0,
+                behind: 0,
+            } => write!(f, "Your branch is up to date."),
+            _ => write!(
+                f,
+                "Your branch is {} commits ahead and {} commits behind",
+                self.ahead, self.behind
+            ),
+        }
+    }
+}
+
 pub trait GitOps {
-    fn branch_status(&self) -> Result<String, Error>;
+    fn branch_status(&self) -> Result<BranchReport, Error>;
     fn branch_list(&self) -> Result<String, Error>;
     fn repo_status(&self) -> Result<String, Error>;
     fn repo_files_not_staged(&self) -> Result<Vec<(String, Status)>, Error>;
@@ -472,6 +495,7 @@ impl GitOps for Client {
 
         Ok(())
     }
+
     /// Rebase the next pr of dependency updates if any
     #[instrument(skip(self))]
     async fn label_next_pr(
@@ -536,18 +560,14 @@ impl GitOps for Client {
         Ok(output)
     }
 
-    fn branch_status(&self) -> Result<String, Error> {
+    fn branch_status(&self) -> Result<BranchReport, Error> {
         let branch_remote = self.git_repo.find_branch(
             format!("origin/{}", self.branch_or_main()).as_str(),
             git2::BranchType::Remote,
         )?;
 
         if branch_remote.get().target() == self.git_repo.head()?.target() {
-            return Ok(format!(
-                "\n\nOn branch {}\nYour branch is up to date with `{}`\n",
-                self.branch_or_main(),
-                branch_remote.name()?.unwrap()
-            ));
+            return Ok(BranchReport::default());
         }
 
         let local = self.git_repo.head()?.target().unwrap();
@@ -555,9 +575,7 @@ impl GitOps for Client {
 
         let (ahead, behind) = self.git_repo.graph_ahead_behind(local, remote)?;
 
-        let output = format!("Your branch is {ahead} commits ahead and {behind} commits behind\n");
-
-        Ok(output)
+        Ok(BranchReport { ahead, behind })
     }
 }
 
