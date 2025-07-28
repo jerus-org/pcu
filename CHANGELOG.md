@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - ♻️ refactor(cmd_draft)-rename methods and variables for clarity(pr [#621])
+- 💄 style(cmd_draft)-update log level for front matter(pr [#622])
 
 ## [0.4.50] - 2025-07-28
 
@@ -1532,6 +1533,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#619]: https://github.com/jerus-org/pcu/pull/619
 [#620]: https://github.com/jerus-org/pcu/pull/620
 [#621]: https://github.com/jerus-org/pcu/pull/621
+[#622]: https://github.com/jerus-org/pcu/pull/622
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.50...HEAD
 [0.4.50]: https://github.com/jerus-org/pcu/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
