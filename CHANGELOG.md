@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- ♻️ refactor(cmd_draft)-rename methods and variables for clarity(pr [#621])
+
 ## [0.4.50] - 2025-07-28
 
 ### Added
@@ -1525,6 +1531,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#618]: https://github.com/jerus-org/pcu/pull/618
 [#619]: https://github.com/jerus-org/pcu/pull/619
 [#620]: https://github.com/jerus-org/pcu/pull/620
+[#621]: https://github.com/jerus-org/pcu/pull/621
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.50...HEAD
 [0.4.50]: https://github.com/jerus-org/pcu/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
