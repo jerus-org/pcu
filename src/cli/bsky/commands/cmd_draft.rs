@@ -251,7 +251,7 @@ impl CmdDraft {
                 front_str.push_str(&line);
                 front_str.push('\n');
                 if first {
-                    log::debug!("Front matter:\n {front_str}\n ... and quit: {quit}");
+                    log::trace!("Front matter:\n {front_str}\n ... and quit: {quit}");
                 }
             }
         }
