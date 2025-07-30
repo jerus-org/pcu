@@ -27,11 +27,11 @@
 [ghub-badge]: https://img.shields.io/badge/sponsor-30363D?logo=GitHub-Sponsors&logoColor=#white
 [ghub-url]: https://github.com/sponsors/jerusdp
 
-A CI utility to update the Unreleased section of the changelog with the title of the and a link to the pull request as part of the CI.
+A CI utility to update the Unreleased section of the changelog with the title of the pull request and include a link to the pull request.
 
 ## Feature set
 
-- [x] Use github as source control system
+- [x] Use GitHub as source control system
 - [x] Use of CircleCI as CI
 
 ## CLI Usage
