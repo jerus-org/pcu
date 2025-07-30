@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- 👷 ci(circleci)-add conditional step for PCU update(pr [#629])
+
 ## [0.4.53] - 2025-07-30
 
 ### Changed
@@ -1562,6 +1568,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#626]: https://github.com/jerus-org/pcu/pull/626
 [#627]: https://github.com/jerus-org/pcu/pull/627
 [#628]: https://github.com/jerus-org/pcu/pull/628
+[#629]: https://github.com/jerus-org/pcu/pull/629
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.53...HEAD
 [0.4.53]: https://github.com/jerus-org/pcu/compare/v0.4.52...v0.4.53
 [0.4.52]: https://github.com/jerus-org/pcu/compare/v0.4.51...v0.4.52
 [0.4.51]: https://github.com/jerus-org/pcu/compare/v0.4.50...v0.4.51
