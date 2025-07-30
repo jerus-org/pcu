@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.51] - 2025-07-29
+
 ### Added
 
 - ✨ add check for nothing to push in push command(pr [#623])
@@ -1548,7 +1550,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#624]: https://github.com/jerus-org/pcu/pull/624
 [#625]: https://github.com/jerus-org/pcu/pull/625
 [#626]: https://github.com/jerus-org/pcu/pull/626
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.50...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.51...HEAD
+[0.4.51]: https://github.com/jerus-org/pcu/compare/v0.4.50...v0.4.51
 [0.4.50]: https://github.com/jerus-org/pcu/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jerus-org/pcu/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jerus-org/pcu/compare/v0.4.45...v0.4.48
