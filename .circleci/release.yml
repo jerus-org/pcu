@@ -7,6 +7,9 @@ parameters:
   fingerprint:
     type: string
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
+  update_pcu:
+    type: boolean
+    default: false
 
 orbs:
   toolkit: jerus-org/circleci-toolkit@2.12.1
@@ -44,3 +47,4 @@ workflows:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           remove_ssh_key: false
+          when_update_pcu: << pipeline.parameters.update_pcu >>
