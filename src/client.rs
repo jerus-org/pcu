@@ -176,7 +176,7 @@ impl Client {
     ) -> Result<(GitHubAPI, gql_client::Client), Error> {
         let bld_style = Style::new().bold();
         log::info!("\n***Get GitHub API instance***\n");
-        log::info!("Settings: {settings:#?}");
+        log::trace!("Settings: {settings:#?}");
         let (config, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::info!("Using {} for authentication", "GitHub App".style(bld_style));
