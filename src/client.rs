@@ -175,10 +175,11 @@ impl Client {
         repo: &str,
     ) -> Result<(GitHubAPI, gql_client::Client), Error> {
         let bld_style = Style::new().bold();
-        log::debug!("\n***Get GitHub API instance***\n");
+        log::info!("\n***Get GitHub API instance***\n");
+        log::info!("Settings: {settings:#?}");
         let (config, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
-                log::debug!("Using {} for authentication", "GitHub App".style(bld_style));
+                log::info!("Using {} for authentication", "GitHub App".style(bld_style));
 
                 let private_key = settings
                     .get::<String>("private_key")
@@ -213,7 +214,7 @@ impl Client {
                 let pat = settings
                     .get::<String>("pat")
                     .map_err(|_| Error::NoGitHubAPIAuth)?;
-                log::debug!(
+                log::info!(
                     "Falling back to {} for authentication",
                     "Personal Access Token".style(bld_style)
                 );
