@@ -44,3 +44,4 @@ workflows:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           remove_ssh_key: false
+          when_update_pcu: true
