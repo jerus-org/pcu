@@ -512,6 +512,10 @@ workflows:
       - toolkit/commit_and_push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
+          filters:
+            branches:
+              ignore:
+                - main
           context:
             - release
             - bot-check
