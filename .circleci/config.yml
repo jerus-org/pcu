@@ -67,7 +67,7 @@ jobs:
       - run:
           name: Install pcu from project under test
           command: |
-            cargo install --force --path .
+            cargo install --force --path ./crates/pcu
       - run:
           name: Copy updated pcu to bin directory
           command: |
@@ -218,7 +218,7 @@ jobs:
 
             mkdir -p bluesky
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2021-11-05 tests/bsky/blog
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2021-11-05 crates/pcu/tests/bsky/blog
             ls -la bluesky
 
       - run:
@@ -271,7 +271,7 @@ jobs:
             rm -rf bluesky
             mkdir -p bluesky
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft tests 
+            bin/pcu << parameters.pcu_verbosity >> bsky draft crates/pcu/tests 
             ls -la
             ls -la bluesky
             cat $(ls -d bluesky/*)
@@ -328,7 +328,7 @@ jobs:
             rm -rf bluesky
             mkdir -p bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 tests/bsky-test-blog.md 
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 crates/pcu/tests/bsky-test-blog.md 
             ls -la
             ls -la bluesky
             cat bluesky/$(ls bluesky)
