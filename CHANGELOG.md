@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - ✨ add initial Cargo.toml for gen-bsky crate(pr [#634])
+- ✨ add front matter parsing functionality(pr [#638])
 
 ### Changed
 
@@ -1601,6 +1602,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#635]: https://github.com/jerus-org/pcu/pull/635
 [#636]: https://github.com/jerus-org/pcu/pull/636
 [#637]: https://github.com/jerus-org/pcu/pull/637
+[#638]: https://github.com/jerus-org/pcu/pull/638
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
