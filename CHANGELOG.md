@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 BREAKING: chore(workspace)-restructure Cargo.toml for workspace management(pr [#633])
 - 🔧 chore(gen-bsky)-update cargo package metadata(pr [#635])
 - 💄 style(gen-bsky)-correct license format in Cargo.toml(pr [#636])
+- 👷 ci(circleci)-update workflow branch filter(pr [#637])
 
 ## [0.4.56] - 2025-07-30
 
@@ -1599,6 +1600,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#634]: https://github.com/jerus-org/pcu/pull/634
 [#635]: https://github.com/jerus-org/pcu/pull/635
 [#636]: https://github.com/jerus-org/pcu/pull/636
+[#637]: https://github.com/jerus-org/pcu/pull/637
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
