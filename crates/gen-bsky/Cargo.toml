@@ -5,9 +5,15 @@ edition.workspace = true
 authors.workspace = true
 description = "A Library to generate and post a bluesky post"
 rust-version.workspace = true
-license.workspace = true
-readme.workspace = true
+license = "MIT or Apache-2.0"
+readme = "README.md"
 repository.workspace = true
 keywords = ["ci", "github", "bluesky"]
-include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
 categories = ["development-tools::build-utils"]
