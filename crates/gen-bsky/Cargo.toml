@@ -1,0 +1,13 @@
+[package]
+name = "gen-bsky"
+version = "0.0.0"
+edition.workspace = true
+authors.workspace = true
+description = "A Library to generate and post a bluesky post"
+rust-version.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+keywords = ["ci", "github", "bluesky"]
+include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
+categories = ["development-tools::build-utils"]
