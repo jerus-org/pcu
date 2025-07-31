@@ -11,11 +11,10 @@ pub enum Error {
     // /// Unable to retrieve the signed data from the child process
     // #[error("failed to get output of signing process call: {0}")]
     // Stdout(String),
-
-    // #[error("bluesky post for `{0}` contains too many characters: {1}")]
-    // PostTooManyCharacters(String, usize),
-    // #[error("bluesky post for `{0}` contains too many graphemes: {1}")]
-    // PostTooManyGraphemes(String, usize),
+    #[error("bluesky post for `{0}` contains too many characters: {1}")]
+    PostTooManyCharacters(String, usize),
+    #[error("bluesky post for `{0}` contains too many graphemes: {1}")]
+    PostTooManyGraphemes(String, usize),
 
     // #[error("{0}")]
     // GpgError(String),
@@ -89,14 +88,14 @@ pub enum Error {
     // Regex(#[from] RegexError),
     // #[error("cargo_toml error says: {0:?}")]
     // CargoToml(#[from] cargo_toml::Error),
-    // #[error("toml deserialization error says: {0:?}")]
-    // Toml(#[from] toml::de::Error),
+    #[error("toml deserialization error says: {0:?}")]
+    Toml(#[from] toml::de::Error),
     // #[error("bsky_sdk error says: {0:?}")]
     // BskySdk(#[from] bsky_sdk::Error),
     // #[error("bsky_sdk create_session error says: {0:?}")]
     // BlueskyLoginError(String),
     // #[error("serde_json create_session error says: {0:?}")]
     // SerdeJsonError(#[from] serde_json::error::Error),
-    // #[error("link-bridge error says: {0:?}")]
-    // RedirectorError(#[from] link_bridge::RedirectorError),
+    #[error("link-bridge error says: {0:?}")]
+    RedirectorError(#[from] link_bridge::RedirectorError),
 }
