@@ -67,7 +67,7 @@ jobs:
       - run:
           name: Install pcu from project under test
           command: |
-            cargo install --force --path .
+            cargo install --force --path ./crates/pcu
       - run:
           name: Copy updated pcu to bin directory
           command: |
