@@ -1018,12 +1018,14 @@ dependencies = [
 name = "gen-bsky"
 version = "0.0.0"
 dependencies = [
+ "base62",
  "bsky-sdk",
  "env_logger",
  "link-bridge",
  "log",
  "regex",
  "serde",
+ "serde_json",
  "thiserror 2.0.12",
  "toml 0.9.2",
  "unicode-segmentation",

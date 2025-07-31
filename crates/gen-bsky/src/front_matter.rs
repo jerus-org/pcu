@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::{cmp::max, fs::File};
 
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
 use bsky_sdk::api::types::string::Datetime as BskyDatetime;
@@ -49,6 +49,17 @@ pub enum FrontMatterError {
     /// as description and tag list.
     #[error("bluesky post for `{0}` contains too many graphemes: {1}")]
     PostTooManyGraphemes(String, usize),
+    /// The bluesky post record has not been constructed. Use
+    /// the `get_bluesky_record` method to generate the bluesky post
+    /// record.
+    #[error("bluesky post has not been constructed")]
+    BlueSkyPostNotConstructed,
+    /// The post basename is has not been set.
+    #[error("post basename is not set")]
+    PostBasenameNotSet,
+    /// Post link is not set
+    #[error("post link is not set")]
+    PostLinkNotSet,
     /// Error reported by the Toml library.
     #[error("toml deserialization error says: {0:?}")]
     Toml(#[from] toml::de::Error),
@@ -58,6 +69,12 @@ pub enum FrontMatterError {
     /// Error reported by the link-bridge library
     #[error("link-bridge error says: {0:?}")]
     RedirectorError(#[from] link_bridge::RedirectorError),
+    /// Error reported by IO library
+    #[error("io error says: {0:?}")]
+    IO(#[from] std::io::Error),
+    /// Error reported by the serde_json library
+    #[error("serde_json create_session error says: {0:?}")]
+    SerdeJsonError(#[from] serde_json::error::Error),
 }
 
 /// Type representing the expected and optional keys in the
@@ -190,6 +207,49 @@ impl FrontMatter {
         log::trace!("{record_data:?}");
 
         self.bluesky_post = Some(record_data);
+        Ok(())
+    }
+
+    /// Write the bluesky record to the `store_dir` location.
+    /// The write function generates a short name based on post link
+    /// and filename to ensure that similarly named posts have unique
+    /// bluesky post names.
+    pub fn write_bluesky_record(&self, store_dir: &str) -> Result<(), FrontMatterError> {
+        let Some(bluesky_post) = self.bluesky_post.as_ref() else {
+            return Err(FrontMatterError::BlueSkyPostNotConstructed);
+        };
+
+        let Some(filename) = &self.basename else {
+            return Err(FrontMatterError::PostBasenameNotSet);
+        };
+
+        let Some(post_link) = self.post_link.as_ref() else {
+            return Err(FrontMatterError::PostLinkNotSet);
+        };
+
+        let postname = format!(
+            "{}{}{}",
+            base62::encode(post_link.encode_utf16().sum::<u16>()),
+            base62::encode(filename.encode_utf16().sum::<u16>()),
+            base62::encode(
+                post_link
+                    .trim_end_matches(filename)
+                    .encode_utf16()
+                    .sum::<u16>()
+            )
+        );
+
+        log::trace!("Bluesky post: {bluesky_post:#?}");
+
+        let post_file = format!("{store_dir}/{postname}.post");
+        log::debug!("Write filename: {filename} as {postname}");
+        log::debug!("Write file: {post_file}");
+
+        let file = File::create(post_file)?;
+
+        serde_json::to_writer_pretty(&file, &bluesky_post)?;
+        file.sync_all()?;
+
         Ok(())
     }
 

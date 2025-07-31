@@ -1,5 +1,4 @@
 mod site_config;
-use std::fs::File;
 
 pub use gen_bsky::FrontMatter;
 use site_config::SiteConfig;
@@ -78,43 +77,16 @@ impl Draft {
         }
 
         for blog_post in &self.blog_posts {
-            let Some(bluesky_post) = &blog_post.bluesky_post else {
-                log::warn!("No Bluesky post found for blog post: {}", blog_post.title);
-                continue;
-            };
-
-            let Some(filename) = &blog_post.basename else {
-                log::warn!("No filename found for blog post: {}", blog_post.title);
-                continue;
-            };
-
-            let Some(post_link) = blog_post.post_link.as_ref() else {
-                log::warn!("No post link found for blog post `{}`", blog_post.title);
-                continue;
-            };
-
-            let postname = format!(
-                "{}{}{}",
-                base62::encode(post_link.encode_utf16().sum::<u16>()),
-                base62::encode(filename.encode_utf16().sum::<u16>()),
-                base62::encode(
-                    post_link
-                        .trim_end_matches(filename)
-                        .encode_utf16()
-                        .sum::<u16>()
-                )
-            );
-
-            log::trace!("Bluesky post: {bluesky_post:#?}");
-            log::debug!("Write filename: {filename} as {postname}");
-
-            let post_file = format!("{}/{}.post", self.store, postname);
-            log::debug!("Write file: {post_file}");
-
-            let file = File::create(post_file)?;
-
-            serde_json::to_writer_pretty(&file, bluesky_post)?;
-            file.sync_all()?;
+            match blog_post.write_bluesky_record(&self.store) {
+                Ok(_) => continue,
+                Err(e) => {
+                    log::warn!(
+                        "Blog post: {} skipped because of error `{e}`",
+                        blog_post.title
+                    );
+                    continue;
+                }
+            }
         }
 
         Ok(self)
