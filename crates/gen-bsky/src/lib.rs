@@ -6,8 +6,5 @@
 //! Gen-bsky
 //!
 
-mod error;
 mod front_matter;
-
-pub use error::Error;
-pub use front_matter::FrontMatter;
+pub use front_matter::{FrontMatter, FrontMatterError};
