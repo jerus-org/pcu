@@ -1,9 +1,11 @@
 use std::cmp::max;
 
-use crate::Error;
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
+use bsky_sdk::api::types::string::Datetime as BskyDatetime;
+use bsky_sdk::rich_text::RichText;
 use link_bridge::Redirector;
 use serde::{Deserialize /* Deserializer */};
+use thiserror::Error;
 use toml::value::Datetime;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -33,27 +35,73 @@ use taxonomies::Taxonomies;
 // +++
 //
 
+/// Error enum for FrontMatter type
+#[non_exhaustive]
+#[derive(Error, Debug)]
+pub enum FrontMatterError {
+    /// Generated post contains two many characters for a bluesky post.
+    /// Reduce the size of the components contributing to the post such
+    /// as description and tag list.
+    #[error("bluesky post for `{0}` contains too many characters: {1}")]
+    PostTooManyCharacters(String, usize),
+    /// Generated post contains two many graphemes for a bluesky post.
+    /// Reduce the size of the components contributing to the post such
+    /// as description and tag list.
+    #[error("bluesky post for `{0}` contains too many graphemes: {1}")]
+    PostTooManyGraphemes(String, usize),
+    /// Error reported by the Toml library.
+    #[error("toml deserialization error says: {0:?}")]
+    Toml(#[from] toml::de::Error),
+    /// Error reported by the Bluesky SDK library.
+    #[error("bsky_sdk error says: {0:?}")]
+    BskySdk(#[from] bsky_sdk::Error),
+    /// Error reported by the link-bridge library
+    #[error("link-bridge error says: {0:?}")]
+    RedirectorError(#[from] link_bridge::RedirectorError),
+}
+
+/// Type representing the expected and optional keys in the
+/// frontmatter of a markdown blog post file.
+///
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct FrontMatter {
+    /// The title for the blog post.
     pub title: String,
+    /// A description of the blog post.
     pub description: String,
+    /// The creation date of the blog post.
     pub date: Option<Datetime>,
+    /// The updated data of the blog post.
     pub updated: Option<Datetime>,
+    /// Flag to indicate if the post is draft.
     #[serde(default)]
     pub draft: bool,
+    /// The taxonomies section in the front matter. Expected
+    /// to contain tags.
     pub taxonomies: Option<Taxonomies>,
+    /// The extras section in the front matter. Containing
+    /// custom keys and may contain the bluesky custom keys.
     pub extra: Option<Extra>,
+    /// The bluesky section in the front matter. May contain
+    /// the bluesky custom keys.
     pub bluesky: Option<Bluesky>,
+    /// The basename for the post.
     pub basename: Option<String>,
+    /// The path to the post.
     pub path: Option<String>,
+    /// The bluesky post record.
     pub bluesky_post: Option<RecordData>,
+    /// The full link to the post.
     pub post_link: Option<String>,
+    /// The generated short link for the post.
     pub post_short_link: Option<String>,
+    /// The location to store the short link.
     pub short_link_store: Option<String>,
 }
 
 impl FrontMatter {
-    pub fn from_toml(toml: &str) -> Result<Self, Error> {
+    /// Extract the relevant keys from toml formatted frontmatter.
+    pub fn from_toml(toml: &str) -> Result<Self, FrontMatterError> {
         let front_matter = toml::from_str::<FrontMatter>(toml)?;
         Ok(front_matter)
     }
@@ -100,6 +148,8 @@ impl FrontMatter {
         Vec::new()
     }
 
+    /// Return a toml formatted datetime representing the most
+    /// recent date reported in the frontmatter.
     pub fn most_recent_date(&self) -> Datetime {
         match (self.date.is_some(), self.updated.is_some()) {
             (false, false) => Datetime {
@@ -113,7 +163,37 @@ impl FrontMatter {
         }
     }
 
-    pub fn build_post_text(&mut self, base_url: &str) -> Result<String, Error> {
+    /// Get bluesky record based on frontmatter data
+    pub async fn get_bluesky_record(&mut self, base_url: &str) -> Result<(), FrontMatterError> {
+        log::info!("Blog post: {self:#?}");
+        log::debug!("Building post text with base url {base_url}");
+        let post_text = self.build_post_text(base_url)?;
+
+        log::trace!("Post text: {post_text}");
+
+        let rt = RichText::new_with_detect_facets(&post_text).await?;
+
+        log::trace!("Rich text: {rt:#?}");
+
+        let record_data = RecordData {
+            created_at: BskyDatetime::now(),
+            embed: None,
+            entities: None,
+            facets: rt.facets,
+            labels: None,
+            langs: None,
+            reply: None,
+            tags: None,
+            text: rt.text,
+        };
+
+        log::trace!("{record_data:?}");
+
+        self.bluesky_post = Some(record_data);
+        Ok(())
+    }
+
+    fn build_post_text(&mut self, base_url: &str) -> Result<String, FrontMatterError> {
         let post_dir = if let Some(path) = self.path.as_ref() {
             format!("{}{}", path, "/")
         } else {
@@ -138,14 +218,14 @@ impl FrontMatter {
         );
 
         if post_text.len() > 300 {
-            return Err(Error::PostTooManyCharacters(
+            return Err(FrontMatterError::PostTooManyCharacters(
                 self.title.clone(),
                 post_text.len(),
             ));
         }
 
         if post_text.graphemes(true).count() > 300 {
-            return Err(Error::PostTooManyGraphemes(
+            return Err(FrontMatterError::PostTooManyGraphemes(
                 self.title.clone(),
                 post_text.graphemes(true).count(),
             ));
@@ -154,7 +234,7 @@ impl FrontMatter {
         Ok(post_text)
     }
 
-    fn get_links(&mut self, base_url: &str, post_dir: &str) -> Result<(), Error> {
+    fn get_links(&mut self, base_url: &str, post_dir: &str) -> Result<(), FrontMatterError> {
         log::debug!(
             "Building link with `{base_url}`, `{post_dir}` and `{}`",
             self.basename.as_ref().unwrap()
