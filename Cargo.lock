@@ -1015,6 +1015,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "gen-bsky"
+version = "0.0.0"
+
+[[package]]
 name = "generator"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
