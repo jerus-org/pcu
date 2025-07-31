@@ -17,3 +17,12 @@ include = [
     "LICENSE-APACHE",
 ]
 categories = ["development-tools::build-utils"]
+
+[dependencies]
+bsky-sdk.workspace = true
+link-bridge.workspace = true
+regex.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+toml.workspace = true
+unicode_segmentation.workspace = true
