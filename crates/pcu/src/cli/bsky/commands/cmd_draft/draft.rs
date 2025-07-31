@@ -1,14 +1,7 @@
-mod front_matter;
 mod site_config;
-
 use std::fs::File;
 
-use bsky_sdk::{
-    api::{app::bsky::feed::post::RecordData, types::string::Datetime},
-    rich_text::RichText,
-};
-
-pub use front_matter::FrontMatter;
+pub use gen_bsky::FrontMatter;
 use site_config::SiteConfig;
 
 use crate::Error;
@@ -67,31 +60,7 @@ impl Draft {
 
     pub async fn process_posts(&mut self) -> Result<&mut Self, Error> {
         for blog_post in &mut self.blog_posts {
-            log::info!("Blog post: {blog_post:#?}");
-            log::debug!("Building post text with base url {}", self.base_url);
-            let post_text = blog_post.build_post_text(self.base_url.as_str())?;
-
-            log::trace!("Post text: {post_text}");
-
-            let rt = RichText::new_with_detect_facets(&post_text).await?;
-
-            log::trace!("Rich text: {rt:#?}");
-
-            let record_data = RecordData {
-                created_at: Datetime::now(),
-                embed: None,
-                entities: None,
-                facets: rt.facets,
-                labels: None,
-                langs: None,
-                reply: None,
-                tags: None,
-                text: rt.text,
-            };
-
-            log::trace!("{record_data:?}");
-
-            blog_post.bluesky_post = Some(record_data);
+            blog_post.get_bluesky_record(self.base_url.as_str()).await?;
         }
 
         Ok(self)
@@ -137,10 +106,10 @@ impl Draft {
             );
 
             log::trace!("Bluesky post: {bluesky_post:#?}");
-            log::debug!("Post filename: {filename} as {postname}");
+            log::debug!("Write filename: {filename} as {postname}");
 
             let post_file = format!("{}/{}.post", self.store, postname);
-            log::debug!("Post file: {post_file}");
+            log::debug!("Write file: {post_file}");
 
             let file = File::create(post_file)?;
 
@@ -156,6 +125,7 @@ impl Draft {
 mod tests {
     use std::{fs, path::Path};
 
+    use bsky_sdk::api::{app::bsky::feed::post::RecordData, types::string::Datetime};
     use log::LevelFilter;
 
     use super::*;

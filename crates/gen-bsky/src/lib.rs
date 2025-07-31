@@ -1,14 +1,10 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![warn(missing_docs)]
+#![cfg_attr(docsrs, feature(rustdoc_missing_doc_code_examples))]
+#![cfg_attr(docsrs, warn(rustdoc::invalid_codeblock_attributes))]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+//! Gen-bsky
+//!
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+mod front_matter;
+pub use front_matter::{FrontMatter, FrontMatterError};

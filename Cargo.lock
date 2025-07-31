@@ -1017,6 +1017,17 @@ dependencies = [
 [[package]]
 name = "gen-bsky"
 version = "0.0.0"
+dependencies = [
+ "bsky-sdk",
+ "env_logger",
+ "link-bridge",
+ "log",
+ "regex",
+ "serde",
+ "thiserror 2.0.12",
+ "toml 0.9.2",
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "generator"
@@ -2069,6 +2080,7 @@ dependencies = [
  "color-eyre",
  "config",
  "env_logger",
+ "gen-bsky",
  "git2",
  "git2_credentials",
  "gql_client",
