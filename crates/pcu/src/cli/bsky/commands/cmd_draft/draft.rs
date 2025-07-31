@@ -1,14 +1,11 @@
-mod front_matter;
 mod site_config;
-
 use std::fs::File;
 
 use bsky_sdk::{
     api::{app::bsky::feed::post::RecordData, types::string::Datetime},
     rich_text::RichText,
 };
-
-pub use front_matter::FrontMatter;
+use gen_bsky::FrontMatter;
 use site_config::SiteConfig;
 
 use crate::Error;
