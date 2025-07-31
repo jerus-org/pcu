@@ -19,12 +19,14 @@ include = [
 categories = ["development-tools::build-utils"]
 
 [dependencies]
+base62.workspace = true
 bsky-sdk.workspace = true
 link-bridge.workspace = true
 log.workspace = true
 regex.workspace = true
 thiserror.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 toml.workspace = true
 unicode-segmentation.workspace = true
 
