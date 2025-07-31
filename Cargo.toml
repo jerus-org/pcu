@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/pcu"]
+members = ["crates/pcu", "crates/gen-bsky"]
 default-members = ["crates/pcu"]
 resolver = "2"
 
