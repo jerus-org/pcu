@@ -1019,7 +1019,9 @@ name = "gen-bsky"
 version = "0.0.0"
 dependencies = [
  "bsky-sdk",
+ "env_logger",
  "link-bridge",
+ "log",
  "regex",
  "serde",
  "thiserror 2.0.12",
