@@ -38,6 +38,10 @@ impl CmdDraft {
             DEFAULT_PATH
         };
 
+        log::trace!(
+            "Key parameters:\n\tBase url:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{path}`"
+        );
+
         let mut posts_builder = Draft::builder();
         let posts_res = posts_builder
             .with_base_url(&base_url)
