@@ -39,7 +39,7 @@ impl CmdDraft {
         };
 
         log::trace!(
-            "Key parameters:\n\tBase url:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{path}`"
+            "Key parameters:\n\tBase:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{path}`"
         );
 
         let mut posts_builder = Draft::builder();
