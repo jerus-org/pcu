@@ -214,7 +214,7 @@ impl FrontMatter {
     /// The write function generates a short name based on post link
     /// and filename to ensure that similarly named posts have unique
     /// bluesky post names.
-    pub fn write_bluesky_record(&self, store_dir: &str) -> Result<(), FrontMatterError> {
+    pub fn write_bluesky_record_to(&self, store_dir: &str) -> Result<(), FrontMatterError> {
         let Some(bluesky_post) = self.bluesky_post.as_ref() else {
             return Err(FrontMatterError::BlueSkyPostNotConstructed);
         };
