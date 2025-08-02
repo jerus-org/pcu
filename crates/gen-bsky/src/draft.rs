@@ -212,7 +212,10 @@ fn get_files(path: &str) -> Result<Vec<(String, String)>, DraftError> {
 
     if path.is_file() {
         if path.extension().unwrap_or_default() == "md" {
-            Ok(vec![(get_path_and_basename(path.to_str().unwrap()))])
+            Ok(vec![(
+                path.to_string_lossy().to_string(),
+                get_path_and_basename(path.to_str().unwrap()).0,
+            )])
         } else {
             Err(DraftError::FileExtensionInvalid(
                 path.to_string_lossy().to_string(),
