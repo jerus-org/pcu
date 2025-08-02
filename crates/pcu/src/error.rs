@@ -23,8 +23,6 @@ pub enum Error {
     NoBlueskyIdentifier,
     #[error("No bluesky password provided")]
     NoBlueskyPassword,
-    #[error("Future capacity is too large")]
-    FutureCapacityTooLarge,
     #[error("Path not found: {0}")]
     PathNotFound(String),
     #[error("File extension invalid (must be `{1}`): {0}")]
@@ -99,8 +97,10 @@ pub enum Error {
     SerdeJsonError(#[from] serde_json::error::Error),
     #[error("link-bridge error says: {0:?}")]
     RedirectorError(#[from] link_bridge::RedirectorError),
-    #[error("gen-bsky error says: {0:?}")]
+    #[error("gen-bsky frontmatter error says: {0:?}")]
     FrontMatterError(#[from] gen_bsky::FrontMatterError),
+    #[error("gen-bsky draft error says: {0:?}")]
+    DraftError(#[from] gen_bsky::DraftError),
 }
 
 #[derive(Debug)]
