@@ -1020,13 +1020,16 @@ version = "0.0.0"
 dependencies = [
  "base62",
  "bsky-sdk",
+ "chrono",
  "env_logger",
  "link-bridge",
  "log",
  "regex",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.12",
+ "tokio",
  "toml 0.9.2",
  "unicode-segmentation",
 ]
