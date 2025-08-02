@@ -21,6 +21,7 @@ categories = ["development-tools::build-utils"]
 [dependencies]
 base62.workspace = true
 bsky-sdk.workspace = true
+chrono.workspace = true
 link-bridge.workspace = true
 log.workspace = true
 regex.workspace = true
@@ -32,3 +33,5 @@ unicode-segmentation.workspace = true
 
 [dev-dependencies]
 env_logger.workspace = true
+tokio.workspace = true
+tempfile.workspace = true
