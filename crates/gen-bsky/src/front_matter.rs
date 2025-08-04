@@ -371,10 +371,10 @@ impl FrontMatter {
             "Length of tag contents: {} characters and {} graphemes",
             self.taxonomies
                 .as_ref()
-                .map_or(0, |e| e.tags.join("#").len() + 1),
+                .map_or(0, |e| e.tags().join("#").len() + 1),
             self.taxonomies
                 .as_ref()
-                .map_or(0, |e| e.tags.join("#").graphemes(true).count() + 1)
+                .map_or(0, |e| e.tags().join("#").graphemes(true).count() + 1)
         );
         log::debug!(
             "Length of bluesky tag contents: {} characters and {} graphemes",
@@ -423,7 +423,7 @@ mod tests {
         let fm = FrontMatter::from_toml(toml).unwrap();
         assert_eq!(fm.title, "Test Title");
         assert_eq!(fm.description, "Test Description");
-        assert_eq!(fm.taxonomies.unwrap().tags, vec!["rust", "testing"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["rust", "testing"]);
         assert!(fm.extra.is_none());
         assert_eq!(fm.path, PathBuf::new());
         assert!(fm.bluesky_post.is_none());
@@ -445,7 +445,7 @@ mod tests {
         "#;
         let fm = FrontMatter::from_toml(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
-        assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
             fm.extra.unwrap().bluesky().unwrap().description(),
@@ -472,7 +472,7 @@ mod tests {
         "#;
         let fm = FrontMatter::from_toml(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
-        assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
             fm.extra.as_ref().unwrap().bluesky().unwrap().description(),
@@ -501,7 +501,7 @@ mod tests {
         "#;
         let fm = FrontMatter::from_toml(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
-        assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
         assert!(fm.bluesky.is_some());
         assert_eq!(fm.bluesky.as_ref().unwrap().description(), "extra_value");
         assert_eq!(
@@ -533,15 +533,13 @@ mod tests {
     }
     #[test]
     fn test_hashtags_formatting() {
-        let taxonomies = Taxonomies {
-            tags: vec![
-                "rust".to_string(),
-                "blue sky".to_string(),
-                "#AlreadyHashtag".to_string(),
-                "multi word tag".to_string(),
-                "".to_string(),
-            ],
-        };
+        let taxonomies = Taxonomies::new(vec![
+            "rust".to_string(),
+            "blue sky".to_string(),
+            "#AlreadyHashtag".to_string(),
+            "multi word tag".to_string(),
+            "".to_string(),
+        ]);
         let hashtags = taxonomies.hashtags();
         assert_eq!(
             hashtags,
@@ -564,7 +562,7 @@ mod tests {
 
     #[test]
     fn test_taxonomies_empty_tags() {
-        let taxonomies = Taxonomies { tags: vec![] };
+        let taxonomies = Taxonomies::new(vec![]);
         let hashtags = taxonomies.hashtags();
         assert_eq!(hashtags, Vec::<String>::new());
     }
