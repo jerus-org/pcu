@@ -128,13 +128,12 @@ impl FrontMatter {
             return self.bluesky.as_ref().unwrap().description();
         }
 
-        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky.is_some() {
+        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky().is_some() {
             return self
                 .extra
                 .as_ref()
                 .unwrap()
-                .bluesky
-                .as_ref()
+                .bluesky()
                 .unwrap()
                 .description();
         }
@@ -147,15 +146,8 @@ impl FrontMatter {
             return self.bluesky.as_ref().unwrap().hashtags();
         }
 
-        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky.is_some() {
-            return self
-                .extra
-                .as_ref()
-                .unwrap()
-                .bluesky
-                .as_ref()
-                .unwrap()
-                .hashtags();
+        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky().is_some() {
+            return self.extra.as_ref().unwrap().bluesky().unwrap().hashtags();
         }
 
         if self.taxonomies.is_some() {
@@ -456,7 +448,7 @@ mod tests {
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
-            fm.extra.unwrap().bluesky.unwrap().description(),
+            fm.extra.unwrap().bluesky().unwrap().description(),
             "extra_value"
         );
     }
@@ -483,17 +475,11 @@ mod tests {
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
-            fm.extra
-                .as_ref()
-                .unwrap()
-                .bluesky
-                .as_ref()
-                .unwrap()
-                .description(),
+            fm.extra.as_ref().unwrap().bluesky().unwrap().description(),
             "extra_value"
         );
         assert_eq!(
-            fm.extra.as_ref().unwrap().bluesky.as_ref().unwrap().tags(),
+            fm.extra.as_ref().unwrap().bluesky().unwrap().tags(),
             vec!["extra_tag".to_string()]
         );
     }
