@@ -346,8 +346,8 @@ jobs:
             set -ex
 
             ls -la static/s
-            cat static/s/$(ls static/s/*.html)
-            cat static/s/$(ls static/s/registry.json)
+            cat static/s/*.html
+            cat static/s/registry.json
 
       - run:
           name: Git status after drafting
