@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   min-rust-version:
     type: string
-    default: "1.81"
+    default: "1.87"
   fingerprint:
     type: string
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
@@ -330,8 +330,28 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 crates/pcu/tests/bsky-test-blog.md 
             ls -la
+
+      - run:
+          name: Display bluesky post contents
+          command: |
+            set -ex
+
+
             ls -la bluesky
             cat bluesky/$(ls bluesky)
+
+      - run:
+          name: Display short link contents
+          command: |
+            set -ex
+
+            ls -la static/s
+            cat static/s/*.html
+            cat static/s/registry.json
+
+      - run:
+          name: Git status after drafting
+          command: |
             git status
 
       - run:

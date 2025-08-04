@@ -1,4 +1,5 @@
-use std::{cmp::max, fs::File};
+use std::fs::File;
+use std::{cmp::max, path::PathBuf};
 
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
 use bsky_sdk::api::types::string::Datetime as BskyDatetime;
@@ -102,10 +103,9 @@ pub struct FrontMatter {
     /// The bluesky section in the front matter. May contain
     /// the bluesky custom keys.
     pub bluesky: Option<Bluesky>,
-    /// The basename for the post.
-    pub basename: Option<String>,
     /// The path to the post.
-    pub path: Option<String>,
+    #[serde(skip)]
+    pub path: PathBuf,
     /// The bluesky post record.
     pub bluesky_post: Option<RecordData>,
     /// The full link to the post.
@@ -219,9 +219,10 @@ impl FrontMatter {
             return Err(FrontMatterError::BlueSkyPostNotConstructed);
         };
 
-        let Some(filename) = &self.basename else {
+        let Some(filename) = self.path.as_path().file_name() else {
             return Err(FrontMatterError::PostBasenameNotSet);
         };
+        let filename = filename.to_str().unwrap();
 
         let Some(post_link) = self.post_link.as_ref() else {
             return Err(FrontMatterError::PostLinkNotSet);
@@ -254,13 +255,12 @@ impl FrontMatter {
     }
 
     fn build_post_text(&mut self, base_url: &str) -> Result<String, FrontMatterError> {
-        let post_dir = if let Some(path) = self.path.as_ref() {
-            format!("{}{}", path, "/")
-        } else {
-            String::new()
-        };
+        log::debug!(
+            "Building post text with post dir: `{}`",
+            self.path.display()
+        );
 
-        self.get_links(base_url, &post_dir)?;
+        self.get_links(base_url)?;
 
         if log::log_enabled!(log::Level::Debug) {
             self.log_post_details();
@@ -294,20 +294,29 @@ impl FrontMatter {
         Ok(post_text)
     }
 
-    fn get_links(&mut self, base_url: &str, post_dir: &str) -> Result<(), FrontMatterError> {
-        log::debug!(
-            "Building link with `{base_url}`, `{post_dir}` and `{}`",
-            self.basename.as_ref().unwrap()
-        );
+    fn get_links(&mut self, base_url: &str) -> Result<(), FrontMatterError> {
+        log::debug!("Building link with `{base_url}` ",);
 
-        let post_link = format!(
-            "/{}/{}",
-            {
-                let link_dir = post_dir.trim_start_matches("content/");
-                link_dir.trim_end_matches("/")
-            },
-            self.basename.as_ref().unwrap()
-        );
+        // let post_link = format!("/{}/{}", {
+        //     let link_dir = self.path.to_string_lossy().trim_start_matches("content");
+        //     link_dir.trim_end_matches("/")
+        // },);
+
+        let post_link = if self.path.is_file() {
+            let mut post_link = self.path.clone();
+            post_link.set_extension("");
+            post_link
+                .as_path()
+                .to_string_lossy()
+                .trim_start_matches("content")
+                .to_string()
+        } else {
+            self.path
+                .as_path()
+                .to_string_lossy()
+                .trim_start_matches("content")
+                .to_string()
+        };
 
         let mut redirect = Redirector::new(&post_link)?;
 
@@ -323,7 +332,7 @@ impl FrontMatter {
         let short_link = redirect.write_redirect()?;
         log::debug!("redirect written and short link returned: {short_link}");
 
-        self.post_link = Some(post_link);
+        self.post_link = Some(post_link.to_string());
         self.post_short_link = Some(format!(
             "{}/{}",
             base_url.trim_end_matches('/'),
@@ -424,8 +433,7 @@ mod tests {
         assert_eq!(fm.description, "Test Description");
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["rust", "testing"]);
         assert!(fm.extra.is_none());
-        assert!(fm.basename.is_none());
-        assert!(fm.path.is_none());
+        assert_eq!(fm.path, PathBuf::new());
         assert!(fm.bluesky_post.is_none());
     }
 
@@ -556,19 +564,6 @@ mod tests {
             hashtags,
             vec!["#Rust", "#BlueSky", "#AlreadyHashtag", "#MultiWordTag", "#"]
         );
-    }
-
-    #[test]
-    fn test_front_matter_with_basename_and_path() {
-        let toml = r#"
-            title = "With Path"
-            description = "Has basename and path"
-            basename = "post1"
-            path = "/blog/post1.md"
-        "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
-        assert_eq!(fm.basename.as_deref(), Some("post1"));
-        assert_eq!(fm.path.as_deref(), Some("/blog/post1.md"));
     }
 
     #[test]
@@ -785,6 +780,8 @@ mod tests {
 
     #[test]
     fn test_date_comparison() {
+        get_test_logger();
+
         let toml = r#"
             title = "Date Comparison"
             description = "Testing date comparison"

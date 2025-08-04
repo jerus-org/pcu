@@ -2,7 +2,7 @@
 
 A library to generate a bluesky post.
 
-[![Rust 1.81+][version-badge]][version-url]
+[![Rust 1.87+][version-badge]][version-url]
 [![circleci-badge]][circleci-url]
 [![Crates.io][crates-badge]][crates-url]
 [![Docs][docs-badge]][docs-url]

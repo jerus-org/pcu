@@ -203,7 +203,7 @@ impl DraftBuilder {
 /// Get the file from the path and return a list of files
 /// The path may be a single file or a directory containing files
 /// Only files ending in `.md` will be returned
-fn get_files(path: &str) -> Result<Vec<(String, String)>, DraftError> {
+fn get_files(path: &str) -> Result<Vec<PathBuf>, DraftError> {
     let path = PathBuf::from(path);
     log::debug!("get_files path: {path:?}");
     if !path.exists() {
@@ -212,10 +212,7 @@ fn get_files(path: &str) -> Result<Vec<(String, String)>, DraftError> {
 
     if path.is_file() {
         if path.extension().unwrap_or_default() == "md" {
-            Ok(vec![(
-                path.to_string_lossy().to_string(),
-                get_path_and_basename(path.to_str().unwrap()).0,
-            )])
+            Ok(vec![path])
         } else {
             Err(DraftError::FileExtensionInvalid(
                 path.to_string_lossy().to_string(),
@@ -233,10 +230,7 @@ fn get_files(path: &str) -> Result<Vec<(String, String)>, DraftError> {
                 files.append(&mut subdir_files);
                 continue;
             } else if entry_path.is_file() && entry_path.extension().unwrap_or_default() == "md" {
-                files.push((
-                    entry_path.to_string_lossy().to_string(),
-                    path.to_string_lossy().to_string(),
-                ));
+                files.push(entry_path);
             }
         }
         return Ok(files);
@@ -245,31 +239,15 @@ fn get_files(path: &str) -> Result<Vec<(String, String)>, DraftError> {
     }
 }
 
-fn get_path_and_basename(path: &str) -> (String, String) {
-    let (path, filename) = split_return_last_and_rest(path.to_string(), '/');
-    let (basename, _ext) = split_return_last_and_rest(filename, '.');
-
-    (path, basename)
-}
-
-fn split_return_last_and_rest(s: String, pat: char) -> (String, String) {
-    let parts = s.split(pat).collect::<Vec<_>>();
-
-    (
-        parts[..parts.len() - 1].join(&String::from(pat)),
-        parts.last().unwrap().to_string(),
-    )
-}
-
-fn get_front_matters(in_scope_files: &[(String, String)]) -> Result<Vec<FrontMatter>, DraftError> {
+fn get_front_matters(in_scope_files: &[PathBuf]) -> Result<Vec<FrontMatter>, DraftError> {
     let mut front_matters = Vec::new();
     let mut first = true;
 
-    for filename in in_scope_files {
-        log::info!("File and path: {filename:?}");
-        match get_frontmatter(&filename.0, first) {
+    for path in in_scope_files {
+        log::info!("File and path: {path:?}");
+        match get_frontmatter(path, first) {
             Ok(mut front_matter) => {
-                front_matter.path = Some(filename.1.clone());
+                front_matter.path = path.clone();
                 front_matters.push(front_matter);
                 first = false;
             }
@@ -291,9 +269,12 @@ fn get_front_matters(in_scope_files: &[(String, String)]) -> Result<Vec<FrontMat
     Ok(front_matters)
 }
 
-fn get_frontmatter(filename: &str, first: bool) -> Result<FrontMatter, DraftError> {
-    log::debug!("Reading front matter from: {filename} with flag first: {first}");
-    let file = File::open(filename)?;
+fn get_frontmatter(path: &PathBuf, first: bool) -> Result<FrontMatter, DraftError> {
+    log::debug!(
+        "Reading front matter from: {} with flag first: {first}",
+        path.display()
+    );
+    let file = File::open(path)?;
     let reader = BufReader::new(file);
 
     let mut front_str = String::new();
@@ -318,12 +299,10 @@ fn get_frontmatter(filename: &str, first: bool) -> Result<FrontMatter, DraftErro
 
     let mut front_matter = FrontMatter::from_toml(&front_str)?;
 
-    let (path, basename) = get_path_and_basename(filename);
-    log::debug!("Basename: {basename}");
-    log::debug!("Full filename: {filename}");
+    log::debug!("Basename: {}", path.file_name().unwrap().display());
+    log::debug!("Full filename: {}", path.display());
     log::trace!("Front matter: {front_matter:#?}");
-    front_matter.basename = Some(basename);
-    front_matter.path = Some(path);
+    front_matter.path = path.clone();
 
     Ok(front_matter)
 }
@@ -354,69 +333,6 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_get_path_and_basename() {
-        let test_cases = vec![
-            (
-                "/media/blog/post.md",
-                ("/media/blog".to_string(), "post".to_string()),
-            ),
-            (
-                "blog/2023/test.md",
-                ("blog/2023".to_string(), "test".to_string()),
-            ),
-            ("single.md", ("".to_string(), "single".to_string())),
-            (
-                "nested/path/file.md",
-                ("nested/path".to_string(), "file".to_string()),
-            ),
-            (
-                "/absolute/path/post.md",
-                ("/absolute/path".to_string(), "post".to_string()),
-            ),
-        ];
-
-        for (input, expected) in test_cases {
-            let result = get_path_and_basename(input);
-            assert_eq!(result, expected, "Failed for input: {input}");
-        }
-    }
-
-    #[test]
-    fn test_get_path_and_filename_basic() {
-        let result = get_path_and_basename("folder/subfolder/file.txt");
-        assert_eq!(result.0, "folder/subfolder");
-        assert_eq!(result.1, "file");
-    }
-
-    #[test]
-    fn test_get_path_and_filename_root() {
-        let result = get_path_and_basename("file.txt");
-        assert_eq!(result.0, "");
-        assert_eq!(result.1, "file");
-    }
-
-    #[test]
-    fn test_get_path_and_filename_nested() {
-        let result = get_path_and_basename("a/b/c/d/file.txt");
-        assert_eq!(result.0, "a/b/c/d");
-        assert_eq!(result.1, "file");
-    }
-
-    #[test]
-    fn test_get_path_and_filename_with_dots() {
-        let result = get_path_and_basename("path/to/my.file.with.dots.txt");
-        assert_eq!(result.0, "path/to");
-        assert_eq!(result.1, "my.file.with.dots");
-    }
-
-    #[test]
-    fn test_get_path_and_filename_trailing_slash() {
-        let result = get_path_and_basename("path/to/file/");
-        assert_eq!(result.0, "path/to/file");
-        assert_eq!(result.1, "");
-    }
-
-    #[test]
     fn test_get_files_single_markdown_file() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("test.md");
@@ -426,13 +342,7 @@ mod tests {
         let result = get_files(file_path.to_str().unwrap());
         println!("Result: {result:#?}");
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            vec![(
-                file_path.to_string_lossy().to_string(),
-                temp_dir.path().to_string_lossy().to_string()
-            )]
-        );
+        assert_eq!(result.unwrap(), vec![(file_path)]);
     }
 
     #[test]
@@ -459,16 +369,7 @@ mod tests {
         let md_file2 = temp_dir.path().join(&file2);
         let txt_file = temp_dir.path().join(&file3);
 
-        let expected = [
-            (
-                md_file1.to_string_lossy().to_string(),
-                temp_dir.path().to_string_lossy().to_string(),
-            ),
-            (
-                md_file2.to_string_lossy().to_string(),
-                temp_dir.path().to_string_lossy().to_string(),
-            ),
-        ];
+        let expected = [(md_file1.clone()), (md_file2.clone())];
 
         fs::write(&md_file1, "content1").unwrap();
         fs::write(&md_file2, "content2").unwrap();
@@ -513,13 +414,7 @@ mod tests {
         assert!(result.is_ok());
         let files = result.unwrap();
         assert_eq!(files.len(), 2);
-        assert!(files.contains(&(
-            md_file1.to_string_lossy().to_string(),
-            temp_dir.path().to_string_lossy().to_string()
-        )));
-        assert!(files.contains(&(
-            md_file2.to_string_lossy().to_string(),
-            nested_dir.as_path().to_string_lossy().to_string()
-        )));
+        assert!(files.contains(&md_file1));
+        assert!(files.contains(&md_file2));
     }
 }

@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(gen-bsky)-update cargo package metadata(pr [#635])
 - 💄 style(gen-bsky)-correct license format in Cargo.toml(pr [#636])
 - 👷 ci(circleci)-update workflow branch filter(pr [#637])
+- ♻️ refactor(front_matter)-update path handling and remove basename usage(pr [#641])
 
 ## [0.4.56] - 2025-07-30
 
@@ -1607,6 +1608,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#638]: https://github.com/jerus-org/pcu/pull/638
 [#639]: https://github.com/jerus-org/pcu/pull/639
 [#640]: https://github.com/jerus-org/pcu/pull/640
+[#641]: https://github.com/jerus-org/pcu/pull/641
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
