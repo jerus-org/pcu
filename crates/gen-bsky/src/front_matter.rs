@@ -4,7 +4,7 @@ use std::{cmp::max, path::PathBuf};
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
 use bsky_sdk::api::types::string::Datetime as BskyDatetime;
 use bsky_sdk::rich_text::RichText;
-// use link_bridge::Redirector;
+use link_bridge::Redirector;
 use serde::{Deserialize /* Deserializer */};
 use thiserror::Error;
 use toml::value::Datetime;
@@ -254,11 +254,13 @@ impl FrontMatter {
         Ok(())
     }
 
-    fn build_post_text(&mut self, _base_url: &str) -> Result<String, FrontMatterError> {
-        let post_dir = self.path.as_path();
-        log::debug!("Building post text with post dir: `{}`", post_dir.display());
+    fn build_post_text(&mut self, base_url: &str) -> Result<String, FrontMatterError> {
+        log::debug!(
+            "Building post text with post dir: `{}`",
+            self.path.display()
+        );
 
-        // self.get_links(base_url, &post_dir.as_os_str())?;
+        self.get_links(base_url)?;
 
         if log::log_enabled!(log::Level::Debug) {
             self.log_post_details();
@@ -292,39 +294,52 @@ impl FrontMatter {
         Ok(post_text)
     }
 
-    // fn get_links(&mut self, base_url: &str, post_dir: &PathBuf) -> Result<(), FrontMatterError> {
-    //     log::debug!(
-    //         "Building link with `{base_url}` and `{}` ",
-    //         post_dir.display()
-    //     );
+    fn get_links(&mut self, base_url: &str) -> Result<(), FrontMatterError> {
+        log::debug!("Building link with `{base_url}` ",);
 
-    //     let post_link = format!("/{}/{}", {
-    //         let link_dir = post_dir.to_string_lossy().trim_start_matches("content");
-    //         link_dir.trim_end_matches("/")
-    //     },);
+        // let post_link = format!("/{}/{}", {
+        //     let link_dir = self.path.to_string_lossy().trim_start_matches("content");
+        //     link_dir.trim_end_matches("/")
+        // },);
 
-    //     let mut redirect = Redirector::new(&post_link)?;
+        let post_link = if self.path.is_file() {
+            let mut post_link = self.path.clone();
+            post_link.set_extension("");
+            post_link
+                .as_path()
+                .to_string_lossy()
+                .trim_start_matches("content")
+                .to_string()
+        } else {
+            self.path
+                .as_path()
+                .to_string_lossy()
+                .trim_start_matches("content")
+                .to_string()
+        };
 
-    //     let redirect_path = if let Some(redirect_path) = self.short_link_store.as_ref() {
-    //         log::debug!("redirect path set as `{redirect_path}`");
-    //         redirect_path
-    //     } else {
-    //         log::debug!("redirect path set to default (`static/s`)");
-    //         "static/s"
-    //     };
-    //     redirect.set_path(redirect_path);
+        let mut redirect = Redirector::new(&post_link)?;
 
-    //     let short_link = redirect.write_redirect()?;
-    //     log::debug!("redirect written and short link returned: {short_link}");
+        let redirect_path = if let Some(redirect_path) = self.short_link_store.as_ref() {
+            log::debug!("redirect path set as `{redirect_path}`");
+            redirect_path
+        } else {
+            log::debug!("redirect path set to default (`static/s`)");
+            "static/s"
+        };
+        redirect.set_path(redirect_path);
 
-    //     self.post_link = Some(post_link);
-    //     self.post_short_link = Some(format!(
-    //         "{}/{}",
-    //         base_url.trim_end_matches('/'),
-    //         short_link.trim_start_matches("static/"),
-    //     ));
-    //     Ok(())
-    // }
+        let short_link = redirect.write_redirect()?;
+        log::debug!("redirect written and short link returned: {short_link}");
+
+        self.post_link = Some(post_link.to_string());
+        self.post_short_link = Some(format!(
+            "{}/{}",
+            base_url.trim_end_matches('/'),
+            short_link.trim_start_matches("static/"),
+        ));
+        Ok(())
+    }
 
     #[allow(dead_code)]
     fn set_short_link_store<S: ToString>(&mut self, store: S) {
