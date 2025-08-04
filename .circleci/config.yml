@@ -330,8 +330,22 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 crates/pcu/tests/bsky-test-blog.md 
             ls -la
+
+      - run:
+          name: Display bluesky post contents
+          command: |
             ls -la bluesky
             cat bluesky/$(ls bluesky)
+
+      - run:
+          name: Display short link contents
+          command: |
+            ls -la static/s
+            cat static/s/$(ls static/s)
+
+      - run:
+          name: Git status after drafting
+          command: |
             git status
 
       - run:
