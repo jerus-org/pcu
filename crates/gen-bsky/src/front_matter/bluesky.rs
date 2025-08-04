@@ -2,8 +2,8 @@ use serde::Deserialize;
 
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct Bluesky {
-    pub description: Option<String>,
-    pub tags: Option<Vec<String>>,
+    description: Option<String>,
+    tags: Option<Vec<String>>,
 }
 
 impl Bluesky {
@@ -11,7 +11,7 @@ impl Bluesky {
         self.description.as_deref().unwrap_or("")
     }
 
-    fn tags(&self) -> Vec<String> {
+    pub fn tags(&self) -> Vec<String> {
         self.tags.clone().unwrap_or_default()
     }
 

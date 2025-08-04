@@ -456,8 +456,8 @@ mod tests {
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
-            fm.extra.unwrap().bluesky.unwrap().description,
-            Some("extra_value".to_string())
+            fm.extra.unwrap().bluesky.unwrap().description(),
+            "extra_value"
         );
     }
 
@@ -489,12 +489,12 @@ mod tests {
                 .bluesky
                 .as_ref()
                 .unwrap()
-                .description,
-            Some("extra_value".to_string())
+                .description(),
+            "extra_value"
         );
         assert_eq!(
-            fm.extra.as_ref().unwrap().bluesky.as_ref().unwrap().tags,
-            Some(vec!["extra_tag".to_string()])
+            fm.extra.as_ref().unwrap().bluesky.as_ref().unwrap().tags(),
+            vec!["extra_tag".to_string()]
         );
     }
 
@@ -517,13 +517,10 @@ mod tests {
         assert_eq!(fm.title, "Extra Test");
         assert_eq!(fm.taxonomies.unwrap().tags, vec!["extra"]);
         assert!(fm.bluesky.is_some());
+        assert_eq!(fm.bluesky.as_ref().unwrap().description(), "extra_value");
         assert_eq!(
-            fm.bluesky.as_ref().unwrap().description,
-            Some("extra_value".to_string())
-        );
-        assert_eq!(
-            fm.bluesky.as_ref().unwrap().tags,
-            Some(vec!["extra_tag".to_string()])
+            fm.bluesky.as_ref().unwrap().tags(),
+            vec!["extra_tag".to_string()]
         );
     }
 
