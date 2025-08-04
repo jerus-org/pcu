@@ -334,14 +334,20 @@ jobs:
       - run:
           name: Display bluesky post contents
           command: |
+            set -ex
+
+
             ls -la bluesky
             cat bluesky/$(ls bluesky)
 
       - run:
           name: Display short link contents
           command: |
+            set -ex
+
             ls -la static/s
-            cat static/s/$(ls static/s)
+            cat static/s/$(ls static/s/*.html)
+            cat static/s/$(ls static/s/registry.json)
 
       - run:
           name: Git status after drafting
