@@ -3,17 +3,21 @@ use serde::Deserialize;
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct Taxonomies {
     #[allow(dead_code)]
-    pub tags: Vec<String>,
+    tags: Vec<String>,
 }
 
 impl Taxonomies {
-    pub fn tags(&self) -> Vec<String> {
-        self.tags.clone()
+    pub fn new(tags: Vec<String>) -> Self {
+        Taxonomies { tags }
+    }
+
+    pub fn tags(&self) -> &Vec<String> {
+        self.tags.as_ref()
     }
 
     pub fn hashtags(&self) -> Vec<String> {
         let mut hashtags = vec![];
-        for tag in &self.tags() {
+        for tag in self.tags() {
             // convert tag to hashtag by capitalising the first letter of each word, removing the spaces and prefixing with a # if required
             let formatted_tag = tag
                 .split_whitespace()
