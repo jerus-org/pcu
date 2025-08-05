@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(bluesky)-update field access in Bluesky struct(pr [#642])
 - ♻️ refactor(taxonomies)-improve tag handling in Taxonomies struct(pr [#644])
 - ♻️ refactor(draft)-improve path handling in DraftBuilder(pr [#645])
+- 👷 ci(circleci)-enhance check_last_commit workflow(pr [#646])
 
 ## [0.4.56] - 2025-07-30
 
@@ -1617,6 +1618,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#643]: https://github.com/jerus-org/pcu/pull/643
 [#644]: https://github.com/jerus-org/pcu/pull/644
 [#645]: https://github.com/jerus-org/pcu/pull/645
+[#646]: https://github.com/jerus-org/pcu/pull/646
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
