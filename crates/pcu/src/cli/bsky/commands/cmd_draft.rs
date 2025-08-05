@@ -46,7 +46,7 @@ impl CmdDraft {
         let posts_res = posts_builder
             .with_base_url(&base_url)
             .with_store(store)
-            .add_blog_posts(path)?
+            .add_path_or_file(path)?
             .with_minimum_date(self.date)?
             .with_allow_draft(self.allow_draft)
             .build();
