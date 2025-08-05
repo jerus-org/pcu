@@ -136,11 +136,15 @@ impl DraftBuilder {
         Ok(self)
     }
 
-    fn add_blog_posts(path: &PathBuf, min_date: Datetime) -> Result<Vec<FrontMatter>, DraftError> {
+    fn add_blog_posts(
+        path: &PathBuf,
+        min_date: Datetime,
+        allow_draft: bool,
+    ) -> Result<Vec<FrontMatter>, DraftError> {
         // find the potential file in the git repo
         let potential_files = get_files(path)?;
 
-        let front_matters = get_front_matters(&potential_files, min_date)?;
+        let front_matters = get_front_matters(&potential_files, min_date, allow_draft)?;
 
         if front_matters.is_empty() {
             log::warn!("no front matters found for path `{}`", path.display());
@@ -177,24 +181,13 @@ impl DraftBuilder {
         let mut blog_posts = Vec::new();
 
         for path in self.path_or_file.iter() {
-            let mut vec_fm = DraftBuilder::add_blog_posts(path, self.minimum_date)?;
+            let mut vec_fm =
+                DraftBuilder::add_blog_posts(path, self.minimum_date, self.allow_draft)?;
             blog_posts.append(&mut vec_fm);
         }
 
         if blog_posts.is_empty() {
             log::warn!("No blog posts found");
-            return Err(DraftError::BlogPostListEmpty);
-        }
-
-        if !self.allow_draft {
-            blog_posts.retain(|fm| !fm.draft);
-            log::trace!(
-                "Retained `{}` front matters after removing drafts",
-                blog_posts.len()
-            );
-        }
-
-        if blog_posts.is_empty() {
             return Err(DraftError::BlogPostListEmpty);
         }
 
@@ -248,6 +241,7 @@ fn get_files(path: &PathBuf) -> Result<Vec<PathBuf>, DraftError> {
 fn get_front_matters(
     in_scope_files: &[PathBuf],
     min_date: Datetime,
+    allow_draft: bool,
 ) -> Result<Vec<FrontMatter>, DraftError> {
     let mut front_matters = Vec::new();
     let mut first = true;
@@ -261,9 +255,15 @@ fn get_front_matters(
             continue;
         };
         fm.path = path.clone();
+        if !allow_draft && fm.draft {
+            log::warn!("blog marked as draft and not allowed");
+            continue;
+        }
         if fm.most_recent_date() >= min_date {
             front_matters.push(fm);
             first = false;
+        } else {
+            log::warn!("blog post too old to process")
         }
     }
 
