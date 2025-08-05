@@ -514,6 +514,10 @@ workflows:
           context: SonarCloud
           ignore_advisories: "RUSTSEC-2025-0007"
       - toolkit/update_changelog:
+          filters:
+            branches:
+              ignore:
+                - main
           requires:
             - test-push
             - test-commit
@@ -552,6 +556,8 @@ workflows:
   on_success:
     when:
       and:
+        - not:
+            equal: ["main", <<pipeline.git.branch >>]
         - not:
             equal: [scheduled_pipeline, << pipeline.trigger_source >>]
         - << pipeline.parameters.success-flag >>
