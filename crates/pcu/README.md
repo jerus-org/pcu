@@ -1,4 +1,4 @@
-# pcu
+# Pcu
 
 [![Crates.io][crates-badge]][crates-url]
 [![MIT licensed][mit-badge]][mit-url]
