@@ -5,11 +5,17 @@ edition.workspace = true
 authors.workspace = true
 description = "A CI tool to update change log in a PR"
 rust-version.workspace = true
-license.workspace = true
-readme.workspace = true
+license = "MIT OR Apache-2.0"
+readme = "README.md"
 repository.workspace = true
 keywords = ["ci", "github", "changelog"]
-include = ["**/*.rs", "Cargo.toml", "README.md", "LICENSE"]
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
 categories = ["development-tools::build-utils", "command-line-utilities"]
 
 [dependencies]
