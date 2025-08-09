@@ -92,8 +92,7 @@ impl Poster {
             } else {
                 let result = agent.create_record(bsky_post.post.clone()).await;
 
-                if result.is_err() {
-                    let e = result.unwrap_err();
+                if let Err(e) = result {
                     log::error!("Error posting to Bluesky: {e}");
                     continue;
                 };

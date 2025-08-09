@@ -1,10 +1,10 @@
-use std::fs::File;
-use std::{cmp::max, path::PathBuf};
+use std::{
+    cmp::max,
+    fs::File,
+    io::{BufRead, BufReader},
+    path::PathBuf,
+};
 
-use bsky_sdk::api::app::bsky::feed::post::RecordData;
-use bsky_sdk::api::types::string::Datetime as BskyDatetime;
-use bsky_sdk::rich_text::RichText;
-use link_bridge::Redirector;
 use serde::{Deserialize /* Deserializer */};
 use thiserror::Error;
 use toml::value::Datetime;
@@ -14,7 +14,7 @@ mod bluesky;
 mod extra;
 mod taxonomies;
 
-pub use bluesky::Bluesky;
+use bluesky::Bluesky;
 use extra::Extra;
 use taxonomies::Taxonomies;
 
@@ -39,91 +39,100 @@ use taxonomies::Taxonomies;
 /// Error enum for FrontMatter type
 #[non_exhaustive]
 #[derive(Error, Debug)]
-pub enum FrontMatterError {
-    /// Generated post contains two many characters for a bluesky post.
-    /// Reduce the size of the components contributing to the post such
-    /// as description and tag list.
-    #[error("bluesky post for `{0}` contains too many characters: {1}")]
-    PostTooManyCharacters(String, usize),
-    /// Generated post contains two many graphemes for a bluesky post.
-    /// Reduce the size of the components contributing to the post such
-    /// as description and tag list.
-    #[error("bluesky post for `{0}` contains too many graphemes: {1}")]
-    PostTooManyGraphemes(String, usize),
-    /// The bluesky post record has not been constructed. Use
-    /// the `get_bluesky_record` method to generate the bluesky post
-    /// record.
-    #[error("bluesky post has not been constructed")]
-    BlueSkyPostNotConstructed,
-    /// The post basename is has not been set.
-    #[error("post basename is not set")]
-    PostBasenameNotSet,
-    /// Post link is not set
-    #[error("post link is not set")]
-    PostLinkNotSet,
+pub(super) enum FrontMatterError {
+    /// Draft posts not allowed
+    #[error("processing of draft posts is not allowed")]
+    DraftNotAllowed,
+
+    /// Post too old
+    #[error("Post is older than allowed by minimum date setting {0}")]
+    PostTooOld(Datetime),
+
+    /// Error reported by IO library
+    #[error("io error says: {0:?}")]
+    Io(#[from] std::io::Error),
+
     /// Error reported by the Toml library.
     #[error("toml deserialization error says: {0:?}")]
     Toml(#[from] toml::de::Error),
-    /// Error reported by the Bluesky SDK library.
-    #[error("bsky_sdk error says: {0:?}")]
-    BskySdk(#[from] bsky_sdk::Error),
-    /// Error reported by the link-bridge library
-    #[error("link-bridge error says: {0:?}")]
-    RedirectorError(#[from] link_bridge::RedirectorError),
-    /// Error reported by IO library
-    #[error("io error says: {0:?}")]
-    IO(#[from] std::io::Error),
-    /// Error reported by the serde_json library
-    #[error("serde_json create_session error says: {0:?}")]
-    SerdeJsonError(#[from] serde_json::error::Error),
 }
 
 /// Type representing the expected and optional keys in the
 /// frontmatter of a markdown blog post file.
 ///
 #[derive(Default, Debug, Clone, Deserialize)]
-pub struct FrontMatter {
+pub(super) struct FrontMatter {
     /// The title for the blog post.
-    pub title: String,
+    pub(super) title: String,
     /// A description of the blog post.
-    pub description: String,
+    pub(super) description: String,
     /// The creation date of the blog post.
-    pub date: Option<Datetime>,
+    pub(super) date: Option<Datetime>,
     /// The updated data of the blog post.
-    pub updated: Option<Datetime>,
+    pub(super) updated: Option<Datetime>,
     /// Flag to indicate if the post is draft.
     #[serde(default)]
-    pub draft: bool,
+    pub(super) draft: bool,
     /// The taxonomies section in the front matter. Expected
     /// to contain tags.
-    pub taxonomies: Option<Taxonomies>,
+    pub(super) taxonomies: Option<Taxonomies>,
     /// The extras section in the front matter. Containing
     /// custom keys and may contain the bluesky custom keys.
-    pub extra: Option<Extra>,
+    pub(super) extra: Option<Extra>,
     /// The bluesky section in the front matter. May contain
     /// the bluesky custom keys.
-    pub bluesky: Option<Bluesky>,
-    /// The path to the post.
-    #[serde(skip)]
-    pub path: PathBuf,
-    /// The bluesky post record.
-    pub bluesky_post: Option<RecordData>,
-    /// The full link to the post.
-    pub post_link: Option<String>,
-    /// The generated short link for the post.
-    pub post_short_link: Option<String>,
-    /// The location to store the short link.
-    pub short_link_store: Option<String>,
+    pub(super) bluesky: Option<Bluesky>,
 }
-
+/// Report values in private fields
 impl FrontMatter {
-    /// Extract the relevant keys from toml formatted frontmatter.
-    pub fn from_toml(toml: &str) -> Result<Self, FrontMatterError> {
-        let front_matter = toml::from_str::<FrontMatter>(toml)?;
+    pub(super) fn title(&self) -> &str {
+        self.title.as_str()
+    }
+}
+impl FrontMatter {
+    pub(super) fn new(
+        blog_path: &PathBuf,
+        min_date: Datetime,
+        allow_draft: bool,
+    ) -> Result<FrontMatter, FrontMatterError> {
+        log::debug!("Reading front matter from `{}` ", blog_path.display());
+        let file = File::open(blog_path)?;
+        let reader = BufReader::new(file);
+
+        let mut front_str = String::new();
+        let mut quit = false;
+
+        for line in reader.lines().map_while(Result::ok) {
+            if line.starts_with("+++") & quit {
+                break;
+            } else if line.starts_with("+++") {
+                quit = true;
+                continue;
+            } else {
+                front_str.push_str(&line);
+                front_str.push('\n');
+            }
+        }
+
+        log::trace!("Front matter string:\n {front_str}");
+
+        let front_matter = toml::from_str::<FrontMatter>(&front_str)?;
+
+        if !allow_draft && front_matter.draft {
+            log::warn!("blog marked as draft and not allowed");
+            return Err(FrontMatterError::DraftNotAllowed);
+        }
+        if front_matter.most_recent_date() < min_date {
+            log::warn!("blog post too old to process");
+            return Err(FrontMatterError::PostTooOld(min_date));
+        }
+
+        log::trace!("Front matter: {front_matter:#?}");
+
         Ok(front_matter)
     }
 
-    fn bluesky_description(&self) -> &str {
+    pub(super) fn bluesky_description(&self) -> &str {
         if self.bluesky.is_some() {
             return self.bluesky.as_ref().unwrap().description();
         }
@@ -141,7 +150,7 @@ impl FrontMatter {
         &self.description
     }
 
-    fn bluesky_tags(&self) -> Vec<String> {
+    pub(super) fn bluesky_tags(&self) -> Vec<String> {
         if self.bluesky.is_some() {
             return self.bluesky.as_ref().unwrap().hashtags();
         }
@@ -159,7 +168,7 @@ impl FrontMatter {
 
     /// Return a toml formatted datetime representing the most
     /// recent date reported in the frontmatter.
-    pub fn most_recent_date(&self) -> Datetime {
+    pub(super) fn most_recent_date(&self) -> Datetime {
         match (self.date.is_some(), self.updated.is_some()) {
             (false, false) => Datetime {
                 date: None,
@@ -172,186 +181,7 @@ impl FrontMatter {
         }
     }
 
-    /// Get bluesky record based on frontmatter data
-    pub async fn get_bluesky_record(&mut self, base_url: &str) -> Result<(), FrontMatterError> {
-        log::info!("Blog post: {self:#?}");
-        log::debug!("Building post text with base url {base_url}");
-        let post_text = self.build_post_text(base_url)?;
-
-        log::trace!("Post text: {post_text}");
-
-        let rt = RichText::new_with_detect_facets(&post_text).await?;
-
-        log::trace!("Rich text: {rt:#?}");
-
-        let record_data = RecordData {
-            created_at: BskyDatetime::now(),
-            embed: None,
-            entities: None,
-            facets: rt.facets,
-            labels: None,
-            langs: None,
-            reply: None,
-            tags: None,
-            text: rt.text,
-        };
-
-        log::trace!("{record_data:?}");
-
-        self.bluesky_post = Some(record_data);
-        Ok(())
-    }
-
-    /// Write the bluesky record to the `store_dir` location.
-    /// The write function generates a short name based on post link
-    /// and filename to ensure that similarly named posts have unique
-    /// bluesky post names.
-    pub fn write_bluesky_record_to(&self, store_dir: &str) -> Result<(), FrontMatterError> {
-        let Some(bluesky_post) = self.bluesky_post.as_ref() else {
-            return Err(FrontMatterError::BlueSkyPostNotConstructed);
-        };
-
-        let Some(filename) = self.path.as_path().file_name() else {
-            return Err(FrontMatterError::PostBasenameNotSet);
-        };
-        let filename = filename.to_str().unwrap();
-
-        let Some(post_link) = self.post_link.as_ref() else {
-            return Err(FrontMatterError::PostLinkNotSet);
-        };
-
-        let postname = format!(
-            "{}{}{}",
-            base62::encode(post_link.encode_utf16().sum::<u16>()),
-            base62::encode(filename.encode_utf16().sum::<u16>()),
-            base62::encode(
-                post_link
-                    .trim_end_matches(filename)
-                    .encode_utf16()
-                    .sum::<u16>()
-            )
-        );
-
-        log::trace!("Bluesky post: {bluesky_post:#?}");
-
-        let post_file = format!("{store_dir}/{postname}.post");
-        log::debug!("Write filename: {filename} as {postname}");
-        log::debug!("Write file: {post_file}");
-
-        let file = File::create(post_file)?;
-
-        serde_json::to_writer_pretty(&file, &bluesky_post)?;
-        file.sync_all()?;
-
-        Ok(())
-    }
-
-    fn build_post_text(&mut self, base_url: &str) -> Result<String, FrontMatterError> {
-        log::debug!(
-            "Building post text with post dir: `{}`",
-            self.path.display()
-        );
-
-        self.get_links(base_url)?;
-
-        if log::log_enabled!(log::Level::Debug) {
-            self.log_post_details();
-        }
-
-        let post_text = format!(
-            "{}\n\n{} {}\n\n{}",
-            self.title,
-            self.bluesky_description(),
-            self.bluesky_tags().join(" "),
-            self.post_short_link.as_ref().map_or_else(
-                || self.post_link.as_ref().unwrap().to_string(),
-                |link| link.to_string()
-            )
-        );
-
-        if post_text.len() > 300 {
-            return Err(FrontMatterError::PostTooManyCharacters(
-                self.title.clone(),
-                post_text.len(),
-            ));
-        }
-
-        if post_text.graphemes(true).count() > 300 {
-            return Err(FrontMatterError::PostTooManyGraphemes(
-                self.title.clone(),
-                post_text.graphemes(true).count(),
-            ));
-        }
-
-        Ok(post_text)
-    }
-
-    fn get_links(&mut self, base_url: &str) -> Result<(), FrontMatterError> {
-        log::debug!("Building link with `{base_url}` ",);
-
-        // let post_link = format!("/{}/{}", {
-        //     let link_dir = self.path.to_string_lossy().trim_start_matches("content");
-        //     link_dir.trim_end_matches("/")
-        // },);
-
-        let post_link = if self.path.is_file() {
-            let mut post_link = self.path.clone();
-            post_link.set_extension("");
-            post_link
-                .as_path()
-                .to_string_lossy()
-                .trim_start_matches("content")
-                .to_string()
-        } else {
-            self.path
-                .as_path()
-                .to_string_lossy()
-                .trim_start_matches("content")
-                .to_string()
-        };
-
-        let mut redirect = Redirector::new(&post_link)?;
-
-        let redirect_path = if let Some(redirect_path) = self.short_link_store.as_ref() {
-            log::debug!("redirect path set as `{redirect_path}`");
-            redirect_path
-        } else {
-            log::debug!("redirect path set to default (`static/s`)");
-            "static/s"
-        };
-        redirect.set_path(redirect_path);
-
-        let short_link = redirect.write_redirect()?;
-        log::debug!("redirect written and short link returned: {short_link}");
-
-        self.post_link = Some(post_link.to_string());
-        self.post_short_link = Some(format!(
-            "{}/{}",
-            base_url.trim_end_matches('/'),
-            short_link.trim_start_matches("static/"),
-        ));
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    fn set_short_link_store<S: ToString>(&mut self, store: S) {
-        self.short_link_store = Some(store.to_string());
-    }
-
-    fn log_post_details(&self) {
-        log::debug!("Post link: {}", self.post_link.as_ref().unwrap());
-        log::debug!(
-            "Length of post link: {} characters and {} graphemes",
-            self.post_link.as_ref().unwrap().len(),
-            self.post_link.as_ref().unwrap().graphemes(true).count()
-        );
-        log::debug!(
-            "Length of post short link: {} characters and {} graphemes",
-            self.post_short_link.as_ref().map_or(0, |link| link.len()),
-            self.post_short_link
-                .as_ref()
-                .map_or(0, |link| link.graphemes(true).count())
-        );
+    pub(super) fn log_post_details(&self) {
         log::debug!(
             "Length of title: {} characters and {} graphemes",
             self.title.len(),
@@ -420,13 +250,11 @@ mod tests {
             [taxonomies]
             tags = ["rust", "testing"]
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Test Title");
         assert_eq!(fm.description, "Test Description");
         assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["rust", "testing"]);
         assert!(fm.extra.is_none());
-        assert_eq!(fm.path, PathBuf::new());
-        assert!(fm.bluesky_post.is_none());
     }
 
     #[test]
@@ -443,7 +271,7 @@ mod tests {
             [extra]
             bluesky.description = "extra_value"
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
         assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
         assert!(fm.extra.is_some());
@@ -470,7 +298,7 @@ mod tests {
             description = "extra_value"
             tags = ["extra_tag"]
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
         assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
         assert!(fm.extra.is_some());
@@ -499,7 +327,7 @@ mod tests {
             description = "extra_value"
             tags = ["extra_tag"]
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
         assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
         assert!(fm.bluesky.is_some());
@@ -516,7 +344,7 @@ mod tests {
             title = "Missing Fields"
             description = "No taxonomies"
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Missing Fields");
         assert_eq!(fm.description, "No taxonomies");
         assert!(fm.taxonomies.is_none());
@@ -528,7 +356,7 @@ mod tests {
             title = 123
             description = "Invalid type"
         "#;
-        let result = FrontMatter::from_toml(toml);
+        let result = toml::from_str::<FrontMatter>(toml);
         assert!(result.is_err());
     }
     #[test]
@@ -553,7 +381,7 @@ mod tests {
             title = "Extra Test"
             description = "Has extra field"
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
         assert_eq!(fm.description, "Has extra field");
         assert!(fm.taxonomies.is_none());
@@ -695,7 +523,7 @@ mod tests {
             description = "Basic date test"
             date = 2025-01-17
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert!(fm.date.is_some());
         let date = fm.date.unwrap();
         assert_eq!(date.date.unwrap().year, 2025);
@@ -712,7 +540,7 @@ mod tests {
             description = "Date with time test"
             date = 2025-01-17T15:30:00Z
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert!(fm.date.is_some());
         let date = fm.date.unwrap();
         assert_eq!(date.date.unwrap().year, 2025);
@@ -732,7 +560,7 @@ mod tests {
             description = "Date with timezone test"
             date = 2025-01-17T15:30:00+02:00
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert!(fm.date.is_some());
         let date = fm.date.unwrap();
         assert_eq!(date.date.unwrap().year, 2025);
@@ -755,7 +583,7 @@ mod tests {
             description = "Invalid date format test"
             date = "not-a-date"
         "#;
-        let result = FrontMatter::from_toml(toml);
+        let result = toml::from_str::<FrontMatter>(toml);
         assert!(result.is_err());
     }
 
@@ -769,7 +597,7 @@ mod tests {
             date = 2025-01-17T15:30:00Z
             updated = 2025-01-18T15:30:00Z
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert!(fm.date.is_some());
         assert!(fm.updated.is_some());
         let most_recent = fm.most_recent_date();
@@ -783,7 +611,7 @@ mod tests {
             description = "Date with microseconds test"
             date = 2025-01-17T15:30:00.123456Z
         "#;
-        let fm = FrontMatter::from_toml(toml).unwrap();
+        let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert!(fm.date.is_some());
         let date = fm.date.unwrap();
         assert_eq!(date.date.unwrap().year, 2025);

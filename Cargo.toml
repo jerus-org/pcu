@@ -24,7 +24,7 @@ git2 = "0.20.2"
 git2_credentials = "0.15.0"
 gql_client = "1.0.8"
 keep-a-changelog = "0.1.4"
-link-bridge = "0.2.2"
+link-bridge = "0.2.3"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
 log = "0.4.27"
 named-colour = { version = "0.3.22", features = ["extended"] }
@@ -48,3 +48,4 @@ rstest = "0.25.0"
 unicode-segmentation = "1.12.0"
 url = "2.5.4"
 uuid = { version = "1.17.0", features = ["v4"] }
+walkdir = "2.5.0"

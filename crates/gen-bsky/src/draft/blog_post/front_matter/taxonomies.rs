@@ -1,23 +1,24 @@
 use serde::Deserialize;
 
 #[derive(Default, Debug, Clone, Deserialize)]
-pub struct Bluesky {
-    description: Option<String>,
-    tags: Option<Vec<String>>,
+pub(crate) struct Taxonomies {
+    #[allow(dead_code)]
+    tags: Vec<String>,
 }
 
-impl Bluesky {
-    pub fn description(&self) -> &str {
-        self.description.as_deref().unwrap_or("")
+impl Taxonomies {
+    #[cfg(test)]
+    pub(crate) fn new(tags: Vec<String>) -> Self {
+        Taxonomies { tags }
     }
 
-    pub fn tags(&self) -> Vec<String> {
-        self.tags.clone().unwrap_or_default()
+    pub(crate) fn tags(&self) -> &Vec<String> {
+        self.tags.as_ref()
     }
 
-    pub fn hashtags(&self) -> Vec<String> {
+    pub(crate) fn hashtags(&self) -> Vec<String> {
         let mut hashtags = vec![];
-        for tag in &self.tags() {
+        for tag in self.tags() {
             // convert tag to hashtag by capitalising the first letter of each word, removing the spaces and prefixing with a # if required
             let formatted_tag = tag
                 .split_whitespace()
