@@ -28,11 +28,45 @@ A library to generate a bluesky post.
 [ghub-badge]: https://img.shields.io/badge/sponsor-30363D?logo=GitHub-Sponsors&logoColor=#white
 [ghub-url]: https://github.com/sponsors/jerusdp
 
-
 ## Feature set
 
-- [ ] Create and save a bluesky post record
+- [x] Create and save a bluesky post record
 - [ ] Login and post the record to a bluesky account
+
+Drafts and posts bluesky feed posts for a markdown blog files. The details
+for the posts are generated from the frontmatter metadata in the blog post.
+To maximize the characters avaiable for post title, description and tags a
+short-name referrer can be generated and hosted on the same website.
+Drafting and posting are two seperate steps to allow for the following
+workflow:
+1. Draft the bluesky post when building the website from the markdown files.
+- Generate the short cut referrer and write to short cut store
+- Generate the text for the bluesky post and save to a store in the repo.
+2. Post the bluesky post when publishing the website
+- For each post saved in the store post to bluesky
+- Delete posts that have been succesfully sent
+## Draft Example
+The following sample builds the draft structure and then write the reffer
+and the bluesky posts. As the referrer has been written when the bluesky
+post is generated using the shorter link to the referrer.
+(e.g. https://www.example.com/s/A4t5rb.html instead
+of https://www.example.com/blog/gen-bsky-release-version-1.3.0/).
+```
+   let mut builder = Draft::builder(base_url);
+   
+   // Add the path to the markdown files 
+    builder.add_path_or_file("content/blog")?;
+    
+    // Set the filters to qualify the blog posts
+    builder
+        .with_minimum_date(self.date)?
+        .with_allow_draft(self.allow_draft);
+   
+    let mut posts = builder.build().await?;
+   
+    posts.write_referrers(None)?;
+    posts.write_bluesky_posts(None)?;
+```
 
 ## License
 
