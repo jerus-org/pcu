@@ -34,7 +34,7 @@ impl CmdDraft {
 
         let base_url = SiteConfig::new()?.base_url();
         let store = &settings.get_string("store")?;
-        if !self.paths.is_empty() {
+        if self.paths.is_empty() {
             self.paths.push(PathBuf::from(DEFAULT_PATH))
         };
 
