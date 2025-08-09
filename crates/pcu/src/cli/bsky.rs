@@ -46,7 +46,7 @@ impl Bsky {
         let (client, settings) = self.setup_client().await?;
 
         match self.cmd.clone() {
-            Cmd::Draft(draft_args) => draft_args.run(&client, &settings).await,
+            Cmd::Draft(mut draft_args) => draft_args.run(&client, &settings).await,
             Cmd::Post(post_args) => post_args.run(&client, &settings).await,
         }
 
