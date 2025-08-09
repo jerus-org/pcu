@@ -97,8 +97,6 @@ pub enum Error {
     SerdeJsonError(#[from] serde_json::error::Error),
     #[error("link-bridge error says: {0:?}")]
     RedirectorError(#[from] link_bridge::RedirectorError),
-    #[error("gen-bsky frontmatter error says: {0:?}")]
-    FrontMatterError(#[from] gen_bsky::FrontMatterError),
     #[error("gen-bsky draft error says: {0:?}")]
     DraftError(#[from] gen_bsky::DraftError),
 }
