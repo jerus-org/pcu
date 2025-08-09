@@ -1,4 +1,5 @@
 use std::fs;
+use url::Url;
 
 use serde::Deserialize;
 
@@ -6,7 +7,7 @@ use crate::Error;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SiteConfig {
-    base_url: String,
+    base_url: Url,
 }
 
 impl SiteConfig {
@@ -17,7 +18,7 @@ impl SiteConfig {
         Ok(site_config)
     }
 
-    pub fn base_url(&self) -> String {
+    pub fn base_url(&self) -> Url {
         self.base_url.clone()
     }
 }
