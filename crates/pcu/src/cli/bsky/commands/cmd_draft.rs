@@ -26,6 +26,9 @@ pub struct CmdDraft {
     /// Allow bluesky posts for draft blog posts
     #[arg(long, default_value_t = false)]
     pub allow_draft: bool,
+    /// Root folder for the website source
+    #[arg(short, long, default_value = ".")]
+    pub www_src_root: PathBuf,
 }
 
 impl CmdDraft {
@@ -39,11 +42,12 @@ impl CmdDraft {
         };
 
         log::trace!(
-            "Key parameters:\n\tBase:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{:#?}`",
-            self.paths
+            "Key parameters:\n\tBase:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{:#?}`\n\tBase:\t`{}`",
+            self.paths,
+            self.www_src_root.display(),
         );
 
-        let mut builder = Draft::builder(base_url);
+        let mut builder = Draft::builder(base_url, &self.www_src_root);
 
         // Add the paths specified at the command line.
         for path in self.paths.iter() {
