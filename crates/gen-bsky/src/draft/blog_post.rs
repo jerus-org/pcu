@@ -75,8 +75,6 @@ pub(super) struct BlogPost {
     /// The front matter from the blog post that is salient
     /// to the production of bluesky posts.
     frontmatter: front_matter::FrontMatter,
-    /// The bluesky post record.
-    bluesky_post: Option<RecordData>,
     /// The full link to the post.
     post_link: Link,
     /// The short link redirection HTML string
@@ -138,7 +136,6 @@ impl BlogPost {
         Ok(BlogPost {
             path: blog_path.clone(),
             frontmatter,
-            bluesky_post: None,
             post_link: link,
             redirector,
             post_short_link: None,
@@ -146,7 +143,7 @@ impl BlogPost {
     }
 
     /// Get bluesky record based on frontmatter data
-    pub async fn get_bluesky_record(&mut self) -> Result<(), BlogPostError> {
+    pub async fn get_bluesky_record(&self) -> Result<RecordData, BlogPostError> {
         log::info!("Blog post: {self:#?}");
         log::debug!("Building post text");
         let post_text = self.build_post_text()?;
@@ -171,11 +168,10 @@ impl BlogPost {
 
         log::trace!("{record_data:?}");
 
-        self.bluesky_post = Some(record_data);
-        Ok(())
+        Ok(record_data)
     }
 
-    fn build_post_text(&mut self) -> Result<String, BlogPostError> {
+    fn build_post_text(&self) -> Result<String, BlogPostError> {
         log::debug!(
             "Building post text with post dir: `{}`",
             self.path.display()
@@ -236,15 +232,26 @@ impl BlogPost {
     /// The write function generates a short name based on post link
     /// and filename to ensure that similarly named posts have unique
     /// bluesky post names.
-    pub fn write_bluesky_record_to(&self, store_dir: &Path) -> Result<(), BlogPostError> {
-        let Some(bluesky_post) = self.bluesky_post.as_ref() else {
-            return Err(BlogPostError::BlueSkyPostNotConstructed);
-        };
+    pub async fn write_bluesky_record_to(&self, store_dir: &Path) -> Result<(), BlogPostError> {
+        // let Some(bluesky_post) = self.bluesky_post.as_ref() else {
+        //     return Err(BlogPostError::BlueSkyPostNotConstructed);
+        // };
 
         let Some(filename) = self.path.as_path().file_name() else {
             return Err(BlogPostError::PostBasenameNotSet);
         };
         let filename = filename.to_str().unwrap();
+
+        let bluesky_post = match self.get_bluesky_record().await {
+            Ok(p) => p,
+            Err(e) => {
+                log::warn!(
+                    "failed to create bluesky record for `{}` because `{e}`",
+                    self.title()
+                );
+                return Err(BlogPostError::BlueSkyPostNotConstructed);
+            }
+        };
 
         let postname = format!(
             "{}{}{}",
