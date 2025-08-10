@@ -49,9 +49,6 @@ impl Bsky {
             Cmd::Draft(mut draft_args) => draft_args.run(&client, &settings).await,
             Cmd::Post(post_args) => post_args.run(&client, &settings).await,
         }
-
-        // TODO: For each blog, extract the title, description, and tags
-        // TODO: For each blog, create a Bluesky post
     }
 
     async fn setup_client(&self) -> Result<(Client, Config), Error> {
