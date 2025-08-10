@@ -179,7 +179,7 @@ impl DraftBuilder {
 
         let mut blog_paths = Vec::new();
 
-        for entry in WalkDir::new(path).into_iter().flatten() {
+        for entry in WalkDir::new(www_src_root.join(path)).into_iter().flatten() {
             if entry.path().extension().unwrap_or_default() == "md" {
                 blog_paths.push(entry.into_path());
             }
