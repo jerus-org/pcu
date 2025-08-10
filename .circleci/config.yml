@@ -268,6 +268,7 @@ jobs:
           command: |
             set -ex
 
+            cd crates/pcu/test/bsky
             rm -rf bluesky
             mkdir -p bluesky
 
