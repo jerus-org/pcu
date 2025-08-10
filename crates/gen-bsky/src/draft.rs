@@ -164,6 +164,7 @@ impl DraftBuilder {
         path: &PathBuf,
         min_date: Datetime,
         allow_draft: bool,
+        base_url: &Url,
     ) -> Result<Vec<BlogPost>, DraftError> {
         // find the potential file in the git repo
         use walkdir::WalkDir;
@@ -179,7 +180,7 @@ impl DraftBuilder {
         let mut blog_posts = Vec::new();
 
         for blog_path in blog_paths {
-            match BlogPost::new(&blog_path, min_date, allow_draft) {
+            match BlogPost::new(&blog_path, min_date, allow_draft, base_url) {
                 Ok(bp) => blog_posts.push(bp),
                 Err(e) => {
                     log::warn!("`{}` excluded because `{e}`", blog_path.display());
@@ -219,8 +220,12 @@ impl DraftBuilder {
         let mut blog_posts = Vec::new();
 
         for path in self.path_or_file.iter() {
-            let mut vec_fm =
-                DraftBuilder::add_blog_posts(path, self.minimum_date, self.allow_draft)?;
+            let mut vec_fm = DraftBuilder::add_blog_posts(
+                path,
+                self.minimum_date,
+                self.allow_draft,
+                &self.base_url,
+            )?;
             blog_posts.append(&mut vec_fm);
         }
 
