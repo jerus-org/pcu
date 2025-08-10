@@ -12,7 +12,14 @@ pub struct SiteConfig {
 
 impl SiteConfig {
     pub fn new() -> Result<Self, Error> {
-        let site_config = fs::read_to_string("config.toml")?;
+        let site_config = match fs::read_to_string("config.toml") {
+            Ok(sc) => sc,
+            Err(e) => {
+                log::error!("failed to read to string config.toml");
+                return Err(e.into());
+            }
+        };
+
         let site_config: SiteConfig = toml::from_str(site_config.as_str())?;
 
         Ok(site_config)
