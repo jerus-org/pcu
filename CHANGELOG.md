@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(README)-update project title casing(pr [#649])
 - Simplify-and-improve-draft-structure(pr [#650])
 
+### Fixed
+
+- 🐛 cli: correct path handling in cmd_draft(pr [#651])
+
 ## [0.4.56] - 2025-07-30
 
 ### Changed
@@ -1628,7 +1632,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#648]: https://github.com/jerus-org/pcu/pull/648
 [#649]: https://github.com/jerus-org/pcu/pull/649
 [#650]: https://github.com/jerus-org/pcu/pull/650
-[#652]: https://github.com/jerus-org/pcu/pull/652
+[#651]: https://github.com/jerus-org/pcu/pull/651
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
