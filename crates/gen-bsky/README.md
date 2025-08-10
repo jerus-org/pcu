@@ -34,23 +34,24 @@ A library to generate a bluesky post.
 - [ ] Login and post the record to a bluesky account
 
 Drafts and posts bluesky feed posts for a markdown blog files. The details
-for the posts are generated from the frontmatter metadata in the blog post.
-To maximize the characters avaiable for post title, description and tags a
+for the posts are generated from the front matter metadata in the blog post.
+To maximize the characters available for post title, description and tags a
 short-name referrer can be generated and hosted on the same website.
-Drafting and posting are two seperate steps to allow for the following
+Drafting and posting are two separate steps to allow for the following
 workflow:
 1. Draft the bluesky post when building the website from the markdown files.
-- Generate the short cut referrer and write to short cut store
+- Generate the shortcut referrer and write to shortcut store
 - Generate the text for the bluesky post and save to a store in the repo.
 2. Post the bluesky post when publishing the website
 - For each post saved in the store post to bluesky
-- Delete posts that have been succesfully sent
+- Delete posts that have been successfully sent
 ## Draft Example
-The following sample builds the draft structure and then write the reffer
+The following sample builds the draft structure and then write the referrer
 and the bluesky posts. As the referrer has been written when the bluesky
 post is generated using the shorter link to the referrer.
 (e.g. https://www.example.com/s/A4t5rb.html instead
 of https://www.example.com/blog/gen-bsky-release-version-1.3.0/).
+
 ```
    let mut builder = Draft::builder(base_url);
    
