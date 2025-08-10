@@ -2,7 +2,6 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 mod front_matter;
-mod link;
 
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
 use bsky_sdk::api::types::string::Datetime as BskyDatetime;
@@ -12,8 +11,6 @@ use thiserror::Error;
 use toml::value::Datetime;
 use unicode_segmentation::UnicodeSegmentation;
 use url::Url;
-
-use crate::draft::blog_post::link::Link;
 
 /// Error enum for BlogPost type
 #[non_exhaustive]
@@ -76,7 +73,7 @@ pub(super) struct BlogPost {
     /// to the production of bluesky posts.
     frontmatter: front_matter::FrontMatter,
     /// The full link to the post.
-    post_link: Link,
+    post_link: Url,
     /// The short link redirection HTML string
     redirector: Redirector,
     /// The generated short link URL for the post.
@@ -126,9 +123,7 @@ impl BlogPost {
                 .trim_start_matches("content")
                 .to_string()
         };
-        let link = Link::new(base_url, &post_link).map_err(|e| match e {
-            link::LinkError::UrlParse(e) => BlogPostError::UrlParse(e),
-        })?;
+        let link = base_url.join(&post_link)?;
 
         // Initialise the short link html redirector
         let redirector = Redirector::new(&post_link)?;
@@ -189,7 +184,7 @@ impl BlogPost {
             if let Some(sl) = self.post_short_link.as_ref() {
                 sl
             } else {
-                self.post_link.public()
+                &self.post_link
             }
         );
 
@@ -255,11 +250,11 @@ impl BlogPost {
 
         let postname = format!(
             "{}{}{}",
-            base62::encode(self.post_link.local().encode_utf16().sum::<u16>()),
+            base62::encode(self.post_link.path().encode_utf16().sum::<u16>()),
             base62::encode(filename.encode_utf16().sum::<u16>()),
             base62::encode(
                 self.post_link
-                    .local()
+                    .path()
                     .trim_end_matches(filename)
                     .encode_utf16()
                     .sum::<u16>()
@@ -282,11 +277,11 @@ impl BlogPost {
     }
 
     fn log_post_details(&self) {
-        log::debug!("Post link: {}", self.post_link.public());
+        log::debug!("Post link: {}", self.post_link);
         log::debug!(
             "Length of post link: {} characters and {} graphemes",
-            self.post_link.public().as_str().len(),
-            self.post_link.public().as_str().graphemes(true).count()
+            self.post_link.as_str().len(),
+            self.post_link.as_str().graphemes(true).count()
         );
         log::debug!(
             "Length of post short link: {} characters and {} graphemes",
