@@ -93,8 +93,11 @@ impl BlogPost {
         min_date: Datetime,
         allow_draft: bool,
         base_url: &Url,
+        www_src_root: &Path,
     ) -> Result<BlogPost, BlogPostError> {
-        let frontmatter = match front_matter::FrontMatter::new(blog_path, min_date, allow_draft) {
+        let blog_file = www_src_root.join(blog_path);
+
+        let frontmatter = match front_matter::FrontMatter::new(&blog_file, min_date, allow_draft) {
             Ok(fm) => fm,
             Err(e) => match e {
                 front_matter::FrontMatterError::DraftNotAllowed => {
