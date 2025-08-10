@@ -273,7 +273,7 @@ jobs:
             mkdir -p bluesky
             ls -la
 
-            ../../../..bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 content/blog 
+            /home/circleci/project/bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 content/blog 
             ls -la
             ls -la bluesky
             cat $(ls -d bluesky/*)
