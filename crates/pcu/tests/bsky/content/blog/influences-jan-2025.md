@@ -12,7 +12,7 @@ tags = ["podcasts", "insights"]
 
 If you want to understand where some of my crazy (or less) ideas might come from this reference to my influences may help.
 <!-- more -->
-My tastes in film, TV and books run a wide gamut but if I was to pin it to one genre it would probably by Science Fiction and Fantasy (is that two?). There is something about taking you out of a familiar world that really helps to focus on delivering a particular message. Perhaps its the fact that everything is strange; anything is possible. It ensures that your brain doesn't use one of its many heuristics to assume away an important detail.
+My tastes in film, TV and books run a wide gamut but if I was to pin it to one genre it would probably be Science Fiction and Fantasy (is that two?). There is something about taking you out of a familiar world that really helps to focus on delivering a particular message. Perhaps it's the fact that everything is strange; anything is possible. It ensures that your brain doesn't use one of its many heuristics to assume away an important detail.
 
 ## People and Society
 
