@@ -56,9 +56,12 @@ impl CmdDraft {
             .with_allow_draft(self.allow_draft);
 
         let mut posts = builder.build().await?;
+        log::info!("Initial posts: {posts:#?}");
 
         posts.write_referrers(None)?;
+        log::info!("Referrers written: {posts:#?}");
         posts.write_bluesky_posts(None)?;
+        log::info!("Bluesky posts written: {posts:#?}");
 
         let sign = Sign::Gpg;
         // Commit the posts to the git repo
