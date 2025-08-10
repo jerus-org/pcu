@@ -35,7 +35,7 @@ impl CmdDraft {
     pub async fn run(&mut self, client: &Client, settings: &Config) -> Result<CIExit, Error> {
         // find the potential file in the git repo
 
-        let base_url = SiteConfig::new()?.base_url();
+        let base_url = SiteConfig::new(&self.www_src_root, None)?.base_url();
         let store = &settings.get_string("store")?;
         if self.paths.is_empty() {
             self.paths.push(PathBuf::from(DEFAULT_PATH))
