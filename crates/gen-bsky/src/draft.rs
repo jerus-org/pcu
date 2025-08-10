@@ -94,7 +94,7 @@ impl Draft {
     }
 
     /// Write Bluesky posts for the front matter.
-    pub fn write_bluesky_posts(
+    pub async fn write_bluesky_posts(
         &self,
         bluesky_post_store: Option<PathBuf>,
     ) -> Result<(), DraftError> {
@@ -110,7 +110,7 @@ impl Draft {
         }
 
         for blog_post in &self.blog_posts {
-            match blog_post.write_bluesky_record_to(bluesky_post_store) {
+            match blog_post.write_bluesky_record_to(bluesky_post_store).await {
                 Ok(_) => continue,
                 Err(e) => {
                     log::warn!(
@@ -232,18 +232,6 @@ impl DraftBuilder {
         if blog_posts.is_empty() {
             log::warn!("No blog posts found");
             return Err(DraftError::BlogPostListEmpty);
-        }
-
-        for blog_post in &mut blog_posts {
-            match blog_post.get_bluesky_record().await {
-                Ok(_) => {}
-                Err(e) => {
-                    log::warn!(
-                        "failed to create bluesky record for `{}` because `{e}`",
-                        blog_post.title()
-                    )
-                }
-            };
         }
 
         Ok(Draft {
