@@ -101,7 +101,7 @@ My tastes in film, TV and books run a wide gamut but if I was to pin it to one g
 - [The Big Tech Show][url_st_tbts]
 - [Command_Line Heroes][url_st_clh]
 - [Darknet Diaries][url_st_dd]
-- [Defensive Security Podcast - Malware, Hacking, Cyber Security & Infosec][url_st_dspmhcsi]
+- [Defensive Security Podcast - Malware, Hacking, Cybersecurity & Infosec][url_st_dspmhcsi]
 - [Down the Security Rabbithole Podcast][url_st_dsrp]
 - [Freakonomics, M.D.][url_st_fmd]
 - [FT Tech Tonic][url_st_fttt]
