@@ -60,7 +60,7 @@ impl CmdDraft {
 
         posts.write_referrers(None)?;
         log::info!("Referrers written: {posts:#?}");
-        posts.write_bluesky_posts(None)?;
+        posts.write_bluesky_posts(None).await?;
         log::info!("Bluesky posts written: {posts:#?}");
 
         let sign = Sign::Gpg;
