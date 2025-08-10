@@ -268,12 +268,11 @@ jobs:
           command: |
             set -ex
 
-            cd crates/pcu/tests/bsky
             rm -rf bluesky
             mkdir -p bluesky
             ls -la
 
-            /home/circleci/project/bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 content/blog 
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w crates/pcu/tests/bsky content/blog 
             ls -la
             ls -la bluesky
             cat $(ls -d bluesky/*)
