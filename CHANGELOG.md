@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add draft management for blog posts(pr [#640])
 - ✨ add getter method for bluesky field(pr [#643])
 - ✨ add draft allowance option to blog post processing(pr [#648])
+- ✨ add link module for blog post draft(pr [#652])
 
 ### Changed
 
@@ -1627,6 +1628,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#648]: https://github.com/jerus-org/pcu/pull/648
 [#649]: https://github.com/jerus-org/pcu/pull/649
 [#650]: https://github.com/jerus-org/pcu/pull/650
+[#652]: https://github.com/jerus-org/pcu/pull/652
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
