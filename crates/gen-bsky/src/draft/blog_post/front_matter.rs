@@ -91,12 +91,12 @@ impl FrontMatter {
 }
 impl FrontMatter {
     pub(super) fn new(
-        blog_path: &PathBuf,
+        blog_file: &PathBuf,
         min_date: Datetime,
         allow_draft: bool,
     ) -> Result<FrontMatter, FrontMatterError> {
-        log::debug!("Reading front matter from `{}` ", blog_path.display());
-        let file = File::open(blog_path)?;
+        log::debug!("Reading front matter from `{}` ", blog_file.display());
+        let file = File::open(blog_file)?;
         let reader = BufReader::new(file);
 
         let mut front_str = String::new();
