@@ -216,10 +216,12 @@ jobs:
           command: |
             set -ex
 
-            mkdir -p bluesky
+            www-src-root="crates/pcu/tests/bsky"
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2021-11-05 crates/pcu/tests/bsky/blog
-            ls -la bluesky
+            mkdir -p ${crates/pcu/tests/bsky}/bluesky
+
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2021-11-05 -w ${crates/pcu/tests/bsky} context/blog
+            ls -la ${crates/pcu/tests/bsky}/bluesky
 
       - run:
           name: Post bsky blog directory
@@ -227,9 +229,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la bluesky
+            ls -la ${crates/pcu/tests/bsky}/bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la bluesky
+            ls -la ${crates/pcu/tests/bsky}/bluesky
 
   test-bsky-directory:
     executor: rust-env
@@ -268,15 +270,17 @@ jobs:
           command: |
             set -ex
 
-            rm -rf bluesky
-            mkdir -p bluesky
+            www-src-root="crates/pcu/tests/bsky"
+
+            rm -rf ${crates/pcu/tests/bsky}/bluesky
+            mkdir -p ${crates/pcu/tests/bsky}/bluesky
             ls -la
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w crates/pcu/tests/bsky content/blog 
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${crates/pcu/tests/bsky} content/blog 
             ls -la
-            ls -la crates/pcu/tests/bsky
-            ls -la crates/pcu/tests/bsky/bluesky
-            cat $(ls -d crates/pcu/tests/bsky/bluesky/*)
+            ls -la ${crates/pcu/tests/bsky}
+            ls -la ${crates/pcu/tests/bsky}/bluesky
+            cat $(ls -d ${crates/pcu/tests/bsky}/bluesky/*)
             git status
 
       - run:
@@ -285,9 +289,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la bluesky
+            ls -la ${crates/pcu/tests/bsky}bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la bluesky
+            ls -la ${crates/pcu/tests/bsky}bluesky
             git status
 
   test-bsky-file:
@@ -327,10 +331,12 @@ jobs:
           command: |
             set -ex
 
-            rm -rf bluesky
-            mkdir -p bluesky  
+            www-src-root="crates/pcu/tests/bsky"
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 crates/pcu/tests/bsky-test-blog.md 
+            rm -rf ${crates/pcu/tests/bsky}/bluesky
+            mkdir -p ${crates/pcu/tests/bsky}/bluesky  
+
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${crates/pcu/tests/bsky} contents/blog/bsky-test-blog.md
             ls -la
 
       - run:
@@ -339,8 +345,8 @@ jobs:
             set -ex
 
 
-            ls -la bluesky
-            cat bluesky/$(ls bluesky)
+            ls -la ${crates/pcu/tests/bsky}/bluesky
+            cat ${crates/pcu/tests/bsky}/bluesky/$(ls ${crates/pcu/tests/bsky}/bluesky)
 
       - run:
           name: Display short link contents
