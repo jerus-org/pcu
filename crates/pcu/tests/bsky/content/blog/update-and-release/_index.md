@@ -1,5 +1,6 @@
 +++
 title = "Update and Release"
+description = "Update and release series"
 template = "series.html"
 sort_by = "slug"
 transparent = true
