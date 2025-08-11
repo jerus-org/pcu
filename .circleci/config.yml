@@ -76,10 +76,16 @@ jobs:
             mkdir -p ~/project/bin
             cp $(which pcu) ~/project/bin/pcu
 
+      - run:
+          name: Set test root for bluesky testing jobs
+          command: |
+            echo 'export BSKY_TEST_ROOT="crates/pcu/tests/bsky"' >> bash.env
+
       - persist_to_workspace:
           root: .
           paths:
             - bin
+            - bash.env
 
   test-commit:
     executor: rust-env
@@ -180,57 +186,6 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> push ${no_push}
 
-  test-bsky-blog-directory:
-    executor: rust-env
-    parameters:
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
-      pcu_verbosity:
-        type: string
-        default: "-vv"
-        description: "The verbosity of the pcu command"
-      pcu_no_push:
-        type: boolean
-        default: false
-        description: "Whether or not prevent final push of commit"
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      # Start with the test setup workspace
-      - attach_workspace:
-          at: .
-      - run:
-          name: Draft bsky blog directory
-          command: |
-            set -ex
-
-            mkdir -p bluesky
-
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2021-11-05 crates/pcu/tests/bsky/blog
-            ls -la bluesky
-
-      - run:
-          name: Post bsky blog directory
-          command: |
-            set -ex
-
-            export TESTING=true
-            ls -la bluesky
-            bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la bluesky
-
   test-bsky-directory:
     executor: rust-env
     parameters:
@@ -264,17 +219,29 @@ jobs:
           at: .
 
       - run:
+          name: Load environment variable
+          command: |
+            cat bash.env >> $BASH_ENV
+      - run:
+          name: Use environment variable
+          command: echo $BSKY_TEST_ROOT
+
+      - run:
           name: Draft bsky directory
           command: |
             set -ex
 
-            rm -rf bluesky
-            mkdir -p bluesky
-
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 crates/pcu/tests 
+            rm -rf $BSKY_TEST_ROOT/bluesky
+            mkdir -p $BSKY_TEST_ROOT/bluesky
             ls -la
-            ls -la bluesky
-            cat $(ls -d bluesky/*)
+
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w $BSKY_TEST_ROOT content/blog
+            ls -la
+            ls -la $BSKY_TEST_ROOT
+            ls -la $BSKY_TEST_ROOT/bluesky
+            cat $(ls -d $BSKY_TEST_ROOT/bluesky/*)
+            ls -la $BSKY_TEST_ROOT/static/s
+            cat $(ls -d $BSKY_TEST_ROOT/static/s/*)
             git status
 
       - run:
@@ -283,9 +250,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la bluesky
+            ls -la $BSKY_TEST_ROOT/bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la bluesky
+            ls -la $BSKY_TEST_ROOT/bluesky
             git status
 
   test-bsky-file:
@@ -321,33 +288,40 @@ jobs:
           at: .
 
       - run:
+          name: Load environment variable
+          command: |
+            cat bash.env >> $BASH_ENV
+      - run:
+          name: Use environment variable
+          command: echo $BSKY_TEST_ROOT
+
+      - run:
           name: Test bsky file
           command: |
             set -ex
 
-            rm -rf bluesky
-            mkdir -p bluesky  
+            rm -rf ${BSKY_TEST_ROOT}/bluesky
+            mkdir -p ${BSKY_TEST_ROOT}/bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 crates/pcu/tests/bsky-test-blog.md 
-            ls -la
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${BSKY_TEST_ROOT} content/blog/bsky-test-blog.md
+            ls -la ${BSKY_TEST_ROOT}
 
       - run:
           name: Display bluesky post contents
           command: |
             set -ex
 
-
-            ls -la bluesky
-            cat bluesky/$(ls bluesky)
+            ls -la ${BSKY_TEST_ROOT}/bluesky
+            cat ${BSKY_TEST_ROOT}/bluesky/$(ls ${BSKY_TEST_ROOT}/bluesky)
 
       - run:
           name: Display short link contents
           command: |
             set -ex
 
-            ls -la static/s
-            cat static/s/*.html
-            cat static/s/registry.json
+            ls -la ${BSKY_TEST_ROOT}/static/s
+            cat ${BSKY_TEST_ROOT}/static/s/*.html
+            cat ${BSKY_TEST_ROOT}/static/s/registry.json
 
       - run:
           name: Git status after drafting
@@ -360,9 +334,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la bluesky
+            ls -la ${BSKY_TEST_ROOT}/bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la bluesky
+            ls -la ${BSKY_TEST_ROOT}/bluesky
             git status
 
   tools:
@@ -461,22 +435,6 @@ workflows:
             - required-builds
             - docs
             - toolkit/idiomatic_rust
-      - test-bsky-blog-directory:
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
-          pcu_verbosity: "-vvvv"
-          pcu_no_push: true
-          context:
-            - release
-            - bot-check
-            - pcu-app
-            - bluesky
-          requires:
-            - test-setup
-            - toolkit/common_tests
-            - toolkit/security
-            - required-builds
-            - docs
-            - toolkit/idiomatic_rust
       - test-bsky-directory:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
@@ -521,7 +479,6 @@ workflows:
           requires:
             - test-push
             - test-commit
-            - test-bsky-blog-directory
             - test-bsky-directory
             - test-bsky-file
           context:

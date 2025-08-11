@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 mod blog_post;
 
@@ -43,6 +43,7 @@ pub struct Draft {
     bsky_store: PathBuf,
     referrer_store: PathBuf,
     base_url: Url,
+    www_src_root: PathBuf,
 }
 
 impl Draft {
@@ -53,9 +54,10 @@ impl Draft {
     /// - `base_url`: the base url for the website (e.g. `https://wwww.example.com/`)
     /// - `store`: the location to store draft posts (e.g. `bluesky`)
     ///
-    pub fn builder(base_url: Url) -> DraftBuilder {
+    pub fn builder(base_url: Url, www_src_root: &PathBuf) -> DraftBuilder {
         DraftBuilder {
             base_url,
+            www_src_root: PathBuf::from(www_src_root),
             bsky_store: PathBuf::from("bluesky"),
             refer_store: PathBuf::from("static").join("s"),
             path_or_file: Vec::new(),
@@ -73,12 +75,14 @@ impl Draft {
             self.referrer_store.as_ref()
         };
 
+        let referrer_store = self.www_src_root.join(referrer_store);
+
         if !referrer_store.exists() {
-            std::fs::create_dir_all(referrer_store)?;
+            std::fs::create_dir_all(&referrer_store)?;
         }
 
         for blog_post in &mut self.blog_posts {
-            match blog_post.write_referrer_file_to(referrer_store, &self.base_url) {
+            match blog_post.write_referrer_file_to(&referrer_store, &self.base_url) {
                 Ok(_) => continue,
                 Err(e) => {
                     log::warn!(
@@ -94,7 +98,7 @@ impl Draft {
     }
 
     /// Write Bluesky posts for the front matter.
-    pub fn write_bluesky_posts(
+    pub async fn write_bluesky_posts(
         &self,
         bluesky_post_store: Option<PathBuf>,
     ) -> Result<(), DraftError> {
@@ -105,12 +109,14 @@ impl Draft {
             self.bsky_store.as_ref()
         };
 
+        let bluesky_post_store = self.www_src_root.join(bluesky_post_store);
+
         if !bluesky_post_store.exists() {
-            std::fs::create_dir_all(bluesky_post_store)?;
+            std::fs::create_dir_all(&bluesky_post_store)?;
         }
 
         for blog_post in &self.blog_posts {
-            match blog_post.write_bluesky_record_to(bluesky_post_store) {
+            match blog_post.write_bluesky_record_to(&bluesky_post_store).await {
                 Ok(_) => continue,
                 Err(e) => {
                     log::warn!(
@@ -130,6 +136,7 @@ impl Draft {
 #[derive(Debug, Clone)]
 pub struct DraftBuilder {
     base_url: Url,
+    www_src_root: PathBuf,
     bsky_store: PathBuf,
     refer_store: PathBuf,
     path_or_file: Vec<PathBuf>,
@@ -164,22 +171,33 @@ impl DraftBuilder {
         path: &PathBuf,
         min_date: Datetime,
         allow_draft: bool,
+        base_url: &Url,
+        www_src_root: &Path,
     ) -> Result<Vec<BlogPost>, DraftError> {
         // find the potential file in the git repo
         use walkdir::WalkDir;
 
         let mut blog_paths = Vec::new();
 
-        for entry in WalkDir::new(path).into_iter().flatten() {
+        log::trace!("Walking directory at {}", path.display());
+
+        for entry in WalkDir::new(www_src_root.join(path)).into_iter().flatten() {
             if entry.path().extension().unwrap_or_default() == "md" {
-                blog_paths.push(entry.into_path());
+                let entry_as_path = entry.into_path();
+                let Ok(path_to_blog) = entry_as_path.strip_prefix(www_src_root) else {
+                    println!("Failed to strip prefix from `{}`", entry_as_path.display());
+                    continue;
+                };
+
+                blog_paths.push(path_to_blog.to_path_buf());
             }
         }
+        log::trace!("Found blog paths:\n{blog_paths:#?}");
 
         let mut blog_posts = Vec::new();
 
         for blog_path in blog_paths {
-            match BlogPost::new(&blog_path, min_date, allow_draft) {
+            match BlogPost::new(&blog_path, min_date, allow_draft, base_url, www_src_root) {
                 Ok(bp) => blog_posts.push(bp),
                 Err(e) => {
                     log::warn!("`{}` excluded because `{e}`", blog_path.display());
@@ -219,8 +237,13 @@ impl DraftBuilder {
         let mut blog_posts = Vec::new();
 
         for path in self.path_or_file.iter() {
-            let mut vec_fm =
-                DraftBuilder::add_blog_posts(path, self.minimum_date, self.allow_draft)?;
+            let mut vec_fm = DraftBuilder::add_blog_posts(
+                path,
+                self.minimum_date,
+                self.allow_draft,
+                &self.base_url,
+                &self.www_src_root,
+            )?;
             blog_posts.append(&mut vec_fm);
         }
 
@@ -229,23 +252,12 @@ impl DraftBuilder {
             return Err(DraftError::BlogPostListEmpty);
         }
 
-        for blog_post in &mut blog_posts {
-            match blog_post.get_bluesky_record().await {
-                Ok(_) => {}
-                Err(e) => {
-                    log::warn!(
-                        "failed to create bluesky record for `{}` because `{e}`",
-                        blog_post.title()
-                    )
-                }
-            };
-        }
-
         Ok(Draft {
             blog_posts,
             bsky_store: self.bsky_store.clone(),
             referrer_store: self.refer_store.clone(),
             base_url: self.base_url.clone(),
+            www_src_root: self.www_src_root.to_path_buf(),
         })
     }
 }

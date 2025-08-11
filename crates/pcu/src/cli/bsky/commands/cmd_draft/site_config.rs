@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::Path};
 use url::Url;
 
 use serde::Deserialize;
@@ -11,8 +11,19 @@ pub struct SiteConfig {
 }
 
 impl SiteConfig {
-    pub fn new() -> Result<Self, Error> {
-        let site_config = fs::read_to_string("config.toml")?;
+    pub fn new(www_src_root: &Path, filename: Option<&str>) -> Result<Self, Error> {
+        let filename = filename.unwrap_or("config.toml");
+
+        let file_path = www_src_root.join(filename);
+
+        let site_config = match fs::read_to_string(&file_path) {
+            Ok(sc) => sc,
+            Err(e) => {
+                log::error!("failed to read to string {}", file_path.display());
+                return Err(e.into());
+            }
+        };
+
         let site_config: SiteConfig = toml::from_str(site_config.as_str())?;
 
         Ok(site_config)

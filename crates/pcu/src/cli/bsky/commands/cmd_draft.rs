@@ -26,24 +26,28 @@ pub struct CmdDraft {
     /// Allow bluesky posts for draft blog posts
     #[arg(long, default_value_t = false)]
     pub allow_draft: bool,
+    /// Root folder for the website source
+    #[arg(short, long, default_value = ".")]
+    pub www_src_root: PathBuf,
 }
 
 impl CmdDraft {
     pub async fn run(&mut self, client: &Client, settings: &Config) -> Result<CIExit, Error> {
         // find the potential file in the git repo
 
-        let base_url = SiteConfig::new()?.base_url();
+        let base_url = SiteConfig::new(&self.www_src_root, None)?.base_url();
         let store = &settings.get_string("store")?;
         if self.paths.is_empty() {
             self.paths.push(PathBuf::from(DEFAULT_PATH))
         };
 
         log::trace!(
-            "Key parameters:\n\tBase:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{:#?}`",
-            self.paths
+            "Key parameters:\n\tbase:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{:?}`\n\troot:\t`{}`",
+            self.paths,
+            self.www_src_root.display(),
         );
 
-        let mut builder = Draft::builder(base_url);
+        let mut builder = Draft::builder(base_url, &self.www_src_root);
 
         // Add the paths specified at the command line.
         for path in self.paths.iter() {
@@ -56,9 +60,12 @@ impl CmdDraft {
             .with_allow_draft(self.allow_draft);
 
         let mut posts = builder.build().await?;
+        log::info!("Initial posts: {posts:#?}");
 
         posts.write_referrers(None)?;
-        posts.write_bluesky_posts(None)?;
+        log::info!("Referrers written: {posts:#?}");
+        posts.write_bluesky_posts(None).await?;
+        log::info!("Bluesky posts written: {posts:#?}");
 
         let sign = Sign::Gpg;
         // Commit the posts to the git repo

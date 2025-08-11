@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add draft management for blog posts(pr [#640])
 - ✨ add getter method for bluesky field(pr [#643])
 - ✨ add draft allowance option to blog post processing(pr [#648])
+- ✨ add link module for blog post draft(pr [#652])
 
 ### Changed
 
@@ -39,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- 💄 style(client)-adjust log level for settings output  and disable pcu-app(pr [#631])
+- 💄 style(client)-adjust log level for settings output and disable pcu-app(pr [#631])
 
 ## [0.4.55] - 2025-07-30
 

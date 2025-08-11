@@ -65,23 +65,19 @@ pub(super) enum BlogPostError {
 
 /// Type representing the blog post.
 ///
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub(super) struct BlogPost {
     /// The path to the original blog post.
     path: PathBuf,
     /// The front matter from the blog post that is salient
     /// to the production of bluesky posts.
     frontmatter: front_matter::FrontMatter,
-    /// The bluesky post record.
-    bluesky_post: Option<RecordData>,
     /// The full link to the post.
-    post_link: String,
+    post_link: Url,
     /// The short link redirection HTML string
     redirector: Redirector,
     /// The generated short link URL for the post.
     post_short_link: Option<Url>,
-    /// Flag to track writing the referrer.
-    referrer_written: bool,
 }
 
 /// Report values in private fields
@@ -96,8 +92,12 @@ impl BlogPost {
         blog_path: &PathBuf,
         min_date: Datetime,
         allow_draft: bool,
+        base_url: &Url,
+        www_src_root: &Path,
     ) -> Result<BlogPost, BlogPostError> {
-        let frontmatter = match front_matter::FrontMatter::new(blog_path, min_date, allow_draft) {
+        let blog_file = www_src_root.join(blog_path);
+
+        let frontmatter = match front_matter::FrontMatter::new(&blog_file, min_date, allow_draft) {
             Ok(fm) => fm,
             Err(e) => match e {
                 front_matter::FrontMatterError::DraftNotAllowed => {
@@ -126,6 +126,7 @@ impl BlogPost {
                 .trim_start_matches("content")
                 .to_string()
         };
+        let link = base_url.join(&post_link)?;
 
         // Initialise the short link html redirector
         let redirector = Redirector::new(&post_link)?;
@@ -133,16 +134,14 @@ impl BlogPost {
         Ok(BlogPost {
             path: blog_path.clone(),
             frontmatter,
-            bluesky_post: None,
-            post_link,
+            post_link: link,
             redirector,
             post_short_link: None,
-            referrer_written: false,
         })
     }
 
     /// Get bluesky record based on frontmatter data
-    pub async fn get_bluesky_record(&mut self) -> Result<(), BlogPostError> {
+    pub async fn get_bluesky_record(&self) -> Result<RecordData, BlogPostError> {
         log::info!("Blog post: {self:#?}");
         log::debug!("Building post text");
         let post_text = self.build_post_text()?;
@@ -167,11 +166,10 @@ impl BlogPost {
 
         log::trace!("{record_data:?}");
 
-        self.bluesky_post = Some(record_data);
-        Ok(())
+        Ok(record_data)
     }
 
-    fn build_post_text(&mut self) -> Result<String, BlogPostError> {
+    fn build_post_text(&self) -> Result<String, BlogPostError> {
         log::debug!(
             "Building post text with post dir: `{}`",
             self.path.display()
@@ -186,14 +184,10 @@ impl BlogPost {
             self.frontmatter.title,
             self.frontmatter.bluesky_description(),
             self.frontmatter.bluesky_tags().join(" "),
-            if self.referrer_written {
-                if let Some(sl) = self.post_short_link.as_ref() {
-                    sl.to_string()
-                } else {
-                    unreachable!("As the post short link is set before the flag becomes true")
-                }
+            if let Some(sl) = self.post_short_link.as_ref() {
+                sl
             } else {
-                self.post_link.clone()
+                &self.post_link
             }
         );
 
@@ -229,7 +223,6 @@ impl BlogPost {
 
         self.post_short_link = Some(base_url.join(short_link.trim_start_matches("static/"))?);
         log::debug!("Saved short post link {:#?}", self.post_short_link);
-        self.referrer_written = true;
         Ok(())
     }
 
@@ -237,22 +230,34 @@ impl BlogPost {
     /// The write function generates a short name based on post link
     /// and filename to ensure that similarly named posts have unique
     /// bluesky post names.
-    pub fn write_bluesky_record_to(&self, store_dir: &Path) -> Result<(), BlogPostError> {
-        let Some(bluesky_post) = self.bluesky_post.as_ref() else {
-            return Err(BlogPostError::BlueSkyPostNotConstructed);
-        };
+    pub async fn write_bluesky_record_to(&self, store_dir: &Path) -> Result<(), BlogPostError> {
+        // let Some(bluesky_post) = self.bluesky_post.as_ref() else {
+        //     return Err(BlogPostError::BlueSkyPostNotConstructed);
+        // };
 
         let Some(filename) = self.path.as_path().file_name() else {
             return Err(BlogPostError::PostBasenameNotSet);
         };
         let filename = filename.to_str().unwrap();
 
+        let bluesky_post = match self.get_bluesky_record().await {
+            Ok(p) => p,
+            Err(e) => {
+                log::warn!(
+                    "failed to create bluesky record for `{}` because `{e}`",
+                    self.title()
+                );
+                return Err(BlogPostError::BlueSkyPostNotConstructed);
+            }
+        };
+
         let postname = format!(
             "{}{}{}",
-            base62::encode(self.post_link.encode_utf16().sum::<u16>()),
+            base62::encode(self.post_link.path().encode_utf16().sum::<u16>()),
             base62::encode(filename.encode_utf16().sum::<u16>()),
             base62::encode(
                 self.post_link
+                    .path()
                     .trim_end_matches(filename)
                     .encode_utf16()
                     .sum::<u16>()
@@ -278,8 +283,8 @@ impl BlogPost {
         log::debug!("Post link: {}", self.post_link);
         log::debug!(
             "Length of post link: {} characters and {} graphemes",
-            self.post_link.len(),
-            self.post_link.graphemes(true).count()
+            self.post_link.as_str().len(),
+            self.post_link.as_str().graphemes(true).count()
         );
         log::debug!(
             "Length of post short link: {} characters and {} graphemes",
