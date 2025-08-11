@@ -47,17 +47,18 @@ impl CmdDraft {
             self.www_src_root.display(),
         );
 
-        let mut builder = Draft::builder(base_url, &self.www_src_root);
+        let mut builder = Draft::builder(base_url, Some(&self.www_src_root));
 
         // Add the paths specified at the command line.
         for path in self.paths.iter() {
             builder.add_path_or_file(path)?;
         }
 
-        // Set the filters to qualify the blog posts
-        builder
-            .with_minimum_date(self.date)?
-            .with_allow_draft(self.allow_draft);
+        if let Some(d) = self.date {
+            builder.with_minimum_date(d)?;
+        }
+
+        builder.with_allow_draft(self.allow_draft);
 
         let mut posts = builder.build().await?;
         log::info!("Initial posts: {posts:#?}");
