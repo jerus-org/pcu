@@ -10,7 +10,7 @@ topic = ["Technology"]
 tags = ["devsecops", "software", "circleci", "security", "practices"]
 
 [extra]
-bluesky = "Covering the key steps involved, from identification of updates through automated testing and release."
+bluesky.description = "Covering the key steps involved, from identification of updates through automated testing and release."
 
 +++
 <!-- markdownlint-disable MD003 MD024 MD033-->
