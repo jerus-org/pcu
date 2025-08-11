@@ -52,21 +52,49 @@ post is generated using the shorter link to the referrer.
 (e.g. https://www.example.com/s/A4t5rb.html instead
 of https://www.example.com/blog/gen-bsky-release-version-1.3.0/).
 
-```
-   let mut builder = Draft::builder(base_url);
+```rust should_panic
+use gen_bsky::{Draft, DraftError};
+use url::Url;
+
+#[tokio::main]
+async fn main()  {
+    // Set values for the base_url, paths to the blog post markdown files.
+    // And if required a minimum date to allow processing of posts marked as draft.
+
+    let base_url = Url::parse("https://www.example.com/").unwrap();
+    let root = None; // Current directory is root for markdown files
+    let paths = vec!["content/blog".to_string()];
+    let date = toml::value::Datetime {
+                  date: Some(toml::value::Date{
+                              year: 2025,
+                              month: 8,
+                              day: 4}),
+                  time: None,
+                  offset: None};
+    let allow_draft = false;
+
+    // Initialise with the `base_url` and the `root`.
+    let mut builder = Draft::builder(base_url, None);
    
-   // Add the path to the markdown files 
-    builder.add_path_or_file("content/blog")?;
-    
-    // Set the filters to qualify the blog posts
+    // Add the paths.
+    for path in paths.iter() {
+        builder.add_path_or_file(path).unwrap();
+    }
+   
+    // Set the filters for blog posts
     builder
-        .with_minimum_date(self.date)?
-        .with_allow_draft(self.allow_draft);
+    .with_minimum_date(date).unwrap()
+    .with_allow_draft(allow_draft);
    
-    let mut posts = builder.build().await?;
+    // Build the Draft posts
+    let mut posts = builder.build().await.unwrap();
    
-    posts.write_referrers(None)?;
-    posts.write_bluesky_posts(None)?;
+    // Write the referrers. Generating the short links for the posts
+    posts.write_referrers(None).unwrap();
+
+    // Write the bluesky posts using the short link
+    posts.write_bluesky_posts(None).await.unwrap();
+}
 ```
 
 ## License

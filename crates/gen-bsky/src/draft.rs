@@ -43,7 +43,7 @@ pub struct Draft {
     bsky_store: PathBuf,
     referrer_store: PathBuf,
     base_url: Url,
-    www_src_root: PathBuf,
+    root: PathBuf,
 }
 
 impl Draft {
@@ -54,10 +54,16 @@ impl Draft {
     /// - `base_url`: the base url for the website (e.g. `https://wwww.example.com/`)
     /// - `store`: the location to store draft posts (e.g. `bluesky`)
     ///
-    pub fn builder(base_url: Url, www_src_root: &PathBuf) -> DraftBuilder {
+    pub fn builder(base_url: Url, root: Option<&PathBuf>) -> DraftBuilder {
+        let root = if let Some(r) = root {
+            PathBuf::from(r)
+        } else {
+            PathBuf::new().join(".")
+        };
+
         DraftBuilder {
             base_url,
-            www_src_root: PathBuf::from(www_src_root),
+            root,
             bsky_store: PathBuf::from("bluesky"),
             refer_store: PathBuf::from("static").join("s"),
             path_or_file: Vec::new(),
@@ -75,7 +81,7 @@ impl Draft {
             self.referrer_store.as_ref()
         };
 
-        let referrer_store = self.www_src_root.join(referrer_store);
+        let referrer_store = self.root.join(referrer_store);
 
         if !referrer_store.exists() {
             std::fs::create_dir_all(&referrer_store)?;
@@ -109,7 +115,7 @@ impl Draft {
             self.bsky_store.as_ref()
         };
 
-        let bluesky_post_store = self.www_src_root.join(bluesky_post_store);
+        let bluesky_post_store = self.root.join(bluesky_post_store);
 
         if !bluesky_post_store.exists() {
             std::fs::create_dir_all(&bluesky_post_store)?;
@@ -136,7 +142,7 @@ impl Draft {
 #[derive(Debug, Clone)]
 pub struct DraftBuilder {
     base_url: Url,
-    www_src_root: PathBuf,
+    root: PathBuf,
     bsky_store: PathBuf,
     refer_store: PathBuf,
     path_or_file: Vec<PathBuf>,
@@ -213,17 +219,10 @@ impl DraftBuilder {
     ///
     /// ## Parameters
     ///
-    /// - `minimum_date`: Optional minimum date in format `YYYY-MM-DD`
+    /// - `minimum_date`: Minimum date in format `YYYY-MM-DD`
     ///
-    pub fn with_minimum_date(
-        &mut self,
-        minimum_date: Option<Datetime>,
-    ) -> Result<&mut Self, DraftError> {
-        self.minimum_date = if let Some(date) = minimum_date {
-            date
-        } else {
-            today()
-        };
+    pub fn with_minimum_date(&mut self, minimum_date: Datetime) -> Result<&mut Self, DraftError> {
+        self.minimum_date = minimum_date;
 
         Ok(self)
     }
@@ -242,7 +241,7 @@ impl DraftBuilder {
                 self.minimum_date,
                 self.allow_draft,
                 &self.base_url,
-                &self.www_src_root,
+                &self.root,
             )?;
             blog_posts.append(&mut vec_fm);
         }
@@ -257,7 +256,7 @@ impl DraftBuilder {
             bsky_store: self.bsky_store.clone(),
             referrer_store: self.refer_store.clone(),
             base_url: self.base_url.clone(),
-            www_src_root: self.www_src_root.to_path_buf(),
+            root: self.root.to_path_buf(),
         })
     }
 }
