@@ -335,7 +335,7 @@ jobs:
             cat bash.env >> $BASH_ENV
       - run:
           name: Use environment variable
-          command: echo $MY_VAR
+          command: echo $BSKY_TEST_ROOT
 
       - run:
           name: Test bsky file
@@ -345,7 +345,7 @@ jobs:
             rm -rf ${BSKY_TEST_ROOT}/bluesky
             mkdir -p ${BSKY_TEST_ROOT}/bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${BSKY_TEST_ROOT} contents/blog/bsky-test-blog.md
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${BSKY_TEST_ROOT} content/blog/bsky-test-blog.md
             ls -la
 
       - run:
