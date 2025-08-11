@@ -114,19 +114,23 @@ impl FrontMatter {
             }
         }
 
+        #[cfg(test)]
         log::trace!("Front matter string:\n {front_str}");
 
         let front_matter = toml::from_str::<FrontMatter>(&front_str)?;
 
         if !allow_draft && front_matter.draft {
+            #[cfg(test)]
             log::warn!("blog marked as draft and not allowed");
             return Err(FrontMatterError::DraftNotAllowed);
         }
         if front_matter.most_recent_date() < min_date {
+            #[cfg(test)]
             log::warn!("blog post too old to process");
             return Err(FrontMatterError::PostTooOld(min_date));
         }
 
+        #[cfg(test)]
         log::trace!("Front matter: {front_matter:#?}");
 
         Ok(front_matter)
@@ -339,7 +343,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_toml_missing_fields() {
+    fn test_from_toml_missing_tags() {
         let toml = r#"
             title = "Missing Fields"
             description = "No taxonomies"
@@ -351,6 +355,32 @@ mod tests {
     }
 
     #[test]
+    fn test_from_toml_bluesky_set_incorrectly() {
+        get_test_logger();
+        let toml = r#"
+            title = "Overview of Our Workflow"
+            description = "We’ll kick things off with a detailed overview"
+            date = 2025-01-17
+            updated = 2025-01-16
+            draft = false
+    
+            [taxonomies]
+            topic = ["Technology"]
+            tags = ["devsecops", "software", "circleci", "security", "practices"]
+    
+            [extra]
+            bluesky = "Covering the key steps involved."
+            "#;
+
+        let expected =
+            r#"invalid type: string "Covering the key steps involved.", expected struct Bluesky"#;
+
+        let fm_res = toml::from_str::<FrontMatter>(toml);
+        assert!(fm_res.is_err());
+        assert_eq!(fm_res.err().unwrap().message(), expected);
+    }
+
+    #[test]
     fn test_from_toml_invalid() {
         let toml = r#"
             title = 123
@@ -359,6 +389,7 @@ mod tests {
         let result = toml::from_str::<FrontMatter>(toml);
         assert!(result.is_err());
     }
+
     #[test]
     fn test_hashtags_formatting() {
         let taxonomies = Taxonomies::new(vec![
