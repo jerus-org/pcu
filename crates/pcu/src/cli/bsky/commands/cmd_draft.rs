@@ -42,7 +42,7 @@ impl CmdDraft {
         };
 
         log::trace!(
-            "Key parameters:\n\tBase:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{:#?}`\n\tBase:\t`{}`",
+            "Key parameters:\n\tbase:\t`{base_url}`\n\tstore:\t`{store}`\n\tpath:\t`{:?}`\n\troot:\t`{}`",
             self.paths,
             self.www_src_root.display(),
         );
