@@ -76,6 +76,9 @@ jobs:
             mkdir -p ~/project/bin
             cp $(which pcu) ~/project/bin/pcu
 
+            www_src_root="crates/pcu/tests/bsky"
+            echo "export ROOT=${www_src_root}" >> "$BASH_ENV"
+
       - persist_to_workspace:
           root: .
           paths:
@@ -216,12 +219,10 @@ jobs:
           command: |
             set -exo pipefail
 
-            www_src_root=crates/pcu/tests/bsky
+            rm -rf ${ROOT}/bluesky
+            mkdir -p ${ROOT}/bluesky  
 
-            rm -rf ${www_src_root}/bluesky
-            mkdir -p ${www_src_root}/bluesky  
-
-            bin/pcu -vvvv bsky draft -d 2025-04-01 -w ${www_src_root} contents/blog/bsky-test-blog.md
+            bin/pcu -vvvv bsky draft -d 2025-04-01 -w ${ROOT} contents/blog/bsky-test-blog.md
             ls -la
 
       - run:
@@ -230,9 +231,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la ${www_src_root}/bluesky
+            ls -la ${ROOT}/bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la ${www_src_root}/bluesky
+            ls -la ${ROOT}/bluesky
 
   test-bsky-directory:
     executor: rust-env
@@ -271,17 +272,15 @@ jobs:
           command: |
             set -ex
 
-            www_src_root="crates/pcu/tests/bsky"
-
-            rm -rf ${www_src_root}/bluesky
-            mkdir -p ${www_src_root}/bluesky
+            rm -rf ${ROOT}/bluesky
+            mkdir -p ${ROOT}/bluesky
             ls -la
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${www_src_root} content/blog 
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${ROOT} content/blog 
             ls -la
-            ls -la ${www_src_root}
-            ls -la ${www_src_root}/bluesky
-            cat $(ls -d ${www_src_root}/bluesky/*)
+            ls -la ${ROOT}
+            ls -la ${ROOT}/bluesky
+            cat $(ls -d ${ROOT}/bluesky/*)
             git status
 
       - run:
@@ -290,9 +289,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la ${www_src_root}bluesky
+            ls -la ${ROOT}bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la ${www_src_root}bluesky
+            ls -la ${ROOT}bluesky
             git status
 
   test-bsky-file:
@@ -332,12 +331,10 @@ jobs:
           command: |
             set -ex
 
-            www_src_root="crates/pcu/tests/bsky"
+            rm -rf ${ROOT}/bluesky
+            mkdir -p ${ROOT}/bluesky  
 
-            rm -rf ${www_src_root}/bluesky
-            mkdir -p ${www_src_root}/bluesky  
-
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${www_src_root} contents/blog/bsky-test-blog.md
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${ROOT} contents/blog/bsky-test-blog.md
             ls -la
 
       - run:
@@ -345,9 +342,8 @@ jobs:
           command: |
             set -ex
 
-
-            ls -la ${www_src_root}/bluesky
-            cat ${www_src_root}/bluesky/$(ls ${www_src_root}/bluesky)
+            ls -la ${ROOT}/bluesky
+            cat ${ROOT}/bluesky/$(ls ${ROOT}/bluesky)
 
       - run:
           name: Display short link contents
