@@ -274,8 +274,9 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w crates/pcu/tests/bsky content/blog 
             ls -la
-            ls -la bluesky
-            cat $(ls -d bluesky/*)
+            ls -la crates/pcu/tests/bsky
+            ls -la crates/pcu/tests/bsky/bluesky
+            cat $(ls -d crates/pcu/tests/bsky/bluesky/*)
             git status
 
       - run:
