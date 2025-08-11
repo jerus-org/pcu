@@ -346,7 +346,7 @@ jobs:
             mkdir -p ${BSKY_TEST_ROOT}/bluesky  
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${BSKY_TEST_ROOT} content/blog/bsky-test-blog.md
-            ls -la
+            ls -la ${BSKY_TEST_ROOT}
 
       - run:
           name: Display bluesky post contents
@@ -361,7 +361,7 @@ jobs:
           command: |
             set -ex
 
-            ls -la static/s
+            ls -la ${BSKY_TEST_ROOT}/static/s
             cat ${BSKY_TEST_ROOT}/static/s/*.html
             cat ${BSKY_TEST_ROOT}/static/s/registry.json
 
