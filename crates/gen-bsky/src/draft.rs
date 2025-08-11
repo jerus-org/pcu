@@ -179,6 +179,8 @@ impl DraftBuilder {
 
         let mut blog_paths = Vec::new();
 
+        log::trace!("Walking directory at {}", path.display());
+
         for entry in WalkDir::new(www_src_root.join(path)).into_iter().flatten() {
             if entry.path().extension().unwrap_or_default() == "md" {
                 let entry_as_path = entry.into_path();
