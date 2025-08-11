@@ -182,15 +182,9 @@ impl DraftBuilder {
         for entry in WalkDir::new(www_src_root.join(path)).into_iter().flatten() {
             if entry.path().extension().unwrap_or_default() == "md" {
                 let entry_as_path = entry.into_path();
-                let path_to_blog = match entry_as_path.strip_prefix(www_src_root) {
-                    Ok(p) => p,
-                    Err(e) => {
-                        log::warn!(
-                            "error `{e}` when attempt to strip from `{}`",
-                            entry_as_path.display()
-                        );
-                        continue;
-                    }
+                let Ok(path_to_blog) = entry_as_path.strip_prefix(www_src_root) else {
+                    println!("Failed to strip prefix from `{}`", entry_as_path.display());
+                    continue;
                 };
 
                 blog_paths.push(path_to_blog.to_path_buf());
