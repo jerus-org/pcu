@@ -76,9 +76,6 @@ jobs:
             mkdir -p ~/project/bin
             cp $(which pcu) ~/project/bin/pcu
 
-            www_src_root="crates/pcu/tests/bsky"
-            echo "export ROOT=${www_src_root}" >> "$BASH_ENV"
-
       - persist_to_workspace:
           root: .
           paths:
@@ -219,10 +216,10 @@ jobs:
           command: |
             set -exo pipefail
 
-            rm -rf ${ROOT}/bluesky
-            mkdir -p ${ROOT}/bluesky  
+            rm -rf ${TEST_ROOT}/bluesky
+            mkdir -p ${TEST_ROOT}/bluesky  
 
-            bin/pcu -vvvv bsky draft -d 2025-04-01 -w ${ROOT} contents/blog/bsky-test-blog.md
+            bin/pcu -vvvv bsky draft -d 2025-04-01 -w ${TEST_ROOT} contents/blog/bsky-test-blog.md
             ls -la
 
       - run:
@@ -231,9 +228,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la ${ROOT}/bluesky
+            ls -la ${TEST_ROOT}/bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la ${ROOT}/bluesky
+            ls -la ${TEST_ROOT}/bluesky
 
   test-bsky-directory:
     executor: rust-env
@@ -272,15 +269,15 @@ jobs:
           command: |
             set -ex
 
-            rm -rf ${ROOT}/bluesky
-            mkdir -p ${ROOT}/bluesky
+            rm -rf ${TEST_ROOT}/bluesky
+            mkdir -p ${TEST_ROOT}/bluesky
             ls -la
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${ROOT} content/blog 
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${TEST_ROOT} content/blog 
             ls -la
-            ls -la ${ROOT}
-            ls -la ${ROOT}/bluesky
-            cat $(ls -d ${ROOT}/bluesky/*)
+            ls -la ${TEST_ROOT}
+            ls -la ${TEST_ROOT}/bluesky
+            cat $(ls -d ${TEST_ROOT}/bluesky/*)
             git status
 
       - run:
@@ -289,9 +286,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la ${ROOT}bluesky
+            ls -la ${TEST_ROOT}bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la ${ROOT}bluesky
+            ls -la ${TEST_ROOT}bluesky
             git status
 
   test-bsky-file:
@@ -331,10 +328,10 @@ jobs:
           command: |
             set -ex
 
-            rm -rf ${ROOT}/bluesky
-            mkdir -p ${ROOT}/bluesky  
+            rm -rf ${TEST_ROOT}/bluesky
+            mkdir -p ${TEST_ROOT}/bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${ROOT} contents/blog/bsky-test-blog.md
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${TEST_ROOT} contents/blog/bsky-test-blog.md
             ls -la
 
       - run:
@@ -342,8 +339,8 @@ jobs:
           command: |
             set -ex
 
-            ls -la ${ROOT}/bluesky
-            cat ${ROOT}/bluesky/$(ls ${ROOT}/bluesky)
+            ls -la ${TEST_ROOT}/bluesky
+            cat ${TEST_ROOT}/bluesky/$(ls ${TEST_ROOT}/bluesky)
 
       - run:
           name: Display short link contents
