@@ -184,6 +184,7 @@ impl DraftBuilder {
                 blog_paths.push(entry.into_path());
             }
         }
+        log::trace!("Found blog paths:\n{blog_paths:#?}");
 
         let mut blog_posts = Vec::new();
 
