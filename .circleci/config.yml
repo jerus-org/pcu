@@ -76,10 +76,16 @@ jobs:
             mkdir -p ~/project/bin
             cp $(which pcu) ~/project/bin/pcu
 
+      - run:
+          name: Set test root for bluesky testing jobs
+          command: |
+            echo 'export BSKY_TEST_ROOT="crates/pcu/tests/bsky"' >> bash.env
+
       - persist_to_workspace:
           root: .
           paths:
             - bin
+            - bash.env
 
   test-commit:
     executor: rust-env
@@ -324,14 +330,22 @@ jobs:
           at: .
 
       - run:
+          name: Load environment variable
+          command: |
+            cat bash.env >> $BASH_ENV
+      - run:
+          name: Use environment variable
+          command: echo $MY_VAR
+
+      - run:
           name: Test bsky file
           command: |
             set -ex
 
-            rm -rf ${TEST_ROOT}/bluesky
-            mkdir -p ${TEST_ROOT}/bluesky  
+            rm -rf ${BSKY_TEST_ROOT}/bluesky
+            mkdir -p ${BSKY_TEST_ROOT}/bluesky  
 
-            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${TEST_ROOT} contents/blog/bsky-test-blog.md
+            bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${BSKY_TEST_ROOT} contents/blog/bsky-test-blog.md
             ls -la
 
       - run:
@@ -339,8 +353,8 @@ jobs:
           command: |
             set -ex
 
-            ls -la ${TEST_ROOT}/bluesky
-            cat ${TEST_ROOT}/bluesky/$(ls ${TEST_ROOT}/bluesky)
+            ls -la ${BSKY_TEST_ROOT}/bluesky
+            cat ${BSKY_TEST_ROOT}/bluesky/$(ls ${BSKY_TEST_ROOT}/bluesky)
 
       - run:
           name: Display short link contents
@@ -348,8 +362,8 @@ jobs:
             set -ex
 
             ls -la static/s
-            cat static/s/*.html
-            cat static/s/registry.json
+            cat ${BSKY_TEST_ROOT}/static/s/*.html
+            cat ${BSKY_TEST_ROOT}/static/s/registry.json
 
       - run:
           name: Git status after drafting
@@ -362,9 +376,9 @@ jobs:
             set -ex
 
             export TESTING=true
-            ls -la bluesky
+            ls -la ${BSKY_TEST_ROOT}/bluesky
             bin/pcu << parameters.pcu_verbosity >> bsky post
-            ls -la bluesky
+            ls -la ${BSKY_TEST_ROOT}/bluesky
             git status
 
   tools:
