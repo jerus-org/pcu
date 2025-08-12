@@ -1,6 +1,6 @@
 [package]
 name = "pcu"
-version = "0.4.56"
+version = "0.5.0"
 edition.workspace = true
 authors.workspace = true
 description = "A CI tool to update change log in a PR"
