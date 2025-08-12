@@ -99,6 +99,8 @@ pub enum Error {
     RedirectorError(#[from] link_bridge::RedirectorError),
     #[error("gen-bsky draft error says: {0:?}")]
     DraftError(#[from] gen_bsky::DraftError),
+    #[error("gen-bsky post error says: {0:?}")]
+    PostError(#[from] gen_bsky::PostError),
 }
 
 #[derive(Debug)]
