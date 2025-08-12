@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ test(front_matter)-add test for incorrect bluesky field(pr [#654])
 - Add-code-coverage-generation(pr [#655])
 - 🔧 BREAKING: chore(config)-simplify test configuration file(pr [#656])
+- 🔧 chore(gen-bsky)-remove publish restriction in Cargo.toml(pr [#657])
 
 ### Fixed
 
@@ -1641,6 +1642,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#654]: https://github.com/jerus-org/pcu/pull/654
 [#655]: https://github.com/jerus-org/pcu/pull/655
 [#656]: https://github.com/jerus-org/pcu/pull/656
+[#657]: https://github.com/jerus-org/pcu/pull/657
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
