@@ -28,7 +28,7 @@ clap-verbosity-flag.workspace = true
 color-eyre.workspace = true
 config.workspace = true
 env_logger.workspace = true
-gen-bsky = { workspace = true, version = "0.0.0" }
+gen-bsky.workspace = true
 git2.workspace = true
 git2_credentials.workspace = true
 gql_client.workspace = true
