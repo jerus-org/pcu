@@ -1,10 +1,8 @@
-mod poster;
-
 use std::env;
 
 use clap::Parser;
 use config::Config;
-use poster::Poster;
+use gen_bsky::Post;
 
 use crate::{cli::push::Push, CIExit, Client, Error, GitOps, Sign};
 
@@ -13,7 +11,7 @@ pub struct CmdPost {
     /// Fail if the files to process are missing
     #[arg(short, long)]
     pub fail_on_missing: bool,
-    /// Executing in release contet so execute push even if requested by CI
+    /// Executing in release context so execute push even if requested by CI
     #[arg(short, long)]
     pub release: bool,
 }
@@ -23,12 +21,12 @@ impl CmdPost {
         let id = settings.get::<String>("bsky_id")?;
         let pw = settings.get::<String>("bsky_password")?;
         let store = settings.get::<String>("store")?;
-        let mut poster = Poster::new()?;
+        let mut poster = Post::new();
         match poster.load(store) {
             Ok(_) => {}
             Err(e) => {
                 if self.fail_on_missing {
-                    return Err(e);
+                    return Err(e.into());
                 } else {
                     log::warn!("{e}");
                     return Ok(CIExit::NoFilesToProcess);
