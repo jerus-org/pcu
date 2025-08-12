@@ -17,7 +17,6 @@ include = [
     "LICENSE-APACHE",
 ]
 categories = ["development-tools::build-utils"]
-publish = false
 
 [dependencies]
 base62.workspace = true
