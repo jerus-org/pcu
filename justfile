@@ -43,3 +43,11 @@ fmt:
 # Generate coverage reported
 cov:
     cargo tarpaulin --output-dir coverage --out lcov
+
+# Smart release dry run
+sr-dry:
+    cargo smart-release -u --dry-run-cargo-publish --allow-fully-generated-changelogs --changelog-without commit-details
+
+# Execute smart release
+sr:
+    cargo smart-release -u --allow-fully-generated-changelogs --changelog-without commit-details --execute
