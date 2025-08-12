@@ -1,11 +1,45 @@
-use std::{ffi::OsString, fmt::Display, fs, io::BufReader, path::Path};
+use std::{
+    ffi::OsString,
+    fmt::Display,
+    fs,
+    io::BufReader,
+    path::{Path, PathBuf},
+};
 
 use bsky_sdk::{
     agent::config::Config as BskyConfig, api::app::bsky::feed::post::RecordData, BskyAgent,
 };
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use crate::Error;
+/// Error enum for Draft type
+#[non_exhaustive]
+#[derive(Debug, Error)]
+pub enum PostError {
+    /// Bluesky identifier required to post to bluesky not provided
+    #[error("No bluesky identifier provided")]
+    NoBlueskyIdentifier,
+
+    /// Bluesky password required to post to bluesky not provided
+    #[error("No bluesky password provided")]
+    NoBlueskyPassword,
+
+    /// Bluesky sdk reports a login error
+    #[error("bsky_sdk create_session error says: {0:?}")]
+    BlueskyLoginError(String),
+
+    /// Error report from the std::io module
+    #[error("io error says: {0:?}")]
+    Io(#[from] std::io::Error),
+
+    /// Error report from the serde_json crate's create_session type
+    #[error("serde_json create_session error says: {0:?}")]
+    SerdeJsonError(#[from] serde_json::error::Error),
+
+    /// Error report from the bsky_sdk crate
+    #[error("bsky_sdk error says: {0:?}")]
+    BskySdk(#[from] bsky_sdk::Error),
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct BskyPost {
@@ -13,17 +47,26 @@ struct BskyPost {
     pub filename: OsString,
 }
 
+/// Post structure to load in bluesky posts and send them from.
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct Poster {
+pub struct Post {
     bsky_posts: Vec<BskyPost>,
+    sent_posts: Vec<PathBuf>,
 }
 
-impl Poster {
-    pub fn new() -> Result<Self, Error> {
-        Ok(Default::default())
+impl Post {
+    /// Create a new default post struct
+    pub fn new() -> Self {
+        Default::default()
     }
 
-    pub fn load<P>(&mut self, directory: P) -> Result<&mut Self, Error>
+    /// Load the bluesky post documents from the directory
+    ///
+    /// ## Parameters
+    ///
+    /// - directory: the directory to find the bluesky posts
+    ///
+    pub fn load<P>(&mut self, directory: P) -> Result<&mut Self, PostError>
     where
         P: AsRef<Path> + Display,
     {
@@ -46,16 +89,23 @@ impl Poster {
         Ok(self)
     }
 
-    pub async fn post_to_bluesky<S>(&self, identifier: S, password: S) -> Result<(), Error>
+    /// Post the bluesky posts to bluesky
+    ///
+    /// ## Parameters
+    ///
+    /// - identifier: login identifier to sign in to the bluesky api
+    /// - password: password to sign in to the bluesky api
+    ///
+    pub async fn post_to_bluesky<S>(&self, identifier: S, password: S) -> Result<(), PostError>
     where
         S: ToString,
     {
         if identifier.to_string().is_empty() {
-            return Err(Error::NoBlueskyIdentifier);
+            return Err(PostError::NoBlueskyIdentifier);
         };
 
         if password.to_string().is_empty() {
-            return Err(Error::NoBlueskyPassword);
+            return Err(PostError::NoBlueskyPassword);
         };
 
         let bsky_config = BskyConfig::default();
@@ -65,7 +115,7 @@ impl Poster {
         agent
             .login(&identifier.to_string(), &password.to_string())
             .await
-            .map_err(|e| Error::BlueskyLoginError(e.to_string()))?;
+            .map_err(|e| PostError::BlueskyLoginError(e.to_string()))?;
         // Set labelers from preferences
         let preferences = agent.get_preferences(true).await?;
         agent.configure_labelers_from_preferences(&preferences);
