@@ -64,6 +64,7 @@
                 "rstest",
                 "rustls",
                 "serde",
+                "signingkey",
                 "sint",
                 "sunt",
                 "tempor",
