@@ -19,7 +19,7 @@ clap-verbosity-flag = "3.0.3"
 color-eyre = "0.6.5"
 config = "0.15.13"
 env_logger = "0.11.8"
-gen-bsky = { path = "crates/gen-bsky", version = "0.0.0" }
+gen-bsky = { path = "crates/gen-bsky" }
 git2 = "0.20.2"
 git2_credentials = "0.15.0"
 gql_client = "1.0.8"
