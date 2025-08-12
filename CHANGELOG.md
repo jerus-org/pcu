@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 BREAKING: chore(config)-simplify test configuration file(pr [#656])
 - 🔧 chore(gen-bsky)-remove publish restriction in Cargo.toml(pr [#657])
 - 📦 build(gen-bsky)-update version to 0.0.1(pr [#659])
+- Release-gen-bsky-v0.0.1,-pcu-v0.5.0(pr [#660])
 
 ### Fixed
 
@@ -1647,6 +1648,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#657]: https://github.com/jerus-org/pcu/pull/657
 [#658]: https://github.com/jerus-org/pcu/pull/658
 [#659]: https://github.com/jerus-org/pcu/pull/659
+[#660]: https://github.com/jerus-org/pcu/pull/660
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
