@@ -63,7 +63,7 @@ pub(super) enum FrontMatterError {
 #[derive(Default, Debug, Clone, Deserialize)]
 pub(super) struct FrontMatter {
     /// The title for the blog post.
-    pub(super) title: String,
+    title: String,
     /// A description of the blog post.
     pub(super) description: String,
     /// The creation date of the blog post.
@@ -83,12 +83,14 @@ pub(super) struct FrontMatter {
     /// the bluesky custom keys.
     pub(super) bluesky: Option<Bluesky>,
 }
+
 /// Report values in private fields
 impl FrontMatter {
     pub(super) fn title(&self) -> &str {
         self.title.as_str()
     }
 }
+
 impl FrontMatter {
     pub(super) fn new(
         blog_file: &PathBuf,
@@ -255,7 +257,7 @@ mod tests {
             tags = ["rust", "testing"]
         "#;
         let fm = toml::from_str::<FrontMatter>(toml).unwrap();
-        assert_eq!(fm.title, "Test Title");
+        assert_eq!(fm.title(), "Test Title");
         assert_eq!(fm.description, "Test Description");
         assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["rust", "testing"]);
         assert!(fm.extra.is_none());

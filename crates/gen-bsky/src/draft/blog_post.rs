@@ -181,7 +181,7 @@ impl BlogPost {
 
         let post_text = format!(
             "{}\n\n{} {}\n\n{}",
-            self.frontmatter.title,
+            self.frontmatter.title(),
             self.frontmatter.bluesky_description(),
             self.frontmatter.bluesky_tags().join(" "),
             if let Some(sl) = self.post_short_link.as_ref() {
@@ -193,14 +193,14 @@ impl BlogPost {
 
         if post_text.len() > 300 {
             return Err(BlogPostError::PostTooManyCharacters(
-                self.frontmatter.title.clone(),
+                self.frontmatter.title().to_string(),
                 post_text.len(),
             ));
         }
 
         if post_text.graphemes(true).count() > 300 {
             return Err(BlogPostError::PostTooManyGraphemes(
-                self.frontmatter.title.clone(),
+                self.frontmatter.title().to_string(),
                 post_text.graphemes(true).count(),
             ));
         }

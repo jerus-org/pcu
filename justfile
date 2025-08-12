@@ -39,3 +39,7 @@ fmt:
     cargo +nightly fmt --all -- --config-path rustfmt-nightly.toml
     cargo +stable fmt --all -- --check
     just --fmt --unstable
+
+# Generate coverage reported
+cov:
+    cargo tarpaulin --output-dir coverage --out lcov
