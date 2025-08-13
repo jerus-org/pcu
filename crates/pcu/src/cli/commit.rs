@@ -1,8 +1,7 @@
-use crate::{Error, Sign};
-
 use clap::Parser;
 
 use super::{CIExit, Commands, GitOps};
+use crate::{Error, Sign};
 
 /// Configuration for the Commit command
 #[derive(Debug, Parser, Clone)]
