@@ -1,7 +1,6 @@
 use clap::Parser;
-use env_logger::Env;
-
 use color_eyre::Result;
+use env_logger::Env;
 
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
