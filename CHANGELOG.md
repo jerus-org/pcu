@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add draft allowance option to blog post processing(pr [#648])
 - ✨ add link module for blog post draft(pr [#652])
 - ✨ add smart release tasks(pr [#658])
+- ✨ add URL parse error handling(pr [#667])
 
 ### Changed
 
@@ -1661,6 +1662,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#664]: https://github.com/jerus-org/pcu/pull/664
 [#665]: https://github.com/jerus-org/pcu/pull/665
 [#666]: https://github.com/jerus-org/pcu/pull/666
+[#667]: https://github.com/jerus-org/pcu/pull/667
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
