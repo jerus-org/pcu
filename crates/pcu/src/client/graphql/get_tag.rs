@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::{Client, Error, GraphQLWrapper};
-
-use tracing::instrument;
 
 pub trait GraphQLGetTag {
     #[allow(async_fn_in_trait)]
