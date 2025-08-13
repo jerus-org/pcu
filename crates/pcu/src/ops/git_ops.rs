@@ -15,10 +15,10 @@ use log::log_enabled;
 use owo_colors::{OwoColorize, Style};
 use tracing::instrument;
 
-use crate::client::graphql::GraphQLLabelPR;
-use crate::client::graphql::{GraphQLGetOpenPRs, GraphQLGetTag};
-use crate::Client;
-use crate::Error;
+use crate::{
+    client::graphql::{GraphQLGetOpenPRs, GraphQLGetTag, GraphQLLabelPR},
+    Client, Error,
+};
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 const DEFAULT_COMMIT_MESSAGE: &str = "chore: commit staged files";
