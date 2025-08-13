@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 mod blog_post;
 
@@ -34,6 +37,9 @@ pub enum DraftError {
     /// Error reported by url crate parse
     #[error("Url says: {0:?}")]
     UrlParse(#[from] url::ParseError),
+    /// Error reported by toml
+    #[error("Url says: {0:?}")]
+    TomlDateTimeParse(#[from] toml::value::DatetimeParseError),
 }
 
 /// Type representing the configuration required to generate
@@ -216,17 +222,69 @@ impl DraftBuilder {
         Ok(blog_posts)
     }
 
-    /// Optionally set a minimum for blog posts
+    /// Sets the minimum date constraint for this instance.
     ///
-    /// ## Parameters
+    /// This method configures the minimum allowable date, which can be used
+    /// for validation or filtering purposes depending on the context of the
+    /// implementing type.
     ///
-    /// - `minimum_date`: Minimum date in format `YYYY-MM-DD`
-    pub fn with_minimum_date(&mut self, minimum_date: Datetime) -> Result<&mut Self, DraftError> {
+    /// # Arguments
+    ///
+    /// * `minimum_date` - A `Datetime` value representing the earliest
+    ///   acceptable date
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(&mut Self)` on success, allowing for method chaining.
+    /// Returns `Err(DraftError)` if the operation fails.
+    ///
+    /// # Errors
+    ///
+    /// This method currently always returns `Ok`, but the `Result` return type
+    /// allows for future error conditions to be added without breaking the API.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use gen_bsky::Draft;
+    /// # use url::Url;
+    /// # async fn main() -> Result<(), DraftError> {
+    ///
+    ///     let base_url = Url::parse("https://www.example.com/")?;
+    ///     let min_date = "2025/08/04";
+    ///
+    ///     let mut builder = Draft::builder(base_url, none);
+    ///
+    ///     builder.with_minimum_date(min_date)?;
+    /// #   Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Method chaining is supported.
+    ///
+    /// ```rust
+    /// # async fn main() -> Result<(), DraftError> {
+    /// # use gen_bsky::Draft;
+    /// # use url::Url;
+    /// #
+    /// #let base_url = Url::parse("https://www.example.com/")?;
+    /// #let min_date = "2025/08/04";
+    /// #
+    /// #let mut builder = Draft::builder(base_url, None);
+    ///
+    ///     let posts = builder.with_minimum_date(min_date)?
+    ///         .build().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_minimum_date(&mut self, minimum_date: &str) -> Result<&mut Self, DraftError> {
+        let minimum_date = Datetime::from_str(minimum_date)?;
         self.minimum_date = minimum_date;
 
         Ok(self)
     }
 
+    /// Optionally set a
     pub fn with_allow_draft(&mut self, allow_draft: bool) -> &mut Self {
         self.allow_draft = allow_draft;
         self
@@ -272,4 +330,24 @@ fn today() -> toml::value::Datetime {
     }
     let current_date: Current = toml::from_str(&date_string).unwrap();
     current_date.date
+}
+
+#[cfg(test)]
+mod test {
+    use super::Draft;
+    use url::Url;
+
+    #[tokio::test]
+    async fn test_with_min_date_for_valid_date() {
+        let base_url = Url::parse("https://www.example.com/").unwrap();
+        let min_date = "2025-08-04";
+
+        let mut builder = Draft::builder(base_url, None);
+
+        let post_res = builder.with_minimum_date(min_date).unwrap().build().await;
+
+        let error = post_res.expect_err("Expecting error as incomplete");
+
+        assert_eq!("blog post list is empty".to_string(), error.to_string());
+    }
 }
