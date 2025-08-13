@@ -6,15 +6,9 @@ mod pr_title;
 mod utilities;
 mod workspace;
 
-pub use cli::CIExit;
-pub use cli::Cli;
-pub use cli::Commands;
+pub use cli::{CIExit, Cli, Commands};
 pub use client::Client;
-pub use error::Error;
-pub use error::GraphQLWrapper;
-pub use ops::GitOps;
-pub use ops::MakeRelease;
-pub use ops::Sign;
-pub use ops::UpdateFromPr;
+pub use error::{Error, GraphQLWrapper};
+pub use ops::{GitOps, MakeRelease, Sign, UpdateFromPr};
 pub use pr_title::PrTitle;
 pub use workspace::{Package, Workspace};
