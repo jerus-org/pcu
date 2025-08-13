@@ -55,7 +55,7 @@ impl CmdDraft {
         }
 
         if let Some(d) = self.date {
-            builder.with_minimum_date(d)?;
+            builder.with_minimum_date(d.to_string().as_str())?;
         }
 
         builder.with_allow_draft(self.allow_draft);
