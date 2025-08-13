@@ -38,8 +38,8 @@ pub enum DraftError {
     #[error("Url says: {0:?}")]
     UrlParse(#[from] url::ParseError),
     /// Error reported by toml
-    #[error("Url says: {0:?}")]
-    TomlDateTimeParse(#[from] toml::value::DatetimeParseError),
+    #[error("Toml Datetime Parse says: {0:?}")]
+    TomlDatetimeParse(#[from] toml::value::DatetimeParseError),
 }
 
 /// Type representing the configuration required to generate
@@ -287,7 +287,41 @@ impl DraftBuilder {
         Ok(self)
     }
 
-    /// Optionally set a
+    /// Sets whether draft items should be allowed.
+    ///
+    /// This method configures the builder to either allow or disallow draft items
+    /// during processing. When set to `true`, draft items will be included; when
+    /// set to `false`, they will be filtered out.
+    ///
+    /// # Arguments
+    ///
+    /// * `allow_draft` - A boolean value indicating whether draft items should be allowed
+    ///
+    /// # Returns
+    ///
+    /// Returns a mutable reference to `self` for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # struct MyBuilder { allow_draft: bool }
+    /// # impl MyBuilder {
+    /// #     pub fn new() -> Self { Self { allow_draft: false } }
+    /// #     pub fn with_allow_draft(&mut self, allow_draft: bool) -> &mut Self {
+    /// #         self.allow_draft = allow_draft;
+    /// #         self
+    /// #     }
+    /// # }
+    /// let mut builder = MyBuilder::new();
+    ///
+    /// // Allow draft items
+    /// builder.with_allow_draft(true);
+    ///
+    /// // Method chaining is supported
+    /// builder
+    ///     .with_allow_draft(false)
+    ///     .with_allow_draft(true);
+    /// ```
     pub fn with_allow_draft(&mut self, allow_draft: bool) -> &mut Self {
         self.allow_draft = allow_draft;
         self
@@ -336,21 +370,270 @@ fn today() -> toml::value::Datetime {
 }
 
 #[cfg(test)]
-mod test {
-    use super::Draft;
+mod tests {
+    use super::*;
+
+    use toml::value::Date;
     use url::Url;
+
+    // get draft builder
+    fn gdb() -> DraftBuilder {
+        let base_url = Url::parse("https://www.example.com/").unwrap();
+
+        Draft::builder(base_url, None)
+    }
+
+    // Generate expected date
+    fn ged(year: u16, month: u8, day: u8) -> Option<Date> {
+        Some(Date { year, month, day })
+    }
+
+    #[test]
+    fn test_with_minimum_date_valid_date() {
+        let mut builder = gdb();
+        let result = builder.with_minimum_date("2023-12-25");
+        let expected_date = ged(2023, 12, 25);
+
+        assert!(result.is_ok());
+        assert_eq!(builder.minimum_date.date, expected_date);
+    }
+
+    #[test]
+    fn test_with_minimum_date_different_valid_formats() {
+        let mut builder = gdb();
+
+        // Expected dates:
+        let expected_dates = [
+            ged(2023, 1, 1),
+            ged(2024, 2, 29), // leap year
+            ged(1999, 12, 31),
+            ged(2000, 6, 15),
+        ];
+
+        // Test various valid date formats
+        let valid_dates = [
+            "2023-01-01",
+            "2024-02-29", // leap year
+            "1999-12-31",
+            "2000-06-15",
+        ];
+
+        for (i, date) in valid_dates.iter().enumerate() {
+            let result = builder.with_minimum_date(date);
+            assert!(result.is_ok(), "Date '{}' should be valid", date);
+            assert_eq!(builder.minimum_date.date, expected_dates[i]);
+        }
+    }
+
+    #[test]
+    fn test_with_minimum_date_returns_mutable_reference() {
+        let mut builder = gdb();
+        let result = builder.with_minimum_date("2023-05-15").unwrap();
+
+        // Verify we get back a mutable reference to the same instance
+        assert_eq!(result.minimum_date.date, ged(2023, 5, 15));
+
+        // Should be able to continue modifying through the returned reference
+        let chained_result = result.with_minimum_date("2023-06-20");
+        assert!(chained_result.is_ok());
+        assert_eq!(result.minimum_date.date, ged(2023, 6, 20));
+    }
+
+    #[test]
+    fn test_with_minimum_date_method_chaining_success() {
+        let mut builder = gdb();
+
+        let result = builder
+            .with_minimum_date("2023-01-01")
+            .and_then(|b| b.with_minimum_date("2023-12-31"));
+
+        assert!(result.is_ok());
+        assert_eq!(builder.minimum_date.date, ged(2023, 12, 31));
+    }
+
+    #[test]
+    fn test_with_minimum_date_empty_string() {
+        let mut builder = gdb();
+        let original_date = builder.minimum_date;
+
+        let result = builder.with_minimum_date("");
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.expect_err("expecting failure").to_string(),
+            "Toml Datetime Parse says: DatetimeParseError { what: None, expected: Some(\"year or hour\") }".to_string()
+        );
+        // Original value should remain unchanged
+        assert_eq!(builder.minimum_date, original_date);
+    }
+
+    #[test]
+    fn test_with_minimum_date_invalid_format() {
+        let mut builder = gdb();
+        let original_date = builder.minimum_date;
+
+        let invalid_dates = vec!["invalid", "2023", "not-a-date", "123", "abcd-ef-gh"];
+
+        for invalid_date in invalid_dates {
+            let result = builder.with_minimum_date(invalid_date);
+            assert!(result.is_err(), "Date '{}' should be invalid", invalid_date);
+            let valid_error = matches!(
+                result.expect_err("certain of failure"),
+                DraftError::TomlDatetimeParse(_)
+            );
+            assert!(valid_error);
+            // Original value should remain unchanged after error
+            assert_eq!(builder.minimum_date, original_date);
+        }
+    }
+
+    #[test]
+    fn test_with_minimum_date_updates_field() {
+        let mut builder = gdb();
+        let initial_date = builder.minimum_date;
+
+        // Verify initial state
+        assert_eq!(builder.minimum_date, today());
+
+        // Update with valid date
+        let result = builder.with_minimum_date("2024-03-15");
+        assert!(result.is_ok());
+
+        // Verify field was updated
+        assert_ne!(builder.minimum_date, initial_date);
+        assert_eq!(builder.minimum_date.date, ged(2024, 3, 15));
+    }
+
+    #[test]
+    fn test_with_minimum_date_multiple_successful_calls() {
+        let mut builder = gdb();
+
+        // Test multiple successful updates
+        builder.with_minimum_date("2023-01-01").unwrap();
+        assert_eq!(builder.minimum_date.date, ged(2023, 1, 1));
+
+        builder.with_minimum_date("2023-06-15").unwrap();
+        assert_eq!(builder.minimum_date.date, ged(2023, 6, 15));
+
+        builder.with_minimum_date("2023-12-31").unwrap();
+        assert_eq!(builder.minimum_date.date, ged(2023, 12, 31));
+    }
+
+    #[test]
+    fn test_with_minimum_date_error_preserves_state() {
+        let mut builder = gdb();
+
+        // Set a valid date first
+        builder.with_minimum_date("2023-05-20").unwrap();
+        let valid_date = builder.minimum_date;
+
+        // Try to set an invalid date
+        let result = builder.with_minimum_date("invalid-date");
+        assert!(result.is_err());
+
+        // Verify the previous valid date is preserved
+        assert_eq!(builder.minimum_date, valid_date);
+        assert_eq!(builder.minimum_date.date, ged(2023, 5, 20));
+    }
+
+    #[test]
+    fn test_with_minimum_date_error_types() {
+        let mut builder = gdb();
+
+        let result = builder.with_minimum_date("");
+        match result {
+            Err(DraftError::TomlDatetimeParse(_)) => {
+                // Expected error type
+            }
+            _ => panic!("Expected InvalidDateFormat error"),
+        }
+    }
 
     #[tokio::test]
     async fn test_with_min_date_for_valid_date() {
-        let base_url = Url::parse("https://www.example.com/").unwrap();
         let min_date = "2025-08-04";
 
-        let mut builder = Draft::builder(base_url, None);
+        let mut builder = gdb();
 
         let post_res = builder.with_minimum_date(min_date).unwrap().build().await;
 
         let error = post_res.expect_err("Expecting error as incomplete");
 
         assert_eq!("blog post list is empty".to_string(), error.to_string());
+    }
+
+    #[test]
+    fn test_with_allow_draft_sets_true() {
+        let mut builder = gdb();
+        assert!(!builder.allow_draft);
+
+        builder.with_allow_draft(true);
+        assert!(builder.allow_draft);
+    }
+
+    #[test]
+    fn test_with_allow_draft_sets_false() {
+        let mut builder = gdb();
+        builder.allow_draft = true; // Set initial state to true
+
+        builder.with_allow_draft(false);
+        assert!(!builder.allow_draft);
+    }
+
+    #[test]
+    fn test_with_allow_draft_returns_mutable_reference() {
+        let mut builder = gdb();
+        let result = builder.with_allow_draft(true);
+
+        // Verify we get back a mutable reference to the same instance
+        assert!(result.allow_draft);
+
+        // Should be able to continue modifying through the returned reference
+        result.with_allow_draft(false);
+        assert!(!result.allow_draft);
+    }
+
+    #[test]
+    fn test_with_allow_draft_method_chaining() {
+        let mut builder = gdb();
+
+        // Test method chaining works
+        builder
+            .with_allow_draft(true)
+            .with_allow_draft(false)
+            .with_allow_draft(true);
+
+        assert!(builder.allow_draft);
+    }
+
+    #[test]
+    fn test_with_allow_draft_multiple_calls() {
+        let mut builder = gdb();
+
+        // Test that multiple calls properly update the value
+        builder.with_allow_draft(true);
+        assert!(builder.allow_draft);
+
+        builder.with_allow_draft(false);
+        assert!(!builder.allow_draft);
+
+        builder.with_allow_draft(true);
+        assert!(builder.allow_draft);
+    }
+
+    #[test]
+    fn test_with_allow_draft_idempotent() {
+        let mut builder = gdb();
+
+        // Test that setting the same value multiple times works correctly
+        builder.with_allow_draft(true);
+        builder.with_allow_draft(true);
+        builder.with_allow_draft(true);
+        assert!(builder.allow_draft);
+
+        builder.with_allow_draft(false);
+        builder.with_allow_draft(false);
+        builder.with_allow_draft(false);
+        assert!(!builder.allow_draft);
     }
 }
