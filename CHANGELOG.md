@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(post)-fix typos in comments and logs(pr [#666])
 - 🔧 chore(scripts)-add rustfmt configuration files and apply formatting rules(pr [#668])
 - 💄 style(config)-update rustfmt configuration and apply updated rules(pr [#669])
+- 📝 docs(lib)-enhance documentation for gen-bsky(pr [#670])
 
 ### Fixed
 
@@ -1667,6 +1668,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#667]: https://github.com/jerus-org/pcu/pull/667
 [#668]: https://github.com/jerus-org/pcu/pull/668
 [#669]: https://github.com/jerus-org/pcu/pull/669
+[#670]: https://github.com/jerus-org/pcu/pull/670
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
