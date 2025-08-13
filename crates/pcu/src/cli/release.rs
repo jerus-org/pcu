@@ -10,7 +10,8 @@ use owo_colors::{OwoColorize, Style};
 
 #[derive(Debug, Parser, Clone)]
 pub struct Release {
-    /// Update the changelog by renaming the unreleased section with the version number
+    /// Update the changelog by renaming the unreleased section with the version
+    /// number
     #[arg(short, long, default_value_t = false)]
     pub update_changelog: bool,
     /// Prefix for the version tag
