@@ -246,14 +246,15 @@ impl DraftBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// # use gen_bsky::Draft;
+    /// # use gen_bsky::{Draft, DraftError};
     /// # use url::Url;
+    /// # #[tokio::main]
     /// # async fn main() -> Result<(), DraftError> {
     ///
     ///     let base_url = Url::parse("https://www.example.com/")?;
-    ///     let min_date = "2025/08/04";
+    ///     let min_date = "2025-08-04";
     ///
-    ///     let mut builder = Draft::builder(base_url, none);
+    ///     let mut builder = Draft::builder(base_url, None);
     ///
     ///     builder.with_minimum_date(min_date)?;
     /// #   Ok(())
@@ -263,18 +264,20 @@ impl DraftBuilder {
     /// Method chaining is supported.
     ///
     /// ```rust
-    /// # async fn main() -> Result<(), DraftError> {
-    /// # use gen_bsky::Draft;
+    /// # use gen_bsky::{Draft, DraftError};
     /// # use url::Url;
-    /// #
-    /// #let base_url = Url::parse("https://www.example.com/")?;
-    /// #let min_date = "2025/08/04";
-    /// #
-    /// #let mut builder = Draft::builder(base_url, None);
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), DraftError> {
+    /// #   
+    /// #   let base_url = Url::parse("https://www.example.com/")?;
+    /// #   let min_date = "2025-08-04";
+    /// #   
+    /// #   let mut builder = Draft::builder(base_url, None);
     ///
-    ///     let posts = builder.with_minimum_date(min_date)?
-    ///         .build().await?;
-    /// # Ok(())
+    ///     let posts_res = builder.with_minimum_date(min_date)?
+    ///         .build().await;
+    ///     posts_res.expect_err("as no blog posts have been added");
+    /// #   Ok(())
     /// # }
     /// ```
     pub fn with_minimum_date(&mut self, minimum_date: &str) -> Result<&mut Self, DraftError> {
