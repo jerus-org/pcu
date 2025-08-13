@@ -3,16 +3,14 @@ use std::{collections::HashMap, env, ffi::OsString, fmt::Debug};
 pub(crate) mod graphql;
 mod pull_request;
 
-use self::pull_request::PullRequest;
-
 use config::Config;
 use git2::Repository;
 use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
 use octocrate::{APIConfig, AppAuthorization, GitHubAPI, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
-use crate::Error;
-use crate::PrTitle;
+use self::pull_request::PullRequest;
+use crate::{Error, PrTitle};
 
 const END_POINT: &str = "https://api.github.com/graphql";
 
