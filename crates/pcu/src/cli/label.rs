@@ -6,7 +6,8 @@ use crate::Error;
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
 pub struct Label {
-    /// Override the default author login (renovate) when selecting the pull request to label
+    /// Override the default author login (renovate) when selecting the pull
+    /// request to label
     #[arg(short, long)]
     pub author: Option<String>,
     /// Override the default label (rebase) to add to the pull request
