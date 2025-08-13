@@ -9,7 +9,7 @@ alias t := test
 alias c := check
 
 # run all tests, clippy, including journey tests, try building docs
-test: clippy check doc unit-tests 
+test: clippy check doc unit-tests
 
 clear-target:
     cargo clean
