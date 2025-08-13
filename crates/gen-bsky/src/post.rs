@@ -156,7 +156,7 @@ impl Post {
         Ok(self)
     }
 
-    /// Delete the successully posted bluesky posts
+    /// Delete the successfully posted bluesky posts
     ///
     pub fn delete_posted_posts(&mut self) -> Result<&mut Self, PostError> {
         for bsky_post in &mut self
@@ -168,7 +168,7 @@ impl Post {
             fs::remove_file(bsky_post.file_path())?;
 
             log::info!(
-                "Successfully deleted `{}` blusky post file",
+                "Successfully deleted `{}` bluesky post file",
                 bsky_post.file_path().to_string_lossy()
             );
 
