@@ -31,6 +31,9 @@ pub enum DraftError {
     /// Error reported by IO library
     #[error("io error says: {0:?}")]
     Io(#[from] std::io::Error),
+    /// Error reported by url crate parse
+    #[error("Url says: {0:?}")]
+    UrlParse(#[from] url::ParseError),
 }
 
 /// Type representing the configuration required to generate
