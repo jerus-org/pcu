@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(post)-modularize and enhance post handling(pr [#664])
 - 💄 style(bsky)-simplify commit message format(pr [#665])
 - 📝 docs(post)-fix typos in comments and logs(pr [#666])
+- 🔧 chore(scripts)-add rustfmt configuration files and apply formatting rules(pr [#668])
 
 ### Fixed
 
@@ -1663,6 +1664,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#665]: https://github.com/jerus-org/pcu/pull/665
 [#666]: https://github.com/jerus-org/pcu/pull/666
 [#667]: https://github.com/jerus-org/pcu/pull/667
+[#668]: https://github.com/jerus-org/pcu/pull/668
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
