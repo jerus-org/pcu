@@ -1,8 +1,7 @@
-use crate::Error;
+use clap::Parser;
 
 use super::{CIExit, Commands, GitOps};
-
-use clap::Parser;
+use crate::Error;
 
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
