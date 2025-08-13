@@ -1,15 +1,14 @@
 use std::env;
 
+use clap::Parser;
+use keep_a_changelog::ChangeKind;
+use owo_colors::{OwoColorize, Style};
+
+use super::CIExit;
 use crate::{
     cli::{Commands, GitOps},
     Client, Error, Sign, UpdateFromPr,
 };
-
-use super::CIExit;
-
-use clap::Parser;
-use keep_a_changelog::ChangeKind;
-use owo_colors::{OwoColorize, Style};
 
 const SIGNAL_HALT: &str = "halt";
 
@@ -158,7 +157,9 @@ impl Pr {
                     && e.to_string()
                         .contains("cannot push non-fastforwardable reference")
                 {
-                    log::info!("Cannot psh non-fastforwardable reference, presuming change made already in parallel job.");
+                    log::info!(
+                        "Cannot psh non-fastforwardable reference, presuming change made already in parallel job."
+                    );
                     Ok(CIExit::UnChanged)
                 } else {
                     Err(e)
