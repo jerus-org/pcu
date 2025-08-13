@@ -1,8 +1,7 @@
 use std::{fs, path::Path};
 
-use crate::{Client, Error, GitOps, MakeRelease, Sign, Workspace};
-
 use super::{CIExit, Commands};
+use crate::{Client, Error, GitOps, MakeRelease, Sign, Workspace};
 mod mode;
 
 use clap::Parser;
