@@ -1,9 +1,8 @@
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::{Client, Error, GraphQLWrapper};
-
-use tracing::instrument;
 
 pub(crate) trait GraphQLGetPRId {
     #[allow(async_fn_in_trait)]
