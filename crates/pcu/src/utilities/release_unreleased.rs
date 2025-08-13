@@ -10,7 +10,6 @@ pub trait ReleaseUnreleased {
 impl ReleaseUnreleased for Changelog {
     /// Release unreleased section with the version number specified and add
     /// a compare link for the new release to the changelog
-    ///
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error> {
         let url = self.url();
         log::debug!("Changelog url: {url:?}");
