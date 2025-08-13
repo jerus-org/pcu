@@ -9,9 +9,8 @@ use clap::Parser;
 use commands::Cmd;
 use config::Config;
 
-use crate::{Client, Error};
-
 use super::{CIExit, Commands};
+use crate::{Client, Error};
 
 const BSKY_POSTS_DIR: &str = "bluesky";
 
