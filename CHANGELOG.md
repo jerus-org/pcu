@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔧 chore(dependencies)-update gen-bsky version specification(pr [#661])
 - ♻️ refactor(post)-rename and restructure post module(pr [#662])
 - ♻️ refactor(error)-remove unused error variants(pr [#663])
+- ♻️ refactor(post)-modularize and enhance post handling(pr [#664])
 
 ### Fixed
 
@@ -1655,6 +1656,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#661]: https://github.com/jerus-org/pcu/pull/661
 [#662]: https://github.com/jerus-org/pcu/pull/662
 [#663]: https://github.com/jerus-org/pcu/pull/663
+[#664]: https://github.com/jerus-org/pcu/pull/664
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
