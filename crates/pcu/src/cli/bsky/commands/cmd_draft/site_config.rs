@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
-use url::Url;
 
 use serde::Deserialize;
+use url::Url;
 
 use crate::Error;
 

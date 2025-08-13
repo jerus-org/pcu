@@ -5,20 +5,19 @@ mod pull_request;
 mod push;
 mod release;
 
+use std::{env, fmt::Display, fs};
+
 use bsky::Bsky;
+use clap::{Parser, Subcommand};
+use color_eyre::Result;
 use commit::Commit;
+use config::Config;
 use label::Label;
 use pull_request::Pr;
 use push::Push;
 use release::Release;
 
-use std::{env, fmt::Display, fs};
-
 use crate::{Client, Error, GitOps, Sign};
-
-use clap::{Parser, Subcommand};
-use color_eyre::Result;
-use config::Config;
 
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 

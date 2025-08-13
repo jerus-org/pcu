@@ -1,7 +1,8 @@
 use std::path::Path;
 
-use crate::Error;
 use cargo_toml::Manifest;
+
+use crate::Error;
 
 #[derive(Debug, Clone)]
 pub struct Workspace {

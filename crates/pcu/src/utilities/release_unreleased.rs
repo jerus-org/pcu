@@ -66,11 +66,11 @@ impl ReleaseUnreleased for Changelog {
 mod tests {
     use std::fs;
 
-    use crate::Error;
     use keep_a_changelog::ChangelogParseOptions;
     use log::LevelFilter;
 
     use super::*;
+    use crate::Error;
 
     fn get_test_logger() {
         let mut builder = env_logger::Builder::new();

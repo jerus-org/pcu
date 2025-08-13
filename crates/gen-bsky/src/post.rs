@@ -3,12 +3,10 @@ use std::{fmt::Display, fs, io::BufReader, path::Path};
 const TESTING_FLAG: &str = "TESTING";
 mod bsky_post;
 
+use bsky_post::{BskyPost, BskyPostState};
 use bsky_sdk::{agent::config::Config as BskyConfig, BskyAgent};
 // use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-use bsky_post::BskyPost;
-use bsky_post::BskyPostState;
 
 /// Error enum for Draft type
 #[non_exhaustive]

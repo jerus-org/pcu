@@ -1,9 +1,10 @@
+use keep_a_changelog::{Changelog, ChangelogParseOptions};
+use octocrate::repos::create_release::RequestMakeLatest;
+
 use crate::{
     utilities::{ReleaseNotesProvider, ReleaseUnreleased},
     Client, Error, GitOps,
 };
-use keep_a_changelog::{Changelog, ChangelogParseOptions};
-use octocrate::repos::create_release::RequestMakeLatest;
 
 pub trait MakeRelease {
     #[allow(async_fn_in_trait)]

@@ -294,10 +294,11 @@ mod tests {
         path::Path,
     };
 
-    use super::*;
     use log::LevelFilter;
     use rstest::rstest;
     use uuid::Uuid;
+
+    use super::*;
 
     fn get_test_logger() {
         let mut builder = env_logger::Builder::new();

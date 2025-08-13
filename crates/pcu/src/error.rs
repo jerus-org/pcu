@@ -1,5 +1,6 @@
-use regex::Error as RegexError;
 use std::{ffi::OsString, fmt::Display, num::ParseIntError};
+
+use regex::Error as RegexError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

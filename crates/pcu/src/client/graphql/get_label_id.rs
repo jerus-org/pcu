@@ -1,13 +1,12 @@
 #![allow(dead_code)]
 // use named_colour::ColourRgb;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::{
     client::graphql::{GraphQLCreateLabel, GraphQLGetRepoID},
     Client, Error, GraphQLWrapper,
 };
-
-use tracing::instrument;
 
 const LABEL: &str = "rebase";
 const LABEL_COLOR: &str = "B22222";

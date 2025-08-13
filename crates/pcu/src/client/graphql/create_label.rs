@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 // use named_colour::ColourRgb;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::{Client, Error, GraphQLWrapper};
-
-use tracing::instrument;
 
 pub(crate) trait GraphQLCreateLabel {
     #[allow(async_fn_in_trait)]

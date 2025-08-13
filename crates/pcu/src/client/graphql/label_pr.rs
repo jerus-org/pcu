@@ -1,13 +1,12 @@
 #![allow(dead_code)]
 // use named_colour::ColourRgb;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::{
     client::graphql::{GraphQLGetLabel, GraphQLGetPRId},
     Client, Error, GraphQLWrapper,
 };
-
-use tracing::instrument;
 
 pub(crate) trait GraphQLLabelPR {
     async fn add_label_to_pr(

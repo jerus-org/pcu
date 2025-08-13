@@ -1,11 +1,14 @@
-use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 mod front_matter;
 
-use bsky_sdk::api::app::bsky::feed::post::RecordData;
-use bsky_sdk::api::types::string::Datetime as BskyDatetime;
-use bsky_sdk::rich_text::RichText;
+use bsky_sdk::{
+    api::{app::bsky::feed::post::RecordData, types::string::Datetime as BskyDatetime},
+    rich_text::RichText,
+};
 use link_bridge::Redirector;
 use thiserror::Error;
 use toml::value::Datetime;
