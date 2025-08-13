@@ -1,16 +1,14 @@
-use std::{
-    ffi::OsString,
-    fmt::Display,
-    fs,
-    io::BufReader,
-    path::{Path, PathBuf},
-};
+use std::{fmt::Display, fs, io::BufReader, path::Path};
 
-use bsky_sdk::{
-    agent::config::Config as BskyConfig, api::app::bsky::feed::post::RecordData, BskyAgent,
-};
-use serde::{Deserialize, Serialize};
+const TESTING_FLAG: &str = "TESTING";
+mod bsky_post;
+
+use bsky_sdk::{agent::config::Config as BskyConfig, BskyAgent};
+// use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use bsky_post::BskyPost;
+use bsky_post::BskyPostState;
 
 /// Error enum for Draft type
 #[non_exhaustive]
@@ -41,23 +39,31 @@ pub enum PostError {
     BskySdk(#[from] bsky_sdk::Error),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct BskyPost {
-    pub post: RecordData,
-    pub filename: OsString,
-}
-
 /// Post structure to load in bluesky posts and send them from.
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone)]
 pub struct Post {
     bsky_posts: Vec<BskyPost>,
-    sent_posts: Vec<PathBuf>,
+    id: String,
+    pwd: String,
+    // sent_posts: Vec<PathBuf>,
 }
 
 impl Post {
     /// Create a new default post struct
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(id: &str, password: &str) -> Result<Self, PostError> {
+        if id.is_empty() {
+            return Err(PostError::NoBlueskyIdentifier);
+        };
+
+        if password.is_empty() {
+            return Err(PostError::NoBlueskyPassword);
+        };
+
+        Ok(Post {
+            id: id.to_string(),
+            pwd: password.to_string(),
+            ..Default::default()
+        })
     }
 
     /// Load the bluesky post documents from the directory
@@ -77,11 +83,10 @@ impl Post {
             let file_name = file.file_name().into_string().unwrap();
             if file_name.ends_with(".post") {
                 let file_path = file.path();
-                let post = fs::File::open(file_path)?;
+                let post = fs::File::open(&file_path)?;
                 let reader = BufReader::new(post);
                 let post = serde_json::from_reader(reader)?;
-                let filename: OsString = format!("{directory}/{file_name}").into();
-                let bsky_post = BskyPost { post, filename };
+                let bsky_post = BskyPost::new(post, file_path);
                 bsky_posts.push(bsky_post);
             }
         }
@@ -91,84 +96,94 @@ impl Post {
 
     /// Post the bluesky posts to bluesky
     ///
-    /// ## Parameters
-    ///
-    /// - identifier: login identifier to sign in to the bluesky api
-    /// - password: password to sign in to the bluesky api
-    ///
-    pub async fn post_to_bluesky<S>(&self, identifier: S, password: S) -> Result<(), PostError>
-    where
-        S: ToString,
-    {
-        if identifier.to_string().is_empty() {
-            return Err(PostError::NoBlueskyIdentifier);
-        };
-
-        if password.to_string().is_empty() {
-            return Err(PostError::NoBlueskyPassword);
-        };
-
+    pub async fn post_to_bluesky(&mut self) -> Result<&mut Self, PostError> {
         let bsky_config = BskyConfig::default();
 
         let agent = BskyAgent::builder().config(bsky_config).build().await?;
 
         agent
-            .login(&identifier.to_string(), &password.to_string())
+            .login(&self.id, &self.pwd)
             .await
             .map_err(|e| PostError::BlueskyLoginError(e.to_string()))?;
         // Set labelers from preferences
         let preferences = agent.get_preferences(true).await?;
         agent.configure_labelers_from_preferences(&preferences);
-
         log::info!("Bluesky login successful!");
 
-        let testing = check_for_testing();
-        log::debug!("Testing: {testing:?}");
+        let testing = std::env::var(TESTING_FLAG).is_ok();
+        if testing {
+            log::info!("No posts will be made to bluesky as this is a test.");
+        }
 
-        for bsky_post in &self.bsky_posts {
-            log::debug!("Post: {}", bsky_post.post.text.clone());
+        for bsky_post in &mut self
+            .bsky_posts
+            .iter_mut()
+            .filter(|p| p.state() == &BskyPostState::Read)
+        {
+            log::debug!("Post: {}", bsky_post.post().text.clone());
 
             if testing {
-                log::debug!("Post validation: `{:?}`", "Pretending for CI");
-
-                log::debug!("Deleting related file: {:?}", bsky_post.filename);
-                fs::remove_file(&bsky_post.filename)?;
+                // log::debug!("Deleting related file: {:?}", bsky_post.file_path);
+                // fs::remove_file(&bsky_post.file_path)?;
 
                 log::info!(
-                    "Successfully posted `{}` to Bluesky and deleted the source file `{}`!",
-                    bsky_post.post.text,
-                    bsky_post.filename.to_string_lossy()
+                    "Successfully posted `{}` to Bluesky",
+                    bsky_post.file_path().to_string_lossy()
                 );
             } else {
-                let result = agent.create_record(bsky_post.post.clone()).await;
+                let result = agent.create_record(bsky_post.post().clone()).await;
 
-                if let Err(e) = result {
-                    log::error!("Error posting to Bluesky: {e}");
+                let Ok(output) = result else {
+                    log::warn!("Error posting to Bluesky: {}", result.err().unwrap());
                     continue;
                 };
 
-                let output = result.unwrap();
                 log::debug!("Post validation: `{:?}`", output.validation_status.as_ref());
 
-                log::debug!("Deleting related file: {:?}", bsky_post.filename);
-                fs::remove_file(&bsky_post.filename)?;
-
                 log::info!(
-                    "Successfully posted `{}` to Bluesky and deleted the source file `{}`!",
+                    "Successfully posted `{}` to Bluesky",
                     bsky_post
-                        .post
+                        .post()
                         .text
                         .split_terminator('\n')
                         .collect::<Vec<&str>>()[0],
-                    bsky_post.filename.to_string_lossy()
                 );
+
+                bsky_post.set_state(BskyPostState::Posted);
             };
         }
 
-        Ok(())
+        Ok(self)
     }
-}
 
-fn check_for_testing() -> bool {
-    std::env::var("TESTING").is_ok()
+    /// Delete the successully posted bluesky posts
+    ///
+    pub fn delete_posted_posts(&mut self) -> Result<&mut Self, PostError> {
+        for bsky_post in &mut self
+            .bsky_posts
+            .iter_mut()
+            .filter(|p| p.state() == &BskyPostState::Posted)
+        {
+            log::debug!("Deleting related file: {:?}", bsky_post.file_path());
+            fs::remove_file(bsky_post.file_path())?;
+
+            log::info!(
+                "Successfully deleted `{}` blusky post file",
+                bsky_post.file_path().to_string_lossy()
+            );
+
+            bsky_post.set_state(BskyPostState::Deleted);
+        }
+
+        Ok(self)
+    }
+
+    /// Count the deleted posts
+    ///
+    pub fn count_deleted(&self) -> usize {
+        self.bsky_posts
+            .iter()
+            .filter(|b| b.state() == &BskyPostState::Deleted)
+            .count()
+    }
 }
