@@ -1,9 +1,8 @@
-use crate::Error;
-
-use super::{CIExit, Commands, GitOps};
-
 use clap::Parser;
 use owo_colors::{OwoColorize, Style};
+
+use super::{CIExit, Commands, GitOps};
+use crate::Error;
 
 /// Configuration for the Push command
 #[derive(Debug, Parser, Clone)]
