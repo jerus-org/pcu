@@ -23,10 +23,12 @@ pub struct Pr {
     /// Attempt to push the changes to the remote repository
     #[clap(short = 'u', long, default_value_t = false)]
     pub push: bool,
-    /// Allow git push to fail. Allows the case of two parallel updates where the second push would fail.
+    /// Allow git push to fail. Allows the case of two parallel updates where
+    /// the second push would fail.
     #[clap(long, default_value_t = true)]
     pub allow_push_fail: bool,
-    /// Hide pull request failure. Exits with success status even if no pull request was found in CI environment.
+    /// Hide pull request failure. Exits with success status even if no pull
+    /// request was found in CI environment.
     #[clap(long, default_value_t = true)]
     pub allow_no_pull_request: bool,
 }
