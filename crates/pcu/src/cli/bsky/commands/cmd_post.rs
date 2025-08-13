@@ -42,7 +42,7 @@ impl CmdPost {
         // Commit to remove the posts successfully sent to Bluesky
         let sign = Sign::Gpg;
         let commit_message = format!(
-            "chore: remove {} posts that were sent to Bluesky",
+            "chore: remove {} sent to Bluesky",
             if deleted == 1 {
                 format!("{deleted} post")
             } else {
