@@ -20,15 +20,15 @@ use taxonomies::Taxonomies;
 
 // +++
 // title = "Blue Sky Test Blog"
-// description = "A blog post to test the processing of blog posts for posting to Bluesky."
-// date = 2025-01-17
+// description = "A blog post to test the processing of blog posts for posting
+// to Bluesky." date = 2025-01-17
 // updated = 2025-01-16
 // draft = false
 //
 // [taxonomies]
 // topic = ["Technology"]
-// description = "A blog post to test the processing of blog posts for posting to Bluesky."
-// tags = ["bluesky", "testing", "test only", "ci"]
+// description = "A blog post to test the processing of blog posts for posting
+// to Bluesky." tags = ["bluesky", "testing", "test only", "ci"]
 //
 // [extra]
 // bluesky.description = "This is a test blog post for Bluesky."
@@ -59,7 +59,6 @@ pub(super) enum FrontMatterError {
 
 /// Type representing the expected and optional keys in the
 /// frontmatter of a markdown blog post file.
-///
 #[derive(Default, Debug, Clone, Deserialize)]
 pub(super) struct FrontMatter {
     /// The title for the blog post.
