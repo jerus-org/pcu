@@ -69,7 +69,6 @@ impl Post {
     /// ## Parameters
     ///
     /// - directory: the directory to find the bluesky posts
-    ///
     pub fn load<P>(&mut self, directory: P) -> Result<&mut Self, PostError>
     where
         P: AsRef<Path> + Display,
@@ -93,7 +92,6 @@ impl Post {
     }
 
     /// Post the bluesky posts to bluesky
-    ///
     pub async fn post_to_bluesky(&mut self) -> Result<&mut Self, PostError> {
         let bsky_config = BskyConfig::default();
 
@@ -155,7 +153,6 @@ impl Post {
     }
 
     /// Delete the successfully posted bluesky posts
-    ///
     pub fn delete_posted_posts(&mut self) -> Result<&mut Self, PostError> {
         for bsky_post in &mut self
             .bsky_posts
@@ -177,7 +174,6 @@ impl Post {
     }
 
     /// Count the deleted posts
-    ///
     pub fn count_deleted(&self) -> usize {
         self.bsky_posts
             .iter()

@@ -32,7 +32,8 @@ impl PullRequest {
             return Ok(None);
         }
 
-        // Use the pull_request config setting to direct to the appropriate CI environment variable to find the PR data
+        // Use the pull_request config setting to direct to the appropriate CI
+        // environment variable to find the PR data
         log::trace!("pull_request: {:?}", settings.get::<String>("pull_request"));
         let pcu_pull_request: String = settings
             .get("pull_request")

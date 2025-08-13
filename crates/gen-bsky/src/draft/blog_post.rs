@@ -67,7 +67,6 @@ pub(super) enum BlogPostError {
 }
 
 /// Type representing the blog post.
-///
 #[derive(Debug, Clone)]
 pub(super) struct BlogPost {
     /// The path to the original blog post.

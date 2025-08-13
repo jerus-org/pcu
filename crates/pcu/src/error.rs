@@ -5,7 +5,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    /// Unable to acquire the child process' standard input to write the commit data for signing
+    /// Unable to acquire the child process' standard input to write the commit
+    /// data for signing
     #[error("failed to acquire standard input handler")]
     Stdin,
 

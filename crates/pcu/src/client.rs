@@ -57,14 +57,16 @@ impl Client {
             .map_err(|_| Error::CommandNotSet)?;
         log::trace!("cmd: {cmd:?}");
 
-        // Use the username config settings to direct to the appropriate CI environment variable to find the owner
+        // Use the username config settings to direct to the appropriate CI environment
+        // variable to find the owner
         log::trace!("owner: {:?}", settings.get::<String>("username"));
         let pcu_owner: String = settings
             .get("username")
             .map_err(|_| Error::EnvVarBranchNotSet)?;
         let owner = env::var(pcu_owner).map_err(|_| Error::EnvVarBranchNotFound)?;
 
-        // Use the reponame config settings to direct to the appropriate CI environment variable to find the repo
+        // Use the reponame config settings to direct to the appropriate CI environment
+        // variable to find the repo
         log::trace!("repo: {:?}", settings.get::<String>("reponame"));
         let pcu_repo: String = settings
             .get("reponame")
@@ -87,7 +89,8 @@ impl Client {
 
         log::trace!("Executing for command: {}", &cmd);
         let (branch, pull_request) = if &cmd == "pr" || &cmd == "push" {
-            // Use the branch config settings to direct to the appropriate CI environment variable to find the branch data
+            // Use the branch config settings to direct to the appropriate CI environment
+            // variable to find the branch data
             log::trace!("branch: {:?}", settings.get::<String>("branch"));
             let pcu_branch: String = settings
                 .get("branch")

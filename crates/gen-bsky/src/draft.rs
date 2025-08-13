@@ -38,7 +38,6 @@ pub enum DraftError {
 
 /// Type representing the configuration required to generate
 /// drafts for a list of blog posts.
-///
 #[non_exhaustive]
 #[derive(Clone, Debug)]
 pub struct Draft {
@@ -56,7 +55,6 @@ impl Draft {
     ///
     /// - `base_url`: the base url for the website (e.g. `https://wwww.example.com/`)
     /// - `store`: the location to store draft posts (e.g. `bluesky`)
-    ///
     pub fn builder(base_url: Url, root: Option<&PathBuf>) -> DraftBuilder {
         let root = if let Some(r) = root {
             PathBuf::from(r)
@@ -223,7 +221,6 @@ impl DraftBuilder {
     /// ## Parameters
     ///
     /// - `minimum_date`: Minimum date in format `YYYY-MM-DD`
-    ///
     pub fn with_minimum_date(&mut self, minimum_date: Datetime) -> Result<&mut Self, DraftError> {
         self.minimum_date = minimum_date;
 

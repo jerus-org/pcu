@@ -455,8 +455,9 @@ impl GitOps for Client {
         //     } else {
         //         log::trace!("Using ssh key from bot user name: {}", bot_user_name);
         //         let cred = Cred::ssh_key_from_agent(bot_user_name);
-        //         log::trace!("cred: {}", if cred.is_ok() { "is ok" } else { "is error" });
-        //         cred
+        //         log::trace!("cred: {}",
+        //              if cred.is_ok() { "is ok" } else { "is error"});
+        //          cred
         //     }
         // });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
