@@ -15,9 +15,9 @@ use url::Url;
 /// Error types that can occur during draft processing operations.
 ///
 /// This enum represents all possible errors that may arise when drafting
-/// bluesky posts for blogs, including file system operations, validation errors, and
-/// parsing failures. The enum is marked as `#[non_exhaustive]` to allow for
-/// future error variants without breaking existing code.
+/// bluesky posts for blogs, including file system operations, validation
+/// errors, and parsing failures. The enum is marked as `#[non_exhaustive]` to
+/// allow for future error variants without breaking existing code.
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum DraftError {
@@ -54,15 +54,137 @@ pub enum DraftError {
     TomlDatetimeParse(#[from] toml::value::DatetimeParseError),
 }
 
-/// Type representing the configuration required to generate
-/// drafts for a list of blog posts.
+/// Configuration for generating bluesky posts for blog posts.
+///
+/// The `Draft` struct encapsulates all the necessary configuration and data
+/// required to generate, and save draft bluesky posts.
+///
+/// This struct is marked as `#[non_exhaustive]` to allow for future expansion
+/// of configuration options without breaking existing code that constructs
+/// or matches on `Draft` instances.
+///
+/// # Structure
+///
+/// The `Draft` configuration includes:
+/// - A collection of blog posts to process
+/// - Storage locations for social media and referrer data
+/// - Base URL for generating absolute links
+/// - Root directory for file operations
+///
+/// # Usage Patterns
+///
+/// Typically used as the first step in the two step generation and posting
+/// process.
+///
+/// ```rust should_panic
+/// # use std::path::PathBuf;
+/// #
+/// # use url::Url;
+/// # use toml::value::Datetime;
+/// #
+/// # use gen_bsky::{Draft, DraftError};
+/// #
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), DraftError> {
+///     let base_url = Url::parse("https://www.example.com/")?;
+///     let paths = vec!["content/blog".to_string()];
+///     let date = Datetime {
+///                   date: Some(toml::value::Date{
+///                               year: 2025,
+///                               month: 8,
+///                               day: 4}),
+///                   time: None,
+///                   offset: None};
+///     let allow_draft = false;
+///
+///     let mut posts = get_post_drafts(
+///                         base_url,
+///                         paths,
+///                         date,
+///                         allow_draft).await?;
+///    
+///     posts.write_referrers(None)?;
+///     posts.write_bluesky_posts(None).await?;
+///
+///     Ok(())
+///  }
+///
+///  async fn get_post_drafts(
+///             base_url: Url,
+///             paths: Vec<String>,
+///             date: Datetime,
+///             allow_draft: bool) -> Result<Draft, DraftError>
+/// {
+///     let post_store = PathBuf::new().join("bluesky_post_store");
+///     let referrer_store = PathBuf::new().join("static").join("s");
+///
+///     let mut builder = Draft::builder(base_url, None);
+///    
+///     // Add the paths specified at the command line.
+///     for path in paths.iter() {
+///         builder.add_path_or_file(path)?;
+///     }
+///    
+///     // Set the filters for blog posts
+///     builder
+///     .with_post_store(post_store)?
+///     .with_referrer_store(referrer_store)?
+///     .with_minimum_date(date)?
+///     .with_allow_draft(allow_draft);
+///    
+///     builder.build().await
+///
+///  }
+/// ```
 #[non_exhaustive]
 #[derive(Clone, Debug)]
 pub struct Draft {
+    /// Collection of blog posts to be processed.
+    ///
+    /// This vector contains all the blog posts that will be included in
+    /// the draft generation process. Posts may be filtered, sorted, or
+    /// otherwise processed based on various criteria during operation.
     blog_posts: Vec<BlogPost>,
+
+    /// File system path for storing Bluesky social media integration data.
+    ///
+    /// This path points to the directory where draft Bluesky posts are stored.
+    /// The directory should be writable by the application. The directory will
+    /// be created if it doesn't exist.
+    ///
+    /// The path should be within the repository so that the draft posts can
+    /// retained until the post process is run.
+    ///
+    /// The default path is set to `bluesky`.
     bsky_store: PathBuf,
+
+    /// File system path for storing referrer tracking data.
+    ///
+    /// This directory stores a generated referrer link for each blog post to
+    /// provided a shortened https link to the post for inclusion in the Bluesky
+    /// post. The link should be stored in the appropriate directory to copy the
+    /// generated html file to the published website.
+    ///
+    /// The default path is set to `static/s`
     referrer_store: PathBuf,
+
+    /// Base URL for the blog or website.
+    ///
+    /// This URL serves as the foundation for generating absolute URLs.
+    /// It should include the scheme (http/https)
+    /// and domain, but typically not include paths beyond the root.
+    ///
+    /// A valid Url must be set to create the builder.
     base_url: Url,
+
+    /// Root directory for blog content and file operations.
+    ///
+    /// This path represents the base directory where blog content, templates,
+    /// static files, and other blog-related files are located. The root
+    /// directory will be preprended to the bsky_store and referrer_store to
+    /// ensure that stores are within the context of the website code.
+    ///
+    /// The default path is empty.
     root: PathBuf,
 }
 
@@ -185,19 +307,21 @@ pub struct DraftBuilder {
 impl DraftBuilder {
     /// Adds a path or file to the builder's collection.
     ///
-    /// This method appends a new path or file to the internal collection of paths
-    /// that will be processed. The path can be either a file or a directory, and
-    /// the method accepts any type that can be converted into a `PathBuf`.
+    /// This method appends a new path or file to the internal collection of
+    /// paths that will be processed. The path can be either a file or a
+    /// directory, and the method accepts any type that can be converted
+    /// into a `PathBuf`.
     ///
     /// # Type Parameters
     ///
-    /// * `P` - Any type that implements `Into<PathBuf>`, such as `&str`, `String`,
-    ///   `&Path`, or `PathBuf` itself.
+    /// * `P` - Any type that implements `Into<PathBuf>`, such as `&str`,
+    ///   `String`, `&Path`, or `PathBuf` itself.
     ///
     /// # Arguments
     ///
-    /// * `path_or_file` - The path or file to add to the collection. This can be
-    ///   an absolute or relative path, pointing to either a file or directory.
+    /// * `path_or_file` - The path or file to add to the collection. This can
+    ///   be an absolute or relative path, pointing to either a file or
+    ///   directory.
     ///
     /// # Returns
     ///
@@ -254,8 +378,8 @@ impl DraftBuilder {
     ///
     /// # Usage Patterns
     ///
-    /// This method is commonly used in builder patterns where you need to collect
-    /// multiple paths before processing them:
+    /// This method is commonly used in builder patterns where you need to
+    /// collect multiple paths before processing them:
     ///
     /// ```
     /// # use std::path::PathBuf;
@@ -362,12 +486,12 @@ impl DraftBuilder {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), DraftError> {
     ///
-    ///     let base_url = Url::parse("https://www.example.com/")?;
-    ///     let min_date = "2025-08-04";
+    /// let base_url = Url::parse("https://www.example.com/")?;
+    /// let min_date = "2025-08-04";
     ///
-    ///     let mut builder = Draft::builder(base_url, None);
+    /// let mut builder = Draft::builder(base_url, None);
     ///
-    ///     builder.with_minimum_date(min_date)?;
+    /// builder.with_minimum_date(min_date)?;
     /// #   Ok(())
     /// # }
     /// ```
@@ -379,15 +503,15 @@ impl DraftBuilder {
     /// # use url::Url;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), DraftError> {
-    /// #   
+    /// #
     /// #   let base_url = Url::parse("https://www.example.com/")?;
     /// #   let min_date = "2025-08-04";
-    /// #   
+    /// #
     /// #   let mut builder = Draft::builder(base_url, None);
     ///
-    ///     let posts_res = builder.with_minimum_date(min_date)?
-    ///         .build().await;
-    ///     posts_res.expect_err("as no blog posts have been added");
+    /// let posts_res =
+    ///     builder.with_minimum_date(min_date)?.build().await;
+    /// posts_res.expect_err("as no blog posts have been added");
     /// #   Ok(())
     /// # }
     /// ```
@@ -400,13 +524,14 @@ impl DraftBuilder {
 
     /// Sets whether draft items should be allowed.
     ///
-    /// This method configures the builder to either allow or disallow draft items
-    /// during processing. When set to `true`, draft items will be included; when
-    /// set to `false`, they will be filtered out.
+    /// This method configures the builder to either allow or disallow draft
+    /// items during processing. When set to `true`, draft items will be
+    /// included; when set to `false`, they will be filtered out.
     ///
     /// # Arguments
     ///
-    /// * `allow_draft` - A boolean value indicating whether draft items should be allowed
+    /// * `allow_draft` - A boolean value indicating whether draft items should
+    ///   be allowed
     ///
     /// # Returns
     ///
@@ -482,14 +607,16 @@ fn today() -> toml::value::Datetime {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{
+        error::Error,
+        io,
+        path::{Path, PathBuf},
+    };
 
-    use std::error::Error;
-    use std::path::{Path, PathBuf};
-
-    use std::io;
     use toml::value::Date;
     use url::Url;
+
+    use super::*;
 
     // get draft builder
     fn gdb() -> DraftBuilder {
