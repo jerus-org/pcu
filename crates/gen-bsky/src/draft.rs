@@ -643,7 +643,7 @@ mod tests {
 
         for path in &special_paths {
             let result = builder.add_path_or_file(*path);
-            assert!(result.is_ok(), "Failed to add path: {}", path);
+            assert!(result.is_ok(), "Failed to add path: {path}");
         }
 
         assert_eq!(builder.path_or_file.len(), special_paths.len());
@@ -677,7 +677,7 @@ mod tests {
         builder.add_path_or_file("duplicate.txt").unwrap();
         builder.add_path_or_file("duplicate.txt").unwrap();
 
-        // Should allow duplicates (behavior may vary based on requirements)
+        // Should allow duplicates (behaviour may vary based on requirements)
         assert_eq!(builder.path_or_file.len(), 3);
         for path in &builder.path_or_file {
             assert_eq!(*path, PathBuf::from("duplicate.txt"));
