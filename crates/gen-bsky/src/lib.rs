@@ -66,7 +66,7 @@
 //! "The post on",
 //! "The website",
 //! "And can be",
-//! "As extesive as",
+//! "As extensive as",
 //! "Required.",
 //! "They will be",
 //! "Converted to",
