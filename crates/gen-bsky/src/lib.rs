@@ -92,12 +92,14 @@
 //!    
 //!     // Set the filters for blog posts
 //!     builder
-//!     .with_post_store(post_store)?
-//!     .with_referrer_store(referrer_store)?
 //!     .with_minimum_date(date)?
 //!     .with_allow_draft(allow_draft);
-//!    
-//!     builder.build().await
+//!
+//!     // Create the `Draft` structure to write the files
+//!     let mut drafter = builder.build().await?;
+//!
+//!     drafter.write_referrers(Some(referrer_store))?
+//!            .write_bluesky_posts(Some(post_store))?;
 //!
 //!  }
 //! ```
