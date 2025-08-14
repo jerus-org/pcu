@@ -63,9 +63,11 @@ impl CmdDraft {
         let mut posts = builder.build().await?;
         log::info!("Initial posts: {posts:#?}");
 
-        posts.write_referrers(None)?;
+        posts
+            .write_referrers(None)?
+            .write_bluesky_posts(None)
+            .await?;
         log::info!("Referrers written: {posts:#?}");
-        posts.write_bluesky_posts(None).await?;
         log::info!("Bluesky posts written: {posts:#?}");
 
         let sign = Sign::Gpg;
