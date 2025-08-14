@@ -171,6 +171,105 @@ pub struct DraftBuilder {
 // }
 
 impl DraftBuilder {
+    /// Adds a path or file to the builder's collection.
+    ///
+    /// This method appends a new path or file to the internal collection of paths
+    /// that will be processed. The path can be either a file or a directory, and
+    /// the method accepts any type that can be converted into a `PathBuf`.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `P` - Any type that implements `Into<PathBuf>`, such as `&str`, `String`,
+    ///   `&Path`, or `PathBuf` itself.
+    ///
+    /// # Arguments
+    ///
+    /// * `path_or_file` - The path or file to add to the collection. This can be
+    ///   an absolute or relative path, pointing to either a file or directory.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(&mut Self)` on success, allowing for method chaining.
+    /// Returns `Err(DraftError)` if an error occurs during processing.
+    ///
+    /// # Errors
+    ///
+    /// This method may return a `DraftError` in future implementations if path
+    /// validation is added, though the current implementation always succeeds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::path::PathBuf;
+    /// # #[derive(Debug)]
+    /// # enum DraftError {
+    /// #     // Error variants
+    /// # }
+    /// # struct PathBuilder {
+    /// #     path_or_file: Vec<PathBuf>,
+    /// # }
+    /// # impl PathBuilder {
+    /// #     pub fn new() -> Self { Self { path_or_file: Vec::new() } }
+    /// #     pub fn add_path_or_file<P: Into<PathBuf>>(
+    /// #         &mut self,
+    /// #         path_or_file: P,
+    /// #     ) -> Result<&mut Self, DraftError> {
+    /// #         self.path_or_file.push(path_or_file.into());
+    /// #         Ok(self)
+    /// #     }
+    /// # }
+    /// let mut builder = gdb();
+    ///
+    /// // Add a file using a string literal
+    /// builder.add_path_or_file("./config.toml")?;
+    ///
+    /// // Add a directory using a String
+    /// let dir = String::from("/home/user/documents");
+    /// builder.add_path_or_file(dir)?;
+    ///
+    /// // Add using a PathBuf
+    /// use std::path::PathBuf;
+    /// let path = PathBuf::from("../assets/images");
+    /// builder.add_path_or_file(path)?;
+    ///
+    /// // Method chaining is supported
+    /// builder
+    ///     .add_path_or_file("file1.txt")?
+    ///     .add_path_or_file("file2.txt")?
+    ///     .add_path_or_file("/absolute/path/file3.txt")?;
+    /// # Ok::<(), DraftError>(())
+    /// ```
+    ///
+    /// # Usage Patterns
+    ///
+    /// This method is commonly used in builder patterns where you need to collect
+    /// multiple paths before processing them:
+    ///
+    /// ```
+    /// # use std::path::PathBuf;
+    /// # #[derive(Debug)]
+    /// # enum DraftError {}
+    /// # struct PathBuilder {
+    /// #     path_or_file: Vec<PathBuf>,
+    /// # }
+    /// # impl PathBuilder {
+    /// #     pub fn new() -> Self { Self { path_or_file: Vec::new() } }
+    /// #     pub fn add_path_or_file<P: Into<PathBuf>>(
+    /// #         &mut self,
+    /// #         path_or_file: P,
+    /// #     ) -> Result<&mut Self, DraftError> {
+    /// #         self.path_or_file.push(path_or_file.into());
+    /// #         Ok(self)
+    /// #     }
+    /// #     pub fn build(self) -> Vec<PathBuf> { self.path_or_file }
+    /// # }
+    /// let paths = gdb()
+    ///     .add_path_or_file("src/")?
+    ///     .add_path_or_file("tests/")?
+    ///     .add_path_or_file("Cargo.toml")?
+    ///     .build();
+    /// # Ok::<(), DraftError>(())
+    /// ```
     pub fn add_path_or_file<P: Into<PathBuf>>(
         &mut self,
         path_or_file: P,
@@ -372,6 +471,8 @@ fn today() -> toml::value::Datetime {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use std::path::{Path, PathBuf};
 
     use toml::value::Date;
     use url::Url;
