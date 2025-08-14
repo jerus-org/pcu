@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(draft)-enhance draft struct documentation(pr [#675])
 - ♻️ refactor(draft)-separate draft builder into its own module(pr [#676])
 - 📝 docs(draft_builder)-add documentation for today function(pr [#677])
+- 📝 docs(draft)-enhance documentation for Draft builder(pr [#678])
 
 ### Fixed
 
@@ -1683,6 +1684,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#675]: https://github.com/jerus-org/pcu/pull/675
 [#676]: https://github.com/jerus-org/pcu/pull/676
 [#677]: https://github.com/jerus-org/pcu/pull/677
+[#678]: https://github.com/jerus-org/pcu/pull/678
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55

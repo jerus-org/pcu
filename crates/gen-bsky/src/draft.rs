@@ -185,12 +185,116 @@ pub struct Draft {
 }
 
 impl Draft {
-    /// Start a builder for the draft struct.
+    /// Creates a new builder for drafting Bluesky posts for one or more blog posts.
     ///
-    /// ## Parameters
+    /// This function provides the entry point for writing draft Bluesky posts and referrer short links using the builder pattern. The builder allows for step-by-step configuration of all required and optional parameters before constructing the final `Draft`.
     ///
-    /// - `base_url`: the base url for the website (e.g. `https://wwww.example.com/`)
-    /// - `store`: the location to store draft posts (e.g. `bluesky`)
+    /// # Parameters
+    ///
+    /// * `base_url` - The base URL for the website or blog. This should include the
+    ///   scheme (http/https) and domain, and will be used for generating absolute
+    ///   URLs. The URL should typically end with a trailing slash for proper path joining.
+    ///
+    /// * `root` - An optional path to the root directory for blog content and
+    ///   operations. If `None`, the root of the repository will be used as the default.
+    ///   If provided, this path will serve as the base for all relative file operations.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `DraftBuilder` instance that can be used to configure additional
+    /// settings before building the final `Draft`.
+    ///
+    /// # Examples
+    ///
+    /// ## Basic Usage with Required Parameters
+    ///
+    /// ```
+    /// # use std::path::PathBuf;
+    /// # use url::Url;
+    /// # use gen_bsky::{Draft, DraftError};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), DraftError > {
+    /// let base_url = Url::parse("https://myblog.example.com/")?;
+    ///
+    /// let draft_res = Draft::builder(base_url, None)
+    ///     .build().await;
+    /// draft_res.is_err(); // as there are no blog posts
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## With Custom Root Directory
+    ///
+    /// ```
+    /// # use std::path::PathBuf;
+    /// # use url::Url;
+    /// # use gen_bsky::{Draft, DraftError};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), DraftError > {
+    /// let base_url = Url::parse("https://blog.company.com")?;
+    /// let website_root = PathBuf::from("www_root");
+    ///
+    /// let draft_res = Draft::builder(base_url, Some(&website_root))
+    ///     .build().await;
+    /// draft_res.is_err(); // as there are no blog posts
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Complete Builder Chain (Typical Usage)
+    ///
+    /// ```
+    /// # use std::path::PathBuf;
+    /// # use url::Url;
+    /// # use gen_bsky::{Draft, DraftError};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), DraftError > {
+    /// let base_url = Url::parse("https://myblog.example.com/")?;
+    /// let root_dir = PathBuf::from("www");
+    ///
+    /// let draft_res = Draft::builder(base_url, Some(&root_dir))
+    ///     .with_bsky_store("data/bluesky")
+    ///     .with_referrer_store("data/referrers")
+    ///     .add_path_or_file("content/blog")
+    ///     .build().await;
+    /// draft_res.is_err(); // as there are no blog posts
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # URL Format Guidelines
+    ///
+    /// The `base_url` parameter should follow these guidelines:
+    ///
+    /// - **Include scheme**: Always use `http://` or `https://`
+    /// - **Include domain**: The full domain name (e.g., `example.com`)
+    /// - **Trailing slash**: Recommended for proper URL joining (e.g., `https://example.com/`)
+    /// - **No path components**: Keep it to the root domain unless you have a specific subdirectory setup
+    ///
+    /// ## Good URL Examples
+    /// - `https://myblog.com/`
+    /// - `https://blog.company.com/`
+    /// - `http://localhost:8080/` (development)
+    /// - `https://user.github.io/blog/` (if blog is in a subdirectory)
+    ///
+    /// ## Avoid These URL Patterns
+    /// - `example.com` (missing scheme)
+    /// - `https://example.com/posts` (unnecessary path component)
+    /// - `https://example.com//` (double trailing slash)
+    ///
+    /// # Root Directory behaviour
+    ///
+    /// When `root` is:
+    /// - **`Some(path)`**: Uses the provided path as the base directory for all file operations
+    /// - **`None`**: The builder will use a default root directory (typically the current working directory or a configured default)
+    ///
+    /// The root directory affects:
+    /// - Where blog post files are searched for
+    /// - Root for Bluesky post drafts
+    /// - Root for referrer link html files
     pub fn builder(base_url: Url, root: Option<&PathBuf>) -> DraftBuilder {
         DraftBuilder::new(base_url, root)
     }
