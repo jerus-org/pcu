@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(lib)-enhance documentation and examples(pr [#671])
 - ✅ test(draft)-add comprehensive tests and documentation for add_path_or_file method(pr [#672])
 - 📝 docs(draft)-enhance error documentation(pr [#673])
+- ✅ test(draft)-add comprehensive tests for DraftError variants(pr [#674])
 
 ### Fixed
 
@@ -1675,6 +1676,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#671]: https://github.com/jerus-org/pcu/pull/671
 [#672]: https://github.com/jerus-org/pcu/pull/672
 [#673]: https://github.com/jerus-org/pcu/pull/673
+[#674]: https://github.com/jerus-org/pcu/pull/674
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
