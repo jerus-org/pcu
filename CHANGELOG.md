@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(draft)-enhance error documentation(pr [#673])
 - ✅ test(draft)-add comprehensive tests for DraftError variants(pr [#674])
 - 📝 docs(draft)-enhance draft struct documentation(pr [#675])
+- ♻️ refactor(draft)-separate draft builder into its own module(pr [#676])
 
 ### Fixed
 
@@ -1679,6 +1680,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#673]: https://github.com/jerus-org/pcu/pull/673
 [#674]: https://github.com/jerus-org/pcu/pull/674
 [#675]: https://github.com/jerus-org/pcu/pull/675
+[#676]: https://github.com/jerus-org/pcu/pull/676
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
