@@ -420,7 +420,7 @@ mod tests {
 
         for (i, date) in valid_dates.iter().enumerate() {
             let result = builder.with_minimum_date(date);
-            assert!(result.is_ok(), "Date '{}' should be valid", date);
+            assert!(result.is_ok(), "Date '{date}' should be valid");
             assert_eq!(builder.minimum_date.date, expected_dates[i]);
         }
     }
@@ -476,7 +476,7 @@ mod tests {
 
         for invalid_date in invalid_dates {
             let result = builder.with_minimum_date(invalid_date);
-            assert!(result.is_err(), "Date '{}' should be invalid", invalid_date);
+            assert!(result.is_err(), "Date '{invalid_date}' should be invalid");
             let valid_error = matches!(
                 result.expect_err("certain of failure"),
                 DraftError::TomlDatetimeParse(_)
