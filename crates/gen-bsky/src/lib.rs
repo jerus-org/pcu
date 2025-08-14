@@ -5,17 +5,23 @@
 
 //! # Gen-bsky - Bluesky Blog Post Generator
 //!
-//! Automatically creates and publishes Bluesky posts for your markdown blog articles using frontmatter metadata. This tool maximizes character usage by generating short URLs, leaving more space for compelling post content.
+//! Automatically creates and publishes Bluesky posts for your markdown blog
+//! articles using frontmatter metadata. This tool maximizes character usage by
+//! generating short URLs, leaving more space for compelling post content.
 //!
 //! ## Two-Step Workflow
 //!
-//! The process separates drafting from publishing to integrate seamlessly with your website build and deployment pipeline:
+//! The process separates drafting from publishing to integrate seamlessly with
+//! your website build and deployment pipeline:
 //!
 //! ### 1. Draft Phase (During Website Build)
 //! When processing your markdown blog files:
-//! - **Generate short URLs**: Creates compact referrer links and saves them to your short URL store
-//! - **Compose posts**: Extracts metadata from frontmatter to craft Bluesky post text
-//! - **Queue for publishing**: Saves draft posts to a repository store for later posting
+//! - **Generate short URLs**: Creates compact referrer links and saves them to
+//!   your short URL store
+//! - **Compose posts**: Extracts metadata from frontmatter to craft Bluesky
+//!   post text
+//! - **Queue for publishing**: Saves draft posts to a repository store for
+//!   later posting
 //!
 //! ### 2. Publishing Phase (During Website Deployment)
 //! When your website goes live:
@@ -31,12 +37,17 @@
 //!
 //! ## Draft Example
 //!
-//! The following example demonstrates the complete drafting workflow—from building the post structure to generating both the short URL referrer and the final Bluesky post content.
+//! The following example demonstrates the complete drafting workflow—from
+//! building the post structure to generating both the short URL referrer and
+//! the final Bluesky post content.
 //!
 //! ```rust should_panic
-//! # use gen_bsky::{Draft, DraftError};
+//! # use std::path::PathBuf;
+//! #
 //! # use url::Url;
 //! # use toml::value::Datetime;
+//! #
+//! # use gen_bsky::{Draft, DraftError};
 //! #
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), DraftError> {
@@ -93,9 +104,11 @@
 //!
 //! ## Post Processing Example
 //!
-//! The post files generated in the previous example are processed through the following workflow:
+//! The post files generated in the previous example are processed through the
+//! following workflow:
 //! 1. **Read**: Retrieve posts from the local store
-//! 2. **Publish**: Submit each post to the Bluesky account using the provided credentials (ID and password)
+//! 2. **Publish**: Submit each post to the Bluesky account using the provided
+//!    credentials (ID and password)
 //! 3. **Clean up**: Remove successfully published posts from the store
 //!
 //! Posts that fail to publish remain in the store for retry or manual review.
