@@ -490,6 +490,242 @@ mod tests {
     }
 
     #[test]
+    fn test_add_path_or_file_with_string_literal() {
+        let mut builder = gdb();
+        let result = builder.add_path_or_file("test/path.txt");
+
+        assert!(result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 1);
+        assert_eq!(builder.path_or_file[0], PathBuf::from("test/path.txt"));
+    }
+
+    #[test]
+    fn test_add_path_or_file_with_string() {
+        let mut builder = gdb();
+        let path_string = String::from("/home/user/document.md");
+        let result = builder.add_path_or_file(path_string);
+
+        assert!(result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 1);
+        assert_eq!(
+            builder.path_or_file[0],
+            PathBuf::from("/home/user/document.md")
+        );
+    }
+
+    #[test]
+    fn test_add_path_or_file_with_pathbuf() {
+        let mut builder = gdb();
+        let path_buf = PathBuf::from("src/main.rs");
+        let expected_path = path_buf.clone();
+        let result = builder.add_path_or_file(path_buf);
+
+        assert!(result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 1);
+        assert_eq!(builder.path_or_file[0], expected_path);
+    }
+
+    #[test]
+    fn test_add_path_or_file_with_path_ref() {
+        let mut builder = gdb();
+        let path = Path::new("config/settings.json");
+        let result = builder.add_path_or_file(path);
+
+        assert!(result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 1);
+        assert_eq!(
+            builder.path_or_file[0],
+            PathBuf::from("config/settings.json")
+        );
+    }
+
+    #[test]
+    fn test_add_path_or_file_multiple_paths() {
+        let mut builder = gdb();
+
+        builder.add_path_or_file("file1.txt").unwrap();
+        builder.add_path_or_file("file2.txt").unwrap();
+        builder.add_path_or_file("dir/file3.txt").unwrap();
+
+        assert_eq!(builder.path_or_file.len(), 3);
+        assert_eq!(builder.path_or_file[0], PathBuf::from("file1.txt"));
+        assert_eq!(builder.path_or_file[1], PathBuf::from("file2.txt"));
+        assert_eq!(builder.path_or_file[2], PathBuf::from("dir/file3.txt"));
+    }
+
+    #[test]
+    fn test_add_path_or_file_returns_mutable_reference() {
+        let mut builder = gdb();
+        let result = builder.add_path_or_file("test.txt");
+
+        assert!(result.is_ok());
+        let builder_ref = result.unwrap();
+
+        // Should be able to continue modifying through the returned reference
+        let second_result = builder_ref.add_path_or_file("test2.txt");
+        assert!(second_result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 2);
+    }
+
+    #[test]
+    fn test_add_path_or_file_method_chaining() {
+        let mut builder = gdb();
+
+        let result = builder
+            .add_path_or_file("path1.txt")
+            .and_then(|b| b.add_path_or_file("path2.txt"))
+            .and_then(|b| b.add_path_or_file("path3.txt"));
+
+        assert!(result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 3);
+        assert_eq!(builder.path_or_file[0], PathBuf::from("path1.txt"));
+        assert_eq!(builder.path_or_file[1], PathBuf::from("path2.txt"));
+        assert_eq!(builder.path_or_file[2], PathBuf::from("path3.txt"));
+    }
+
+    #[test]
+    fn test_add_path_or_file_empty_path() {
+        let mut builder = gdb();
+        let result = builder.add_path_or_file("");
+
+        assert!(result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 1);
+        assert_eq!(builder.path_or_file[0], PathBuf::from(""));
+    }
+
+    #[test]
+    fn test_add_path_or_file_absolute_paths() {
+        let mut builder = gdb();
+
+        #[cfg(unix)]
+        let absolute_path = "/usr/local/bin/tool";
+        #[cfg(windows)]
+        let absolute_path = r"C:\Program Files\Tool\tool.exe";
+
+        let result = builder.add_path_or_file(absolute_path);
+        assert!(result.is_ok());
+        assert_eq!(builder.path_or_file.len(), 1);
+        assert_eq!(builder.path_or_file[0], PathBuf::from(absolute_path));
+    }
+
+    #[test]
+    fn test_add_path_or_file_relative_paths() {
+        let mut builder = gdb();
+
+        let relative_paths = vec![
+            "./current_dir/file.txt",
+            "../parent_dir/file.txt",
+            "../../grandparent/file.txt",
+            "subdir/file.txt",
+        ];
+
+        for path in &relative_paths {
+            builder.add_path_or_file(*path).unwrap();
+        }
+
+        assert_eq!(builder.path_or_file.len(), relative_paths.len());
+        for (i, expected_path) in relative_paths.iter().enumerate() {
+            assert_eq!(builder.path_or_file[i], PathBuf::from(expected_path));
+        }
+    }
+
+    #[test]
+    fn test_add_path_or_file_special_characters() {
+        let mut builder = gdb();
+
+        let special_paths = vec![
+            "file with spaces.txt",
+            "file-with-dashes.txt",
+            "file_with_underscores.txt",
+            "file.with.dots.txt",
+            "file[with]brackets.txt",
+        ];
+
+        for path in &special_paths {
+            let result = builder.add_path_or_file(*path);
+            assert!(result.is_ok(), "Failed to add path: {}", path);
+        }
+
+        assert_eq!(builder.path_or_file.len(), special_paths.len());
+        for (i, expected_path) in special_paths.iter().enumerate() {
+            assert_eq!(builder.path_or_file[i], PathBuf::from(expected_path));
+        }
+    }
+
+    #[test]
+    fn test_add_path_or_file_preserves_order() {
+        let mut builder = gdb();
+
+        let paths_in_order = vec!["first.txt", "second.txt", "third.txt", "fourth.txt"];
+
+        for path in &paths_in_order {
+            builder.add_path_or_file(*path).unwrap();
+        }
+
+        // Verify paths are stored in the order they were added
+        for (i, expected_path) in paths_in_order.iter().enumerate() {
+            assert_eq!(builder.path_or_file[i], PathBuf::from(expected_path));
+        }
+    }
+
+    #[test]
+    fn test_add_path_or_file_duplicate_paths() {
+        let mut builder = gdb();
+
+        // Add the same path multiple times
+        builder.add_path_or_file("duplicate.txt").unwrap();
+        builder.add_path_or_file("duplicate.txt").unwrap();
+        builder.add_path_or_file("duplicate.txt").unwrap();
+
+        // Should allow duplicates (behavior may vary based on requirements)
+        assert_eq!(builder.path_or_file.len(), 3);
+        for path in &builder.path_or_file {
+            assert_eq!(*path, PathBuf::from("duplicate.txt"));
+        }
+    }
+
+    #[test]
+    fn test_add_path_or_file_mixed_types_in_sequence() {
+        let mut builder = gdb();
+
+        // Add paths using different input types in sequence
+        builder.add_path_or_file("string_literal.txt").unwrap();
+        builder
+            .add_path_or_file(String::from("owned_string.txt"))
+            .unwrap();
+        builder
+            .add_path_or_file(PathBuf::from("pathbuf.txt"))
+            .unwrap();
+        builder.add_path_or_file(Path::new("path_ref.txt")).unwrap();
+
+        assert_eq!(builder.path_or_file.len(), 4);
+        assert_eq!(builder.path_or_file[0], PathBuf::from("string_literal.txt"));
+        assert_eq!(builder.path_or_file[1], PathBuf::from("owned_string.txt"));
+        assert_eq!(builder.path_or_file[2], PathBuf::from("pathbuf.txt"));
+        assert_eq!(builder.path_or_file[3], PathBuf::from("path_ref.txt"));
+    }
+
+    #[test]
+    fn test_add_path_or_file_builder_state_after_success() {
+        let mut builder = gdb();
+
+        // Initial state
+        assert_eq!(builder.path_or_file.len(), 0);
+
+        // Add first path
+        builder.add_path_or_file("first.txt").unwrap();
+        assert_eq!(builder.path_or_file.len(), 1);
+
+        // Add second path
+        builder.add_path_or_file("second.txt").unwrap();
+        assert_eq!(builder.path_or_file.len(), 2);
+
+        // Verify both paths are present
+        assert_eq!(builder.path_or_file[0], PathBuf::from("first.txt"));
+        assert_eq!(builder.path_or_file[1], PathBuf::from("second.txt"));
+    }
+
+    #[test]
     fn test_with_minimum_date_valid_date() {
         let mut builder = gdb();
         let result = builder.with_minimum_date("2023-12-25");
