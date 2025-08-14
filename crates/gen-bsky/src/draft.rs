@@ -12,33 +12,45 @@ use thiserror::Error;
 use toml::value::Datetime;
 use url::Url;
 
-/// Error enum for Draft type
+/// Error types that can occur during draft processing operations.
+///
+/// This enum represents all possible errors that may arise when drafting
+/// bluesky posts for blogs, including file system operations, validation errors, and
+/// parsing failures. The enum is marked as `#[non_exhaustive]` to allow for
+/// future error variants without breaking existing code.
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum DraftError {
-    /// Array capacity too large
+    /// Indicates that a future capacity allocation would exceed system limits.
     #[error("Future capacity is too large")]
     FutureCapacityTooLarge,
-    /// Path to add blog posts is not found
+
+    /// The specified file or directory path could not be found.
     #[error("path not found: `{0}`")]
     PathNotFound(String),
-    /// Incorrect file extension for blog post (must be `.md`)
+
+    /// A file has an incorrect extension for blog post processing.
     #[error("file extension invalid (must be `{1}`): {0}")]
     FileExtensionInvalid(String, String),
-    /// Blog post list is empty
+
+    /// No blog posts were found to process.
     #[error("blog post list is empty")]
     BlogPostListEmpty,
-    /// Blog post list is empty
+
+    /// No blog posts remain after applying filtering criteria.
     #[error("blog post list is empty after qualifications have been applied")]
     QualifiedBlogPostListEmpty,
-    /// Error reported by IO library
-    #[error("io error says: {0:?}")]
+
+    /// An I/O operation failed.
+    #[error("io error: {0}")]
     Io(#[from] std::io::Error),
-    /// Error reported by url crate parse
-    #[error("Url says: {0:?}")]
+
+    /// URL parsing failed.
+    #[error("URL parse error: {0}")]
     UrlParse(#[from] url::ParseError),
-    /// Error reported by toml
-    #[error("Toml Datetime Parse says: {0:?}")]
+
+    /// TOML datetime parsing failed.
+    #[error("TOML datetime parse error: {0}")]
     TomlDatetimeParse(#[from] toml::value::DatetimeParseError),
 }
 
