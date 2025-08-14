@@ -185,24 +185,30 @@ pub struct Draft {
 }
 
 impl Draft {
-    /// Creates a new builder for drafting Bluesky posts for one or more blog posts.
+    /// Creates a new builder for drafting Bluesky posts for one or more blog
+    /// posts.
     ///
-    /// This function provides the entry point for writing draft Bluesky posts and referrer short links using the builder pattern. The builder allows for step-by-step configuration of all required and optional parameters before constructing the final `Draft`.
+    /// This function provides the entry point for writing draft Bluesky posts
+    /// and referrer short links using the builder pattern. The builder allows
+    /// for step-by-step configuration of all required and optional parameters
+    /// before constructing the final `Draft`.
     ///
     /// # Parameters
     ///
-    /// * `base_url` - The base URL for the website or blog. This should include the
-    ///   scheme (http/https) and domain, and will be used for generating absolute
-    ///   URLs. The URL should typically end with a trailing slash for proper path joining.
+    /// * `base_url` - The base URL for the website or blog. This should include
+    ///   the scheme (http/https) and domain, and will be used for generating
+    ///   absolute URLs. The URL should typically end with a trailing slash for
+    ///   proper path joining.
     ///
     /// * `root` - An optional path to the root directory for blog content and
-    ///   operations. If `None`, the root of the repository will be used as the default.
-    ///   If provided, this path will serve as the base for all relative file operations.
+    ///   operations. If `None`, the root of the repository will be used as the
+    ///   default. If provided, this path will serve as the base for all
+    ///   relative file operations.
     ///
     /// # Returns
     ///
-    /// Returns a `DraftBuilder` instance that can be used to configure additional
-    /// settings before building the final `Draft`.
+    /// Returns a `DraftBuilder` instance that can be used to configure
+    /// additional settings before building the final `Draft`.
     ///
     /// # Examples
     ///
@@ -217,8 +223,7 @@ impl Draft {
     /// # async fn main() -> Result<(), DraftError > {
     /// let base_url = Url::parse("https://myblog.example.com/")?;
     ///
-    /// let draft_res = Draft::builder(base_url, None)
-    ///     .build().await;
+    /// let draft_res = Draft::builder(base_url, None).build().await;
     /// draft_res.is_err(); // as there are no blog posts
     /// # Ok(())
     /// # }
@@ -236,8 +241,8 @@ impl Draft {
     /// let base_url = Url::parse("https://blog.company.com")?;
     /// let website_root = PathBuf::from("www_root");
     ///
-    /// let draft_res = Draft::builder(base_url, Some(&website_root))
-    ///     .build().await;
+    /// let draft_res =
+    ///     Draft::builder(base_url, Some(&website_root)).build().await;
     /// draft_res.is_err(); // as there are no blog posts
     /// # Ok(())
     /// # }
@@ -245,7 +250,7 @@ impl Draft {
     ///
     /// ## Complete Builder Chain (Typical Usage)
     ///
-    /// ```
+    /// ```should_panic
     /// # use std::path::PathBuf;
     /// # use url::Url;
     /// # use gen_bsky::{Draft, DraftError};
@@ -254,13 +259,16 @@ impl Draft {
     /// # async fn main() -> Result<(), DraftError > {
     /// let base_url = Url::parse("https://myblog.example.com/")?;
     /// let root_dir = PathBuf::from("www");
+    /// let referrer_store = PathBuf::from("static/short");
+    /// let bluesky_store = PathBuf::from("post_store");
     ///
-    /// let draft_res = Draft::builder(base_url, Some(&root_dir))
-    ///     .with_bsky_store("data/bluesky")
-    ///     .with_referrer_store("data/referrers")
-    ///     .add_path_or_file("content/blog")
-    ///     .build().await;
-    /// draft_res.is_err(); // as there are no blog posts
+    /// let mut draft = Draft::builder(base_url, Some(&root_dir))
+    ///     .add_path_or_file("content/blog")?
+    ///     .build() // assuming build found blog posts
+    ///     .await?;
+    ///
+    /// draft.write_referrers(Some(referrer_store))?;
+    /// draft.write_bluesky_posts(Some(bluesky_store)).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -272,7 +280,8 @@ impl Draft {
     /// - **Include scheme**: Always use `http://` or `https://`
     /// - **Include domain**: The full domain name (e.g., `example.com`)
     /// - **Trailing slash**: Recommended for proper URL joining (e.g., `https://example.com/`)
-    /// - **No path components**: Keep it to the root domain unless you have a specific subdirectory setup
+    /// - **No path components**: Keep it to the root domain unless you have a
+    ///   specific subdirectory setup
     ///
     /// ## Good URL Examples
     /// - `https://myblog.com/`
@@ -288,8 +297,10 @@ impl Draft {
     /// # Root Directory behaviour
     ///
     /// When `root` is:
-    /// - **`Some(path)`**: Uses the provided path as the base directory for all file operations
-    /// - **`None`**: The builder will use a default root directory (typically the current working directory or a configured default)
+    /// - **`Some(path)`**: Uses the provided path as the base directory for all
+    ///   file operations
+    /// - **`None`**: The builder will use a default root directory (typically
+    ///   the current working directory or a configured default)
     ///
     /// The root directory affects:
     /// - Where blog post files are searched for
@@ -299,8 +310,100 @@ impl Draft {
         DraftBuilder::new(base_url, root)
     }
 
-    /// Write referrer html files for blog posts.
-    /// The referrer html file provides a self-hosted short link that
+    /// Generates referrer HTML files for all blog posts in the collection.
+    ///
+    /// This method creates self-hosted short link HTML files that serve as
+    /// referrer endpoints for blog posts. Each referrer file acts as a
+    /// redirect mechanism forwarding visitors to the actual blog post content.
+    ///
+    /// # Purpose
+    ///
+    /// Referrer files enable:
+    /// - **Short links**: Provide shorter, cleaner URLs for sharing
+    /// - **Redirect control**: Manage redirects without external services
+    ///
+    /// When a referrer file is successfully created that link will be used when
+    /// generating the Bluesky post as the link to the blog to post. This saves
+    /// characters in the Bluesky post for the title, description and tags.
+    ///
+    /// # Parameters
+    ///
+    /// * `referrer_store` - Optional override for the referrer storage
+    ///   directory.
+    ///   - If `Some(path)`, uses the provided path relative to the root
+    ///     directory
+    ///   - If `None`, uses the default `referrer_store` configured in `Draft`
+    ///   - The path is always resolved relative to the `root` directory
+    ///
+    /// # behaviour
+    ///
+    /// 1. **Directory Resolution**: Determines the target directory using
+    ///    either the provided override or the configured default
+    /// 2. **Directory Creation**: Ensures the referrer storage directory
+    ///    exists, creating it if necessary
+    /// 3. **File Generation**: Iterates through all blog posts and generates
+    ///    referrer HTML files for each
+    /// 4. **Error Handling**: Logs warnings for individual post failures but
+    ///    continues processing remaining posts
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` on successful completion, even if some individual blog
+    /// posts failed to generate referrer files. Returns `Err(DraftError)`
+    /// only for critical failures like directory creation errors.
+    ///
+    /// # Errors
+    ///
+    /// This method can return errors for:
+    /// - **I/O failures**: Directory creation or file system access issues
+    /// - **Permission errors**: Insufficient permissions to create directories
+    ///   or files
+    /// - **Path resolution**: Issues with path construction or validation
+    ///
+    /// Individual blog post processing errors are logged as warnings but do not
+    /// cause the method to fail.
+    ///
+    /// # Generated File Structure
+    ///
+    /// The method creates a directory structure like:
+    ///
+    /// ```text
+    /// <root>/
+    /// └── <referrer_store>/
+    ///     ├── aaBB23.html      # Referrer file for first post
+    ///     ├── ZZ24ss.html      # Referrer file for second post
+    ///     └── ...              # Additional referrer files
+    /// ```
+    ///
+    /// Each HTML file contains redirect logic to forward visitors to the actual
+    /// blog post.
+    ///
+    /// # URL Structure
+    ///
+    /// Referrer URLs typically follow the pattern:
+    /// - **Referrer URL**: `{base_url}/{referrer_store}/{post-slug}.html`
+    /// - **Target URL**: `/{path-to-post}/{post-slug}` (or similar)
+    ///
+    /// # Error Handling Strategy
+    ///
+    /// The method uses a "best effort" approach:
+    /// - **Critical errors** (directory creation): Method fails immediately
+    /// - **Individual post errors**: Logged as warnings, processing continues
+    /// - **Final result**: Success if directory operations succeed, regardless
+    ///   of individual post failures
+    ///
+    /// This ensures that partial failures don't prevent the generation of
+    /// referrer files for posts that can be processed successfully.
+    ///
+    /// # Logging
+    ///
+    /// Failed blog post processing is logged at the `WARN` level with the
+    /// format: ```text
+    /// Blog post: `<post_title>` skipped because of error `<error_details>`
+    /// ```
+    /// 
+    /// Ensure your logging framework is configured to capture these warnings
+    /// for debugging purposes.
     pub fn write_referrers(&mut self, referrer_store: Option<PathBuf>) -> Result<(), DraftError> {
         let referrer_store = if let Some(p) = referrer_store.as_deref() {
             p
