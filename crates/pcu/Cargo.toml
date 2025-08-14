@@ -61,3 +61,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "pcu"
 path = "src/bin/main.rs"
+
+[lints]
+workspace = true
