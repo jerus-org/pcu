@@ -401,7 +401,7 @@ impl Draft {
     /// format: ```text
     /// Blog post: `<post_title>` skipped because of error `<error_details>`
     /// ```
-    /// 
+    ///
     /// Ensure your logging framework is configured to capture these warnings
     /// for debugging purposes.
     pub fn write_referrers(&mut self, referrer_store: Option<PathBuf>) -> Result<(), DraftError> {
