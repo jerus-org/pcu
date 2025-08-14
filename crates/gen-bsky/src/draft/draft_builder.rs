@@ -14,8 +14,8 @@ use super::{blog_post::BlogPost, Draft, DraftError};
 pub struct DraftBuilder {
     base_url: Url,
     root: PathBuf,
-    bsky_store: PathBuf,
-    refer_store: PathBuf,
+    // bsky_store: PathBuf,
+    // refer_store: PathBuf,
     path_or_file: Vec<PathBuf>,
     minimum_date: Datetime,
     allow_draft: bool,
@@ -38,8 +38,8 @@ impl DraftBuilder {
         DraftBuilder {
             base_url,
             root,
-            bsky_store: PathBuf::from("bluesky"),
-            refer_store: PathBuf::from("static").join("s"),
+            // bsky_store: PathBuf::from("bluesky"),
+            // refer_store: PathBuf::from("static").join("s"),
             path_or_file: Vec::new(),
             minimum_date: today(),
             allow_draft: false,
@@ -324,8 +324,8 @@ impl DraftBuilder {
 
         Ok(Draft {
             blog_posts,
-            bsky_store: self.bsky_store.clone(),
-            referrer_store: self.refer_store.clone(),
+            bsky_store: PathBuf::from("bluesky"),
+            referrer_store: PathBuf::from("static").join("s"),
             base_url: self.base_url.clone(),
             root: self.root.to_path_buf(),
         })
