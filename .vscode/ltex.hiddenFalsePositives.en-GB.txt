@@ -56,3 +56,4 @@
 {"rule":"EN_UNPAIRED_QUOTES","sentence":"^\\Qprev_only = \"\"\" 🎉 Congratulations!\\E$"}
 {"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qdefault = \"\"\"\\E$"}
 {"rule":"EN_UNPAIRED_QUOTES","sentence":"^\\Qdefault = \"\"\"\\E$"}
+{"rule":"EN_COMPOUNDS_POST_PROCESSING","sentence":"^\\Q✨ add initial Cargo.toml for gen-bsky crate(pr #634)\n✨ add front matter parsing functionality(pr #638)\n✨ add error variants and write bluesky record(pr #639)\n✨ add draft management for blog posts(pr #640)\n✨ add getter method for bluesky field(pr #643)\n✨ add draft allowance option to blog post processing(pr #648)\n✨ add link module for blog post draft(pr #652)\n✨ add smart release tasks(pr #658)\n✨ add URL parse error handling(pr #667)\\E$"}
