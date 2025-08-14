@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 💄 style(config)-update rustfmt configuration and apply updated rules(pr [#669])
 - 📝 docs(lib)-enhance documentation for gen-bsky(pr [#670])
 - 📝 docs(lib)-enhance documentation and examples(pr [#671])
-- ✅ test(draft)-add comprehensive tests  and documentation for add_path_or_file method(pr [#672])
+- ✅ test(draft)-add comprehensive tests and documentation for add_path_or_file method(pr [#672])
 - 📝 docs(draft)-enhance error documentation(pr [#673])
 
 ### Fixed
