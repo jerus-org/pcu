@@ -1,12 +1,13 @@
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use chrono::Utc;
 use toml::value::Datetime;
 use url::Url;
 
-use super::blog_post::BlogPost;
-use super::{Draft, DraftError};
+use super::{blog_post::BlogPost, Draft, DraftError};
 
 #[non_exhaustive]
 #[derive(Debug, Clone)]
@@ -331,12 +332,70 @@ impl DraftBuilder {
     }
 }
 
+/// Returns the current date as a TOML-compatible datetime value.
+///
+/// This function creates a `toml::value::Datetime` representing today's date
+/// in UTC, without any time or timezone offset information. It's useful for
+/// creating date-only values that can be serialized to TOML format or used
+/// in TOML frontmatter.
+///
+///
+/// # Returns
+///
+/// Returns a `toml::value::Datetime` with:
+/// - `date`: Some(Date) containing the current UTC year, month, and day
+/// - `time`: None (no time component)
+/// - `offset`: None (no timezone information)
+///
+/// # Examples
+///
+/// ## Basic Usage
+///
+/// ```
+/// # use toml::value::Datetime;
+/// # use chrono::{Utc, Datelike};
+/// # fn today() -> toml::value::Datetime {
+/// #     use toml::value::Date;
+/// #     let date = Date {
+/// #         year: Utc::now().year() as u16,
+/// #         month: Utc::now().month() as u8,
+/// #         day: Utc::now().day() as u8,
+/// #     };
+/// #     Datetime {
+/// #         date: Some(date),
+/// #         time: None,
+/// #         offset: None,
+/// #     }
+/// # }
+/// let current_date = today();
+///
+/// // The datetime will have only a date component
+/// assert!(current_date.date.is_some());
+/// assert!(current_date.time.is_none());
+/// assert!(current_date.offset.is_none());
+///
+/// // Access the date components
+/// if let Some(date) = current_date.date {
+///     println!(
+///         "Today is {}-{:02}-{:02}",
+///         date.year, date.month, date.day
+///     );
+/// }
+/// ```
+///
+/// # Implementation Notes
+///
+/// The function performs a single call to `Utc::now()` to get the year, month,
+/// and day components. While this could theoretically result in returning
+/// yesterday's date if called just before midnight UTC, this is extremely
+/// unlikely in practice and the impact would be minimal.
 fn today() -> toml::value::Datetime {
     use chrono::Datelike;
+    let now = Utc::now();
     let date = toml::value::Date {
-        year: Utc::now().year() as u16,
-        month: Utc::now().month() as u8,
-        day: Utc::now().day() as u8,
+        year: now.year() as u16,
+        month: now.month() as u8,
+        day: now.day() as u8,
     };
 
     Datetime {

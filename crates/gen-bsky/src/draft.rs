@@ -5,7 +5,6 @@ mod draft_builder;
 
 use blog_post::BlogPost;
 use draft_builder::DraftBuilder;
-
 use thiserror::Error;
 use url::Url;
 
