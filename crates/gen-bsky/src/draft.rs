@@ -181,7 +181,7 @@ pub struct Draft {
     ///
     /// This path represents the base directory where blog content, templates,
     /// static files, and other blog-related files are located. The root
-    /// directory will be preprended to the bsky_store and referrer_store to
+    /// directory will be pretended to the bsky_store and referrer_store to
     /// ensure that stores are within the context of the website code.
     ///
     /// The default path is empty.
