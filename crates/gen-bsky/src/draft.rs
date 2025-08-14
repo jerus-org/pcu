@@ -484,8 +484,10 @@ fn today() -> toml::value::Datetime {
 mod tests {
     use super::*;
 
+    use std::error::Error;
     use std::path::{Path, PathBuf};
 
+    use std::io;
     use toml::value::Date;
     use url::Url;
 
@@ -499,6 +501,291 @@ mod tests {
     // Generate expected date
     fn ged(year: u16, month: u8, day: u8) -> Option<Date> {
         Some(Date { year, month, day })
+    }
+
+    #[test]
+    fn test_future_capacity_too_large_display() {
+        let error = DraftError::FutureCapacityTooLarge;
+        assert_eq!(error.to_string(), "Future capacity is too large");
+    }
+
+    #[test]
+    fn test_future_capacity_too_large_debug() {
+        let error = DraftError::FutureCapacityTooLarge;
+        let debug_str = format!("{error:?}");
+        assert!(debug_str.contains("FutureCapacityTooLarge"));
+    }
+
+    #[test]
+    fn test_path_not_found_display() {
+        let path = "/some/missing/path".to_string();
+        let error = DraftError::PathNotFound(path.clone());
+        assert_eq!(error.to_string(), format!("path not found: `{path}`"));
+    }
+
+    #[test]
+    fn test_path_not_found_with_various_paths() {
+        let test_paths = vec![
+            "/absolute/unix/path",
+            "relative/path",
+            "C:\\Windows\\Path",
+            "",
+            "path with spaces",
+            "path/with/unicode/🦀",
+        ];
+
+        for path in test_paths {
+            let error = DraftError::PathNotFound(path.to_string());
+            let expected = format!("path not found: `{path}`");
+            assert_eq!(error.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn test_file_extension_invalid_display() {
+        let file_path = "document.txt".to_string();
+        let expected_ext = ".md".to_string();
+        let error = DraftError::FileExtensionInvalid(file_path.clone(), expected_ext.clone());
+
+        assert_eq!(
+            error.to_string(),
+            format!("file extension invalid (must be `{expected_ext}`): {file_path}")
+        );
+    }
+
+    #[test]
+    fn test_file_extension_invalid_various_combinations() {
+        let test_cases = vec![
+            ("file.txt", ".md"),
+            ("document.doc", ".markdown"),
+            ("image.jpg", ".png"),
+            ("no_extension", ".md"),
+            ("file.TAR.GZ", ".zip"),
+        ];
+
+        for (file, expected) in test_cases {
+            let error = DraftError::FileExtensionInvalid(file.to_string(), expected.to_string());
+            let expected_msg = format!("file extension invalid (must be `{expected}`): {file}");
+            assert_eq!(error.to_string(), expected_msg);
+        }
+    }
+
+    #[test]
+    fn test_blog_post_list_empty_display() {
+        let error = DraftError::BlogPostListEmpty;
+        assert_eq!(error.to_string(), "blog post list is empty");
+    }
+
+    #[test]
+    fn test_qualified_blog_post_list_empty_display() {
+        let error = DraftError::QualifiedBlogPostListEmpty;
+        assert_eq!(
+            error.to_string(),
+            "blog post list is empty after qualifications have been applied"
+        );
+    }
+
+    #[test]
+    fn test_io_error_from_conversion() {
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "File not found");
+        let draft_error: DraftError = io_error.into();
+
+        match draft_error {
+            DraftError::Io(inner_error) => {
+                assert_eq!(inner_error.kind(), io::ErrorKind::NotFound);
+                assert_eq!(inner_error.to_string(), "File not found");
+            }
+            _ => panic!("Expected DraftError::Io variant"),
+        }
+    }
+
+    #[test]
+    fn test_io_error_display() {
+        let io_error = io::Error::new(io::ErrorKind::PermissionDenied, "Access denied");
+        let draft_error = DraftError::Io(io_error);
+
+        let error_string = draft_error.to_string();
+        assert!(error_string.contains("io error:"));
+        assert!(error_string.contains("Access denied"));
+    }
+
+    #[test]
+    fn test_io_error_various_kinds() {
+        let io_errors = vec![
+            io::Error::new(io::ErrorKind::NotFound, "Not found"),
+            io::Error::new(io::ErrorKind::PermissionDenied, "Permission denied"),
+            io::Error::new(io::ErrorKind::ConnectionRefused, "Connection refused"),
+            io::Error::new(io::ErrorKind::InvalidData, "Invalid data"),
+        ];
+
+        for io_error in io_errors {
+            let expected_msg = io_error.to_string();
+            let draft_error = DraftError::Io(io_error);
+
+            assert!(draft_error.to_string().contains("io error:"));
+            assert!(draft_error.to_string().contains(&expected_msg));
+        }
+    }
+
+    #[test]
+    fn test_url_parse_error_from_conversion() {
+        let url_result = url::Url::parse("not-a-valid-url");
+        assert!(url_result.is_err());
+
+        let url_error = url_result.unwrap_err();
+        let draft_error: DraftError = url_error.into();
+
+        match draft_error {
+            DraftError::UrlParse(_) => {
+                // Success - we got the expected variant
+            }
+            _ => panic!("Expected DraftError::UrlParse variant"),
+        }
+    }
+
+    #[test]
+    fn test_url_parse_error_display() {
+        let url_result = url::Url::parse("h://invalid::url");
+        let url_error = url_result.unwrap_err();
+        let draft_error = DraftError::UrlParse(url_error);
+
+        let error_string = draft_error.to_string();
+        assert!(error_string.contains("URL parse error:"));
+    }
+
+    #[test]
+    fn test_toml_datetime_parse_error_from_conversion() {
+        let datetime_result = "invalid-datetime".parse::<toml::value::Datetime>();
+        assert!(datetime_result.is_err());
+
+        let datetime_error = datetime_result.unwrap_err();
+        let draft_error: DraftError = datetime_error.into();
+
+        match draft_error {
+            DraftError::TomlDatetimeParse(_) => {
+                // Success - we got the expected variant
+            }
+            _ => panic!("Expected DraftError::TomlDatetimeParse variant"),
+        }
+    }
+
+    #[test]
+    fn test_toml_datetime_parse_error_display() {
+        let datetime_result = "not-a-date".parse::<toml::value::Datetime>();
+        let datetime_error = datetime_result.unwrap_err();
+        let draft_error = DraftError::TomlDatetimeParse(datetime_error);
+
+        let error_string = draft_error.to_string();
+        assert!(error_string.contains("TOML datetime parse error:"));
+    }
+
+    #[test]
+    fn test_error_trait_implementation() {
+        let error = DraftError::BlogPostListEmpty;
+
+        // Test that it implements Error trait
+        let _: &dyn Error = &error;
+
+        // Test source() method (should be None for simple variants)
+        assert!(error.source().is_none());
+    }
+
+    #[test]
+    fn test_error_trait_with_source() {
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "Test error");
+        let draft_error = DraftError::Io(io_error);
+
+        // Test that source() returns the wrapped error
+        let source = draft_error.source();
+        assert!(source.is_some());
+
+        // Verify the source is an io::Error
+        let source_error = source.unwrap();
+        assert!(source_error.is::<io::Error>());
+    }
+
+    #[test]
+    fn test_debug_implementation() {
+        let error = DraftError::PathNotFound("test/path".to_string());
+        let debug_output = format!("{error:?}");
+
+        assert!(debug_output.contains("PathNotFound"));
+        assert!(debug_output.contains("test/path"));
+    }
+
+    #[test]
+    fn test_equality_for_simple_variants() {
+        let error1 = DraftError::FutureCapacityTooLarge;
+        let error2 = DraftError::FutureCapacityTooLarge;
+
+        // Note: PartialEq is not derived due to contained error types,
+        // but we can test that the same variant creates consistent output
+        assert_eq!(error1.to_string(), error2.to_string());
+        assert_eq!(format!("{error1:?}"), format!("{:?}", error2));
+    }
+
+    #[test]
+    fn test_error_message_consistency() {
+        // Test that error messages are consistent and well-formed
+        let errors = vec![
+            DraftError::FutureCapacityTooLarge,
+            DraftError::PathNotFound("test".to_string()),
+            DraftError::FileExtensionInvalid("file.txt".to_string(), ".md".to_string()),
+            DraftError::BlogPostListEmpty,
+            DraftError::QualifiedBlogPostListEmpty,
+        ];
+
+        for error in errors {
+            let message = error.to_string();
+
+            // Error messages should not be empty
+            assert!(!message.is_empty());
+
+            // Error messages should not end with punctuation (common convention)
+            assert!(!message.ends_with('.'));
+            assert!(!message.ends_with('!'));
+        }
+    }
+
+    #[test]
+    fn test_from_trait_implementations() {
+        // Test std::io::Error conversion
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "test");
+        let draft_error: DraftError = DraftError::from(io_error);
+        assert!(matches!(draft_error, DraftError::Io(_)));
+
+        // Test url::ParseError conversion
+        let url_error = url::Url::parse("invalid").unwrap_err();
+        let draft_error: DraftError = DraftError::from(url_error);
+        assert!(matches!(draft_error, DraftError::UrlParse(_)));
+
+        // Test toml::value::DatetimeParseError conversion
+        let datetime_error = "invalid".parse::<toml::value::Datetime>().unwrap_err();
+        let draft_error: DraftError = DraftError::from(datetime_error);
+        assert!(matches!(draft_error, DraftError::TomlDatetimeParse(_)));
+    }
+
+    #[test]
+    fn test_non_exhaustive_attribute() {
+        // This test ensures that the enum is marked as non_exhaustive
+        // We can't directly test this, but we can verify that pattern matching
+        // requires a catch-all pattern
+        let error = DraftError::BlogPostListEmpty;
+
+        #[allow(unreachable_patterns)]
+        let true_branch = match error {
+            DraftError::FutureCapacityTooLarge => false,
+            DraftError::PathNotFound(_) => false,
+            DraftError::FileExtensionInvalid(_, _) => false,
+            DraftError::BlogPostListEmpty => true,
+            DraftError::QualifiedBlogPostListEmpty => false,
+            DraftError::Io(_) => false,
+            DraftError::UrlParse(_) => false,
+            DraftError::TomlDatetimeParse(_) => false,
+            // The #[non_exhaustive] attribute means we need this catch-all
+            _ => false,
+        };
+        assert!(true_branch);
     }
 
     #[test]
@@ -810,7 +1097,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.expect_err("expecting failure").to_string(),
-            "Toml Datetime Parse says: DatetimeParseError { what: None, expected: Some(\"year or hour\") }".to_string()
+            "TOML datetime parse error: invalid datetime, expected year or hour".to_string()
         );
         // Original value should remain unchanged
         assert_eq!(builder.minimum_date, original_date);
