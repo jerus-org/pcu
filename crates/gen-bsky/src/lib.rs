@@ -28,9 +28,69 @@
 //! - **Batch publish**: Posts all queued drafts to Bluesky
 //! - **Clean up**: Removes successfully posted drafts from the store
 //!
+//! ## Preparing Blog Post Front Matter
+//!
+//! The Bluesky post is generated using the blog post title, description and
+//! tags as documented in the frontmatter for blog post and the fully qualified
+//! link to the blog post or the short link (if generated).
+//!
+//! Bluesky posts are limited to 300 characters or graphemes. Attempting to
+//! generate a post that exceeds this limit will result in an error. The error
+//! will be logged as warning and processing will continue.
+//!
+//! In the event that the title, description and tags on the post are too long
+//! you can add a `[bluesky]` section to the front matter and specify
+//! alternative `description` and `tags` for use in generating the Bluesky post.
+//! The same title will be used and the long or short link (if generated).
+//!
+//! Example frontmatter with bluesky section:
+//!
+//! ```
+//! +++
+//! title = "Used as the header in the Bluesky blog post"
+//! description = """
+//! The descriptions of the blog post can be as necessary for the \
+//! publication of the website and as long as you need it to be. \
+//! The goals of publication on the website should be primary \
+//! ones driving the composition of this element. The description \
+//! will be used for the text on the Bluesky blog post and if it \
+//! is very long result in a Bluesky post that exceeds the size \
+//! allowed by the protocol."""
+//!
+//! [taxonomies]
+//! tags = ["Tags",
+//! "Should be",
+//! "Generated as",
+//! "Appropriate to the ",
+//! "Requirements of ",
+//! "The post on",
+//! "The website",
+//! "And can be",
+//! "As extesive as",
+//! "Required.",
+//! "They will be",
+//! "Converted to",
+//! "Hashtags"
+//! "And contribute to"
+//! "The size of the post."
+//! ]
+//!
+//! [bluesky]
+//! description = """\
+//! This description will be preferred allowing an edited version \
+//! of the description to ensure the Bluesky post can be kept \
+//! within the limits of the protocol."""
+//! tags = ["Likewise",
+//! "this tags section",
+//! "will be preferred"]
+//! +++
+//! ```
+//!
 //! ## Benefits of Short URLs
 //!
-//! By generating compact referrer URLs (like `https://www.example.com/s/A4t5rb.html` instead of `https://www.example.com/blog/gen-bsky-release-version-1.3.0/`), you gain valuable characters for:
+//! By generating compact referrer URLs (like `https://www.example.com/s/A4t5rb.html`
+//! instead of `https://www.example.com/blog/gen-bsky-release-version-1.3.0/`), you gain
+//! valuable characters for:
 //! - Engaging post titles
 //! - Descriptive content summaries
 //! - Relevant hashtags and mentions
