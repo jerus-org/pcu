@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug, Clone, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Extra {
     #[allow(dead_code)]
     bluesky: Option<super::Bluesky>,
