@@ -1,9 +1,11 @@
 use std::{
+    env,
+    ffi::{OsStr, OsString},
+    fs::{read_dir, DirEntry},
     path::{Path, PathBuf},
     str::FromStr,
 };
 
-use chrono::Utc;
 use toml::value::Datetime;
 use url::Url;
 
@@ -14,8 +16,6 @@ use super::{blog_post::BlogPost, Draft, DraftError};
 pub struct DraftBuilder {
     base_url: Url,
     root: PathBuf,
-    // bsky_store: PathBuf,
-    // refer_store: PathBuf,
     path_or_file: Vec<PathBuf>,
     minimum_date: Datetime,
     allow_draft: bool,
@@ -38,10 +38,8 @@ impl DraftBuilder {
         DraftBuilder {
             base_url,
             root,
-            // bsky_store: PathBuf::from("bluesky"),
-            // refer_store: PathBuf::from("static").join("s"),
             path_or_file: Vec::new(),
-            minimum_date: today(),
+            minimum_date: super::today(),
             allow_draft: false,
         }
     }
@@ -167,9 +165,11 @@ impl DraftBuilder {
 
         let mut blog_paths = Vec::new();
 
-        log::trace!("Walking directory at {}", path.display());
+        let walk_dir = www_src_root.join(path);
+        log::trace!("Walking directory at {}", walk_dir.display());
 
-        for entry in WalkDir::new(www_src_root.join(path)).into_iter().flatten() {
+        for entry in WalkDir::new(walk_dir).into_iter().flatten() {
+            log::debug!("Entry found: {entry:?}");
             if entry.path().extension().unwrap_or_default() == "md" {
                 let entry_as_path = entry.into_path();
                 let Ok(path_to_blog) = entry_as_path.strip_prefix(www_src_root) else {
@@ -306,6 +306,13 @@ impl DraftBuilder {
     pub async fn build(&mut self) -> Result<Draft, DraftError> {
         let mut blog_posts = Vec::new();
 
+        if self.path_or_file.is_empty() {
+            log::debug!("Add default path to the path list as it is empty.");
+            self.path_or_file = vec![PathBuf::new().join("content").join("blog")];
+        }
+
+        log::trace!("Paths and files to processes: {:?}", self.path_or_file);
+
         for path in self.path_or_file.iter() {
             let mut vec_fm = DraftBuilder::add_blog_posts(
                 path,
@@ -332,79 +339,6 @@ impl DraftBuilder {
     }
 }
 
-/// Returns the current date as a TOML-compatible datetime value.
-///
-/// This function creates a `toml::value::Datetime` representing today's date
-/// in UTC, without any time or timezone offset information. It's useful for
-/// creating date-only values that can be serialized to TOML format or used
-/// in TOML frontmatter.
-///
-///
-/// # Returns
-///
-/// Returns a `toml::value::Datetime` with:
-/// - `date`: Some(Date) containing the current UTC year, month, and day
-/// - `time`: None (no time component)
-/// - `offset`: None (no timezone information)
-///
-/// # Examples
-///
-/// ## Basic Usage
-///
-/// ```
-/// # use toml::value::Datetime;
-/// # use chrono::{Utc, Datelike};
-/// # fn today() -> toml::value::Datetime {
-/// #     use toml::value::Date;
-/// #     let date = Date {
-/// #         year: Utc::now().year() as u16,
-/// #         month: Utc::now().month() as u8,
-/// #         day: Utc::now().day() as u8,
-/// #     };
-/// #     Datetime {
-/// #         date: Some(date),
-/// #         time: None,
-/// #         offset: None,
-/// #     }
-/// # }
-/// let current_date = today();
-///
-/// // The datetime will have only a date component
-/// assert!(current_date.date.is_some());
-/// assert!(current_date.time.is_none());
-/// assert!(current_date.offset.is_none());
-///
-/// // Access the date components
-/// if let Some(date) = current_date.date {
-///     println!(
-///         "Today is {}-{:02}-{:02}",
-///         date.year, date.month, date.day
-///     );
-/// }
-/// ```
-///
-/// # Implementation Notes
-///
-/// The function performs a single call to `Utc::now()` to get the year, month,
-/// and day components. While this could theoretically result in returning
-/// yesterday's date if called just before midnight UTC, this is extremely
-/// unlikely in practice and the impact would be minimal.
-fn today() -> toml::value::Datetime {
-    use chrono::Datelike;
-    let now = Utc::now();
-    let date = toml::value::Date {
-        year: now.year() as u16,
-        month: now.month() as u8,
-        day: now.day() as u8,
-    };
-
-    Datetime {
-        date: Some(date),
-        time: None,
-        offset: None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::{
@@ -415,6 +349,8 @@ mod tests {
 
     use toml::value::Date;
     use url::Url;
+
+    use crate::draft::today;
 
     use super::*;
 
