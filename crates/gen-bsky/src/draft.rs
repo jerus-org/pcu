@@ -408,7 +408,7 @@ impl Draft {
     pub fn write_referrers(
         &mut self,
         referrer_store: Option<PathBuf>,
-    ) -> Result<&Self, DraftError> {
+    ) -> Result<&mut Self, DraftError> {
         let referrer_store = if let Some(p) = referrer_store.as_deref() {
             p
         } else {
@@ -437,9 +437,104 @@ impl Draft {
         Ok(self)
     }
 
-    /// Write Bluesky posts for the front matter.
+    /// Generates Bluesky social media posts for all blog posts in the
+    /// collection.
+    ///
+    /// This async method creates Bluesky post records based on blog post
+    /// frontmatter and metadata. Each record contains the necessary
+    /// information to publish posts on the Bluesky social media platform,
+    /// enabling automated social media promotion of blog content.
+    ///
+    /// # Purpose
+    ///
+    /// Bluesky post generation enables:
+    /// - **Automated social promotion**: Generate social media posts from blog
+    ///   content
+    /// - **Consistent branding**: Standardized post format across all blog
+    ///   posts
+    /// - **Scheduled publishing**: Create posts that can be published at
+    ///   optimal times
+    /// - **Content integration**: Link social media presence with blog content
+    /// - **Batch processing**: Generate multiple posts efficiently in a single
+    ///   operation
+    ///
+    /// # Parameters
+    ///
+    /// * `bluesky_post_store` - Optional override for the Bluesky storage
+    ///   directory.
+    ///   - If `Some(path)`, uses the provided path relative to the root
+    ///     directory
+    ///   - If `None`, uses the default `[BSKY_STORE]` configured in `Draft`
+    ///   - The path is always resolved relative to the `root` directory
+    ///
+    /// # behaviour
+    ///
+    /// 1. **Directory Resolution**: Determines the target directory using
+    ///    either the provided override or the configured default
+    /// 2. **Directory Creation**: Ensures the Bluesky storage directory exists,
+    ///    creating it if necessary
+    /// 3. **Async Processing**: Asynchronously processes each blog post to
+    ///    generate Bluesky records
+    /// 4. **Error Handling**: Logs warnings for individual post failures but
+    ///    continues processing remaining posts
+    /// 5. **Best Effort**: Completes successfully even if some posts fail to
+    ///    process
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` on successful completion, even if some individual blog
+    /// posts failed to generate Bluesky records. Returns `Err(DraftError)`
+    /// only for critical failures like directory creation errors.
+    ///
+    /// # Errors
+    ///
+    /// This method can return errors for:
+    /// - **I/O failures**: Directory creation or file system access issues
+    /// - **Permission errors**: Insufficient permissions to create directories
+    ///   or files
+    /// - **Path resolution**: Issues with path construction or validation
+    ///
+    /// Individual blog post processing errors are logged as warnings but do not
+    /// cause the method to fail. These might include:
+    /// - Missing required frontmatter fields
+    /// - Invalid post content or metadata
+    /// - Network issues (if fetching external data)
+    ///
+    /// # Generated File Structure
+    ///
+    /// The method creates a directory structure like:
+    ///
+    /// ```text
+    /// <root>/
+    /// └── <bluesky_post_store>/
+    ///     ├── ppOO33.json      # Bluesky record for first post
+    ///     ├── qwRWlu.json      # Bluesky record for second post
+    ///     └── ...                   # Additional post records
+    /// ```
+    ///
+    /// Each JSON file contains structured data that can be consumed by Bluesky
+    /// publishing tools or APIs.
+    ///
+    /// # Async Considerations
+    ///
+    /// This method is async because:
+    /// - **Individual processing**: Each `write_bluesky_record_to` call is
+    ///   async
+    /// - **I/O operations**: File writing operations may be async
+    /// - **External APIs**: May fetch data from external services
+    ///
+    /// # Logging
+    ///
+    /// Failed blog post processing is logged at the `WARN` level with the
+    /// format:
+    /// ```text
+    /// Blog post: `<post_title>` skipped because of error `<error_details>`
+    /// ```
+    ///
+    /// Ensure your logging framework is configured to capture these warnings
+    /// for debugging and monitoring purposes.
     pub async fn write_bluesky_posts(
-        &self,
+        &mut self,
         bluesky_post_store: Option<PathBuf>,
     ) -> Result<(), DraftError> {
         // create store directory if it doesn't exist
@@ -455,7 +550,7 @@ impl Draft {
             std::fs::create_dir_all(&bluesky_post_store)?;
         }
 
-        for blog_post in &self.blog_posts {
+        for blog_post in self.blog_posts.iter_mut() {
             match blog_post.write_bluesky_record_to(&bluesky_post_store).await {
                 Ok(_) => continue,
                 Err(e) => {
@@ -470,4 +565,474 @@ impl Draft {
 
         Ok(())
     }
+}
+
+/// Returns the current date as a TOML-compatible datetime value.
+///
+/// This function creates a `toml::value::Datetime` representing today's date
+/// in UTC, without any time or timezone offset information. It's useful for
+/// creating date-only values that can be serialized to TOML format or used
+/// in TOML frontmatter.
+///
+///
+/// # Returns
+///
+/// Returns a `toml::value::Datetime` with:
+/// - `date`: Some(Date) containing the current UTC year, month, and day
+/// - `time`: None (no time component)
+/// - `offset`: None (no timezone information)
+///
+/// # Examples
+///
+/// ## Basic Usage
+///
+/// ```
+/// # use toml::value::Datetime;
+/// # use chrono::{Utc, Datelike};
+/// # fn today() -> toml::value::Datetime {
+/// #     use toml::value::Date;
+/// #     let date = Date {
+/// #         year: Utc::now().year() as u16,
+/// #         month: Utc::now().month() as u8,
+/// #         day: Utc::now().day() as u8,
+/// #     };
+/// #     Datetime {
+/// #         date: Some(date),
+/// #         time: None,
+/// #         offset: None,
+/// #     }
+/// # }
+/// let current_date = today();
+///
+/// // The datetime will have only a date component
+/// assert!(current_date.date.is_some());
+/// assert!(current_date.time.is_none());
+/// assert!(current_date.offset.is_none());
+///
+/// // Access the date components
+/// if let Some(date) = current_date.date {
+///     println!(
+///         "Today is {}-{:02}-{:02}",
+///         date.year, date.month, date.day
+///     );
+/// }
+/// ```
+///
+/// # Implementation Notes
+///
+/// The function performs a single call to `Utc::now()` to get the year, month,
+/// and day components. While this could theoretically result in returning
+/// yesterday's date if called just before midnight UTC, this is extremely
+/// unlikely in practice and the impact would be minimal.
+pub(crate) fn today() -> toml::value::Datetime {
+    use chrono::{Datelike, Utc};
+    let now = Utc::now();
+    let date = toml::value::Date {
+        year: now.year() as u16,
+        month: now.month() as u8,
+        day: now.day() as u8,
+    };
+
+    toml::value::Datetime {
+        date: Some(date),
+        time: None,
+        offset: None,
+    }
+}
+
+// ============================================================================
+// TESTS
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::{fs::File, io::Write, path::Path, str::FromStr};
+
+    use log::LevelFilter;
+
+    use super::blog_post::front_matter::FrontMatter;
+    use super::*;
+
+    fn get_test_logger(level: LevelFilter) {
+        let mut builder = env_logger::Builder::new();
+        builder.filter(None, level);
+        builder.format_timestamp_secs().format_module_path(false);
+        let _ = builder.try_init();
+    }
+
+    // // Mock types for testing
+    // #[derive(Debug, PartialEq)]
+    // enum DraftError {
+    //     Io(std::io::Error),
+    // }
+
+    // impl From<std::io::Error> for DraftError {
+    //     fn from(e: std::io::Error) -> Self {
+    //         DraftError::Io(e)
+    //     }
+    // }
+
+    // impl std::fmt::Display for DraftError {
+    //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    //         match self {
+    //             DraftError::Io(e) => write!(f, "IO error: {}", e),
+    //         }
+    //     }
+    // }
+
+    // impl std::error::Error for DraftError {}
+
+    // // Mock BlogPost for testing
+    // #[derive(Clone)]
+    // struct BlogPost {
+    //     title: String,
+    //     should_fail: bool,
+    //     call_count: Arc<Mutex<usize>>,
+    // }
+
+    // impl BlogPost {
+    //     fn new(title: &str) -> Self {
+    //         Self {
+    //             title: title.to_string(),
+    //             should_fail: false,
+    //             call_count: Arc::new(Mutex::new(0)),
+    //         }
+    //     }
+
+    //     fn new_failing(title: &str) -> Self {
+    //         Self {
+    //             title: title.to_string(),
+    //             should_fail: true,
+    //             call_count: Arc::new(Mutex::new(0)),
+    //         }
+    //     }
+
+    //     fn title(&self) -> &str {
+    //         &self.title
+    //     }
+
+    //     async fn write_bluesky_record_to(
+    //         &self,
+    //         _store_path: &std::path::Path,
+    //     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    //         // Increment call count
+    //         *self.call_count.lock().unwrap() += 1;
+
+    //         if self.should_fail {
+    //             Err("Simulated blog post error".into())
+    //         } else {
+    //             Ok(())
+    //         }
+    //     }
+
+    //     fn call_count(&self) -> usize {
+    //         *self.call_count.lock().unwrap()
+    //     }
+    // }
+
+    // // Mock Draft struct
+    // struct Draft {
+    //     bsky_store: PathBuf,
+    //     root: PathBuf,
+    //     blog_posts: Vec<BlogPost>,
+    // }
+
+    // impl Draft {
+    //     fn new() -> Self {
+    //         Self {
+    //             bsky_store: PathBuf::from("bluesky"),
+    //             root: PathBuf::from("."),
+    //             blog_posts: vec![],
+    //         }
+    //     }
+
+    //     async fn write_bluesky_posts(
+    //         &self,
+    //         bluesky_post_store: Option<PathBuf>,
+    //     ) -> Result<(), DraftError> {
+    //         let bluesky_post_store = if let Some(p) = bluesky_post_store.as_deref() {
+    //             p
+    //         } else {
+    //             self.bsky_store.as_ref()
+    //         };
+
+    //         let bluesky_post_store = self.root.join(bluesky_post_store);
+
+    //         if !bluesky_post_store.exists() {
+    //             std::fs::create_dir_all(&bluesky_post_store)?;
+    //         }
+
+    //         for blog_post in &self.blog_posts {
+    //             match blog_post.write_bluesky_record_to(&bluesky_post_store).await {
+    //                 Ok(_) => continue,
+    //                 Err(e) => {
+    //                     // In real implementation, this would use log::warn!
+    //                     eprintln!(
+    //                         "Blog post: `{}` skipped because of error `{e}`",
+    //                         blog_post.title()
+    //                     );
+    //                     continue;
+    //                 }
+    //             }
+    //         }
+
+    //         Ok(())
+    //     }
+    // }
+
+    fn create_blog_post(dir: &Path, name: &str, front_matter: &FrontMatter) {
+        log::debug!(
+            "path: `{}`, name: `{name}`, frontmatter: {front_matter:?}",
+            dir.display()
+        );
+        let blog_store = dir.join("content").join("blog");
+
+        if !blog_store.exists() {
+            log::debug!("creating blog store: `{}`", blog_store.display());
+            std::fs::create_dir_all(&blog_store).unwrap();
+        }
+
+        let blog_name = blog_store.join(name);
+
+        let mut fd = File::create(blog_name).unwrap();
+        let buffer = format!("+++\n{}+++\n", toml::to_string(front_matter).unwrap());
+        fd.write_all(buffer.as_bytes()).unwrap();
+
+        for entry in blog_store
+            .read_dir()
+            .expect("read_dir call failed")
+            .flatten()
+        {
+            log::debug!("Entry found in `{}` of `{:?}`", blog_store.display(), entry);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_write_bluesky_posts_with_default_store() {
+        get_test_logger(LevelFilter::Debug);
+        let random_name = crate::util::random_name();
+        log::debug!("Random name for test directory: `{random_name}`");
+        let temp_dir = PathBuf::new().join(random_name);
+        fs::create_dir(&temp_dir).unwrap();
+        log::trace!("Created temp directory: {temp_dir:?}");
+        let base_url = Url::from_str("https://www.example.com/").unwrap();
+
+        let first_post = FrontMatter::new("First Post", "Description of first post");
+        let second_post = FrontMatter::new("Second Post", "Description of second post");
+
+        create_blog_post(temp_dir.as_path(), "first-post.md", &first_post);
+        create_blog_post(temp_dir.as_path(), "second-post.md", &second_post);
+
+        for entry in temp_dir
+            .as_path()
+            .join("content")
+            .join("blog")
+            .read_dir()
+            .expect("read_dir call failed")
+            .flatten()
+        {
+            log::debug!(
+                "Entry found in of `{}`",
+                entry.file_name().to_string_lossy()
+            );
+        }
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir))
+            .build()
+            .await
+            .unwrap();
+
+        let result = draft.write_bluesky_posts(None).await;
+
+        assert!(result.is_ok());
+
+        // Verify directory was created
+        let expected_path = temp_dir.join("bluesky");
+        assert!(expected_path.exists());
+        assert!(expected_path.is_dir());
+
+        // Verify all posts were processed
+        for post in &draft.blog_posts {
+            log::debug!("Checking if written post file: {post:#?}");
+            assert!(post.bluesky_written());
+        }
+
+        fs::remove_dir_all(temp_dir).unwrap();
+    }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_with_custom_store() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.blog_posts = vec![BlogPost::new("Test Post")];
+
+    //     let custom_store = PathBuf::from("custom/bluesky/path");
+    //     let result = draft.write_bluesky_posts(Some(custom_store.clone())).await;
+
+    //     assert!(result.is_ok());
+
+    //     // Verify custom directory was created
+    //     let expected_path = temp_dir.path().join(custom_store);
+    //     assert!(expected_path.exists());
+    //     assert!(expected_path.is_dir());
+
+    //     // Verify post was processed
+    //     assert_eq!(draft.blog_posts[0].call_count(), 1);
+    // }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_creates_nested_directories() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.blog_posts = vec![BlogPost::new("Test Post")];
+
+    //     let nested_store = PathBuf::from("deeply/nested/bluesky/directory");
+    //     let result = draft.write_bluesky_posts(Some(nested_store.clone())).await;
+
+    //     assert!(result.is_ok());
+
+    //     // Verify nested directory structure was created
+    //     let expected_path = temp_dir.path().join(nested_store);
+    //     assert!(expected_path.exists());
+    //     assert!(expected_path.is_dir());
+    // }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_continues_on_individual_failures() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.blog_posts = vec![
+    //         BlogPost::new("Success Post 1"),
+    //         BlogPost::new_failing("Failing Post"),
+    //         BlogPost::new("Success Post 2"),
+    //     ];
+
+    //     let result = draft.write_bluesky_posts(None).await;
+
+    //     // Method should succeed despite individual post failure
+    //     assert!(result.is_ok());
+
+    //     // Verify all posts were attempted
+    //     for post in &draft.blog_posts {
+    //         assert_eq!(post.call_count(), 1);
+    //     }
+
+    //     // Directory should still be created
+    //     let expected_path = temp_dir.path().join("bluesky");
+    //     assert!(expected_path.exists());
+    // }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_empty_blog_posts() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.blog_posts = vec![];
+
+    //     let result = draft.write_bluesky_posts(None).await;
+
+    //     assert!(result.is_ok());
+
+    //     // Directory should still be created even with no posts
+    //     let expected_path = temp_dir.path().join("bluesky");
+    //     assert!(expected_path.exists());
+    // }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_existing_directory() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.blog_posts = vec![BlogPost::new("Test Post")];
+
+    //     // Pre-create the directory
+    //     let store_path = temp_dir.path().join("bluesky");
+    //     std::fs::create_dir_all(&store_path).unwrap();
+
+    //     let result = draft.write_bluesky_posts(None).await;
+
+    //     assert!(result.is_ok());
+    //     assert!(store_path.exists());
+    //     assert_eq!(draft.blog_posts[0].call_count(), 1);
+    // }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_path_resolution() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.bsky_store = PathBuf::from("default/bsky");
+    //     draft.blog_posts = vec![BlogPost::new("Path Test")];
+
+    //     // Test with None (should use default bsky_store)
+    //     let result = draft.write_bluesky_posts(None).await;
+    //     assert!(result.is_ok());
+
+    //     let default_path = temp_dir.path().join("default/bsky");
+    //     assert!(default_path.exists());
+
+    //     // Test with Some (should use override)
+    //     let override_path = PathBuf::from("override/bsky");
+    //     let result = draft.write_bluesky_posts(Some(override_path.clone())).await;
+    //     assert!(result.is_ok());
+
+    //     let override_full_path = temp_dir.path().join(override_path);
+    //     assert!(override_full_path.exists());
+    // }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_multiple_calls() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.blog_posts = vec![BlogPost::new("Multi Test 1"), BlogPost::new("Multi Test 2")];
+
+    //     // First call
+    //     let result1 = draft.write_bluesky_posts(None).await;
+    //     assert!(result1.is_ok());
+
+    //     // Verify first call processed posts
+    //     for post in &draft.blog_posts {
+    //         assert_eq!(post.call_count(), 1);
+    //     }
+
+    //     // Second call
+    //     let result2 = draft.write_bluesky_posts(None).await;
+    //     assert!(result2.is_ok());
+
+    //     // Verify second call also processed posts
+    //     for post in &draft.blog_posts {
+    //         assert_eq!(post.call_count(), 2);
+    //     }
+    // }
+
+    // #[tokio::test]
+    // async fn test_write_bluesky_posts_all_posts_fail() {
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let mut draft = Draft::new();
+    //     draft.root = temp_dir.path().to_path_buf();
+    //     draft.blog_posts = vec![
+    //         BlogPost::new_failing("Fail 1"),
+    //         BlogPost::new_failing("Fail 2"),
+    //         BlogPost::new_failing("Fail 3"),
+    //     ];
+
+    //     let result = draft.write_bluesky_posts(None).await;
+
+    //     // Should still succeed even if all individual posts fail
+    //     assert!(result.is_ok());
+
+    //     // All posts should have been attempted
+    //     for post in &draft.blog_posts {
+    //         assert_eq!(post.call_count(), 1);
+    //     }
+
+    //     // Directory should be created
+    //     let expected_path = temp_dir.path().join("bluesky");
+    //     assert!(expected_path.exists());
+    // }
 }
