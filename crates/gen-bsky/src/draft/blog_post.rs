@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-mod front_matter;
+pub(crate) mod front_matter;
 
 use bsky_sdk::{
     api::{app::bsky::feed::post::RecordData, types::string::Datetime as BskyDatetime},
@@ -80,12 +80,19 @@ pub(super) struct BlogPost {
     redirector: Redirector,
     /// The generated short link URL for the post.
     post_short_link: Option<Url>,
+    /// Flag indicating that the Bluesky post is saved to the store
+    bluesky_written: bool,
 }
 
 /// Report values in private fields
 impl BlogPost {
     pub fn title(&self) -> &str {
         self.frontmatter.title()
+    }
+
+    // #[cfg(test)]
+    pub fn bluesky_written(&self) -> bool {
+        self.bluesky_written
     }
 }
 
@@ -99,7 +106,7 @@ impl BlogPost {
     ) -> Result<BlogPost, BlogPostError> {
         let blog_file = www_src_root.join(blog_path);
 
-        let frontmatter = match front_matter::FrontMatter::new(&blog_file, min_date, allow_draft) {
+        let frontmatter = match front_matter::FrontMatter::read(&blog_file, min_date, allow_draft) {
             Ok(fm) => fm,
             Err(e) => match e {
                 front_matter::FrontMatterError::DraftNotAllowed => {
@@ -139,6 +146,7 @@ impl BlogPost {
             post_link: link,
             redirector,
             post_short_link: None,
+            bluesky_written: false,
         })
     }
 
@@ -232,7 +240,7 @@ impl BlogPost {
     /// The write function generates a short name based on post link
     /// and filename to ensure that similarly named posts have unique
     /// bluesky post names.
-    pub async fn write_bluesky_record_to(&self, store_dir: &Path) -> Result<(), BlogPostError> {
+    pub async fn write_bluesky_record_to(&mut self, store_dir: &Path) -> Result<(), BlogPostError> {
         // let Some(bluesky_post) = self.bluesky_post.as_ref() else {
         //     return Err(BlogPostError::BlueSkyPostNotConstructed);
         // };
@@ -277,6 +285,7 @@ impl BlogPost {
 
         serde_json::to_writer_pretty(&file, &bluesky_post)?;
         file.sync_all()?;
+        self.bluesky_written = true;
 
         Ok(())
     }
