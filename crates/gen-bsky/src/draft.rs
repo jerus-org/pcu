@@ -649,6 +649,7 @@ mod tests {
     use std::fs;
     use std::{fs::File, io::Write, path::Path, str::FromStr};
 
+    use bsky_sdk::api::client::com::atproto::temp;
     use log::{Level, LevelFilter};
 
     use super::blog_post::front_matter::FrontMatter;
@@ -857,6 +858,8 @@ mod tests {
             log::debug!("Checking if written post file: {post:#?}");
             assert!(post.bluesky_written());
         }
+
+        fs::remove_dir_all(temp_dir).unwrap();
     }
 
     // #[tokio::test]
