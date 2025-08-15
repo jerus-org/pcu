@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use serde::{Deserialize /* Deserializer */};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use toml::value::Datetime;
 use unicode_segmentation::UnicodeSegmentation;
@@ -61,8 +61,8 @@ pub(super) enum FrontMatterError {
 
 /// Type representing the expected and optional keys in the
 /// frontmatter of a markdown blog post file.
-#[derive(Default, Debug, Clone, Deserialize)]
-pub(super) struct FrontMatter {
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct FrontMatter {
     /// The title for the blog post.
     title: String,
     /// A description of the blog post.
@@ -92,8 +92,25 @@ impl FrontMatter {
     }
 }
 
+/// Create new file and set advanced values
+// #[cfg(test)]
 impl FrontMatter {
-    pub(super) fn new(
+    pub(crate) fn new(title: &str, description: &str) -> Self {
+        FrontMatter {
+            title: title.to_string(),
+            description: description.to_string(),
+            date: None,
+            updated: None,
+            draft: false,
+            taxonomies: None,
+            extra: None,
+            bluesky: None,
+        }
+    }
+}
+
+impl FrontMatter {
+    pub(super) fn read(
         blog_file: &PathBuf,
         min_date: Datetime,
         allow_draft: bool,
@@ -177,11 +194,7 @@ impl FrontMatter {
     /// recent date reported in the frontmatter.
     pub(super) fn most_recent_date(&self) -> Datetime {
         match (self.date.is_some(), self.updated.is_some()) {
-            (false, false) => Datetime {
-                date: None,
-                time: None,
-                offset: None,
-            },
+            (false, false) => super::super::today(),
             (true, false) => self.date.unwrap(),
             (false, true) => self.updated.unwrap(),
             (true, true) => max(self.date.unwrap(), self.updated.unwrap()),
