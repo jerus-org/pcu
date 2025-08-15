@@ -1,7 +1,4 @@
 use std::{
-    env,
-    ffi::{OsStr, OsString},
-    fs::{read_dir, DirEntry},
     path::{Path, PathBuf},
     str::FromStr,
 };
