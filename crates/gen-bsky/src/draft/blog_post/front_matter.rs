@@ -93,7 +93,7 @@ impl FrontMatter {
 }
 
 /// Create new file and set advanced values
-// #[cfg(test)]
+#[cfg(test)]
 impl FrontMatter {
     pub(crate) fn new(title: &str, description: &str) -> Self {
         FrontMatter {
