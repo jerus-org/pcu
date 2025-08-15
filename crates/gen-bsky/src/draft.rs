@@ -649,8 +649,7 @@ mod tests {
     use std::fs;
     use std::{fs::File, io::Write, path::Path, str::FromStr};
 
-    use bsky_sdk::api::client::com::atproto::temp;
-    use log::{Level, LevelFilter};
+    use log::LevelFilter;
 
     use super::blog_post::front_matter::FrontMatter;
     use super::*;
