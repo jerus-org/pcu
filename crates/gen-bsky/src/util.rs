@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use chrono::Utc;
-
+#[cfg(test)]
 pub(crate) fn random_name() -> String {
+    use chrono::Utc;
     let now = Utc::now();
     let millis = now.timestamp_millis();
 
