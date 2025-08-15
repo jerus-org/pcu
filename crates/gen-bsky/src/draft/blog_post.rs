@@ -90,7 +90,7 @@ impl BlogPost {
         self.frontmatter.title()
     }
 
-    // #[cfg(test)]
+    #[cfg(test)]
     pub fn bluesky_written(&self) -> bool {
         self.bluesky_written
     }
