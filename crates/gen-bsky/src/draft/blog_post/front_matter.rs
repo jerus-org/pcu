@@ -250,6 +250,7 @@ impl FrontMatter {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{Datelike, Utc};
     use log::LevelFilter;
 
     use super::*;
@@ -452,7 +453,14 @@ mod tests {
             ..Default::default()
         };
         let result = fm.most_recent_date();
-        assert!(result.date.is_none());
+        let now = Utc::now();
+
+        let expected_date = Some(toml::value::Date {
+            year: now.year() as u16,
+            month: now.month() as u8,
+            day: now.day() as u8,
+        });
+        assert_eq!(expected_date, result.date);
         assert!(result.time.is_none());
         assert!(result.offset.is_none());
     }

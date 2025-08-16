@@ -650,6 +650,7 @@ mod tests {
     use std::{fs::File, io::Write, path::Path, str::FromStr};
 
     use log::LevelFilter;
+    use tempfile::TempDir;
 
     use super::blog_post::front_matter::FrontMatter;
     use super::*;
@@ -781,7 +782,16 @@ mod tests {
     //     }
     // }
 
-    fn create_blog_post(dir: &Path, name: &str, front_matter: &FrontMatter) {
+    fn setup_test_environment() -> (TempDir, Url) {
+        get_test_logger(LevelFilter::Debug);
+        let temp_dir = tempfile::tempdir().unwrap();
+        log::debug!("Created temp directory: {temp_dir:?}");
+        let base_url = Url::from_str("https://www.example.com/").unwrap();
+
+        (temp_dir, base_url)
+    }
+
+    fn create_frontmatter_blog_post(dir: &Path, name: &str, front_matter: &FrontMatter) {
         log::debug!(
             "path: `{}`, name: `{name}`, frontmatter: {front_matter:?}",
             dir.display()
@@ -798,14 +808,25 @@ mod tests {
         let mut fd = File::create(blog_name).unwrap();
         let buffer = format!("+++\n{}+++\n", toml::to_string(front_matter).unwrap());
         fd.write_all(buffer.as_bytes()).unwrap();
+    }
 
-        for entry in blog_store
-            .read_dir()
-            .expect("read_dir call failed")
-            .flatten()
-        {
-            log::debug!("Entry found in `{}` of `{:?}`", blog_store.display(), entry);
+    fn create_freeform_blog_post(dir: &Path, name: &str, fm_text: &str) {
+        log::debug!(
+            "path: `{}`, name: `{name}`, frontmatter: {fm_text:?}",
+            dir.display()
+        );
+        let blog_store = dir.join("content").join("blog");
+
+        if !blog_store.exists() {
+            log::debug!("creating blog store: `{}`", blog_store.display());
+            std::fs::create_dir_all(&blog_store).unwrap();
         }
+
+        let blog_name = blog_store.join(name);
+
+        let mut fd = File::create(blog_name).unwrap();
+        let buffer = format!("+++\n{fm_text}+++\n");
+        fd.write_all(buffer.as_bytes()).unwrap();
     }
 
     #[tokio::test]
@@ -821,13 +842,12 @@ mod tests {
         let first_post = FrontMatter::new("First Post", "Description of first post");
         let second_post = FrontMatter::new("Second Post", "Description of second post");
 
-        create_blog_post(temp_dir.as_path(), "first-post.md", &first_post);
-        create_blog_post(temp_dir.as_path(), "second-post.md", &second_post);
+        create_frontmatter_blog_post(temp_dir.as_path(), "first-post.md", &first_post);
+        create_frontmatter_blog_post(temp_dir.as_path(), "second-post.md", &second_post);
 
         for entry in temp_dir
             .as_path()
-            .join("content")
-            .join("blog")
+            .join(crate::util::default_blog_dir())
             .read_dir()
             .expect("read_dir call failed")
             .flatten()
@@ -852,184 +872,197 @@ mod tests {
         // Verify all posts were processed
         for post in &draft.blog_posts {
             log::debug!("Checking if written post file: {post:#?}");
-            assert!(post.bluesky_written());
+            assert_eq!(post.bluesky_count(), 1);
         }
 
         fs::remove_dir_all(temp_dir).unwrap();
     }
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_with_custom_store() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.blog_posts = vec![BlogPost::new("Test Post")];
+    #[tokio::test]
+    async fn test_write_bluesky_posts_with_custom_store() {
+        get_test_logger(LevelFilter::Debug);
+        let temp_dir = tempfile::tempdir().unwrap();
+        log::debug!("Created temp directory: {temp_dir:?}");
+        let base_url = Url::from_str("https://www.example.com/").unwrap();
 
-    //     let custom_store = PathBuf::from("custom/bluesky/path");
-    //     let result = draft.write_bluesky_posts(Some(custom_store.clone())).await;
+        let first_post = FrontMatter::new("Test Post", "Description of test post");
+        create_frontmatter_blog_post(temp_dir.path(), "test-post.md", &first_post);
 
-    //     assert!(result.is_ok());
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
 
-    //     // Verify custom directory was created
-    //     let expected_path = temp_dir.path().join(custom_store);
-    //     assert!(expected_path.exists());
-    //     assert!(expected_path.is_dir());
+        let custom_store = PathBuf::from("custom/bluesky/path");
+        let result = draft.write_bluesky_posts(Some(custom_store.clone())).await;
 
-    //     // Verify post was processed
-    //     assert_eq!(draft.blog_posts[0].call_count(), 1);
-    // }
+        assert!(result.is_ok());
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_creates_nested_directories() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.blog_posts = vec![BlogPost::new("Test Post")];
+        // Verify custom directory was created
+        let expected_path = temp_dir.path().join(custom_store);
+        assert!(expected_path.exists());
+        assert!(expected_path.is_dir());
 
-    //     let nested_store = PathBuf::from("deeply/nested/bluesky/directory");
-    //     let result = draft.write_bluesky_posts(Some(nested_store.clone())).await;
+        // Verify post was processed
+        assert_eq!(draft.blog_posts[0].bluesky_count(), 1);
+    }
 
-    //     assert!(result.is_ok());
+    #[tokio::test]
+    async fn test_write_bluesky_posts_creates_nested_directories() {
+        let (temp_dir, base_url) = setup_test_environment();
 
-    //     // Verify nested directory structure was created
-    //     let expected_path = temp_dir.path().join(nested_store);
-    //     assert!(expected_path.exists());
-    //     assert!(expected_path.is_dir());
-    // }
+        let first_post = FrontMatter::new("Test Post", "Description of test post");
+        create_frontmatter_blog_post(temp_dir.path(), "test-post.md", &first_post);
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_continues_on_individual_failures() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.blog_posts = vec![
-    //         BlogPost::new("Success Post 1"),
-    //         BlogPost::new_failing("Failing Post"),
-    //         BlogPost::new("Success Post 2"),
-    //     ];
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
 
-    //     let result = draft.write_bluesky_posts(None).await;
+        let nested_store = PathBuf::from("deeply/nested/bluesky/directory");
+        let result = draft.write_bluesky_posts(Some(nested_store.clone())).await;
 
-    //     // Method should succeed despite individual post failure
-    //     assert!(result.is_ok());
+        assert!(result.is_ok());
 
-    //     // Verify all posts were attempted
-    //     for post in &draft.blog_posts {
-    //         assert_eq!(post.call_count(), 1);
-    //     }
+        // Verify nested directory structure was created
+        let expected_path = temp_dir.path().join(nested_store);
+        assert!(expected_path.exists());
+        assert!(expected_path.is_dir());
+    }
 
-    //     // Directory should still be created
-    //     let expected_path = temp_dir.path().join("bluesky");
-    //     assert!(expected_path.exists());
-    // }
+    #[tokio::test]
+    async fn test_write_bluesky_posts_continues_on_individual_failures() {
+        let (temp_dir, base_url) = setup_test_environment();
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_empty_blog_posts() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.blog_posts = vec![];
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+        let post_two = "Title: Test Post Two will Fail";
+        create_freeform_blog_post(temp_dir.path(), "post_2.md", post_two);
+        let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
 
-    //     let result = draft.write_bluesky_posts(None).await;
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
 
-    //     assert!(result.is_ok());
+        let result = draft.write_bluesky_posts(None).await;
 
-    //     // Directory should still be created even with no posts
-    //     let expected_path = temp_dir.path().join("bluesky");
-    //     assert!(expected_path.exists());
-    // }
+        // Method should succeed despite individual post failure
+        assert!(result.is_ok());
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_existing_directory() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.blog_posts = vec![BlogPost::new("Test Post")];
+        // Verify all posts were attempted
+        for post in &draft.blog_posts {
+            assert_eq!(post.bluesky_count(), 1);
+        }
 
-    //     // Pre-create the directory
-    //     let store_path = temp_dir.path().join("bluesky");
-    //     std::fs::create_dir_all(&store_path).unwrap();
+        assert_eq!(2, draft.blog_posts.len());
 
-    //     let result = draft.write_bluesky_posts(None).await;
+        // Directory should still be created
+        let expected_path = temp_dir.path().join("bluesky");
+        assert!(expected_path.exists());
+    }
 
-    //     assert!(result.is_ok());
-    //     assert!(store_path.exists());
-    //     assert_eq!(draft.blog_posts[0].call_count(), 1);
-    // }
+    #[tokio::test]
+    async fn test_write_bluesky_posts_empty_blog_posts() {
+        let (temp_dir, base_url) = setup_test_environment();
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_path_resolution() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.bsky_store = PathBuf::from("default/bsky");
-    //     draft.blog_posts = vec![BlogPost::new("Path Test")];
+        let result = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await;
 
-    //     // Test with None (should use default bsky_store)
-    //     let result = draft.write_bluesky_posts(None).await;
-    //     assert!(result.is_ok());
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            DraftError::BlogPostListEmpty.to_string()
+        );
 
-    //     let default_path = temp_dir.path().join("default/bsky");
-    //     assert!(default_path.exists());
+        // Directory should still be created even with no posts
+        let expected_path = temp_dir.path().join("bluesky");
+        assert!(!expected_path.exists());
+    }
 
-    //     // Test with Some (should use override)
-    //     let override_path = PathBuf::from("override/bsky");
-    //     let result = draft.write_bluesky_posts(Some(override_path.clone())).await;
-    //     assert!(result.is_ok());
+    #[tokio::test]
+    async fn test_write_bluesky_posts_existing_directory() {
+        let (temp_dir, base_url) = setup_test_environment();
 
-    //     let override_full_path = temp_dir.path().join(override_path);
-    //     assert!(override_full_path.exists());
-    // }
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_multiple_calls() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.blog_posts = vec![BlogPost::new("Multi Test 1"), BlogPost::new("Multi Test 2")];
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
 
-    //     // First call
-    //     let result1 = draft.write_bluesky_posts(None).await;
-    //     assert!(result1.is_ok());
+        // Pre-create the directory
+        let store_path = temp_dir.path().join("bluesky");
+        std::fs::create_dir_all(&store_path).unwrap();
 
-    //     // Verify first call processed posts
-    //     for post in &draft.blog_posts {
-    //         assert_eq!(post.call_count(), 1);
-    //     }
+        let result = draft.write_bluesky_posts(None).await;
 
-    //     // Second call
-    //     let result2 = draft.write_bluesky_posts(None).await;
-    //     assert!(result2.is_ok());
+        assert!(result.is_ok());
+        assert!(store_path.exists());
+        assert_eq!(draft.blog_posts[0].bluesky_count(), 1);
+    }
 
-    //     // Verify second call also processed posts
-    //     for post in &draft.blog_posts {
-    //         assert_eq!(post.call_count(), 2);
-    //     }
-    // }
+    #[tokio::test]
+    async fn test_write_bluesky_posts_path_resolution() {
+        let (temp_dir, base_url) = setup_test_environment();
 
-    // #[tokio::test]
-    // async fn test_write_bluesky_posts_all_posts_fail() {
-    //     let temp_dir = tempfile::tempdir().unwrap();
-    //     let mut draft = Draft::new();
-    //     draft.root = temp_dir.path().to_path_buf();
-    //     draft.blog_posts = vec![
-    //         BlogPost::new_failing("Fail 1"),
-    //         BlogPost::new_failing("Fail 2"),
-    //         BlogPost::new_failing("Fail 3"),
-    //     ];
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
 
-    //     let result = draft.write_bluesky_posts(None).await;
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
 
-    //     // Should still succeed even if all individual posts fail
-    //     assert!(result.is_ok());
+        // Test with None (should use default bsky_store)
+        let result = draft.write_bluesky_posts(None).await;
+        assert!(result.is_ok());
 
-    //     // All posts should have been attempted
-    //     for post in &draft.blog_posts {
-    //         assert_eq!(post.call_count(), 1);
-    //     }
+        let default_path = temp_dir.path().join(crate::util::default_bluesky_dir());
+        assert!(default_path.exists());
 
-    //     // Directory should be created
-    //     let expected_path = temp_dir.path().join("bluesky");
-    //     assert!(expected_path.exists());
-    // }
+        // Test with Some (should use override)
+        let override_path = PathBuf::from("override/bsky");
+        let result = draft.write_bluesky_posts(Some(override_path.clone())).await;
+        assert!(result.is_ok());
+
+        let override_full_path = temp_dir.path().join(override_path);
+        assert!(override_full_path.exists());
+    }
+
+    #[tokio::test]
+    async fn test_write_bluesky_posts_multiple_calls() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+        let post_two = FrontMatter::new("Test Post two will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_2.md", &post_two);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        // First call
+        let result1 = draft.write_bluesky_posts(None).await;
+        assert!(result1.is_ok());
+
+        // Verify first call processed posts
+        for post in &draft.blog_posts {
+            assert_eq!(post.bluesky_count(), 1);
+        }
+
+        // Second call
+        let result2 = draft.write_bluesky_posts(None).await;
+        assert!(result2.is_ok());
+
+        // Verify second call also processed posts
+        for post in &draft.blog_posts {
+            assert_eq!(post.bluesky_count(), 2);
+        }
+    }
 }
