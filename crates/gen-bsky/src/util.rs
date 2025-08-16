@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use crate::{BLOG_DIR, BSKY_DIR, REFERRER_DIR};
+
 #[cfg(test)]
 pub(crate) fn random_name() -> String {
     use chrono::Utc;
@@ -35,4 +37,28 @@ fn walk_directory_for_files(path: &Path) -> Vec<PathBuf> {
     }
 
     files
+}
+
+pub fn default_bluesky_dir() -> PathBuf {
+    PathBuf::new().join(BSKY_DIR)
+}
+
+pub fn default_referrer_dir() -> PathBuf {
+    let mut path = PathBuf::new();
+
+    for s in REFERRER_DIR {
+        path = path.join(s);
+    }
+
+    path
+}
+
+pub fn default_blog_dir() -> PathBuf {
+    let mut path = PathBuf::new();
+
+    for s in BLOG_DIR {
+        path = path.join(s);
+    }
+
+    path
 }

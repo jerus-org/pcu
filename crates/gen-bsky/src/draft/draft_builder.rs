@@ -6,6 +6,8 @@ use std::{
 use toml::value::Datetime;
 use url::Url;
 
+// use crate::util::{default_bluesky_dir, default_referrer_dir};
+
 use super::{blog_post::BlogPost, Draft, DraftError};
 
 #[non_exhaustive]
@@ -305,7 +307,7 @@ impl DraftBuilder {
 
         if self.path_or_file.is_empty() {
             log::debug!("Add default path to the path list as it is empty.");
-            self.path_or_file = vec![PathBuf::new().join("content").join("blog")];
+            self.path_or_file = vec![crate::util::default_blog_dir()];
         }
 
         log::trace!("Paths and files to processes: {:?}", self.path_or_file);
@@ -328,8 +330,8 @@ impl DraftBuilder {
 
         Ok(Draft {
             blog_posts,
-            bsky_store: PathBuf::from("bluesky"),
-            referrer_store: PathBuf::from("static").join("s"),
+            bsky_store: crate::util::default_bluesky_dir(),
+            referrer_store: crate::util::default_referrer_dir(),
             base_url: self.base_url.clone(),
             root: self.root.to_path_buf(),
         })

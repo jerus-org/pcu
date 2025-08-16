@@ -198,6 +198,13 @@
 //! # }   
 //! ```
 
+/// Default bluesky post directory.
+pub const BSKY_DIR: &str = "bluesky";
+/// Default referrer directory.
+pub const REFERRER_DIR: [&str; 2] = ["static", "s"];
+/// Default blog directory.
+pub const BLOG_DIR: [&str; 2] = ["content", "blog"];
+
 mod draft;
 pub use draft::{Draft, DraftError};
 mod post;

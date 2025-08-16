@@ -832,10 +832,7 @@ mod tests {
             .expect("read_dir call failed")
             .flatten()
         {
-            log::debug!(
-                "Entry found in of `{}`",
-                entry.file_name().to_string_lossy()
-            );
+            log::debug!("Entry found: `{}`", entry.file_name().to_string_lossy());
         }
 
         let mut draft = Draft::builder(base_url, Some(&temp_dir))
