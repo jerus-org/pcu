@@ -80,8 +80,8 @@ pub(super) struct BlogPost {
     redirector: Redirector,
     /// The generated short link URL for the post.
     post_short_link: Option<Url>,
-    /// Flag indicating that the Bluesky post is saved to the store
-    bluesky_written: bool,
+    /// Count of bluesky post writing, increment each time a post is written.
+    bluesky_count: u8,
 }
 
 /// Report values in private fields
@@ -91,8 +91,8 @@ impl BlogPost {
     }
 
     #[cfg(test)]
-    pub fn bluesky_written(&self) -> bool {
-        self.bluesky_written
+    pub fn bluesky_count(&self) -> u8 {
+        self.bluesky_count
     }
 }
 
@@ -146,7 +146,7 @@ impl BlogPost {
             post_link: link,
             redirector,
             post_short_link: None,
-            bluesky_written: false,
+            bluesky_count: 0,
         })
     }
 
@@ -285,7 +285,7 @@ impl BlogPost {
 
         serde_json::to_writer_pretty(&file, &bluesky_post)?;
         file.sync_all()?;
-        self.bluesky_written = true;
+        self.bluesky_count += 1;
 
         Ok(())
     }
