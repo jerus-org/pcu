@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ add link module for blog post draft(pr [#652])
 - ✨ add smart release tasks(pr [#658])
 - ✨ add URL parse error handling(pr [#667])
+- ✨ add default directory path functions(pr [#683])
 
 ### Changed
 
@@ -1693,6 +1694,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#680]: https://github.com/jerus-org/pcu/pull/680
 [#681]: https://github.com/jerus-org/pcu/pull/681
 [#682]: https://github.com/jerus-org/pcu/pull/682
+[#683]: https://github.com/jerus-org/pcu/pull/683
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
