@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(draft)-enhance documentation for Bluesky post generation and initial test(pr [#682])
 - ✅ test(draft)-add comprehensive tests for blog post handling(pr [#684])
 - ✅ test(draft)-add comprehensive tests for write_referrers method(pr [#685])
+- ✅ test(draft)-add extensive tests for builder() method(pr [#686])
 
 ### Fixed
 
@@ -1699,6 +1700,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#683]: https://github.com/jerus-org/pcu/pull/683
 [#684]: https://github.com/jerus-org/pcu/pull/684
 [#685]: https://github.com/jerus-org/pcu/pull/685
+[#686]: https://github.com/jerus-org/pcu/pull/686
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
