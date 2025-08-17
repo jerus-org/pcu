@@ -709,6 +709,222 @@ mod tests {
         fd.write_all(buffer.as_bytes()).unwrap();
     }
 
+    // // Mock DraftBuilder for testing purposes
+    // // This assumes DraftBuilder has similar structure - adjust as needed
+    // #[derive(Debug)]
+    // pub struct DraftBuilder {
+    //     base_url: Url,
+    //     root: PathBuf,
+    // }
+
+    // impl DraftBuilder {
+    //     pub fn new(base_url: Url, root: Option<&PathBuf>) -> Self {
+    //         let root = if let Some(r) = root {
+    //             PathBuf::from(r)
+    //         } else {
+    //             PathBuf::new().join(".")
+    //         };
+
+    //         Self { base_url, root }
+    //     }
+
+    //     // Getter methods for testing
+    //     pub fn base_url(&self) -> &Url {
+    //         &self.base_url
+    //     }
+
+    //     pub fn root(&self) -> &PathBuf {
+    //         &self.root
+    //     }
+    // }
+
+    #[test]
+    fn test_builder_with_valid_url_and_no_root() {
+        let base_url = Url::parse("https://example.com").unwrap();
+
+        let builder = Draft::builder(base_url.clone(), None);
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.root(), &PathBuf::new().join("."));
+    }
+
+    #[test]
+    fn test_builder_with_valid_url_and_root_path() {
+        let base_url = Url::parse("https://example.com").unwrap();
+        let root_path = PathBuf::from("/home/user/blog");
+
+        let builder = Draft::builder(base_url.clone(), Some(&root_path));
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.root(), &root_path);
+    }
+
+    #[test]
+    fn test_builder_with_http_url() {
+        let base_url = Url::parse("http://localhost:3000").unwrap();
+
+        let builder = Draft::builder(base_url.clone(), None);
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.base_url().scheme(), "http");
+    }
+
+    #[test]
+    fn test_builder_with_https_url() {
+        let base_url = Url::parse("https://myblog.com").unwrap();
+
+        let builder = Draft::builder(base_url.clone(), None);
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.base_url().scheme(), "https");
+    }
+
+    #[test]
+    fn test_builder_with_url_containing_path() {
+        let base_url = Url::parse("https://example.com/blog/").unwrap();
+
+        let builder = Draft::builder(base_url.clone(), None);
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.base_url().path(), "/blog/");
+    }
+
+    #[test]
+    fn test_builder_with_url_containing_port() {
+        let base_url = Url::parse("https://example.com:8080").unwrap();
+
+        let builder = Draft::builder(base_url.clone(), None);
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.base_url().port(), Some(8080));
+    }
+
+    #[test]
+    fn test_builder_with_relative_root_path() {
+        let base_url = Url::parse("https://example.com").unwrap();
+        let root_path = PathBuf::from("./content");
+
+        let builder = Draft::builder(base_url.clone(), Some(&root_path));
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.root(), &root_path);
+    }
+
+    #[test]
+    fn test_builder_with_absolute_root_path() {
+        let base_url = Url::parse("https://example.com").unwrap();
+        let root_path = PathBuf::from("/var/www/html");
+
+        let builder = Draft::builder(base_url.clone(), Some(&root_path));
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.root(), &root_path);
+    }
+
+    #[test]
+    fn test_builder_with_windows_style_path() {
+        let base_url = Url::parse("https://example.com").unwrap();
+        let root_path = PathBuf::from(r"C:\Users\user\blog");
+
+        let builder = Draft::builder(base_url.clone(), Some(&root_path));
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.root(), &root_path);
+    }
+
+    #[test]
+    fn test_builder_creates_new_instance_each_time() {
+        let base_url = Url::parse("https://example.com").unwrap();
+        let root_path = PathBuf::from("/path/to/blog");
+
+        let builder1 = Draft::builder(base_url.clone(), Some(&root_path));
+        let builder2 = Draft::builder(base_url.clone(), Some(&root_path));
+
+        // Each call should create a new instance
+        // We can't directly compare the builders since they don't implement PartialEq
+        // but we can verify they have the same values
+        assert_eq!(builder1.base_url(), builder2.base_url());
+        assert_eq!(builder1.root(), builder2.root());
+    }
+
+    #[test]
+    fn test_builder_url_ownership() {
+        let base_url = Url::parse("https://example.com").unwrap();
+        let original_url = base_url.clone();
+
+        let builder = Draft::builder(base_url, None);
+
+        // Verify the builder has its own copy of the URL
+        assert_eq!(builder.base_url(), &original_url);
+
+        // The original URL should still be usable
+        assert_eq!(original_url.as_str(), "https://example.com/");
+    }
+
+    #[test]
+    fn test_builder_path_ownership() {
+        let root_path = PathBuf::from("/home/user/blog");
+        let original_path = root_path.clone();
+        let base_url = Url::parse("https://example.com").unwrap();
+
+        let builder = Draft::builder(base_url, Some(&root_path));
+
+        // Verify the builder has its own copy of the path
+        assert_eq!(builder.root(), &original_path);
+
+        // The original path should still be usable
+        assert_eq!(original_path.to_str().unwrap(), "/home/user/blog");
+    }
+
+    #[test]
+    fn test_builder_with_complex_url() {
+        let base_url =
+            Url::parse("https://user:pass@example.com:8080/blog/?param=value#fragment").unwrap();
+        let root_path = PathBuf::from("/complex/path/with spaces/and-dashes");
+
+        let builder = Draft::builder(base_url.clone(), Some(&root_path));
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.root(), &root_path);
+
+        // Verify URL components are preserved
+        assert_eq!(builder.base_url().username(), "user");
+        assert_eq!(builder.base_url().password(), Some("pass"));
+        assert_eq!(builder.base_url().host_str(), Some("example.com"));
+        assert_eq!(builder.base_url().port(), Some(8080));
+        assert_eq!(builder.base_url().path(), "/blog/");
+        assert_eq!(builder.base_url().query(), Some("param=value"));
+        assert_eq!(builder.base_url().fragment(), Some("fragment"));
+    }
+
+    #[test]
+    fn test_builder_functional_style() {
+        // Test that the builder method works well in functional programming style
+        let create_builder = |url_str: &str, root: Option<&str>| -> DraftBuilder {
+            let base_url = Url::parse(url_str).unwrap();
+            let root_path = root.map(PathBuf::from);
+
+            Draft::builder(base_url, root_path.as_ref())
+        };
+
+        let builder = create_builder("https://example.com", Some("/path/to/blog"));
+
+        assert_eq!(builder.base_url().as_str(), "https://example.com/");
+        assert_eq!(builder.root().to_str().unwrap(), "/path/to/blog");
+    }
+
+    #[test]
+    fn test_builder_with_empty_path() {
+        let base_url = Url::parse("https://example.com").unwrap();
+        let empty_path = PathBuf::new();
+
+        let builder = Draft::builder(base_url.clone(), Some(&empty_path));
+
+        assert_eq!(builder.base_url(), &base_url);
+        assert_eq!(builder.root(), &empty_path);
+        assert!(builder.root().as_os_str().is_empty());
+    }
+
     #[tokio::test]
     async fn test_write_referrers_creates_directory_if_not_exists() {
         let (temp_dir, base_url) = setup_test_environment();
