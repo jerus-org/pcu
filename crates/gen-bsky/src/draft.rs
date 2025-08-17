@@ -690,7 +690,7 @@ mod tests {
         fd.write_all(buffer.as_bytes()).unwrap();
     }
 
-    fn create_freeform_blog_post(dir: &Path, name: &str, fm_text: &str) {
+    fn create_free_form_blog_post(dir: &Path, name: &str, fm_text: &str) {
         log::debug!(
             "path: `{}`, name: `{name}`, frontmatter: {fm_text:?}",
             dir.display()
@@ -807,7 +807,7 @@ mod tests {
         let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
         let post_two = "Title: Test Post Two will Fail";
-        create_freeform_blog_post(temp_dir.path(), "post_2.md", post_two);
+        create_free_form_blog_post(temp_dir.path(), "post_2.md", post_two);
         let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
 
@@ -866,7 +866,7 @@ mod tests {
         let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
         let post_two = "Title: Test Post Two will Fail";
-        create_freeform_blog_post(temp_dir.path(), "post_2.md", post_two);
+        create_free_form_blog_post(temp_dir.path(), "post_2.md", post_two);
         let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
 
@@ -1070,7 +1070,7 @@ mod tests {
         let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
         let post_two = "Title: Test Post Two will Fail";
-        create_freeform_blog_post(temp_dir.path(), "post_2.md", post_two);
+        create_free_form_blog_post(temp_dir.path(), "post_2.md", post_two);
         let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
 
