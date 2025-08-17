@@ -20,6 +20,17 @@ pub struct DraftBuilder {
     allow_draft: bool,
 }
 
+#[cfg(test)]
+impl DraftBuilder {
+    pub(crate) fn base_url(&self) -> &Url {
+        &self.base_url
+    }
+
+    pub(crate) fn root(&self) -> &PathBuf {
+        &self.root
+    }
+}
+
 impl DraftBuilder {
     /// Start a builder for the draft struct.
     ///
