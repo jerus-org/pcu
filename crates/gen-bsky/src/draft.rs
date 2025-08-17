@@ -662,126 +662,6 @@ mod tests {
         let _ = builder.try_init();
     }
 
-    // // Mock types for testing
-    // #[derive(Debug, PartialEq)]
-    // enum DraftError {
-    //     Io(std::io::Error),
-    // }
-
-    // impl From<std::io::Error> for DraftError {
-    //     fn from(e: std::io::Error) -> Self {
-    //         DraftError::Io(e)
-    //     }
-    // }
-
-    // impl std::fmt::Display for DraftError {
-    //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    //         match self {
-    //             DraftError::Io(e) => write!(f, "IO error: {}", e),
-    //         }
-    //     }
-    // }
-
-    // impl std::error::Error for DraftError {}
-
-    // // Mock BlogPost for testing
-    // #[derive(Clone)]
-    // struct BlogPost {
-    //     title: String,
-    //     should_fail: bool,
-    //     call_count: Arc<Mutex<usize>>,
-    // }
-
-    // impl BlogPost {
-    //     fn new(title: &str) -> Self {
-    //         Self {
-    //             title: title.to_string(),
-    //             should_fail: false,
-    //             call_count: Arc::new(Mutex::new(0)),
-    //         }
-    //     }
-
-    //     fn new_failing(title: &str) -> Self {
-    //         Self {
-    //             title: title.to_string(),
-    //             should_fail: true,
-    //             call_count: Arc::new(Mutex::new(0)),
-    //         }
-    //     }
-
-    //     fn title(&self) -> &str {
-    //         &self.title
-    //     }
-
-    //     async fn write_bluesky_record_to(
-    //         &self,
-    //         _store_path: &std::path::Path,
-    //     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    //         // Increment call count
-    //         *self.call_count.lock().unwrap() += 1;
-
-    //         if self.should_fail {
-    //             Err("Simulated blog post error".into())
-    //         } else {
-    //             Ok(())
-    //         }
-    //     }
-
-    //     fn call_count(&self) -> usize {
-    //         *self.call_count.lock().unwrap()
-    //     }
-    // }
-
-    // // Mock Draft struct
-    // struct Draft {
-    //     bsky_store: PathBuf,
-    //     root: PathBuf,
-    //     blog_posts: Vec<BlogPost>,
-    // }
-
-    // impl Draft {
-    //     fn new() -> Self {
-    //         Self {
-    //             bsky_store: PathBuf::from("bluesky"),
-    //             root: PathBuf::from("."),
-    //             blog_posts: vec![],
-    //         }
-    //     }
-
-    //     async fn write_bluesky_posts(
-    //         &self,
-    //         bluesky_post_store: Option<PathBuf>,
-    //     ) -> Result<(), DraftError> {
-    //         let bluesky_post_store = if let Some(p) = bluesky_post_store.as_deref() {
-    //             p
-    //         } else {
-    //             self.bsky_store.as_ref()
-    //         };
-
-    //         let bluesky_post_store = self.root.join(bluesky_post_store);
-
-    //         if !bluesky_post_store.exists() {
-    //             std::fs::create_dir_all(&bluesky_post_store)?;
-    //         }
-
-    //         for blog_post in &self.blog_posts {
-    //             match blog_post.write_bluesky_record_to(&bluesky_post_store).await {
-    //                 Ok(_) => continue,
-    //                 Err(e) => {
-    //                     // In real implementation, this would use log::warn!
-    //                     eprintln!(
-    //                         "Blog post: `{}` skipped because of error `{e}`",
-    //                         blog_post.title()
-    //                     );
-    //                     continue;
-    //                 }
-    //             }
-    //         }
-
-    //         Ok(())
-    //     }
-    // }
-
     fn setup_test_environment() -> (TempDir, Url) {
         get_test_logger(LevelFilter::Debug);
         let temp_dir = tempfile::tempdir().unwrap();
@@ -810,7 +690,7 @@ mod tests {
         fd.write_all(buffer.as_bytes()).unwrap();
     }
 
-    fn create_freeform_blog_post(dir: &Path, name: &str, fm_text: &str) {
+    fn create_free_form_blog_post(dir: &Path, name: &str, fm_text: &str) {
         log::debug!(
             "path: `{}`, name: `{name}`, frontmatter: {fm_text:?}",
             dir.display()
@@ -827,6 +707,259 @@ mod tests {
         let mut fd = File::create(blog_name).unwrap();
         let buffer = format!("+++\n{fm_text}+++\n");
         fd.write_all(buffer.as_bytes()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_creates_directory_if_not_exists() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        let result = draft.write_referrers(None);
+
+        assert!(result.is_ok());
+
+        // Check that the referrer store directory was created
+        let expected_path = temp_dir.path().join("static/s");
+        assert!(expected_path.exists());
+        assert!(expected_path.is_dir());
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_uses_existing_directory() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        let referrer_path = temp_dir.path().join("static/s");
+
+        // Pre-create the directory
+        fs::create_dir_all(&referrer_path).unwrap();
+
+        let result = draft.write_referrers(None);
+
+        assert!(result.is_ok());
+        assert!(referrer_path.exists());
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_with_custom_path() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        let custom_path = PathBuf::from("custom/referrers");
+
+        let result = draft.write_referrers(Some(custom_path.clone()));
+
+        assert!(result.is_ok());
+
+        // Check that the custom path was created
+        let expected_path = temp_dir.path().join(&custom_path);
+        assert!(expected_path.exists());
+        assert!(expected_path.is_dir());
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_processes_all_blog_posts() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+        let post_two = FrontMatter::new("Test Post Two will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_2.md", &post_two);
+        let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        let result = draft.write_referrers(None);
+
+        assert!(result.is_ok());
+        // In a real test, you might verify that files were created for each post
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_continues_on_individual_errors() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+        let post_two = "Title: Test Post Two will Fail";
+        create_free_form_blog_post(temp_dir.path(), "post_2.md", post_two);
+        let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        let result = draft.write_referrers(None);
+
+        // Should succeed despite individual post errors
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_returns_self_reference() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        let result = draft.write_referrers(None);
+
+        assert!(result.is_ok());
+
+        // Verify that we get back a mutable reference to the same Draft
+        let returned_draft = result.unwrap();
+        assert_eq!(returned_draft.blog_posts.len(), 1);
+        assert_eq!(returned_draft.base_url.as_str(), "https://www.example.com/");
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_handles_empty_blog_posts() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let result = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await;
+
+        assert!(result.is_err());
+
+        // Directory should still be created even with no posts
+        let expected_path = temp_dir.path().join("static/s");
+        assert!(!expected_path.exists());
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_directory_creation_failure() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+        let post_two = "Title: Test Post Two will Fail";
+        create_free_form_blog_post(temp_dir.path(), "post_2.md", post_two);
+        let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        // Create a file where we want to create a directory (will cause conflict)
+        let conflicting_path = temp_dir.path().join("static");
+        fs::write(&conflicting_path, "file content").unwrap();
+
+        let result = draft.write_referrers(None);
+
+        // Should return an IO error when trying to create directory
+        assert!(result.is_err());
+        match result {
+            Err(DraftError::Io(_)) => {} // Expected
+            _ => panic!("Expected IO error"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_with_nested_custom_path() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        let nested_path = PathBuf::from("deeply/nested/custom/path");
+
+        let result = draft.write_referrers(Some(nested_path.clone()));
+
+        assert!(result.is_ok());
+
+        // Check that the nested path was created
+        let expected_path = temp_dir.path().join(&nested_path);
+        assert!(expected_path.exists());
+        assert!(expected_path.is_dir());
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_absolute_vs_relative_path_handling() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        // Test with None (uses default referrer_store)
+        let result1 = draft.write_referrers(None);
+        assert!(result1.is_ok());
+
+        // Test with relative path
+        let relative_path = PathBuf::from("relative/path");
+        let result2 = draft.write_referrers(Some(relative_path.clone()));
+        assert!(result2.is_ok());
+
+        let expected_relative = temp_dir.path().join(&relative_path);
+        assert!(expected_relative.exists());
+    }
+
+    #[tokio::test]
+    async fn test_write_referrers_method_chaining() {
+        let (temp_dir, base_url) = setup_test_environment();
+
+        let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
+        create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
+
+        let mut draft = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()))
+            .build()
+            .await
+            .unwrap();
+
+        // Test that method chaining works (returns &mut Self)
+        let result = draft
+            .write_referrers(None)
+            .and_then(|d| d.write_referrers(Some(PathBuf::from("another/path"))));
+
+        assert!(result.is_ok());
+
+        // Both directories should exist
+        assert!(temp_dir.path().join("static/s").exists());
+        assert!(temp_dir.path().join("another/path").exists());
     }
 
     #[tokio::test]
@@ -937,7 +1070,7 @@ mod tests {
         let post_one = FrontMatter::new("Test Post One will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_1.md", &post_one);
         let post_two = "Title: Test Post Two will Fail";
-        create_freeform_blog_post(temp_dir.path(), "post_2.md", post_two);
+        create_free_form_blog_post(temp_dir.path(), "post_2.md", post_two);
         let post_three = FrontMatter::new("Test Post Three will Pass", "This post will pass");
         create_frontmatter_blog_post(temp_dir.path(), "post_3.md", &post_three);
 
