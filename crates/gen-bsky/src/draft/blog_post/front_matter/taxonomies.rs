@@ -1,44 +1,26 @@
 use serde::{Deserialize, Serialize};
 
+use crate::draft::blog_post::front_matter::tags;
+
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Taxonomies {
     #[allow(dead_code)]
     tags: Vec<String>,
 }
 
+#[cfg(test)]
 impl Taxonomies {
-    #[cfg(test)]
     pub(crate) fn new(tags: Vec<String>) -> Self {
         Taxonomies { tags }
     }
+}
 
-    pub(crate) fn tags(&self) -> &Vec<String> {
-        self.tags.as_ref()
+impl Taxonomies {
+    pub(crate) fn tags(&self) -> Vec<String> {
+        self.tags.clone()
     }
 
     pub(crate) fn hashtags(&self) -> Vec<String> {
-        let mut hashtags = vec![];
-        for tag in self.tags() {
-            // convert tag to hashtag by capitalising the first letter of each word,
-            // removing the spaces and prefixing with a # if required
-            let formatted_tag = tag
-                .split_whitespace()
-                .map(|word| {
-                    let mut chars = word.chars();
-                    match chars.next() {
-                        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-                        None => String::new(),
-                    }
-                })
-                .collect::<String>();
-            let hashtag = if formatted_tag.starts_with('#') {
-                formatted_tag
-            } else {
-                format!("#{formatted_tag}")
-            };
-            hashtags.push(hashtag);
-        }
-
-        hashtags
+        tags::hashtags(self.tags.clone())
     }
 }
