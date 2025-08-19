@@ -305,6 +305,7 @@ jobs:
 
             bin/pcu << parameters.pcu_verbosity >> bsky draft -d 2025-04-01 -w ${BSKY_TEST_ROOT} content/blog/bsky-test-blog.md
             ls -la ${BSKY_TEST_ROOT}
+            ls -la ${BSKY_TEST_ROOT}/bluesky
 
       - run:
           name: Display bluesky post contents
