@@ -1,5 +1,6 @@
 {
         "cSpell.words": [
+                "àccénts",
                 "adipiscing",
                 "aliqua",
                 "aliquip",
@@ -28,6 +29,7 @@
                 "Duis",
                 "eiusmod",
                 "elit",
+                "émojis",
                 "enim",
                 "Excepteur",
                 "exercitation",
@@ -74,6 +76,7 @@
                 "ullamco",
                 "velit",
                 "veniam",
+                "verylongtag",
                 "voluptate"
         ],
         "sonarlint.connectedMode.project": {

@@ -12,11 +12,12 @@ use unicode_segmentation::UnicodeSegmentation;
 
 mod bluesky;
 mod extra;
+mod tags;
 mod taxonomies;
 
 use bluesky::Bluesky;
 use extra::Extra;
-use taxonomies::Taxonomies;
+pub(crate) use taxonomies::Taxonomies;
 
 // +++
 // title = "Blue Sky Test Blog"
@@ -274,7 +275,7 @@ mod tests {
         let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title(), "Test Title");
         assert_eq!(fm.description, "Test Description");
-        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["rust", "testing"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), vec!["rust", "testing"]);
         assert!(fm.extra.is_none());
     }
 
@@ -294,7 +295,7 @@ mod tests {
         "#;
         let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
-        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
             fm.extra.unwrap().bluesky().unwrap().description(),
@@ -321,7 +322,7 @@ mod tests {
         "#;
         let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
-        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), vec!["extra"]);
         assert!(fm.extra.is_some());
         assert_eq!(
             fm.extra.as_ref().unwrap().bluesky().unwrap().description(),
@@ -350,7 +351,7 @@ mod tests {
         "#;
         let fm = toml::from_str::<FrontMatter>(toml).unwrap();
         assert_eq!(fm.title, "Extra Test");
-        assert_eq!(fm.taxonomies.unwrap().tags(), &vec!["extra"]);
+        assert_eq!(fm.taxonomies.unwrap().tags(), vec!["extra"]);
         assert!(fm.bluesky.is_some());
         assert_eq!(fm.bluesky.as_ref().unwrap().description(), "extra_value");
         assert_eq!(

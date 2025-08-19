@@ -7,7 +7,6 @@ use toml::value::Datetime;
 use url::Url;
 
 // use crate::util::{default_bluesky_dir, default_referrer_dir};
-
 use super::{blog_post::BlogPost, Draft, DraftError};
 
 #[non_exhaustive]
@@ -360,9 +359,8 @@ mod tests {
     use toml::value::Date;
     use url::Url;
 
-    use crate::draft::today;
-
     use super::*;
+    use crate::draft::today;
 
     // get draft builder
     fn gdb() -> DraftBuilder {
