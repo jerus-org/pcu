@@ -422,7 +422,7 @@ impl Draft {
         }
 
         for blog_post in &mut self.blog_posts {
-            match blog_post.write_referrer_file_to(&referrer_store, &self.base_url) {
+            match blog_post.write_referrer_file_to(&referrer_store, &self.base_url, &self.root) {
                 Ok(_) => continue,
                 Err(e) => {
                     log::warn!(
@@ -646,14 +646,12 @@ pub(crate) fn today() -> toml::value::Datetime {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-    use std::{fs::File, io::Write, path::Path, str::FromStr};
+    use std::{fs, fs::File, io::Write, path::Path, str::FromStr};
 
     use log::LevelFilter;
     use tempfile::TempDir;
 
-    use super::blog_post::front_matter::FrontMatter;
-    use super::*;
+    use super::{blog_post::front_matter::FrontMatter, *};
 
     fn get_test_logger(level: LevelFilter) {
         let mut builder = env_logger::Builder::new();
@@ -1013,7 +1011,8 @@ mod tests {
         let result = draft.write_referrers(None);
 
         assert!(result.is_ok());
-        // In a real test, you might verify that files were created for each post
+        // In a real test, you might verify that files were created for each
+        // post
     }
 
     #[tokio::test]
@@ -1181,7 +1180,7 @@ mod tests {
     #[tokio::test]
     async fn test_write_bluesky_posts_with_default_store() {
         get_test_logger(LevelFilter::Debug);
-        let random_name = crate::util::random_name();
+        let random_name = crate::util::test_utils::random_name();
         log::debug!("Random name for test directory: `{random_name}`");
         let temp_dir = PathBuf::new().join(random_name);
         fs::create_dir(&temp_dir).unwrap();
