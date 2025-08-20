@@ -9,7 +9,10 @@ use crate::Capitalise;
 ///
 /// ## Overview
 ///
-/// The `hashtags` function converts a vector of string tags into properly formatted hashtags suitable for social media platforms. It handles various input formats and normalizes them into consistent hashtag format with title case capitalization and no spaces.
+/// The `hashtags` function converts a vector of string tags into properly
+/// formatted hashtags suitable for social media platforms. It handles various
+/// input formats and normalizes them into consistent hashtag format with title
+/// case capitalization and no spaces.
 ///
 /// ## Function Signature
 ///
@@ -29,9 +32,11 @@ use crate::Capitalise;
 ///
 /// ### Core Processing Steps
 ///
-/// 1. **Hashtag Prefix Removal**: Strips any existing `#` prefix from input tags
+/// 1. **Hashtag Prefix Removal**: Strips any existing `#` prefix from input
+///    tags
 /// 2. **Word Splitting**: Splits tags on whitespace to handle multi-word tags
-/// 3. **Word Capitalization**: Capitalizes the first letter of each word using the `capitalize()` method
+/// 3. **Word Capitalization**: Capitalizes the first letter of each word using
+///    the `capitalize()` method
 /// 4. **Space Removal**: Concatenates capitalized words without spaces
 /// 5. **Hashtag Prefix Addition**: Adds `#` prefix to create the final hashtag
 ///
@@ -74,7 +79,8 @@ use crate::Capitalise;
 ///
 /// #### Multiple Hash Symbols
 /// - **Input**: `"##rust"` → **Output**: `"#Rust"`
-/// - Only the first `#` is removed, others are treated as part of the tag content
+/// - Only the first `#` is removed, others are treated as part of the tag
+///   content
 ///
 /// ## Usage Examples
 ///
@@ -143,12 +149,14 @@ use crate::Capitalise;
 /// The function is designed to be panic-free:
 /// - Empty input vectors are handled gracefully
 /// - Empty strings are processed without errors
-/// - Invalid Unicode in the `capitalize()` method is handled by the trait implementation
+/// - Invalid Unicode in the `capitalize()` method is handled by the trait
+///   implementation
 ///
 /// ### Error Propagation
 /// - No explicit error handling as the function doesn't return `Result`
 /// - Any panics would come from the `capitalize()` implementation
-/// - Memory allocation failures would cause program termination (standard Rust behaviour)
+/// - Memory allocation failures would cause program termination (standard Rust
+///   behaviour)
 ///
 /// ## Unicode Support
 ///
@@ -171,7 +179,6 @@ use crate::Capitalise;
 /// // Result depends on capitalise() implementation:
 /// // ["#CaféCulture", "#МоскваTravel", "#日本Food"]
 /// ```
-///
 pub(crate) fn hashtags<S: Display>(tags: Vec<S>) -> Vec<String> {
     let mut hashtags = vec![];
     for tag in tags.into_iter() {
