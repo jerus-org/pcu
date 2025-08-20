@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 use crate::Capitalise;
 
+#[cfg_attr(doc, aquamarine::aquamarine)]
 /// # Hashtags Function Documentation
 ///
 /// ## Overview
@@ -12,7 +13,7 @@ use crate::Capitalise;
 ///
 /// ## Function Signature
 ///
-/// ```rust
+/// ```ignore
 /// pub(crate) fn hashtags(tags: Vec<String>) -> Vec<String>
 /// ```
 ///
@@ -36,10 +37,12 @@ use crate::Capitalise;
 ///
 /// ### Processing Pipeline
 ///
-/// ```
-/// Input: "rust programming" -> Split: ["rust", "programming"]
-/// -> Capitalize: ["Rust", "Programming"] -> Join: "RustProgramming"
-/// -> Prefix: "#RustProgramming"
+/// ```mermaid
+/// graph LR
+///     A["Input: 'rust programming'"] --> B["Split: ['rust', 'programming']"]
+///     B --> C["Capitalize: ['Rust', 'Programming']"]
+///     C --> D["Join: 'RustProgramming'"]
+///     D --> E["Prefix: '#RustProgramming'"]
 /// ```
 ///
 /// ## Input Format Handling
@@ -77,7 +80,7 @@ use crate::Capitalise;
 ///
 /// ### Basic Usage
 ///
-/// ```rust
+/// ```rust ignore
 /// let tags = vec![
 ///     "rust".to_string(),
 ///     "programming".to_string(),
@@ -90,7 +93,7 @@ use crate::Capitalise;
 ///
 /// ### Handling Existing Hashtags
 ///
-/// ```rust
+/// ```rust ignore
 /// let tags = vec![
 ///     "#rust".to_string(),
 ///     "machine learning".to_string(),
@@ -103,7 +106,7 @@ use crate::Capitalise;
 ///
 /// ### Mixed Format Input
 ///
-/// ```rust
+/// ```rust ignore
 /// let tags = vec![
 ///     "  web development  ".to_string(),
 ///     "#mobile  app".to_string(),
@@ -134,31 +137,6 @@ use crate::Capitalise;
 ///   - Capitalization creates new strings for each word
 ///   - Final concatenation creates the hashtag string
 ///
-/// ## Dependencies
-///
-/// ### Required Traits
-/// The function depends on the `Capitalize` trait being implemented for `&str`:
-///
-/// ```rust
-/// trait Capitalize {
-///     fn capitalize(&mut self) -> String;
-/// }
-///
-/// impl Capitalize for &str {
-///     fn capitalize(&mut self) -> String {
-///         // Implementation details
-///     }
-/// }
-/// ```
-///
-/// ### Standard Library Usage
-/// - `String::trim_start_matches()` - Prefix removal
-/// - `str::split_whitespace()` - Word splitting
-/// - `Iterator::map()` - Word transformation
-/// - `Iterator::collect()` - String concatenation
-/// - `format!()` - Hashtag prefix addition
-/// - `Vec::push()` - Result accumulation
-///
 /// ## Error Handling
 ///
 /// ### Panic Conditions
@@ -181,7 +159,8 @@ use crate::Capitalise;
 ///
 /// ### Unicode Examples
 ///
-/// ```rust
+/// ```rust ignore
+/// use super::hashtags;
 /// let tags = vec![
 ///     "café culture".to_string(),
 ///     "москва travel".to_string(),
@@ -189,136 +168,20 @@ use crate::Capitalise;
 /// ];
 ///
 /// let result = hashtags(tags);
-/// // Result depends on capitalize() implementation:
+/// // Result depends on capitalise() implementation:
 /// // ["#CaféCulture", "#МоскваTravel", "#日本Food"]
 /// ```
 ///
-/// ## Integration Patterns
-///
-/// ### Common Use Cases
-///
-/// #### Social Media Post Generation
-/// ```rust
-/// fn create_post_with_tags(content: &str, raw_tags: Vec<String>) -> String {
-///     let formatted_hashtags = hashtags(raw_tags);
-///     format!("{}\n\n{}", content, formatted_hashtags.join(" "))
-/// }
-/// ```
-///
-/// #### Tag Normalization Pipeline
-/// ```rust
-/// fn normalize_user_tags(user_input: &str) -> Vec<String> {
-///     let raw_tags: Vec<String> = user_input
-///         .split(',')
-///         .map(|s| s.trim().to_string())
-///         .filter(|s| !s.is_empty())
-///         .collect();
-///     
-///     hashtags(raw_tags)
-/// }
-/// ```
-///
-/// #### Configuration-Based Tag Processing
-/// ```rust
-/// struct TagConfig {
-///     max_tags: usize,
-///     min_word_length: usize,
-/// }
-///
-/// fn process_tags_with_config(tags: Vec<String>, config: &TagConfig) -> Vec<String> {
-///     hashtags(tags)
-///         .into_iter()
-///         .filter(|tag| tag.len() > config.min_word_length + 1) // +1 for #
-///         .take(config.max_tags)
-///         .collect()
-/// }
-/// ```
-///
-/// ## Performance Optimizations
-///
-/// ### Potential Improvements
-///
-/// #### Pre-allocation
-/// ```rust
-/// pub(crate) fn hashtags_optimized(tags: Vec<String>) -> Vec<String> {
-///     let mut hashtags = Vec::with_capacity(tags.len());
-///     // ... rest of implementation
-/// }
-/// ```
-///
-/// #### String Builder Pattern
-/// ```rust
-/// use std::fmt::Write;
-///
-/// pub(crate) fn hashtags_with_builder(tags: Vec<String>) -> Vec<String> {
-///     let mut hashtags = Vec::with_capacity(tags.len());
-///     
-///     for tag in tags.into_iter() {
-///         let mut formatted_tag = String::new();
-///         
-///         for mut word in tag.trim_start_matches('#').split_whitespace() {
-///             write!(&mut formatted_tag, "{}", word.capitalize()).unwrap();
-///         }
-///         
-///         hashtags.push(format!("#{}", formatted_tag));
-///     }
-///     
-///     hashtags
-/// }
-/// ```
-///
-/// ## Testing Considerations
-///
-/// ### Test Categories
-///
-/// 1. **Basic Functionality**: Single words, multi-word tags
-/// 2. **Edge Cases**: Empty strings, whitespace, existing hashtags
-/// 3. **Unicode Handling**: International characters, emojis
-/// 4. **Performance**: Large input sets, long tag names
-/// 5. **Integration**: Interaction with `capitalize()` trait
-///
-/// ### Mock Dependencies
-/// Testing may require mocking the `Capitalize` trait for isolated unit tests.
-///
-/// ## Thread Safety
-///
-/// The function is thread-safe:
-/// - Takes ownership of input vector
-/// - Creates new strings without shared mutable state
-/// - No global state dependencies
-/// - Pure function behaviour (same input always produces same output)
-///
-/// ## Backwards Compatibility
-///
-/// As a `pub(crate)` function, breaking changes affect only the current crate:
-/// - Changing input/output types would break internal callers
-/// - Modifying behaviour could affect dependent functionality
-/// - Consider deprecation warnings for significant behaviour changes
-///
-/// ## Related Functions
-///
-/// Complementary functionality that might be useful:
-///
-/// ```rust
-/// // Reverse operation - extract tags from text
-/// pub(crate) fn extract_hashtags(text: &str) -> Vec<String>;
-///
-/// // Validate hashtag format
-/// pub(crate) fn is_valid_hashtag(tag: &str) -> bool;
-///
-/// // Remove hashtags from text
-/// pub(crate) fn strip_hashtags(text: &str) -> String;
-/// ```
 pub(crate) fn hashtags<S: Display>(tags: Vec<S>) -> Vec<String> {
     let mut hashtags = vec![];
     for tag in tags.into_iter() {
         let tag = tag.to_string();
         // convert tag to hashtag by capitalising the first letter of each word,
-        // removing the spaces and prefixing with a # if required
+        // removing the spaces and prefixing with a #
         let formatted_tag = tag
             .trim_start_matches('#')
             .split_whitespace()
-            .map(|mut word| word.capitalise())
+            .map(|word| word.capitalise())
             .collect::<String>();
         let hashtag = format!("#{formatted_tag}");
         hashtags.push(hashtag);
