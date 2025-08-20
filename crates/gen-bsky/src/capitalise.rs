@@ -2,7 +2,10 @@
 ///
 /// ## Overview
 ///
-/// The `Capitalise` trait provides functionality to capitalise the first character of a string while preserving the rest of the string unchanged. This trait is designed to handle Unicode characters properly and supports various string types through different implementations.
+/// The `Capitalise` trait provides functionality to capitalise the first
+/// character of a string while preserving the rest of the string unchanged.
+/// This trait is designed to handle Unicode characters properly and supports
+/// various string types through different implementations.
 ///
 /// ## Trait Definition
 ///
@@ -12,7 +15,8 @@
 /// }
 /// ```
 ///
-/// The trait defines a single method that takes a mutable reference to self and returns a new `String` with the first character capitalised.
+/// The trait defines a single method that takes a mutable reference to self and
+/// returns a new `String` with the first character capitalised.
 ///
 /// ## Implementation for `&str`
 ///
@@ -36,17 +40,23 @@
 ///
 /// The `capitalise` method:
 ///
-/// 1. **Empty String Handling**: Returns an empty `String` if the input is empty
-/// 2. **First Character Processing**: Extracts the first character and converts it to uppercase
-/// 3. **Remainder Preservation**: Concatenates the uppercased first character with the remaining string unchanged
-/// 4. **Unicode Support**: Properly handles multi-byte Unicode characters using `char` iteration
+/// 1. **Empty String Handling**: Returns an empty `String` if the input is
+///    empty
+/// 2. **First Character Processing**: Extracts the first character and converts
+///    it to uppercase
+/// 3. **Remainder Preservation**: Concatenates the uppercased first character
+///    with the remaining string unchanged
+/// 4. **Unicode Support**: Properly handles multi-byte Unicode characters using
+///    `char` iteration
 ///
 /// ### Implementation Details
 ///
 /// - Uses `chars()` iterator for proper Unicode handling
-/// - `to_uppercase()` returns an iterator that handles special Unicode cases (like ß → SS)
+/// - `to_uppercase()` returns an iterator that handles special Unicode cases
+///   (like ß → SS)
 /// - Collects the uppercase result into a String before concatenation
-/// - Uses `as_str()` on the remaining character iterator for efficient string building
+/// - Uses `as_str()` on the remaining character iterator for efficient string
+///   building
 ///
 /// ## Unicode Handling
 ///
@@ -62,11 +72,13 @@
 /// - `"москва"` (Moscow in Cyrillic) → `"Москва"`
 ///
 /// ### Special Unicode Cases
-/// - `"ß"` (German eszett) → `"SS"` (uppercase conversion produces multiple characters)
+/// - `"ß"` (German eszett) → `"SS"` (uppercase conversion produces multiple
+///   characters)
 /// - `"ğ"` (Turkish g with breve) → `"Ğ"`
 ///
 /// ### Emoji and Symbols
-/// - `"🦀rust"` → `"🦀rust"` (emoji doesn't change, as it has no uppercase form)
+/// - `"🦀rust"` → `"🦀rust"` (emoji doesn't change, as it has no uppercase
+///   form)
 /// - `"αβγ"` (Greek letters) → `"Αβγ"`
 ///
 /// ## Performance Characteristics
@@ -74,7 +86,8 @@
 /// ### Time Complexity
 /// - **O(n)** where n is the length of the string in bytes
 /// - Single pass through the string for character extraction
-/// - Additional O(k) for uppercase conversion where k is typically 1-2 characters
+/// - Additional O(k) for uppercase conversion where k is typically 1-2
+///   characters
 ///
 /// ### Space Complexity
 /// - **O(n)** for the returned String
@@ -127,7 +140,6 @@
 /// - The trait implementation is thread-safe for `&str`
 /// - No shared mutable state
 /// - Pure function behaviour despite the `&mut self` signature
-///
 pub(crate) trait Capitalise: ToString {
     fn capitalise(&self) -> String;
 }
