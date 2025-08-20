@@ -232,8 +232,6 @@ impl Taxonomies {
 
 #[cfg(test)]
 mod tests {
-    use toml;
-
     use super::*;
 
     /// Helper macro for testing hashtag conversions
@@ -393,7 +391,7 @@ mod tests {
     #[test]
     fn test_large_tag_vector() {
         // Create a large vector of tags
-        let tags: Vec<String> = (0..1000).map(|i| format!("tag{}", i)).collect();
+        let tags: Vec<String> = (0..1000).map(|i| format!("tag{i}")).collect();
         let taxonomies = Taxonomies::new(tags);
 
         // Test tags() method with large vector
