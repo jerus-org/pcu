@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ test(blog_post)-add extensive unit tests for blog_post functionality(pr [#687])
 - ✅ test(hashtags)-add extensive test suite and documentation for hashtags function(pr [#688])
 - 📝 docs(bluesky)-add comprehensive documentation and tests for Bluesky struct(pr [#689])
+- ✅ test(extra)-add unit tests and documentation for Extra struct functionality(pr [#690])
 
 ### Fixed
 
@@ -1707,6 +1708,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#687]: https://github.com/jerus-org/pcu/pull/687
 [#688]: https://github.com/jerus-org/pcu/pull/688
 [#689]: https://github.com/jerus-org/pcu/pull/689
+[#690]: https://github.com/jerus-org/pcu/pull/690
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
