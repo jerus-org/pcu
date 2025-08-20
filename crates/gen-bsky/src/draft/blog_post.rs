@@ -837,16 +837,19 @@ Long content here."#
 
     // #[tokio::test]
     // async fn test_post_basename_not_set_error() {
-    //     let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Trace);
-    //     let content = format!("{}\n\nContent here.", create_test_frontmatter_content());
+    //     let (temp_dir, base_url) =
+    // test_utils::setup_test_environment(LevelFilter::Trace);     let content =
+    // format!("{}\n\nContent here.", create_test_frontmatter_content());
     //     let blog_path = temp_dir.path().join("content").join("blog/");
-    //     let _blog_file = create_test_blog_file(&blog_path, "basename-test.md", &content);
+    //     let _blog_file = create_test_blog_file(&blog_path, "basename-test.md",
+    // &content);
 
     //     // Create a blog path that doesn't have a filename
     //     let _min_date = Datetime::from_str("2024-01-01T00:00:00Z").unwrap();
     //     let store_dir = temp_dir.path().join("posts");
     //     let mut fm = FrontMatter::new("Test", "Test desc");
-    //     let taxonomies = front_matter::Taxonomies::new(vec!["#test".to_string()]);
+    //     let taxonomies =
+    // front_matter::Taxonomies::new(vec!["#test".to_string()]);
     //     fm.taxonomies = Some(taxonomies);
     //     fs::create_dir_all(&store_dir).unwrap();
 

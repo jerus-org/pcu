@@ -60,13 +60,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(draft)-enhance documentation for Draft builder(pr [#678])
 - 📝 docs(draft)-enhance documentation for Draft methods(pr [#679])
 - ♻️ refactor(draft)-modify return type for write_referrers(pr [#680])
-- 📝 docs(lib)-add documentation for preparing blog post frontmatter(pr [#681])
+- 📝 docs(lib)-add documentation for preparing blog post front-matter(pr [#681])
 - 📝 docs(draft)-enhance documentation for Bluesky post generation and initial test(pr [#682])
 - ✅ test(draft)-add comprehensive tests for blog post handling(pr [#684])
 - ✅ test(draft)-add comprehensive tests for write_referrers method(pr [#685])
 - ✅ test(draft)-add extensive tests for builder() method(pr [#686])
-- Add-extensive-unit-tests-for-blog-post-functionality(pr [#687])
-- Add-extensive-test-suite-for-hashtags-function-and-documentation(pr [#688])
+- ✅ test(blog_post)-add extensive unit tests for blog_post functionality(pr [#687])
+- ✅ test(hashtags)-add extensive test suite and documentation for hashtags function(pr [#688])
+- 📝 docs(bluesky)-add comprehensive documentation and tests for Bluesky struct(pr [#689])
 
 ### Fixed
 
@@ -1705,6 +1706,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#686]: https://github.com/jerus-org/pcu/pull/686
 [#687]: https://github.com/jerus-org/pcu/pull/687
 [#688]: https://github.com/jerus-org/pcu/pull/688
+[#689]: https://github.com/jerus-org/pcu/pull/689
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
