@@ -69,14 +69,14 @@ pub(crate) enum BskyPostState {
     /// This is the initial state when posts are loaded via `Post::load()`.
     /// Posts in this state are candidates for publishing to Bluesky.
     Read,
-    
+
     /// Post has been successfully published to Bluesky.
     ///
     /// Posts transition to this state after successful API calls to Bluesky.
     /// This state indicates the post is live on the platform and the source
     /// file is eligible for cleanup.
     Posted,
-    
+
     /// Post file has been deleted from the filesystem after successful publishing.
     ///
     /// This is the final state in the post lifecycle. Posts in this state
@@ -137,10 +137,10 @@ pub(crate) enum BskyPostState {
 pub(crate) struct BskyPost {
     /// The Bluesky post data ready for API submission
     post: RecordData,
-    
+
     /// Path to the source `.post` file for cleanup operations
     file_path: PathBuf,
-    
+
     /// Current lifecycle state of the post
     state: BskyPostState,
 }
@@ -422,7 +422,7 @@ mod tests {
     fn create_test_record_data(text: &str) -> RecordData {
         use bsky_sdk::api::types::string::Datetime;
         use bsky_sdk::api::types::string::Language;
-        
+
         RecordData {
             text: text.to_string(),
             created_at: Datetime::now(),
@@ -450,51 +450,57 @@ mod tests {
         assert_eq!(BskyPostState::Read, BskyPostState::Read);
         assert_eq!(BskyPostState::Posted, BskyPostState::Posted);
         assert_eq!(BskyPostState::Deleted, BskyPostState::Deleted);
-        
+
         assert_ne!(BskyPostState::Read, BskyPostState::Posted);
         assert_ne!(BskyPostState::Posted, BskyPostState::Deleted);
         assert_ne!(BskyPostState::Read, BskyPostState::Deleted);
     }
-    
+
     #[test]
     fn test_bsky_post_state_debug() {
         // Test Debug implementation
         let read_debug = format!("{:?}", BskyPostState::Read);
         let posted_debug = format!("{:?}", BskyPostState::Posted);
         let deleted_debug = format!("{:?}", BskyPostState::Deleted);
-        
+
         assert_eq!(read_debug, "Read");
         assert_eq!(posted_debug, "Posted");
         assert_eq!(deleted_debug, "Deleted");
     }
-    
+
     #[test]
     fn test_bsky_post_state_clone() {
         // Test Clone implementation
         let original = BskyPostState::Posted;
         let cloned = original.clone();
         assert_eq!(original, cloned);
-        
+
         // Verify they are independent (enum copies are independent by nature)
         let _modified_clone = BskyPostState::Deleted;
         assert_eq!(original, BskyPostState::Posted);
     }
-    
+
     #[test]
     fn test_bsky_post_state_filtering() {
         // Test usage in filtering scenarios
-        let states = vec![
+        let states = [
             BskyPostState::Read,
             BskyPostState::Posted,
             BskyPostState::Read,
             BskyPostState::Deleted,
             BskyPostState::Posted,
         ];
-        
+
         let read_count = states.iter().filter(|&s| s == &BskyPostState::Read).count();
-        let posted_count = states.iter().filter(|&s| s == &BskyPostState::Posted).count();
-        let deleted_count = states.iter().filter(|&s| s == &BskyPostState::Deleted).count();
-        
+        let posted_count = states
+            .iter()
+            .filter(|&s| s == &BskyPostState::Posted)
+            .count();
+        let deleted_count = states
+            .iter()
+            .filter(|&s| s == &BskyPostState::Deleted)
+            .count();
+
         assert_eq!(read_count, 2);
         assert_eq!(posted_count, 2);
         assert_eq!(deleted_count, 1);
@@ -505,30 +511,35 @@ mod tests {
     fn test_bsky_post_new() {
         let record = create_test_record_data("Test content");
         let path = PathBuf::from("/test/example.post");
-        
+
         let bsky_post = BskyPost::new(record.clone(), path.clone());
-        
+
         assert_eq!(bsky_post.post().text, "Test content");
         assert_eq!(bsky_post.file_path(), &path);
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
     }
-    
+
     #[test]
     fn test_bsky_post_new_initial_state() {
         // Verify posts always start in Read state
         let bsky_post = create_test_bsky_post();
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
     }
-    
+
     #[test]
     fn test_bsky_post_new_with_different_content() {
-        let texts = vec!["Short", "A much longer post with more content", "", "🦀 Rust with emoji"];
-        
+        let texts = vec![
+            "Short",
+            "A much longer post with more content",
+            "",
+            "🦀 Rust with emoji",
+        ];
+
         for text in texts {
             let record = create_test_record_data(text);
             let path = PathBuf::from(format!("/test/{}.post", text.len()));
             let bsky_post = BskyPost::new(record, path);
-            
+
             assert_eq!(bsky_post.post().text, text);
             assert_eq!(bsky_post.state(), &BskyPostState::Read);
         }
@@ -540,41 +551,41 @@ mod tests {
         let original_text = "Test post for accessor";
         let record = create_test_record_data(original_text);
         let bsky_post = BskyPost::new(record, PathBuf::from("/test.post"));
-        
+
         let retrieved_post = bsky_post.post();
         assert_eq!(retrieved_post.text, original_text);
-        
+
         // Verify it returns a reference
         let ptr1 = retrieved_post as *const RecordData;
         let ptr2 = bsky_post.post() as *const RecordData;
         assert_eq!(ptr1, ptr2);
     }
-    
+
     #[test]
     fn test_bsky_post_file_path_accessor() {
         let original_path = PathBuf::from("/some/test/path.post");
         let bsky_post = BskyPost::new(create_test_record_data("test"), original_path.clone());
-        
+
         let retrieved_path = bsky_post.file_path();
         assert_eq!(retrieved_path, &original_path);
-        
+
         // Verify it returns a reference
         let ptr1 = retrieved_path as *const PathBuf;
         let ptr2 = bsky_post.file_path() as *const PathBuf;
         assert_eq!(ptr1, ptr2);
     }
-    
+
     #[test]
     fn test_bsky_post_state_accessor() {
         let mut bsky_post = create_test_bsky_post();
-        
+
         // Test initial state
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
-        
+
         // Test state after modification
         bsky_post.set_state(BskyPostState::Posted);
         assert_eq!(bsky_post.state(), &BskyPostState::Posted);
-        
+
         bsky_post.set_state(BskyPostState::Deleted);
         assert_eq!(bsky_post.state(), &BskyPostState::Deleted);
     }
@@ -583,41 +594,41 @@ mod tests {
     #[test]
     fn test_bsky_post_set_state() {
         let mut bsky_post = create_test_bsky_post();
-        
+
         // Test normal workflow transitions
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
-        
+
         bsky_post.set_state(BskyPostState::Posted);
         assert_eq!(bsky_post.state(), &BskyPostState::Posted);
-        
+
         bsky_post.set_state(BskyPostState::Deleted);
         assert_eq!(bsky_post.state(), &BskyPostState::Deleted);
     }
-    
+
     #[test]
     fn test_bsky_post_set_state_non_linear_transitions() {
         let mut bsky_post = create_test_bsky_post();
-        
+
         // Test non-linear transitions (should be allowed)
         bsky_post.set_state(BskyPostState::Deleted);
         assert_eq!(bsky_post.state(), &BskyPostState::Deleted);
-        
+
         bsky_post.set_state(BskyPostState::Read);
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
-        
+
         bsky_post.set_state(BskyPostState::Posted);
         assert_eq!(bsky_post.state(), &BskyPostState::Posted);
     }
-    
+
     #[test]
     fn test_bsky_post_set_state_same_state() {
         let mut bsky_post = create_test_bsky_post();
-        
+
         // Setting the same state should work
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
         bsky_post.set_state(BskyPostState::Read);
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
-        
+
         bsky_post.set_state(BskyPostState::Posted);
         bsky_post.set_state(BskyPostState::Posted);
         assert_eq!(bsky_post.state(), &BskyPostState::Posted);
@@ -628,25 +639,25 @@ mod tests {
     fn test_bsky_post_clone() {
         let original = create_test_bsky_post();
         let cloned = original.clone();
-        
+
         // Verify content is the same
         assert_eq!(original.post().text, cloned.post().text);
         assert_eq!(original.file_path(), cloned.file_path());
         assert_eq!(original.state(), cloned.state());
-        
+
         // Verify they are independent
         let mut cloned_modified = cloned.clone();
         cloned_modified.set_state(BskyPostState::Posted);
-        
+
         assert_eq!(original.state(), &BskyPostState::Read);
         assert_eq!(cloned_modified.state(), &BskyPostState::Posted);
     }
-    
+
     #[test]
     fn test_bsky_post_debug() {
         let bsky_post = create_test_bsky_post();
-        let debug_str = format!("{:?}", bsky_post);
-        
+        let debug_str = format!("{bsky_post:?}");
+
         // Should contain struct name and basic info
         assert!(debug_str.contains("BskyPost"));
         // Debug format may vary, so just check it's not empty
@@ -658,33 +669,33 @@ mod tests {
     fn test_bsky_post_with_empty_text() {
         let record = create_test_record_data("");
         let bsky_post = BskyPost::new(record, PathBuf::from("/empty.post"));
-        
+
         assert_eq!(bsky_post.post().text, "");
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
     }
-    
+
     #[test]
     fn test_bsky_post_with_unicode_content() {
         let unicode_text = "Hello 世界 🌍 Здравствуй мир";
         let record = create_test_record_data(unicode_text);
         let bsky_post = BskyPost::new(record, PathBuf::from("/unicode.post"));
-        
+
         assert_eq!(bsky_post.post().text, unicode_text);
     }
-    
+
     #[test]
     fn test_bsky_post_with_long_path() {
         let long_path = PathBuf::from("/very/deep/directory/structure/with/many/levels/post.post");
         let bsky_post = BskyPost::new(create_test_record_data("test"), long_path.clone());
-        
+
         assert_eq!(bsky_post.file_path(), &long_path);
     }
-    
+
     #[test]
     fn test_bsky_post_with_relative_path() {
         let relative_path = PathBuf::from("./posts/relative.post");
         let bsky_post = BskyPost::new(create_test_record_data("test"), relative_path.clone());
-        
+
         assert_eq!(bsky_post.file_path(), &relative_path);
     }
 
@@ -697,94 +708,107 @@ mod tests {
             create_test_bsky_post(),
             create_test_bsky_post(),
         ];
-        
+
         // Set different states
         posts[1].set_state(BskyPostState::Posted);
         posts[2].set_state(BskyPostState::Deleted);
         posts[3].set_state(BskyPostState::Posted);
-        
+
         // Test filtering by state
-        let read_posts: Vec<_> = posts.iter()
+        let read_posts: Vec<_> = posts
+            .iter()
             .filter(|p| p.state() == &BskyPostState::Read)
             .collect();
-        let posted_posts: Vec<_> = posts.iter()
+        let posted_posts: Vec<_> = posts
+            .iter()
             .filter(|p| p.state() == &BskyPostState::Posted)
             .collect();
-        let deleted_posts: Vec<_> = posts.iter()
+        let deleted_posts: Vec<_> = posts
+            .iter()
             .filter(|p| p.state() == &BskyPostState::Deleted)
             .collect();
-        
+
         assert_eq!(read_posts.len(), 1);
         assert_eq!(posted_posts.len(), 2);
         assert_eq!(deleted_posts.len(), 1);
     }
-    
+
     #[test]
     fn test_state_transition_workflow() {
         let mut bsky_post = create_test_bsky_post();
-        
+
         // Simulate complete workflow
-        
+
         // 1. Initial state after loading
         assert_eq!(bsky_post.state(), &BskyPostState::Read);
-        
+
         // 2. After successful posting
         bsky_post.set_state(BskyPostState::Posted);
         assert_eq!(bsky_post.state(), &BskyPostState::Posted);
-        
+
         // 3. After file cleanup
         bsky_post.set_state(BskyPostState::Deleted);
         assert_eq!(bsky_post.state(), &BskyPostState::Deleted);
     }
-    
+
     // Memory and performance tests
     #[test]
     fn test_many_posts_creation() {
         let posts: Vec<BskyPost> = (0..1000)
             .map(|i| {
-                let record = create_test_record_data(&format!("Post {}", i));
-                let path = PathBuf::from(format!("/test/post{}.post", i));
+                let record = create_test_record_data(&format!("Post {i}"));
+                let path = PathBuf::from(format!("/test/post{i}.post"));
                 BskyPost::new(record, path)
             })
             .collect();
-        
+
         assert_eq!(posts.len(), 1000);
-        
+
         // Verify all start in Read state
-        let read_count = posts.iter()
+        let read_count = posts
+            .iter()
             .filter(|p| p.state() == &BskyPostState::Read)
             .count();
         assert_eq!(read_count, 1000);
-        
+
         // Verify content is correct
         assert_eq!(posts[0].post().text, "Post 0");
         assert_eq!(posts[999].post().text, "Post 999");
     }
-    
+
     #[test]
     fn test_state_changes_performance() {
         let mut posts: Vec<BskyPost> = (0..100)
             .map(|i| {
-                let record = create_test_record_data(&format!("Post {}", i));
-                let path = PathBuf::from(format!("/test/post{}.post", i));
+                let record = create_test_record_data(&format!("Post {i}"));
+                let path = PathBuf::from(format!("/test/post{i}.post"));
                 BskyPost::new(record, path)
             })
             .collect();
-        
+
         // Simulate state changes
         for post in posts.iter_mut().take(30) {
             post.set_state(BskyPostState::Posted);
         }
-        
+
         for post in posts.iter_mut().skip(30).take(20) {
             post.set_state(BskyPostState::Deleted);
         }
-        
+
         // Count states
-        let read_count = posts.iter().filter(|p| p.state() == &BskyPostState::Read).count();
-        let posted_count = posts.iter().filter(|p| p.state() == &BskyPostState::Posted).count();
-        let deleted_count = posts.iter().filter(|p| p.state() == &BskyPostState::Deleted).count();
-        
+        let read_count = posts
+            .iter()
+            .filter(|p| p.state() == &BskyPostState::Read)
+            .count();
+        let posted_count = posts
+            .iter()
+            .filter(|p| p.state() == &BskyPostState::Posted)
+            .count();
+        let deleted_count = posts
+            .iter()
+            .filter(|p| p.state() == &BskyPostState::Deleted)
+            .count();
+
         assert_eq!(read_count, 50);
         assert_eq!(posted_count, 30);
         assert_eq!(deleted_count, 20);
