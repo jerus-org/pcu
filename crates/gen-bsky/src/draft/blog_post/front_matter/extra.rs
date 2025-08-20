@@ -108,7 +108,8 @@ mod tests {
         }
     }
 
-    // For testing purposes, we'll create a test version of Extra that uses MockBluesky
+    // For testing purposes, we'll create a test version of Extra that uses
+    // MockBluesky
     #[derive(Default, Debug, Clone, Serialize, Deserialize)]
     struct TestExtra {
         bluesky: Option<MockBluesky>,
