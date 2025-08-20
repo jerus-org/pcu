@@ -88,7 +88,6 @@
 ///     Ok(())
 /// }
 /// ```
-
 use std::{fmt::Display, fs, io::BufReader, path::Path};
 
 const TESTING_FLAG: &str = "TESTING";
@@ -290,13 +289,12 @@ pub enum PostError {
 pub struct Post {
     /// Collection of Bluesky posts with individual state tracking
     bsky_posts: Vec<BskyPost>,
-    
+
     /// Bluesky user identifier (handle like "user.bsky.social" or email)
     id: String,
-    
+
     /// Authentication password or app-specific password
     pwd: String,
-    
     // Future: Track sent posts for additional state management
     // sent_posts: Vec<PathBuf>,
 }
@@ -382,7 +380,7 @@ impl Post {
     /// - `PostError::Io`: Directory doesn't exist, permission denied, or I/O errors
     /// - `PostError::SerdeJsonError`: Invalid JSON format or schema mismatch
     ///
-    /// ## Behavior
+    /// ## behaviour
     ///
     /// - Only processes files with `.post` extension
     /// - Ignores files that don't match the extension
@@ -463,7 +461,7 @@ impl Post {
     /// - `PostError::BlueskyLoginError`: Invalid credentials or authentication failure
     /// - `PostError::BskySdk`: Network errors, API errors, or SDK issues
     ///
-    /// ## Async Behavior
+    /// ## Async behaviour
     ///
     /// - Establishes Bluesky session asynchronously
     /// - Posts are published sequentially (not concurrently)
@@ -597,7 +595,7 @@ impl Post {
     ///
     /// - `PostError::Io`: File deletion failures, permission issues, or I/O errors
     ///
-    /// ## Behavior
+    /// ## behaviour
     ///
     /// - Only processes posts in `Posted` state
     /// - Individual file deletion failures stop the entire process
@@ -748,7 +746,6 @@ mod tests {
     use std::fs;
     use std::io::Write;
     use tempfile::TempDir;
-    use tokio;
 
     /// Helper function to create a test Post instance
     fn create_test_post() -> Result<Post, PostError> {
@@ -758,7 +755,7 @@ mod tests {
     /// Helper function to create a temporary directory with test post files
     fn create_test_posts_directory() -> Result<TempDir, std::io::Error> {
         let temp_dir = tempfile::tempdir()?;
-        
+
         // Create valid post file
         let post_content = r#"{
             "text": "Test post content",
@@ -768,7 +765,7 @@ mod tests {
         let post_path = temp_dir.path().join("test1.post");
         let mut post_file = fs::File::create(post_path)?;
         post_file.write_all(post_content.as_bytes())?;
-        
+
         // Create another valid post file
         let post_content2 = r#"{
             "text": "Another test post",
@@ -778,15 +775,15 @@ mod tests {
         let post_path2 = temp_dir.path().join("test2.post");
         let mut post_file2 = fs::File::create(post_path2)?;
         post_file2.write_all(post_content2.as_bytes())?;
-        
+
         // Create a non-post file (should be ignored)
         let other_file = temp_dir.path().join("readme.txt");
         let mut other = fs::File::create(other_file)?;
         other.write_all(b"This is not a post file")?;
-        
+
         Ok(temp_dir)
     }
-    
+
     /// Helper function to create invalid JSON post file
     fn create_invalid_post_file(temp_dir: &TempDir) -> Result<(), std::io::Error> {
         let invalid_content = r#"{
@@ -805,125 +802,127 @@ mod tests {
     fn test_post_new_success() {
         let result = Post::new("test.user", "password123");
         assert!(result.is_ok());
-        
+
         let post = result.unwrap();
         assert_eq!(post.id, "test.user");
         assert_eq!(post.pwd, "password123");
         assert_eq!(post.bsky_posts.len(), 0);
     }
-    
+
     #[test]
     fn test_post_new_empty_identifier() {
         let result = Post::new("", "password");
         assert!(matches!(result, Err(PostError::NoBlueskyIdentifier)));
     }
-    
+
     #[test]
     fn test_post_new_empty_password() {
         let result = Post::new("user", "");
         assert!(matches!(result, Err(PostError::NoBlueskyPassword)));
     }
-    
+
     #[test]
     fn test_post_new_both_empty() {
         let result = Post::new("", "");
         // Should fail on identifier first
         assert!(matches!(result, Err(PostError::NoBlueskyIdentifier)));
     }
-    
+
     #[test]
     fn test_post_new_whitespace_identifier() {
         let result = Post::new("   ", "password");
         // Current implementation allows whitespace, but should be empty string
         assert!(result.is_ok());
     }
-    
+
     // Load method tests
     #[test]
     fn test_load_success() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
-        
-        let result = post.load(&temp_dir.path().to_string_lossy().to_string());
+
+        let result = post.load(temp_dir.path().to_string_lossy().to_string());
         assert!(result.is_ok());
-        
+
         assert_eq!(post.bsky_posts.len(), 2);
-        
+
         // Check that all posts are in Read state
         for bsky_post in &post.bsky_posts {
             assert_eq!(bsky_post.state(), &BskyPostState::Read);
         }
-        
+
         // Verify post content - posts can be loaded in any order
-        let post_texts: Vec<&str> = post.bsky_posts.iter()
+        let post_texts: Vec<&str> = post
+            .bsky_posts
+            .iter()
             .map(|p| p.post().text.as_str())
             .collect();
         assert!(post_texts.contains(&"Test post content"));
         assert!(post_texts.contains(&"Another test post"));
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_load_nonexistent_directory() {
         let mut post = create_test_post().unwrap();
         let result = post.load("/nonexistent/directory");
         assert!(matches!(result, Err(PostError::Io(_))));
     }
-    
+
     #[test]
     fn test_load_invalid_json() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
         create_invalid_post_file(&temp_dir)?;
-        
-        let result = post.load(&temp_dir.path().to_string_lossy().to_string());
+
+        let result = post.load(temp_dir.path().to_string_lossy().to_string());
         // Should fail due to invalid JSON
         assert!(matches!(result, Err(PostError::SerdeJsonError(_))));
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_load_empty_directory() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = tempfile::tempdir()?;
-        
-        let result = post.load(&temp_dir.path().to_string_lossy().to_string());
+
+        let result = post.load(temp_dir.path().to_string_lossy().to_string());
         assert!(result.is_ok());
         assert_eq!(post.bsky_posts.len(), 0);
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_load_no_post_files() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = tempfile::tempdir()?;
-        
+
         // Create non-post files
         let txt_file = temp_dir.path().join("readme.txt");
         fs::write(txt_file, "Not a post file")?;
-        
+
         let json_file = temp_dir.path().join("config.json");
         fs::write(json_file, "{\"config\": \"value\"}")?;
-        
-        let result = post.load(&temp_dir.path().to_string_lossy().to_string());
+
+        let result = post.load(temp_dir.path().to_string_lossy().to_string());
         assert!(result.is_ok());
         assert_eq!(post.bsky_posts.len(), 0);
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_load_accumulative() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
-        
+
         // Create first directory with posts
         let temp_dir1 = create_test_posts_directory()?;
-        post.load(&temp_dir1.path().to_string_lossy().to_string())?;
+        post.load(temp_dir1.path().to_string_lossy().to_string())?;
         assert_eq!(post.bsky_posts.len(), 2);
-        
+
         // Create second directory with more posts
         let temp_dir2 = tempfile::tempdir()?;
         let post_content = r#"{
@@ -933,142 +932,145 @@ mod tests {
         }"#;
         let post_path = temp_dir2.path().join("test3.post");
         fs::write(post_path, post_content)?;
-        
-        post.load(&temp_dir2.path().to_string_lossy().to_string())?;
+
+        post.load(temp_dir2.path().to_string_lossy().to_string())?;
         assert_eq!(post.bsky_posts.len(), 3);
-        
+
         Ok(())
     }
-    
+
     // Post to Bluesky tests (using testing mode)
     #[tokio::test]
     async fn test_post_to_bluesky_testing_mode() -> Result<(), Box<dyn std::error::Error>> {
         env::set_var("TESTING", "1");
-        
+
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
-        post.load(&temp_dir.path().to_string_lossy().to_string())?;
-        
+        post.load(temp_dir.path().to_string_lossy().to_string())?;
+
         // In testing mode, this should not fail even with fake credentials
         let result = post.post_to_bluesky().await;
-        
+
         // Clean up environment variable
         env::remove_var("TESTING");
-        
+
         // Note: This test might fail due to actual network calls even in testing mode
         // depending on the implementation. The current code still tries to authenticate.
         // For a proper test, we'd need to mock the BskyAgent.
-        
+
         // If authentication fails, that's expected with fake credentials
         match result {
             Err(PostError::BlueskyLoginError(_)) => {
                 // Expected with fake credentials
-            },
+            }
             Ok(_) => {
                 // Success in testing mode (if implementation is properly mocked)
-            },
+            }
             Err(e) => {
                 // Other errors might indicate implementation issues
-                println!("Unexpected error: {:?}", e);
+                println!("Unexpected error: {e:?}");
             }
         }
-        
+
         Ok(())
     }
-    
+
     // Delete posted posts tests
     #[test]
     fn test_delete_posted_posts_no_posted() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
-        post.load(&temp_dir.path().to_string_lossy().to_string())?;
-        
+        post.load(temp_dir.path().to_string_lossy().to_string())?;
+
         // No posts are in Posted state yet
         let result = post.delete_posted_posts();
         assert!(result.is_ok());
-        
+
         // Verify files still exist
         assert!(temp_dir.path().join("test1.post").exists());
         assert!(temp_dir.path().join("test2.post").exists());
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_delete_posted_posts_with_posted() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
-        post.load(&temp_dir.path().to_string_lossy().to_string())?;
-        
+        post.load(temp_dir.path().to_string_lossy().to_string())?;
+
         // Manually set one post to Posted state
         let first_post_file_path = post.bsky_posts[0].file_path().clone();
         post.bsky_posts[0].set_state(BskyPostState::Posted);
-        
+
         let result = post.delete_posted_posts();
         assert!(result.is_ok());
-        
+
         // Verify the posted file was deleted
         assert!(!first_post_file_path.exists());
-        
+
         // Count files to verify only one was deleted
-        let remaining_files: Vec<_> = ["test1.post", "test2.post"].iter()
+        let remaining_files: Vec<_> = ["test1.post", "test2.post"]
+            .iter()
             .filter(|filename| temp_dir.path().join(filename).exists())
             .collect();
         assert_eq!(remaining_files.len(), 1);
-        
+
         // Verify state transition
         assert_eq!(post.bsky_posts[0].state(), &BskyPostState::Deleted);
         assert_eq!(post.bsky_posts[1].state(), &BskyPostState::Read);
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_delete_posted_posts_file_not_found() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
-        post.load(&temp_dir.path().to_string_lossy().to_string())?;
-        
+        post.load(temp_dir.path().to_string_lossy().to_string())?;
+
         // Find the post that corresponds to test1.post and delete its file
-        let test1_post_index = post.bsky_posts.iter().position(|p| 
-            p.file_path().file_name().unwrap().to_str().unwrap() == "test1.post"
-        ).expect("Should find test1.post");
-        
+        let test1_post_index = post
+            .bsky_posts
+            .iter()
+            .position(|p| p.file_path().file_name().unwrap().to_str().unwrap() == "test1.post")
+            .expect("Should find test1.post");
+
         // Remove the actual file
-        fs::remove_file(&post.bsky_posts[test1_post_index].file_path())?;
-        
+        fs::remove_file(post.bsky_posts[test1_post_index].file_path())?;
+
         // Set the post to Posted state
         post.bsky_posts[test1_post_index].set_state(BskyPostState::Posted);
-        
+
         let result = post.delete_posted_posts();
         // Should fail because file doesn't exist
         assert!(matches!(result, Err(PostError::Io(_))));
-        
+
         Ok(())
     }
-    
+
     // Count deleted tests
     #[test]
     fn test_count_deleted_none() {
         let post = create_test_post().unwrap();
         assert_eq!(post.count_deleted(), 0);
     }
-    
+
     #[test]
     fn test_count_deleted_with_deleted_posts() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
-        post.load(&temp_dir.path().to_string_lossy().to_string())?;
-        
+        post.load(temp_dir.path().to_string_lossy().to_string())?;
+
         // Set posts to different states
         post.bsky_posts[0].set_state(BskyPostState::Deleted);
         post.bsky_posts[1].set_state(BskyPostState::Posted);
-        
+
         assert_eq!(post.count_deleted(), 1);
-        
+
         Ok(())
     }
-    
+
     // Error handling tests
     #[test]
     fn test_error_display() {
@@ -1076,37 +1078,40 @@ mod tests {
             PostError::NoBlueskyIdentifier,
             PostError::NoBlueskyPassword,
             PostError::BlueskyLoginError("Login failed".to_string()),
-            PostError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "File not found")),
+            PostError::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "File not found",
+            )),
         ];
-        
+
         for error in errors {
-            let error_string = format!("{}", error);
+            let error_string = format!("{error}");
             assert!(!error_string.is_empty());
         }
     }
-    
+
     // Clone and Debug tests
     #[test]
     fn test_post_clone() -> Result<(), Box<dyn std::error::Error>> {
         let mut original = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
-        original.load(&temp_dir.path().to_string_lossy().to_string())?;
-        
+        original.load(temp_dir.path().to_string_lossy().to_string())?;
+
         let cloned = original.clone();
         assert_eq!(original.id, cloned.id);
         assert_eq!(original.pwd, cloned.pwd);
         assert_eq!(original.bsky_posts.len(), cloned.bsky_posts.len());
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_post_debug() {
         let post = create_test_post().unwrap();
-        let debug_str = format!("{:?}", post);
+        let debug_str = format!("{post:?}");
         assert!(debug_str.contains("Post"));
     }
-    
+
     // Default implementation test
     #[test]
     fn test_post_default() {
@@ -1115,55 +1120,54 @@ mod tests {
         assert!(post.pwd.is_empty());
         assert_eq!(post.bsky_posts.len(), 0);
     }
-    
+
     // Fluent interface tests
     #[test]
     fn test_fluent_interface() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir1 = create_test_posts_directory()?;
         let temp_dir2 = tempfile::tempdir()?;
-        
+
         // Create a post in second directory
         let post_content = r#"{
             "text": "Fluent test",
             "createdAt": "2024-01-04T00:00:00.000Z"
         }"#;
         fs::write(temp_dir2.path().join("fluent.post"), post_content)?;
-        
+
         // Test method chaining
         let result = post
-            .load(&temp_dir1.path().to_string_lossy().to_string())?
-            .load(&temp_dir2.path().to_string_lossy().to_string());
-            
+            .load(temp_dir1.path().to_string_lossy().to_string())?
+            .load(temp_dir2.path().to_string_lossy().to_string());
+
         assert!(result.is_ok());
         assert_eq!(post.bsky_posts.len(), 3);
-        
+
         Ok(())
     }
-    
+
     // Memory and performance tests
     #[test]
     fn test_large_number_of_posts() -> Result<(), Box<dyn std::error::Error>> {
         let mut post = create_test_post()?;
         let temp_dir = tempfile::tempdir()?;
-        
+
         // Create 100 post files
         for i in 0..100 {
             let post_content = format!(
                 r#"{{
-                    "text": "Post number {}",
+                    "text": "Post number {i}",
                     "createdAt": "2024-01-01T00:00:00.000Z"
-                }}"#,
-                i
+                }}"#
             );
-            let post_path = temp_dir.path().join(format!("post{}.post", i));
+            let post_path = temp_dir.path().join(format!("post{i}.post"));
             fs::write(post_path, post_content)?;
         }
-        
-        let result = post.load(&temp_dir.path().to_string_lossy().to_string());
+
+        let result = post.load(temp_dir.path().to_string_lossy().to_string());
         assert!(result.is_ok());
         assert_eq!(post.bsky_posts.len(), 100);
-        
+
         // Test counting with different states
         for i in 0..30 {
             post.bsky_posts[i].set_state(BskyPostState::Posted);
@@ -1171,9 +1175,9 @@ mod tests {
         for i in 30..50 {
             post.bsky_posts[i].set_state(BskyPostState::Deleted);
         }
-        
+
         assert_eq!(post.count_deleted(), 20);
-        
+
         Ok(())
     }
 }
