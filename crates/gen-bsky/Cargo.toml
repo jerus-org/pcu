@@ -19,6 +19,7 @@ include = [
 categories = ["development-tools::build-utils"]
 
 [dependencies]
+aquamarine.workspace = true
 base62.workspace = true
 bsky-sdk.workspace = true
 chrono.workspace = true

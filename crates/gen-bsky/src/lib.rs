@@ -210,3 +210,6 @@ pub use draft::{Draft, DraftError};
 mod post;
 pub use post::{Post, PostError};
 mod util;
+
+mod capitalise;
+pub(crate) use capitalise::Capitalise;
