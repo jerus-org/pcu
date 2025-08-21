@@ -32,6 +32,10 @@ A library to generate a bluesky feed post from the front matter metadata in mark
 
 - [X] Create and save a bluesky post record
 - [X] Login and post the record to a bluesky account
+
+## Gen-bsky Library
+
+
 Automatically creates and publishes Bluesky posts for your markdown blog
 articles using front matter metadata. This tool maximizes character usage by
 generating short URLs, leaving more space for compelling post content.
