@@ -71,7 +71,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ test(extra)-add unit tests and documentation for Extra struct functionality(pr [#690])
 - ✅ test(taxonomies)-add documentation and enhance test coverage for taxonomies functionality(pr [#691])
 - ✅ test(post)-add documentation and extensive unit tests for post module(pr [#692])
-- 📝 docs(lib)-streamline documentation inclusion(pr [#693])
 
 ### Fixed
 
