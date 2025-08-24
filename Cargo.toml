@@ -12,7 +12,7 @@ repository = "https://github.com/jerus-org/pcu"
 [workspace.dependencies]
 aquamarine = "0.6.0"
 base62 = "2.2.1"
-bsky-sdk = "0.1.20"
+bsky-sdk = "0.1.21"
 cargo_toml = "0.22.1"
 chrono = "0.4.41"
 clap = "4.5.41"
