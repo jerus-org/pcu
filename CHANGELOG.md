@@ -80,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate bsky-sdk to 0.1.21(pr [#695])
 - deps: update rust crate cargo_toml to 0.22.3(pr [#696])
 - deps: update rust crate clap to 4.5.45(pr [#697])
+- deps: update rust crate clap-verbosity-flag to 3.0.4(pr [#698])
 
 ## [0.4.56] - 2025-07-30
 
@@ -1724,6 +1725,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#695]: https://github.com/jerus-org/pcu/pull/695
 [#696]: https://github.com/jerus-org/pcu/pull/696
 [#697]: https://github.com/jerus-org/pcu/pull/697
+[#698]: https://github.com/jerus-org/pcu/pull/698
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
