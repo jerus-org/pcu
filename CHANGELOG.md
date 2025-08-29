@@ -87,6 +87,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate tokio to 1.47.1(pr [#702])
 - deps: update rust crate toml to 0.9.5(pr [#703])
 
+### Security
+
+- Dependencies: bump tracing-subscriber from 0.3.19 to 0.3.20 in the cargo group across 1 directory(pr [#704])
+
 ## [0.4.56] - 2025-07-30
 
 ### Changed
@@ -1736,6 +1740,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#701]: https://github.com/jerus-org/pcu/pull/701
 [#702]: https://github.com/jerus-org/pcu/pull/702
 [#703]: https://github.com/jerus-org/pcu/pull/703
+[#704]: https://github.com/jerus-org/pcu/pull/704
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
