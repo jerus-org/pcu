@@ -93,7 +93,7 @@ impl Commands {
     fn get_settings(&self) -> Result<Config, Error> {
         let mut settings = Config::builder()
             // Set defaults for CircleCI
-            .set_default("log", "CHANGELOG.md")?
+            .set_default("log", "PRLOG.md")?
             .set_default("branch", "CIRCLE_BRANCH")?
             .set_default("default_branch", "main")?
             .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
