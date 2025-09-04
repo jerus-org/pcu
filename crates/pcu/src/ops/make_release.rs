@@ -38,7 +38,7 @@ impl MakeRelease for Client {
             Ok(changelog) => changelog,
             Err(e) => {
                 log::error!("Error parsing changelog: {e}");
-                return Err(Error::InvalidPath(self.changelog.clone()));
+                return Err(Error::InvalidPath(self.prlog.clone()));
             }
         };
 

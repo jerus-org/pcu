@@ -25,7 +25,7 @@ pub struct Client {
     pub(crate) default_branch: String,
     pub(crate) branch: Option<String>,
     pull_request: Option<PullRequest>,
-    pub(crate) changelog: OsString,
+    pub(crate) prlog: OsString,
     pub(crate) line_limit: usize,
     pub(crate) changelog_parse_options: ChangelogParseOptions,
     pub(crate) changelog_update: Option<PrTitle>,
@@ -41,7 +41,7 @@ impl Debug for Client {
             .field("default_branch", &self.default_branch)
             .field("branch", &self.branch)
             .field("pull_request", &self.pull_request)
-            .field("changelog", &self.changelog)
+            .field("changelog", &self.prlog)
             .field("line_limit", &self.line_limit)
             .field("changelog_parse_options", &self.changelog_parse_options)
             .field("changelog_update", &self.changelog_update)
@@ -112,30 +112,11 @@ impl Client {
         };
         log::trace!("branch: {branch:?} and pull_request: {pull_request:?}");
 
-        // Use the log config setting to set the default change log file name
         log::trace!("log: {:?}", settings.get::<String>("log"));
-        let default_change_log: String = settings
+        let prlog: String = settings
             .get("log")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
-
-        // Get the name of the changelog file
-        let mut changelog = OsString::from(default_change_log);
-        if let Ok(files) = std::fs::read_dir(".") {
-            for file in files.into_iter().flatten() {
-                log::trace!("File: {:?}", file.path());
-
-                if file
-                    .file_name()
-                    .to_string_lossy()
-                    .to_lowercase()
-                    .contains("change")
-                    && file.file_type().unwrap().is_file()
-                {
-                    changelog = file.file_name();
-                    break;
-                }
-            }
-        };
+        let prlog = OsString::from(prlog);
 
         let git_repo = git2::Repository::open(".")?;
 
@@ -161,7 +142,7 @@ impl Client {
             owner,
             repo,
             pull_request,
-            changelog,
+            prlog,
             line_limit,
             changelog_parse_options,
             changelog_update: None,
@@ -325,7 +306,7 @@ impl Client {
     }
 
     pub fn changelog_as_str(&self) -> &str {
-        if let Some(cl) = &self.changelog.to_str() {
+        if let Some(cl) = &self.prlog.to_str() {
             cl
         } else {
             ""
@@ -333,6 +314,6 @@ impl Client {
     }
 
     pub fn set_changelog(&mut self, changelog: &str) {
-        self.changelog = changelog.into();
+        self.prlog = changelog.into();
     }
 }
