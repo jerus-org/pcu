@@ -27,11 +27,11 @@ impl UpdateFromPr for Client {
     fn update_changelog(&mut self) -> Result<Option<(ChangeKind, String)>, Error> {
         log::debug!(
             "Updating changelog: {:?} with entry {:?}",
-            self.changelog,
+            self.prlog,
             self.changelog_update
         );
 
-        if self.changelog.is_empty() {
+        if self.prlog.is_empty() {
             return Err(Error::NoChangeLogFileFound);
         }
 
@@ -39,7 +39,7 @@ impl UpdateFromPr for Client {
 
         if let Some(update) = &mut self.changelog_update {
             #[allow(clippy::needless_question_mark)]
-            return Ok(update.update_changelog(&self.changelog, opts)?);
+            return Ok(update.update_changelog(&self.prlog, opts)?);
         }
         Ok(None)
     }
