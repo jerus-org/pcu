@@ -577,7 +577,7 @@ mod tests {
         let temp_dir = Path::new(&temp_dir_string);
         fs::create_dir_all(temp_dir)?;
 
-        let file_name = temp_dir.join("CHANGELOG.md");
+        let file_name = temp_dir.join("PRLOG.md");
         log::debug!("filename : {file_name:?}");
 
         let mut file = File::create(&file_name)?;
@@ -622,7 +622,7 @@ mod tests {
         let temp_dir = Path::new(&temp_dir_string);
         fs::create_dir_all(temp_dir)?;
 
-        let file_name = temp_dir.join("CHANGELOG.md");
+        let file_name = temp_dir.join("PRLOG.md");
         log::debug!("filename : {file_name:?}");
 
         let mut file = File::create(&file_name)?;
