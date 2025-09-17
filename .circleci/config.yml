@@ -423,7 +423,7 @@ jobs:
                   set -ex
 
                   ls /tmp/workspace
-                  cp /tmp/workspace/CHANGELOG.md .
+                  cp /tmp/workspace/PRLOG.md .
                 name: Copy changelog from workspace to current directory
       - run:
           command: |
@@ -606,7 +606,7 @@ workflows:
             - toolkit/update_changelog
           pcu_verbosity: "-vvvv"
           changelog_updated: true
-          pcu_commit_message: "chore: update changelog for pr"
+          pcu_commit_message: "chore: update pr log"
           # install_me: true
 
   on_success:
