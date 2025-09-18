@@ -496,7 +496,7 @@ impl GitOps for Client {
         };
 
         log::trace!("Push refs: {push_refs:?}");
-        let mut call_backs = RemoteCallbacks::new();
+        // let mut call_backs = RemoteCallbacks::new();
         call_backs.push_transfer_progress(progress_bar);
         let mut push_opts = PushOptions::new();
         push_opts.remote_callbacks(call_backs);
