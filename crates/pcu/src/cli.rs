@@ -168,11 +168,7 @@ impl Commands {
         };
 
         match settings.build() {
-            Ok(settings) => {
-                let toml_string = &settings.get_string("prlog").unwrap();
-                let _ = std::fs::write("pcu.settings", toml_string);
-                Ok(settings)
-            }
+            Ok(settings) => Ok(settings),
             Err(e) => {
                 log::error!("Error: {e}");
                 Err(e.into())
