@@ -659,7 +659,7 @@ jobs:
 
       #             mkdir -p /tmp/workspace
       #             cp PRLOG.md /tmp/workspace/PRLOG.md
-      #           name: Save CHANGELOG.md to workspace
+      #           name: Save PRLOG.md to workspace
       #       - persist_to_workspace:
       #           paths:
       #             - PRLOG.md
