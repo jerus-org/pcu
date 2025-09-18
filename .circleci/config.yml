@@ -422,9 +422,11 @@ jobs:
                 command: |
                   set -ex
 
-                  ls /tmp/workspace
+                  ls -l PRLOG.md
+                  ls -l /tmp/workspace
                   cp /tmp/workspace/PRLOG.md .
-                name: Copy changelog from workspace to current directory
+                  ls -l PRLOG.md
+                name: Copy PRLOG from workspace to current directory
       - run:
           command: |
             pcu --version
