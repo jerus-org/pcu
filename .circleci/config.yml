@@ -796,12 +796,14 @@ workflows:
             - pcu-app
           post-steps:
             - run:
+                name: Save PRLOG.md to workspace
                 command: |
                   set -ex
 
+                  env
+                  echo "------------------" 
                   mkdir -p /tmp/workspace
                   cp PRLOG.md /tmp/workspace/PRLOG.md
-                name: Save CHANGELOG.md to workspace
             - persist_to_workspace:
                 paths:
                   - PRLOG.md
