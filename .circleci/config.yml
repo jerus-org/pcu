@@ -425,7 +425,6 @@ jobs:
                   ls -l PRLOG.md
                   ls -l /tmp/workspace
                   cp /tmp/workspace/PRLOG.md .
-                  cp /tmp/workspace/env_report.txt .
                   cp /tmp/workspace/pcu.settings .
                   ls -l PRLOG.md
                 name: Copy PRLOG from workspace to current directory
@@ -802,16 +801,12 @@ workflows:
                 command: |
                   set -ex
 
-                  env > env_report.txt
-                  echo "------------------" 
                   mkdir -p /tmp/workspace
                   cp PRLOG.md /tmp/workspace/PRLOG.md
-                  cp env_report.txt /tmp/workspace/env_report.txt
                   cp pcu.settings /tmp/workspace/pcu.settings
             - persist_to_workspace:
                 paths:
                   - PRLOG.md
-                  - env_report.txt
                   - pcu.settings
                 root: /tmp/workspace
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
