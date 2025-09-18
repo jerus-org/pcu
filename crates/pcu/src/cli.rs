@@ -107,6 +107,8 @@ impl Commands {
             // Add in settings from the environment (with a prefix of PCU)
             .add_source(config::Environment::with_prefix("PCU"));
 
+        log::trace!("Initial settings (default, pcu.toml and environment: {settings:#?}");
+
         settings = match self {
             Commands::Pr(_) => settings
                 .set_override("commit_message", "chore: update changelog for pr")?
