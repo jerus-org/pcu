@@ -407,24 +407,24 @@ jobs:
           steps:
             - toolkit/install_me:
                 path_to_crate: << parameters.install_me_path >>
-      - when:
-          condition: << parameters.changelog_updated >>
-          steps:
-            - run:
-                command: |
-                  set -ex
+      # - when:
+      #     condition: << parameters.changelog_updated >>
+      #     steps:
+      #       - run:
+      #           command: |
+      #             set -ex
 
-                  mkdir -p /tmp/workspace
-                name: Create workspace in tmp
-            - attach_workspace:
-                at: /tmp/workspace
-            - run:
-                command: |
-                  set -ex
+      #             mkdir -p /tmp/workspace
+      #           name: Create workspace in tmp
+      #       - attach_workspace:
+      #           at: /tmp/workspace
+      #       - run:
+      #           command: |
+      #             set -ex
 
-                  ls /tmp/workspace
-                  cp /tmp/workspace/PRLOG.md .
-                name: Copy changelog from workspace to current directory
+      #             ls /tmp/workspace
+      #             cp /tmp/workspace/PRLOG.md .
+      #           name: Copy changelog from workspace to current directory
       - run:
           command: |
             pcu --version
@@ -645,21 +645,21 @@ jobs:
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
                 pcu_push: <<parameters.pcu_push>>
                 pcu_verbosity: <<parameters.pcu_verbosity>>
-      - when:
-          condition:
-            not: << parameters.pcu_push >>
-          steps:
-            - run:
-                command: |
-                  set -ex
+      # - when:
+      #     condition:
+      #       not: << parameters.pcu_push >>
+      #     steps:
+      #       - run:
+      #           command: |
+      #             set -ex
 
-                  mkdir -p /tmp/workspace
-                  cp PRLOG.md /tmp/workspace/PRLOG.md
-                name: Save CHANGELOG.md to workspace
-            - persist_to_workspace:
-                paths:
-                  - PRLOG.md
-                root: /tmp/workspace
+      #             mkdir -p /tmp/workspace
+      #             cp PRLOG.md /tmp/workspace/PRLOG.md
+      #           name: Save CHANGELOG.md to workspace
+      #       - persist_to_workspace:
+      #           paths:
+      #             - PRLOG.md
+      #           root: /tmp/workspace
 
 workflows:
   check_last_commit:
@@ -792,6 +792,18 @@ workflows:
             - release
             - bot-check
             - pcu-app
+          post-steps:
+            - run:
+                command: |
+                  set -ex
+
+                  mkdir -p /tmp/workspace
+                  cp PRLOG.md /tmp/workspace/PRLOG.md
+                name: Save CHANGELOG.md to workspace
+            - persist_to_workspace:
+                paths:
+                  - PRLOG.md
+                root: /tmp/workspace
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           update_pcu: true
@@ -812,6 +824,22 @@ workflows:
             - pcu-app
           requires:
             - update_changelog
+          pre-steps:
+            - run:
+                command: |
+                  set -ex
+
+                  mkdir -p /tmp/workspace
+                name: Create workspace in tmp
+            - attach_workspace:
+                at: /tmp/workspace
+            - run:
+                command: |
+                  set -ex
+
+                  ls /tmp/workspace
+                  cp /tmp/workspace/PRLOG.md .
+                name: Copy changelog from workspace to current directory
           pcu_verbosity: "-vvvv"
           changelog_updated: true
           pcu_commit_message: "chore: update pr log"
