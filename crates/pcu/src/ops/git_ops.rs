@@ -473,15 +473,24 @@ impl GitOps for Client {
         };
 
         let branch_ref = local_branch.into_reference();
+        let mut push_refs = Vec::new();
+        let commit_ref = if let Some(br) = branch_ref.name() {
+            let r = format!("{br}:{br}");
+            r
+        } else {
+            "".to_string()
+        };
 
-        let mut push_refs = vec![branch_ref.name().unwrap()];
+        if !commit_ref.is_empty() {
+            push_refs.push(&commit_ref)
+        }
 
         #[allow(unused_assignments)]
         let mut tag_ref = String::from("");
 
         if let Some(version_tag) = version {
             log::trace!("Found version tag: {prefix}{version_tag}");
-            tag_ref = format!("refs/tags/{prefix}{version_tag}");
+            tag_ref = format!("refs/tags/{prefix}{version_tag}:refs/tags/{prefix}{version_tag}");
             log::trace!("Tag ref: {tag_ref}");
             push_refs.push(&tag_ref);
         };
