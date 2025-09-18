@@ -848,7 +848,8 @@ workflows:
           pcu_verbosity: "-vvvv"
           changelog_updated: true
           pcu_commit_message: "chore: update pr log"
-          # install_me: true
+          install_me: true
+          install_me_path: "crates/pcu"
 
   on_success:
     when:
