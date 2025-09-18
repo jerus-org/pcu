@@ -800,10 +800,11 @@ workflows:
                 command: |
                   set -ex
 
-                  env
+                  env > env_report.txt
                   echo "------------------" 
                   mkdir -p /tmp/workspace
                   cp PRLOG.md /tmp/workspace/PRLOG.md
+                  cp env_report.txt /tmp/workspace/env_report.txt
             - persist_to_workspace:
                 paths:
                   - PRLOG.md
