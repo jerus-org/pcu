@@ -112,9 +112,9 @@ impl Client {
         };
         log::trace!("branch: {branch:?} and pull_request: {pull_request:?}");
 
-        log::trace!("log: {:?}", settings.get::<String>("log"));
+        log::trace!("log: {:?}", settings.get::<String>("prlog"));
         let prlog: String = settings
-            .get("log")
+            .get("prlog")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
         let prlog = OsString::from(prlog);
 

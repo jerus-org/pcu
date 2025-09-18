@@ -93,7 +93,7 @@ impl Commands {
     fn get_settings(&self) -> Result<Config, Error> {
         let mut settings = Config::builder()
             // Set defaults for CircleCI
-            .set_default("log", "PRLOG.md")?
+            .set_default("prlog", "PRLOG.md")?
             .set_default("branch", "CIRCLE_BRANCH")?
             .set_default("default_branch", "main")?
             .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
@@ -169,7 +169,7 @@ impl Commands {
 
         match settings.build() {
             Ok(settings) => {
-                let toml_string = &settings.get_string("log").unwrap();
+                let toml_string = &settings.get_string("prlog").unwrap();
                 let _ = std::fs::write("pcu.settings", toml_string);
                 Ok(settings)
             }
