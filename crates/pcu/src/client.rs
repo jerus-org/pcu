@@ -27,8 +27,8 @@ pub struct Client {
     pull_request: Option<PullRequest>,
     pub(crate) prlog: OsString,
     pub(crate) line_limit: usize,
-    pub(crate) changelog_parse_options: ChangelogParseOptions,
-    pub(crate) changelog_update: Option<PrTitle>,
+    pub(crate) prlog_parse_options: ChangelogParseOptions,
+    pub(crate) prlog_update: Option<PrTitle>,
     pub(crate) commit_message: String,
 }
 
@@ -41,10 +41,10 @@ impl Debug for Client {
             .field("default_branch", &self.default_branch)
             .field("branch", &self.branch)
             .field("pull_request", &self.pull_request)
-            .field("changelog", &self.prlog)
+            .field("prlog", &self.prlog)
             .field("line_limit", &self.line_limit)
-            .field("changelog_parse_options", &self.changelog_parse_options)
-            .field("changelog_update", &self.changelog_update)
+            .field("prlog_parse_options", &self.prlog_parse_options)
+            .field("prlog_update", &self.prlog_update)
             .field("commit_message", &self.commit_message)
             .finish()
     }
@@ -112,9 +112,9 @@ impl Client {
         };
         log::trace!("branch: {branch:?} and pull_request: {pull_request:?}");
 
-        log::trace!("log: {:?}", settings.get::<String>("log"));
+        log::trace!("log: {:?}", settings.get::<String>("prlog"));
         let prlog: String = settings
-            .get("log")
+            .get("prlog")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
         let prlog = OsString::from(prlog);
 
@@ -144,8 +144,8 @@ impl Client {
             pull_request,
             prlog,
             line_limit,
-            changelog_parse_options,
-            changelog_update: None,
+            prlog_parse_options: changelog_parse_options,
+            prlog_update: None,
             commit_message,
         })
     }
@@ -279,7 +279,7 @@ impl Client {
     }
 
     pub fn section(&self) -> Option<&str> {
-        if let Some(update) = &self.changelog_update {
+        if let Some(update) = &self.prlog_update {
             if let Some(section) = &update.section {
                 match section {
                     ChangeKind::Added => Some("Added"),
@@ -298,7 +298,7 @@ impl Client {
     }
 
     pub fn entry(&self) -> Option<&str> {
-        if let Some(update) = &self.changelog_update {
+        if let Some(update) = &self.prlog_update {
             Some(&update.entry)
         } else {
             None

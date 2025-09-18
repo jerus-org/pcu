@@ -93,7 +93,7 @@ impl Commands {
     fn get_settings(&self) -> Result<Config, Error> {
         let mut settings = Config::builder()
             // Set defaults for CircleCI
-            .set_default("log", "PRLOG.md")?
+            .set_default("prlog", "PRLOG.md")?
             .set_default("branch", "CIRCLE_BRANCH")?
             .set_default("default_branch", "main")?
             .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
@@ -106,6 +106,8 @@ impl Commands {
             .add_source(config::File::with_name("pcu.toml").required(false))
             // Add in settings from the environment (with a prefix of PCU)
             .add_source(config::Environment::with_prefix("PCU"));
+
+        log::trace!("Initial settings (default, pcu.toml and environment: {settings:#?}");
 
         settings = match self {
             Commands::Pr(_) => settings

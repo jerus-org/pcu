@@ -14,7 +14,7 @@ pub trait MakeRelease {
 
 impl MakeRelease for Client {
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error> {
-        let opts = self.changelog_parse_options.clone();
+        let opts = self.prlog_parse_options.clone();
 
         let mut change_log = Changelog::parse_from_file(self.changelog_as_str(), Some(opts))
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;

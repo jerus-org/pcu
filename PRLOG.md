@@ -74,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 docs(lib)-streamline documentation inclusion(pr [#693])
 - 📝 docs(readme)-update readme with gen-bsky library section(pr [#694])
 - ♻️ BREAKING: refactor(client)-rename changelog to prlog(pr [#707])
+- 🔧 chore-rename CHANGELOG.md to PRLOG.md(pr [#708])
 
 ### Fixed
 
@@ -1742,6 +1743,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#705]: https://github.com/jerus-org/pcu/pull/705
 [#706]: https://github.com/jerus-org/pcu/pull/706
 [#707]: https://github.com/jerus-org/pcu/pull/707
+[#708]: https://github.com/jerus-org/pcu/pull/708
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55

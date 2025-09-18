@@ -19,7 +19,7 @@ impl UpdateFromPr for Client {
         pr_title.calculate_section_and_entry();
         log::trace!("pr_title: {pr_title:#?}");
 
-        self.changelog_update = Some(pr_title);
+        self.prlog_update = Some(pr_title);
 
         Ok(())
     }
@@ -28,16 +28,16 @@ impl UpdateFromPr for Client {
         log::debug!(
             "Updating changelog: {:?} with entry {:?}",
             self.prlog,
-            self.changelog_update
+            self.prlog_update
         );
 
         if self.prlog.is_empty() {
             return Err(Error::NoChangeLogFileFound);
         }
 
-        let opts = self.changelog_parse_options.clone();
+        let opts = self.prlog_parse_options.clone();
 
-        if let Some(update) = &mut self.changelog_update {
+        if let Some(update) = &mut self.prlog_update {
             #[allow(clippy::needless_question_mark)]
             return Ok(update.update_changelog(&self.prlog, opts)?);
         }
