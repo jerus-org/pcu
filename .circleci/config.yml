@@ -425,7 +425,6 @@ jobs:
                   ls -l PRLOG.md
                   ls -l /tmp/workspace
                   cp /tmp/workspace/PRLOG.md .
-                  cp /tmp/workspace/pcu.settings .
                   ls -l PRLOG.md
                 name: Copy PRLOG from workspace to current directory
       - run:
@@ -803,11 +802,9 @@ workflows:
 
                   mkdir -p /tmp/workspace
                   cp PRLOG.md /tmp/workspace/PRLOG.md
-                  cp pcu.settings /tmp/workspace/pcu.settings
             - persist_to_workspace:
                 paths:
                   - PRLOG.md
-                  - pcu.settings
                 root: /tmp/workspace
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
