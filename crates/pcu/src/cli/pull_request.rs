@@ -94,7 +94,7 @@ impl Pr {
         log::debug!("Proposed entry: {:?}", client.entry());
 
         if log::log_enabled!(log::Level::Info) {
-            if let Some((section, entry)) = client.update_changelog()? {
+            if let Some((section, entry)) = client.update_prlog()? {
                 let section = match section {
                     ChangeKind::Added => "Added",
                     ChangeKind::Changed => "Changed",
@@ -111,7 +111,7 @@ impl Pr {
                 }
                 return Ok(CIExit::UnChanged);
             };
-        } else if client.update_changelog()?.is_none() {
+        } else if client.update_prlog()?.is_none() {
             return Ok(CIExit::UnChanged);
         }
 
