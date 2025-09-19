@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 👷 ci(circleci)-remove unused version and package parameters(pr [#713])
 - Update-changelog-with-version-0.5.0-release-details(pr [#714])
 - 🔧 chore(release)-remove unused release configuration(pr [#715])
+- 👷 ci(circleci)-update validation workflow conditions(pr [#716])
 
 ### Fixed
 
@@ -1769,6 +1770,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#713]: https://github.com/jerus-org/pcu/pull/713
 [#714]: https://github.com/jerus-org/pcu/pull/714
 [#715]: https://github.com/jerus-org/pcu/pull/715
+[#716]: https://github.com/jerus-org/pcu/pull/716
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
