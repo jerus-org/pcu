@@ -345,7 +345,7 @@ jobs:
       Build the software and push updates to the remote repository.
     executor: rust-env
     parameters:
-      changelog_updated:
+      prlog_updated:
         default: false
         description: Flag to expected updated changelog in workspace
         type: boolean
@@ -408,17 +408,20 @@ jobs:
             - toolkit/install_me:
                 path_to_crate: << parameters.install_me_path >>
       - when:
-          condition: << parameters.changelog_updated >>
+          condition: << parameters.prlog_updated >>
           steps:
-            #       - run:
-            #           command: |
-            #             set -ex
-
-            #             mkdir -p /tmp/workspace
-            #           name: Create workspace in tmp
-            #       - attach_workspace:
-            #           at: /tmp/workspace
             - run:
+                command: |
+                  set -ex
+                  mkdir -p /tmp/workspace
+                name: Create workspace in tmp
+            - attach_workspace:
+                at: /tmp/workspace
+      - when:
+          condition: << parameters.prlog_updated >>
+          steps:
+            - run:
+                name: Copy PRLOG from workspace to current directory
                 command: |
                   set -ex
 
@@ -426,7 +429,6 @@ jobs:
                   ls -l /tmp/workspace
                   cp /tmp/workspace/PRLOG.md .
                   ls -l PRLOG.md
-                name: Copy PRLOG from workspace to current directory
       - run:
           command: |
             pcu --version
@@ -455,9 +457,9 @@ jobs:
             cargo audit --version
             git --version
 
-  update_changelog:
+  update_prlog:
     description: |
-      Update the changelog based on the pull request
+      Add the pull request to the PRLOG
     executor:
       name: rust-env
     parameters:
@@ -647,21 +649,21 @@ jobs:
                 pcu_halt_signal: <<parameters.pcu_halt_signal>>
                 pcu_push: <<parameters.pcu_push>>
                 pcu_verbosity: <<parameters.pcu_verbosity>>
-      # - when:
-      #     condition:
-      #       not: << parameters.pcu_push >>
-      #     steps:
-      #       - run:
-      #           command: |
-      #             set -ex
+      - when:
+          condition:
+            not: << parameters.pcu_push >>
+          steps:
+            - run:
+                name: Save PRLOG.md to workspace
+                command: |
+                  set -ex
 
-      #             mkdir -p /tmp/workspace
-      #             cp PRLOG.md /tmp/workspace/PRLOG.md
-      #           name: Save PRLOG.md to workspace
-      #       - persist_to_workspace:
-      #           paths:
-      #             - PRLOG.md
-      #           root: /tmp/workspace
+                  mkdir -p /tmp/workspace
+                  cp PRLOG.md /tmp/workspace/PRLOG.md
+            - persist_to_workspace:
+                paths:
+                  - PRLOG.md
+                root: /tmp/workspace
 
 workflows:
   check_last_commit:
@@ -780,7 +782,7 @@ workflows:
       - toolkit/security:
           context: SonarCloud
           ignore_advisories: "RUSTSEC-2025-0007"
-      - update_changelog:
+      - update_prlog:
           filters:
             branches:
               ignore:
@@ -794,24 +796,11 @@ workflows:
             - release
             - bot-check
             - pcu-app
-          post-steps:
-            - run:
-                name: Save PRLOG.md to workspace
-                command: |
-                  set -ex
-
-                  mkdir -p /tmp/workspace
-                  cp PRLOG.md /tmp/workspace/PRLOG.md
-            - persist_to_workspace:
-                paths:
-                  - PRLOG.md
-                root: /tmp/workspace
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           # update_pcu: true
           install_me: true
           install_me_path: "crates/pcu"
-
           pcu_verbosity: "-vvvv"
           pcu_push: false
 
@@ -827,18 +816,9 @@ workflows:
             - bot-check
             - pcu-app
           requires:
-            - update_changelog
-          pre-steps:
-            - run:
-                command: |
-                  set -ex
-
-                  mkdir -p /tmp/workspace
-                name: Create workspace in tmp
-            - attach_workspace:
-                at: /tmp/workspace
+            - update_prlog
           pcu_verbosity: "-vvvv"
-          changelog_updated: true
+          prlog_updated: true
           pcu_commit_message: "chore: update pr log"
           install_me: true
           install_me_path: "crates/pcu"
