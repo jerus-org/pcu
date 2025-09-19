@@ -174,7 +174,7 @@ impl PrTitle {
         }
     }
 
-    pub fn update_changelog(
+    pub fn update_prlog(
         &mut self,
         log_file: &OsStr,
         opts: ChangelogParseOptions,
@@ -208,35 +208,35 @@ impl PrTitle {
                     .join("\n")
             );
             if file_contents.contains(&self.entry) {
-                log::trace!("The changelog exists and already contains the entry!");
+                log::trace!("The prlog exists and already contains the entry!");
                 return Ok(None);
             } else {
-                log::trace!("The changelog exists but does not contain the entry!");
+                log::trace!("The prlog exists but does not contain the entry!");
             }
 
             Changelog::parse_from_file(log_file, Some(opts))
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?
         } else {
-            log::trace!("The changelog does not exist! Create a default changelog.");
-            let mut changelog = ChangelogBuilder::default()
+            log::trace!("The prlog does not exist! Create a default prlog.");
+            let mut prlog = ChangelogBuilder::default()
                 .url(repo_url)
                 .build()
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
-            log::debug!("Changelog: {changelog:#?}");
+            log::debug!("Changelog: {prlog:#?}");
             let release = Release::builder()
                 .build()
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
-            changelog.add_release(release);
-            log::debug!("Changelog: {changelog:#?}");
+            prlog.add_release(release);
+            log::debug!("Changelog: {prlog:#?}");
 
-            changelog
+            prlog
                 .save_to_file(log_file)
                 .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
-            changelog
+            prlog
         };
 
         // Get the unreleased section from the Changelog.
-        // If there is no unreleased section create it and add it to the changelog
+        // If there is no unreleased section create it and add it to the prlog
         let unreleased = if let Some(unreleased) = change_log.get_unreleased_mut() {
             unreleased
         } else {
@@ -274,7 +274,7 @@ impl PrTitle {
             change_log.add_link(
                 &format!("[#{}]:", self.pr_id.unwrap()),
                 &self.pr_url.clone().unwrap().to_string(),
-            ); // TODO: Add the PR link to the changelog.
+            );
         }
 
         change_log
@@ -570,8 +570,8 @@ mod tests {
     fn test_update_change_log_added() -> Result<(), Error> {
         get_test_logger();
 
-        let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
-        let expected_content = fs::read_to_string("tests/data/expected_changelog.md")?;
+        let initial_content = fs::read_to_string("tests/data/initial_prlog.md")?;
+        let expected_content = fs::read_to_string("tests/data/expected_prlog.md")?;
 
         let temp_dir_string = format!("tests/tmp/test-{}", Uuid::new_v4());
         let temp_dir = Path::new(&temp_dir_string);
@@ -599,7 +599,7 @@ mod tests {
 
         let opts = ChangelogParseOptions::default();
 
-        pr_title.update_changelog(file_name, opts)?;
+        pr_title.update_prlog(file_name, opts)?;
 
         let actual_content = fs::read_to_string(file_name)?;
 
@@ -615,8 +615,8 @@ mod tests {
     fn test_update_change_log_added_issue_172() -> Result<(), Error> {
         get_test_logger();
 
-        let initial_content = fs::read_to_string("tests/data/initial_changelog.md")?;
-        let expected_content = fs::read_to_string("tests/data/expected_changelog_issue_172.md")?;
+        let initial_content = fs::read_to_string("tests/data/initial_prlog.md")?;
+        let expected_content = fs::read_to_string("tests/data/expected_prlog_issue_172.md")?;
 
         let temp_dir_string = format!("tests/tmp/test-{}", Uuid::new_v4());
         let temp_dir = Path::new(&temp_dir_string);
@@ -643,7 +643,7 @@ mod tests {
         let file_name = &file_name.into_os_string();
         let opts = ChangelogParseOptions::default();
 
-        pr_title.update_changelog(file_name, opts)?;
+        pr_title.update_prlog(file_name, opts)?;
 
         let mut pr_title = PrTitle::parse(
             "chore(config.yml): update jerus-org/circleci-toolkit orb version to 0.4.0",
@@ -655,7 +655,7 @@ mod tests {
         let file_name = &file_name.to_os_string();
         let opts = ChangelogParseOptions::default();
 
-        pr_title.update_changelog(file_name, opts)?;
+        pr_title.update_prlog(file_name, opts)?;
 
         let actual_content = fs::read_to_string(file_name)?;
 

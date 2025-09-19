@@ -6,7 +6,7 @@ use url::Url;
 use crate::{Client, Error, PrTitle};
 
 pub trait UpdateFromPr {
-    fn update_changelog(&mut self) -> Result<Option<(ChangeKind, String)>, Error>;
+    fn update_prlog(&mut self) -> Result<Option<(ChangeKind, String)>, Error>;
     fn create_entry(&mut self) -> Result<(), Error>;
 }
 
@@ -24,9 +24,9 @@ impl UpdateFromPr for Client {
         Ok(())
     }
 
-    fn update_changelog(&mut self) -> Result<Option<(ChangeKind, String)>, Error> {
+    fn update_prlog(&mut self) -> Result<Option<(ChangeKind, String)>, Error> {
         log::debug!(
-            "Updating changelog: {:?} with entry {:?}",
+            "Updating prlog: {:?} with entry {:?}",
             self.prlog,
             self.prlog_update
         );
@@ -39,7 +39,7 @@ impl UpdateFromPr for Client {
 
         if let Some(update) = &mut self.prlog_update {
             #[allow(clippy::needless_question_mark)]
-            return Ok(update.update_changelog(&self.prlog, opts)?);
+            return Ok(update.update_prlog(&self.prlog, opts)?);
         }
         Ok(None)
     }

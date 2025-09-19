@@ -76,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ BREAKING: refactor(client)-rename changelog to prlog(pr [#707])
 - 🔧 chore-rename CHANGELOG.md to PRLOG.md(pr [#708])
 - 👷 ci(circleci)-update changelog references to prlog(pr [#709])
+- ♻️ refactor-rename changelog to prlog(pr [#710])
 
 ### Fixed
 
@@ -1746,6 +1747,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#707]: https://github.com/jerus-org/pcu/pull/707
 [#708]: https://github.com/jerus-org/pcu/pull/708
 [#709]: https://github.com/jerus-org/pcu/pull/709
+[#710]: https://github.com/jerus-org/pcu/pull/710
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55

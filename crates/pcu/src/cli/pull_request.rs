@@ -14,7 +14,7 @@ const SIGNAL_HALT: &str = "halt";
 
 #[derive(Debug, Parser, Clone)]
 pub struct Pr {
-    /// Signal an early exit as the changelog is already updated
+    /// Signal an early exit as the prlog is already updated
     #[clap(short, long, default_value_t = false)]
     pub early_exit: bool,
     /// Prefix for the version tag
@@ -94,7 +94,7 @@ impl Pr {
         log::debug!("Proposed entry: {:?}", client.entry());
 
         if log::log_enabled!(log::Level::Info) {
-            if let Some((section, entry)) = client.update_changelog()? {
+            if let Some((section, entry)) = client.update_prlog()? {
                 let section = match section {
                     ChangeKind::Added => "Added",
                     ChangeKind::Changed => "Changed",
@@ -111,19 +111,19 @@ impl Pr {
                 }
                 return Ok(CIExit::UnChanged);
             };
-        } else if client.update_changelog()?.is_none() {
+        } else if client.update_prlog()?.is_none() {
             return Ok(CIExit::UnChanged);
         }
 
-        log::debug!("Changelog file name: {}", client.changelog_as_str());
+        log::debug!("Changelog file name: {}", client.prlog_as_str());
 
         log::trace!(
             "{}",
-            crate::cli::print_changelog(client.changelog_as_str(), client.line_limit())
+            crate::cli::print_prlog(client.prlog_as_str(), client.line_limit())
         );
 
         // Commit the change log
-        let commit_message = "chore: update changelog for pr";
+        let commit_message = "chore: update prlog for pr";
         client
             .commit_changed_files(sign, commit_message, &self.prefix, None)
             .await?;
