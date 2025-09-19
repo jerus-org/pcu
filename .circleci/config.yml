@@ -859,5 +859,3 @@ workflows:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           when_update_pcu: << pipeline.parameters.update_pcu >>
-          version: "0.6.0"
-          package: "pcu"
