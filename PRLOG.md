@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - ✨ add URL parse error handling(pr [#667])
 - ✨ add default directory path functions(pr [#683])
 
@@ -51,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 👷 ci(circleci)-add update_pcu parameter to pipeline(pr [#711])
 - 🔧 chore(ci)-update make_release job parameters in workflow(pr [#712])
 - 👷 ci(circleci)-remove unused version and package parameters(pr [#713])
+- Update-changelog-with-version-0.5.0-release-details(pr [#714])
 
 ### Fixed
 
@@ -1764,7 +1766,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#711]: https://github.com/jerus-org/pcu/pull/711
 [#712]: https://github.com/jerus-org/pcu/pull/712
 [#713]: https://github.com/jerus-org/pcu/pull/713
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
+[#714]: https://github.com/jerus-org/pcu/pull/714
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
 [0.4.54]: https://github.com/jerus-org/pcu/compare/v0.4.53...v0.4.54
