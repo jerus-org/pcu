@@ -38,9 +38,9 @@ pub enum Error {
     InvalidVersion(String),
     #[error("Default change log file name not set")]
     DefaultChangeLogNotSet,
-    #[error("Invalid path for changelog file {0:?}")]
+    #[error("Invalid path for prlog file {0:?}")]
     InvalidPath(OsString),
-    #[error("Keep a changelog says: {0}")]
+    #[error("Keep a prlog says: {0}")]
     KeepAChangelog(String),
     #[error("No GitHub API private key found")]
     NoGitHubAPIPrivateKey,
@@ -48,7 +48,7 @@ pub enum Error {
     NoGitHubAPIAuth,
     #[error("Unknown format for pull request: {0}")]
     UnknownPullRequestFormat(String),
-    #[error("No default changelog file found")]
+    #[error("No default prlog file found")]
     NoChangeLogFileFound,
     #[error("ParseInt says: {0:?}")]
     ParseInt(#[from] ParseIntError),
