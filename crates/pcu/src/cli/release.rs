@@ -10,10 +10,10 @@ use owo_colors::{OwoColorize, Style};
 
 #[derive(Debug, Parser, Clone)]
 pub struct Release {
-    /// Update the changelog by renaming the unreleased section with the version
+    /// Update the prlog by renaming the unreleased section with the version
     /// number
     #[arg(short, long, default_value_t = false)]
-    pub update_changelog: bool,
+    pub update_prlog: bool,
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
@@ -154,18 +154,18 @@ impl Release {
             client.repo()
         );
         log::trace!("Signing: {sign:?}");
-        log::trace!("Update changelog flag: {}", self.update_changelog);
+        log::trace!("Update prlog flag: {}", self.update_prlog);
 
-        if self.update_changelog {
+        if self.update_prlog {
             client.release_unreleased(&version)?;
-            log::debug!("Changelog file name: {}", client.changelog_as_str());
+            log::debug!("Changelog file name: {}", client.prlog_as_str());
 
             log::trace!(
                 "{}",
-                print_changelog(client.changelog_as_str(), client.line_limit())
+                print_prlog(client.prlog_as_str(), client.line_limit())
             );
 
-            let commit_message = "chore: update changelog for pr";
+            let commit_message = "chore: update prlog for pr";
 
             client
                 .commit_changed_files(sign, commit_message, &self.prefix, Some(&version))
@@ -190,10 +190,10 @@ impl Release {
     }
 }
 
-fn print_changelog(changelog_path: &str, mut line_limit: usize) -> String {
+fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     let mut output = String::new();
 
-    if let Ok(change_log) = fs::read_to_string(changelog_path) {
+    if let Ok(change_log) = fs::read_to_string(prlog_path) {
         let mut line_count = 0;
         if line_limit == 0 {
             line_limit = change_log.lines().count();
