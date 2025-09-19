@@ -16,7 +16,7 @@ impl MakeRelease for Client {
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error> {
         let opts = self.prlog_parse_options.clone();
 
-        let mut change_log = Changelog::parse_from_file(self.changelog_as_str(), Some(opts))
+        let mut change_log = Changelog::parse_from_file(self.prlog_as_str(), Some(opts))
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
 
         let total_releases = change_log.releases().len();
@@ -25,7 +25,7 @@ impl MakeRelease for Client {
         change_log.release_unreleased(version).unwrap();
 
         change_log
-            .save_to_file(self.changelog_as_str())
+            .save_to_file(self.prlog_as_str())
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
         Ok(())
     }
@@ -34,15 +34,15 @@ impl MakeRelease for Client {
         log::debug!("Making release {version}");
 
         let opts = ChangelogParseOptions::default();
-        let changelog = match Changelog::parse_from_file(self.changelog_as_str(), Some(opts)) {
-            Ok(changelog) => changelog,
+        let prlog = match Changelog::parse_from_file(self.prlog_as_str(), Some(opts)) {
+            Ok(pl) => pl,
             Err(e) => {
-                log::error!("Error parsing changelog: {e}");
+                log::error!("Error parsing prlog: {e}");
                 return Err(Error::InvalidPath(self.prlog.clone()));
             }
         };
 
-        let release_notes = changelog.release_notes(prefix, version)?;
+        let release_notes = prlog.release_notes(prefix, version)?;
         log::trace!("Release notes: {release_notes:#?}");
 
         let tag = format!("{prefix}{version}");
