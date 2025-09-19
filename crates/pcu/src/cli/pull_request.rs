@@ -119,7 +119,7 @@ impl Pr {
 
         log::trace!(
             "{}",
-            crate::cli::print_changelog(client.changelog_as_str(), client.line_limit())
+            crate::cli::print_prlog(client.changelog_as_str(), client.line_limit())
         );
 
         // Commit the change log
