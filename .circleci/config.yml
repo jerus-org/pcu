@@ -447,18 +447,18 @@ jobs:
           pcu_semver: << parameters.pcu_semver >>
           pcu_verbosity: << parameters.pcu_verbosity >>
 
-  tools:
-    executor: rust-env
-    steps:
-      - run:
-          name: Run tools
-          command: |
-            set -ex
-            nextsv --version
-            pcu --version
-            cargo release --version
-            cargo audit --version
-            git --version
+  # tools:
+  #   executor: rust-env
+  #   steps:
+  #     - run:
+  #         name: Run tools
+  #         command: |
+  #           set -ex
+  #           nextsv --version
+  #           pcu --version
+  #           cargo release --version
+  #           cargo audit --version
+  #           git --version
 
   update_prlog:
     description: |
@@ -852,7 +852,6 @@ workflows:
         - not: << pipeline.parameters.validation-flag >>
         - <<  pipeline.parameters.release-flag >>
     jobs:
-      - tools
       - toolkit/make_release:
           context:
             - release
@@ -860,3 +859,5 @@ workflows:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
           when_update_pcu: << pipeline.parameters.update_pcu >>
+          version: "0.6.0"
+          package: "pcu"
