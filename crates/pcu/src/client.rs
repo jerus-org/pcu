@@ -127,7 +127,7 @@ impl Client {
             .get("version_prefix")
             .unwrap_or_else(|_| "v".to_string());
         let repo_url = Some(format!("{svs_root}{owner}/{repo}"));
-        let changelog_parse_options = ChangelogParseOptions {
+        let prlog_parse_options = ChangelogParseOptions {
             url: repo_url,
             head: Some("HEAD".to_string()),
             tag_prefix: Some(prefix),
@@ -144,7 +144,7 @@ impl Client {
             pull_request,
             prlog,
             line_limit,
-            prlog_parse_options: changelog_parse_options,
+            prlog_parse_options,
             prlog_update: None,
             commit_message,
         })
@@ -305,7 +305,7 @@ impl Client {
         }
     }
 
-    pub fn changelog_as_str(&self) -> &str {
+    pub fn prlog_as_str(&self) -> &str {
         if let Some(cl) = &self.prlog.to_str() {
             cl
         } else {
@@ -313,7 +313,7 @@ impl Client {
         }
     }
 
-    pub fn set_changelog(&mut self, changelog: &str) {
-        self.prlog = changelog.into();
+    pub fn set_prlog(&mut self, value: &str) {
+        self.prlog = value.into();
     }
 }
