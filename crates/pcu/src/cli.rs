@@ -51,7 +51,7 @@ pub struct Cli {
 /// Commands for the CLI
 #[derive(Debug, Subcommand, Clone)]
 pub enum Commands {
-    /// Update the changelog from a pull request
+    /// Update the prlog from a pull request
     Pr(Pr),
     /// Create a release on GitHub
     Release(Release),
@@ -99,7 +99,7 @@ impl Commands {
             .set_default("pull_request", "CIRCLE_PULL_REQUEST")?
             .set_default("username", "CIRCLE_PROJECT_USERNAME")?
             .set_default("reponame", "CIRCLE_PROJECT_REPONAME")?
-            .set_default("commit_message", "chore: update changelog")?
+            .set_default("commit_message", "chore: update prlog")?
             .set_default("dev_platform", "https://github.com/")?
             .set_default("version_prefix", "v")?
             // Add in settings from pcu.toml if it exists
@@ -111,19 +111,19 @@ impl Commands {
 
         settings = match self {
             Commands::Pr(_) => settings
-                .set_override("commit_message", "chore: update changelog for pr")?
+                .set_override("commit_message", "chore: update prlog for pr")?
                 .set_override("command", "pr")?,
             Commands::Release(_) => settings
-                .set_override("commit_message", "chore: update changelog for release")?
+                .set_override("commit_message", "chore: update prlog for release")?
                 .set_override("command", "release")?,
             Commands::Commit(_) => settings
                 .set_override("commit_message", "chore: adding changed files")?
                 .set_override("command", "commit")?,
             Commands::Push(_) => settings
-                .set_override("commit_message", "chore: update changelog for release")?
+                .set_override("commit_message", "chore: update prlog for release")?
                 .set_override("command", "push")?,
             Commands::Label(_) => settings
-                .set_override("commit_message", "chore: update changelog for release")?
+                .set_override("commit_message", "chore: update prlog for release")?
                 .set_override("command", "label")?,
             Commands::Bsky(bsky) => settings
                 .set_override("commit_message", "chore: add Bluesky posts to repository")?
@@ -177,10 +177,10 @@ impl Commands {
     }
 }
 
-fn print_changelog(changelog_path: &str, mut line_limit: usize) -> String {
+fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     let mut output = String::new();
 
-    if let Ok(change_log) = fs::read_to_string(changelog_path) {
+    if let Ok(change_log) = fs::read_to_string(prlog_path) {
         let mut line_count = 0;
         if line_limit == 0 {
             line_limit = change_log.lines().count();
