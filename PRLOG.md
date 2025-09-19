@@ -69,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate toml to 0.9.5(pr [#703])
 - deps: update rust crate tracing-subscriber to v0.3.20 [security](pr [#705])
 - 🐛 cli: correct default log file setting(pr [#706])
+- 🐛 docs: correct doc attribute for rustdoc configuration(pr [#717])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1771,6 +1772,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#714]: https://github.com/jerus-org/pcu/pull/714
 [#715]: https://github.com/jerus-org/pcu/pull/715
 [#716]: https://github.com/jerus-org/pcu/pull/716
+[#717]: https://github.com/jerus-org/pcu/pull/717
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
