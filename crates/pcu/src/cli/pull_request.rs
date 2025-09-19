@@ -14,7 +14,7 @@ const SIGNAL_HALT: &str = "halt";
 
 #[derive(Debug, Parser, Clone)]
 pub struct Pr {
-    /// Signal an early exit as the changelog is already updated
+    /// Signal an early exit as the prlog is already updated
     #[clap(short, long, default_value_t = false)]
     pub early_exit: bool,
     /// Prefix for the version tag
@@ -115,15 +115,15 @@ impl Pr {
             return Ok(CIExit::UnChanged);
         }
 
-        log::debug!("Changelog file name: {}", client.changelog_as_str());
+        log::debug!("Changelog file name: {}", client.prlog_as_str());
 
         log::trace!(
             "{}",
-            crate::cli::print_prlog(client.changelog_as_str(), client.line_limit())
+            crate::cli::print_prlog(client.prlog_as_str(), client.line_limit())
         );
 
         // Commit the change log
-        let commit_message = "chore: update changelog for pr";
+        let commit_message = "chore: update prlog for pr";
         client
             .commit_changed_files(sign, commit_message, &self.prefix, None)
             .await?;
