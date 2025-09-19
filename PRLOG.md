@@ -9,39 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- ✨ add initial Cargo.toml for gen-bsky crate(pr [#634])
-- ✨ add front matter parsing functionality(pr [#638])
-- ✨ add error variants and write bluesky record(pr [#639])
-- ✨ add draft management for blog posts(pr [#640])
-- ✨ add getter method for bluesky field(pr [#643])
-- ✨ add draft allowance option to blog post processing(pr [#648])
-- ✨ add link module for blog post draft(pr [#652])
-- ✨ add smart release tasks(pr [#658])
 - ✨ add URL parse error handling(pr [#667])
 - ✨ add default directory path functions(pr [#683])
 
 ### Changed
 
-- 🔧 BREAKING: chore(workspace)-restructure Cargo.toml for workspace management(pr [#633])
-- 🔧 chore(gen-bsky)-update cargo package metadata(pr [#635])
-- 💄 style(gen-bsky)-correct license format in Cargo.toml(pr [#636])
-- 👷 ci(circleci)-update workflow branch filter(pr [#637])
-- ♻️ refactor(front_matter)-update path handling and remove basename usage(pr [#641])
-- ♻️ refactor(bluesky)-update field access in Bluesky struct(pr [#642])
-- ♻️ refactor(taxonomies)-improve tag handling in Taxonomies struct(pr [#644])
-- ♻️ refactor(draft)-improve path handling in DraftBuilder(pr [#645])
-- 👷 ci(circleci)-enhance check_last_commit workflow(pr [#646])
-- 👷 ci(config)-update CircleCI workflow filters(pr [#647])
-- 📝 docs(README)-update project title casing(pr [#649])
-- Simplify-and-improve-draft-structure(pr [#650])
-- Rename-and-refactor-path-handling(pr [#653])
-- ✅ test(front_matter)-add test for incorrect bluesky field(pr [#654])
-- Add-code-coverage-generation(pr [#655])
-- 🔧 BREAKING: chore(config)-simplify test configuration file(pr [#656])
-- 🔧 chore(gen-bsky)-remove publish restriction in Cargo.toml(pr [#657])
-- 📦 build(gen-bsky)-update version to 0.0.1(pr [#659])
-- Release-gen-bsky-v0.0.1,-pcu-v0.5.0(pr [#660])
-- 🔧 chore(dependencies)-update gen-bsky version specification(pr [#661])
 - ♻️ refactor(post)-rename and restructure post module(pr [#662])
 - ♻️ refactor(error)-remove unused error variants(pr [#663])
 - ♻️ refactor(post)-modularize and enhance post handling(pr [#664])
@@ -80,10 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 👷 ci(circleci)-add update_pcu parameter to pipeline(pr [#711])
 - 🔧 chore(ci)-update make_release job parameters in workflow(pr [#712])
 - 👷 ci(circleci)-remove unused version and package parameters(pr [#713])
+- Update-changelog-with-version-0.5.0-release-details(pr [#714])
 
 ### Fixed
 
-- 🐛 cli: correct path handling in cmd_draft(pr [#651])
 - deps: update rust crate bsky-sdk to 0.1.21(pr [#695])
 - deps: update rust crate cargo_toml to 0.22.3(pr [#696])
 - deps: update rust crate clap to 4.5.45(pr [#697])
@@ -95,6 +67,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate toml to 0.9.5(pr [#703])
 - deps: update rust crate tracing-subscriber to v0.3.20 [security](pr [#705])
 - 🐛 cli: correct default log file setting(pr [#706])
+
+## [0.5.0] - 2025-08-12
+
+### Added
+
+- ✨ add initial Cargo.toml for gen-bsky crate(pr [#634])
+- ✨ add front matter parsing functionality(pr [#638])
+- ✨ add error variants and write bluesky record(pr [#639])
+- ✨ add draft management for blog posts(pr [#640])
+- ✨ add getter method for bluesky field(pr [#643])
+- ✨ add draft allowance option to blog post processing(pr [#648])
+- ✨ add link module for blog post draft(pr [#652])
+- ✨ add smart release tasks(pr [#658])
+
+### Changed
+
+- 🔧 BREAKING: chore(workspace)-restructure Cargo.toml for workspace management(pr [#633])
+- 🔧 chore(gen-bsky)-update cargo package metadata(pr [#635])
+- 💄 style(gen-bsky)-correct license format in Cargo.toml(pr [#636])
+- 👷 ci(circleci)-update workflow branch filter(pr [#637])
+- ♻️ refactor(front_matter)-update path handling and remove basename usage(pr [#641])
+- ♻️ refactor(bluesky)-update field access in Bluesky struct(pr [#642])
+- ♻️ refactor(taxonomies)-improve tag handling in Taxonomies struct(pr [#644])
+- ♻️ refactor(draft)-improve path handling in DraftBuilder(pr [#645])
+- 👷 ci(circleci)-enhance check_last_commit workflow(pr [#646])
+- 👷 ci(config)-update CircleCI workflow filters(pr [#647])
+- 📝 docs(README)-update project title casing(pr [#649])
+- Simplify-and-improve-draft-structure(pr [#650])
+- Rename-and-refactor-path-handling(pr [#653])
+- ✅ test(front_matter)-add test for incorrect bluesky field(pr [#654])
+- Add-code-coverage-generation(pr [#655])
+- 🔧 BREAKING: chore(config)-simplify test configuration file(pr [#656])
+- 🔧 chore(gen-bsky)-remove publish restriction in Cargo.toml(pr [#657])
+- 📦 build(gen-bsky)-update version to 0.0.1(pr [#659])
+- Release-gen-bsky-v0.0.1,-pcu-v0.5.0(pr [#660])
+- 🔧 chore(dependencies)-update gen-bsky version specification(pr [#661])
+
+### Fixed
+
+- 🐛 cli: correct path handling in cmd_draft(pr [#651])
 
 ## [0.4.56] - 2025-07-30
 
@@ -1754,7 +1766,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#711]: https://github.com/jerus-org/pcu/pull/711
 [#712]: https://github.com/jerus-org/pcu/pull/712
 [#713]: https://github.com/jerus-org/pcu/pull/713
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.4.56...HEAD
+[#714]: https://github.com/jerus-org/pcu/pull/714
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
 [0.4.54]: https://github.com/jerus-org/pcu/compare/v0.4.53...v0.4.54
