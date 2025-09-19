@@ -19,6 +19,9 @@ parameters:
     type: boolean
     default: false
     description: "If true, the release pipeline will be executed."
+  update_pcu:
+    type: boolean
+    default: false
 
 orbs:
   toolkit: jerus-org/circleci-toolkit@2.12.1
@@ -856,3 +859,4 @@ workflows:
             - bot-check
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
+          when_update_pcu: << pipeline.parameters.update_pcu >>
