@@ -4,7 +4,7 @@
 #![cfg_attr(docsrs, warn(rustdoc::invalid_codeblock_attributes))]
 
 //! # Gen-bsky - Bluesky Blog Post Generator
-#![doc = include_str!("../docs/lib.md")]
+#![cfg_attr(docsrs, doc = include_str!("../docs/lib.md"))]
 
 /// Default bluesky post directory.
 pub const BSKY_DIR: &str = "bluesky";
