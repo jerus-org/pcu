@@ -9,7 +9,7 @@ pub trait ReleaseUnreleased {
 
 impl ReleaseUnreleased for Changelog {
     /// Release unreleased section with the version number specified and add
-    /// a compare link for the new release to the changelog
+    /// a compare link for the new release to the PRLog
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error> {
         let url = self.url();
         log::debug!("Changelog url: {url:?}");
@@ -107,7 +107,7 @@ mod tests {
     fn test_release_unreleased_creates_unreleased_section() -> Result<(), Error> {
         get_test_logger();
 
-        let original_path = "tests/data/release_changelog.md";
+        let original_path = "tests/data/release_prlog.md";
 
         // setup
 
@@ -117,19 +117,19 @@ mod tests {
             tag_prefix: None,
         };
 
-        let mut changelog = Changelog::parse_from_file(original_path, Some(opts))
+        let mut prlog = Changelog::parse_from_file(original_path, Some(opts))
             .map_err(|e| Error::KeepAChangelog(e.to_string()))?;
         let new_version = "0.1.2";
 
-        let total_releases = changelog.releases().len();
+        let total_releases = prlog.releases().len();
         log::debug!("total_releases: {total_releases:?}");
 
         // test
-        changelog.release_unreleased(new_version).unwrap();
+        prlog.release_unreleased(new_version).unwrap();
 
         // verify
 
-        let releases = changelog.releases();
+        let releases = prlog.releases();
         log::debug!("releases: {releases:?}");
 
         let new_latest_version = releases
@@ -145,7 +145,7 @@ mod tests {
         log::debug!("new_latest_version: {new_latest_version:?}");
 
         assert_eq!(total_releases, releases.len());
-        assert!(changelog.get_unreleased().is_none());
+        assert!(prlog.get_unreleased().is_none());
         assert_eq!(new_latest_version, new_version);
 
         Ok(())
