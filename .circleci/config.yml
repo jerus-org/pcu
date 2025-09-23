@@ -477,9 +477,6 @@ workflows:
             - pcu-app
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
-          # update_pcu: true
-          install_me: true
-          install_me_path: "crates/pcu"
           pcu_verbosity: "-vvvv"
           pcu_push: false
 
