@@ -6,10 +6,10 @@ use crate::Error;
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
 pub struct Label {
-    /// Override the default author login (renovate) when selecting the pull
+    /// Override the default allowed authors (renovate, mend) when selecting the pull
     /// request to label
     #[arg(short, long)]
-    pub author: Option<String>,
+    pub author: Vec<String>,
     /// Override the default label (rebase) to add to the pull request
     #[arg(short, long)]
     pub label: Option<String>,
@@ -22,11 +22,8 @@ pub struct Label {
 }
 
 impl Label {
-    pub fn author(&self) -> Option<&str> {
-        if let Some(l) = &self.author {
-            return Some(l);
-        }
-        None
+    pub fn author(&self) -> &Vec<String> {
+        &self.author
     }
 
     pub fn label(&self) -> Option<&str> {
