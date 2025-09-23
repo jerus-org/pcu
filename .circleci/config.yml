@@ -361,14 +361,13 @@ workflows:
 
   validation:
     when:
-      and:
-        - << pipeline.parameters.validation-flag >>
-        - or:
-            - equal: ["main", << pipeline.git.branch >>]
-            - and:
-                - not:
-                    equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-                - not: << pipeline.parameters.success-flag >>
+      or:
+        - equal: ["main", << pipeline.git.branch >>]
+        - and:
+            - << pipeline.parameters.validation-flag >>
+            - not:
+                equal: [scheduled_pipeline, << pipeline.trigger_source >>]
+            - not: << pipeline.parameters.success-flag >>
     jobs:
       - toolkit/label:
           min_rust_version: << pipeline.parameters.min-rust-version >>
