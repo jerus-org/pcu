@@ -122,14 +122,14 @@ impl Pr {
             crate::cli::print_prlog(client.prlog_as_str(), client.line_limit())
         );
 
-        // Commit the change log
+        // Commit the pull request log
         let commit_message = "chore: update prlog for pr";
         client
             .commit_changed_files(sign, commit_message, &self.prefix, None)
             .await?;
 
         if self.push {
-            // Push the change log (and other commits)
+            // Push the pull request log (and other commits)
             self.push_the_commit(client)?;
         };
 
