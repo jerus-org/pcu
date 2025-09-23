@@ -31,8 +31,8 @@ async fn main() -> Result<()> {
     match res {
         Ok(state) => {
             match state {
-                CIExit::Updated => log::info!("Changelog updated!"),
-                CIExit::UnChanged => log::info!("Changelog not changed!"),
+                CIExit::Updated => log::info!("Pull Request log updated!"),
+                CIExit::UnChanged => log::info!("Pull Request log not changed!"),
                 CIExit::Committed => log::info!("Changed files committed"),
                 CIExit::Pushed(s) => log::info!("{s}"),
                 CIExit::Released => log::info!("Created GitHub Release"),
