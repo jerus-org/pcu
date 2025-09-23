@@ -24,7 +24,7 @@ pub enum Error {
     EnvVarPullRequestNotSet,
     #[error("Environment variable specified in PCU_PULL_REQUEST not found")]
     EnvVarPullRequestNotFound,
-    #[error("Unreleased section not found in change log")]
+    #[error("Unreleased section not found in pull request log")]
     NoUnreleasedSection,
     #[error("Command not set")]
     CommandNotSet,
@@ -36,7 +36,7 @@ pub enum Error {
     TagNotFound(String),
     #[error("Invalid version string")]
     InvalidVersion(String),
-    #[error("Default change log file name not set")]
+    #[error("Default pull request log file name not set")]
     DefaultChangeLogNotSet,
     #[error("Invalid path for prlog file {0:?}")]
     InvalidPath(OsString),
