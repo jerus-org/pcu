@@ -22,7 +22,7 @@ use crate::{
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 const DEFAULT_COMMIT_MESSAGE: &str = "chore: commit staged files";
-const DEFAULT_REBASE_LOGIN: &str = "renovate";
+const DEFAULT_REBASE_LOGINS: &str = "renovate,mend";
 
 #[derive(ValueEnum, Debug, Default, Clone)]
 pub enum Sign {
@@ -85,7 +85,7 @@ pub trait GitOps {
     #[allow(async_fn_in_trait)]
     async fn label_next_pr(
         &self,
-        author: Option<&str>,
+        authors: &[String],
         label: Option<&str>,
         desc: Option<&str>,
         colour: Option<&str>,
@@ -517,7 +517,7 @@ impl GitOps for Client {
     #[instrument(skip(self))]
     async fn label_next_pr(
         &self,
-        author: Option<&str>,
+        authors: &[String],
         label: Option<&str>,
         desc: Option<&str>,
         colour: Option<&str>,
@@ -532,21 +532,26 @@ impl GitOps for Client {
 
         log::trace!("Found {prs:?} open PRs");
 
-        // filter to PRs created by a specific login
-        let login = if let Some(login) = author {
-            login
-        } else {
-            DEFAULT_REBASE_LOGIN
-        };
+        let mut qualified_authors = DEFAULT_REBASE_LOGINS
+            .split(',')
+            .map(|i| i.to_string())
+            .collect::<Vec<String>>();
 
-        let mut prs: Vec<_> = prs.iter().filter(|pr| pr.login == login).collect();
+        for a in authors {
+            qualified_authors.push(a.clone());
+        }
+
+        let mut prs: Vec<_> = prs
+            .iter()
+            .filter(|pr| authors.contains(&pr.login))
+            .collect();
 
         if prs.is_empty() {
-            log::trace!("Found no open PRs for {login}");
+            log::trace!("Found no open PRs for {qualified_authors:?}");
             return Ok(None);
         };
 
-        log::trace!("Found {prs:?} open PRs for {login}");
+        log::trace!("Found {prs:?} open PRs for {qualified_authors:?}");
 
         prs.sort_by(|a, b| a.number.cmp(&b.number));
         let next_pr = &prs[0];
