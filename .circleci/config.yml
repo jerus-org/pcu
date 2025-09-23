@@ -494,10 +494,16 @@ workflows:
           requires:
             - toolkit/update_prlog
           pcu_verbosity: "-vvvv"
-          prlog_updated: true
           pcu_commit_message: "chore: update pr log"
-          install_me: true
-          install_me_path: "crates/pcu"
+          pre-steps:
+            - attach_workspace:
+                at: /tmp/workspace
+            - run:
+                name: Copy PRLOG.md from workspace
+                run: |
+                  set -exo pipefail
+
+                  cp -vf /tmp/workspace/PRLOG.md ./PRLOG.md
 
   on_success:
     when:
