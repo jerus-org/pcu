@@ -343,6 +343,98 @@ jobs:
             ls -la ${BSKY_TEST_ROOT}/bluesky
             git status
 
+  commit_and_push:
+    description: |
+      Push updates to the remote repository.
+    executor:
+      name: rust-env
+    parameters:
+      install_me:
+        default: false
+        description: Install the current crate as a binary
+        type: boolean
+      install_me_path:
+        default: .
+        description: The path to the crate to install
+        type: string
+      min_rust_version:
+        description: The minimum version of the rust compiler to use
+        type: string
+      pcu_commit_message:
+        default: "chore: test push"
+        description: The commit message to use for the pcu test push
+        type: string
+      pcu_no_push:
+        default: false
+        description: Whether or not prevent final push of commit
+        type: boolean
+      pcu_semver:
+        default: false
+        description: Whether or not to push a semver version
+        type: boolean
+      pcu_verbosity:
+        default: "-vv"
+        description: The verbosity of the pcu command
+        type: string
+      ssh_fingerprint:
+        description: |
+          The fingerprint of the ssh key to use
+        type: string
+      update_pcu:
+        default: false
+        description: Update pcu to the latest code from the git repo
+        type: boolean
+      workspace:
+        default: ""
+        description: Name of attached shared workspace to copy from
+        type: string
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - <<parameters.ssh_fingerprint>>
+      - run:
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
+          name: Remove original SSH key from agent
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - when:
+          condition: << parameters.update_pcu >>
+          steps:
+            - toolkit/install_latest_pcu
+      - when:
+          condition: << parameters.install_me >>
+          name: Install pcu from main branch on GitHub
+          steps:
+            - toolkit/install_me:
+                path_to_crate: << parameters.install_me_path >>
+      - when:
+          condition: << parameters.workspace >>
+          steps:
+            - run:
+                command: |
+                  set -ex
+
+                  echo "Assumed: workspace was created and attached in pre-step"
+                  ls << parameters.workspace >>
+                  cp -rv << parameters.workspace >>/* .
+                name: Copy files from the workspace
+      - run:
+          command: |
+            pcu --version
+          name: pcu version
+      - toolkit/commit_cmd:
+          pcu_commit_message: << parameters.pcu_commit_message >>
+          pcu_semver: << parameters.pcu_semver >>
+          pcu_verbosity: << parameters.pcu_verbosity >>
+      - toolkit/push_cmd:
+          pcu_no_push: << parameters.pcu_no_push >>
+          pcu_semver: << parameters.pcu_semver >>
+          pcu_verbosity: << parameters.pcu_verbosity >>
+
 workflows:
   check_last_commit:
     when:
@@ -480,9 +572,11 @@ workflows:
           pcu_verbosity: "-vvvv"
           pcu_push: false
 
-      - toolkit/commit_and_push:
+      - commit_and_push:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           min_rust_version: << pipeline.parameters.min-rust-version >>
+          pcu_verbosity: "-vvvv"
+          pcu_commit_message: "chore: update pr log"
           filters:
             branches:
               ignore:
@@ -493,8 +587,6 @@ workflows:
             - pcu-app
           requires:
             - toolkit/update_prlog
-          pcu_verbosity: "-vvvv"
-          pcu_commit_message: "chore: update pr log"
           pre-steps:
             - attach_workspace:
                 at: /tmp/workspace
