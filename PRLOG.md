@@ -83,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate tracing-subscriber to 0.3.20(pr [#728])
 - deps: update rust crate url to 2.5.7(pr [#729])
 - deps: update rust crate uuid to 1.18.1(pr [#730])
+- deps: update serde packages(pr [#731])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1799,6 +1800,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#728]: https://github.com/jerus-org/pcu/pull/728
 [#729]: https://github.com/jerus-org/pcu/pull/729
 [#730]: https://github.com/jerus-org/pcu/pull/730
+[#731]: https://github.com/jerus-org/pcu/pull/731
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
