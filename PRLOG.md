@@ -80,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate log to 0.4.28(pr [#725])
 - deps: update rust crate regex to 1.11.2(pr [#726])
 - deps: update rust crate toml to 0.9.7(pr [#727])
+- deps: update rust crate tracing-subscriber to 0.3.20(pr [#728])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1793,6 +1794,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#725]: https://github.com/jerus-org/pcu/pull/725
 [#726]: https://github.com/jerus-org/pcu/pull/726
 [#727]: https://github.com/jerus-org/pcu/pull/727
+[#728]: https://github.com/jerus-org/pcu/pull/728
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
