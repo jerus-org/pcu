@@ -77,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate base62 to 2.2.3(pr [#720])
 - deps: update rust crate chrono to 0.4.42(pr [#723])
 - deps: update rust crate clap to 4.5.48(pr [#724])
+- deps: update rust crate log to 0.4.28(pr [#725])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1787,6 +1788,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#720]: https://github.com/jerus-org/pcu/pull/720
 [#723]: https://github.com/jerus-org/pcu/pull/723
 [#724]: https://github.com/jerus-org/pcu/pull/724
+[#725]: https://github.com/jerus-org/pcu/pull/725
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
