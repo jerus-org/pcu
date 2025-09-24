@@ -27,7 +27,7 @@ gql_client = "1.0.8"
 keep-a-changelog = "0.1.4"
 link-bridge = "0.2.3"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
-log = "0.4.27"
+log = "0.4.28"
 named-colour = { version = "0.3.23", features = ["extended"] }
 octocrate = { version = "2.2.0", features = [
     "apps",
