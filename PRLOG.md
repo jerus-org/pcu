@@ -87,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate bsky-sdk to 0.1.22(pr [#732])
 - deps: update rust crate clap to 4.5.50(pr [#733])
 - deps: update rust crate named-colour to 0.3.24(pr [#734])
+- deps: update rust crate owo-colors to 4.2.3(pr [#735])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1807,6 +1808,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#732]: https://github.com/jerus-org/pcu/pull/732
 [#733]: https://github.com/jerus-org/pcu/pull/733
 [#734]: https://github.com/jerus-org/pcu/pull/734
+[#735]: https://github.com/jerus-org/pcu/pull/735
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
