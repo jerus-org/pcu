@@ -702,7 +702,7 @@ mod tests {
     // State filtering integration tests
     #[test]
     fn test_multiple_posts_state_filtering() {
-        let mut posts = vec![
+        let mut posts = [
             create_test_bsky_post(),
             create_test_bsky_post(),
             create_test_bsky_post(),
