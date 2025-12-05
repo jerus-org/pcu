@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update-error-messages-for-clarity(pr [#719])
 - Support-multiple-authors-in-label-command(pr [#721])
 - 👷 ci(circleci)-update validation workflow logic(pr [#722])
+- ♻️ refactor(bsky)-use config builder for settings overrides(pr [#747])
 
 ### Fixed
 
@@ -1831,6 +1832,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#744]: https://github.com/jerus-org/pcu/pull/744
 [#745]: https://github.com/jerus-org/pcu/pull/745
 [#746]: https://github.com/jerus-org/pcu/pull/746
+[#747]: https://github.com/jerus-org/pcu/pull/747
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
