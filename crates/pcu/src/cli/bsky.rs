@@ -1,9 +1,6 @@
 mod commands;
 
-use std::{
-    env,
-    fs::{self},
-};
+use std::fs::{self};
 
 use clap::Parser;
 use commands::Cmd;
@@ -51,28 +48,32 @@ impl Bsky {
     }
 
     async fn setup_client(&self) -> Result<(Client, Config), Error> {
-        if let Some(owner) = &self.owner {
+        let settings = Commands::Bsky(self.clone()).get_settings()?;
+        let mut builder = Config::builder();
+        builder = builder.add_source(settings);
+
+        if let Some(owner) = self.owner.as_deref() {
             log::info!("Owner: {owner}");
-            env::set_var("OWNER", owner);
+            builder = builder.set_override("OWNER", owner)?;
         }
-        if let Some(repo) = &self.repo {
+        if let Some(repo) = self.repo.as_deref() {
             log::info!("Repository: {repo}");
-            env::set_var("REPO", repo);
+            builder = builder.set_override("REPO", repo)?;
         }
-        if let Some(branch) = &self.branch {
+        if let Some(branch) = self.branch.as_deref() {
             log::info!("Branch: {branch}");
-            env::set_var("BRANCH", branch);
+            builder = builder.set_override("BRANCH", branch)?;
         }
-        if let Some(appid) = &self.id {
+        if let Some(appid) = self.id.as_deref() {
             log::info!("Appid: {appid}");
-            env::set_var("PCU_APP_ID", appid);
+            builder = builder.set_override("PCU_APP_ID", appid)?;
         }
         if let Some(app_private_key) = &self.pk {
             log::info!("App Private Key file: {app_private_key}");
             let app_private_key = fs::read_to_string(app_private_key)?;
-            env::set_var("PCU_PRIVATE_KEY", app_private_key);
+            builder = builder.set_override("PCU_PRIVATE_KEY", app_private_key)?;
         }
-        let settings = Commands::Bsky(self.clone()).get_settings()?;
+        let settings = builder.build()?;
         let client = Client::new_with(&settings).await?;
 
         Ok((client, settings))
