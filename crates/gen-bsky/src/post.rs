@@ -942,7 +942,7 @@ mod tests {
     // Post to Bluesky tests (using testing mode)
     #[tokio::test]
     async fn test_post_to_bluesky_testing_mode() -> Result<(), Box<dyn std::error::Error>> {
-        env::set_var("TESTING", "1");
+        unsafe { env::set_var("TESTING", "1") };
 
         let mut post = create_test_post()?;
         let temp_dir = create_test_posts_directory()?;
@@ -952,7 +952,7 @@ mod tests {
         let result = post.post_to_bluesky().await;
 
         // Clean up environment variable
-        env::remove_var("TESTING");
+        unsafe { env::remove_var("TESTING") };
 
         // Note: This test might fail due to actual network calls even in testing mode
         // depending on the implementation. The current code still tries to authenticate.
