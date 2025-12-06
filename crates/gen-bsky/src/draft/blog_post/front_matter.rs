@@ -377,7 +377,7 @@ mod tests {
         get_test_logger();
         let toml = r#"
             title = "Overview of Our Workflow"
-            description = "We’ll kick things off with a detailed overview"
+            description = "We will kick things off with a detailed overview"
             date = 2025-01-17
             updated = 2025-01-16
             draft = false

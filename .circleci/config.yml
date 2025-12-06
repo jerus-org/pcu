@@ -458,6 +458,10 @@ workflows:
             - toolkit/idiomatic_rust
 
       - toolkit/security:
+          filters:
+            branches:
+              ignore:
+                - main
           context: SonarCloud
           ignore_advisories: "RUSTSEC-2025-0007"
       - toolkit/update_prlog:
