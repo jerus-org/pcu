@@ -7,7 +7,7 @@ use owo_colors::{OwoColorize, Style};
 use super::CIExit;
 use crate::{
     cli::{Commands, GitOps},
-    Client, Error, Sign, UpdateFromPr,
+    Client, Error, SignConfig, UpdateFromPr,
 };
 
 const SIGNAL_HALT: &str = "halt";
@@ -34,7 +34,7 @@ pub struct Pr {
 }
 
 impl Pr {
-    pub async fn run_pull_request(&self, sign: Sign) -> Result<CIExit, Error> {
+    pub async fn run_pull_request(&self, sign_config: SignConfig) -> Result<CIExit, Error> {
         let branch = env::var("CIRCLE_BRANCH");
         let branch = branch.unwrap_or("main".to_string());
         log::trace!("Branch: {branch:?}");
@@ -125,7 +125,7 @@ impl Pr {
         // Commit the pull request log
         let commit_message = "chore: update prlog for pr";
         client
-            .commit_changed_files(sign, commit_message, &self.prefix, None)
+            .commit_changed_files(sign_config, commit_message, &self.prefix, None)
             .await?;
 
         if self.push {

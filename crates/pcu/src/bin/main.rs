@@ -5,7 +5,7 @@ use env_logger::Env;
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 
-use pcu::{CIExit, Cli, Commands};
+use pcu::{CIExit, Cli, Commands, SignConfig};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -15,16 +15,19 @@ async fn main() -> Result<()> {
     builder.init();
     get_tracing(args.logging.log_level_filter());
     log::debug!("Args: {args:?}");
+
+    // Get the sign option and apply the no_signoff flag
     let sign = args.sign.unwrap_or_default();
+    let sign_config = SignConfig::with_signoff(sign, !args.no_signoff);
 
     let cmd = args.command.clone();
 
     let res = match cmd {
-        Commands::Pr(pr_args) => pr_args.run_pull_request(sign).await,
-        Commands::Commit(commit_args) => commit_args.run_commit(sign).await,
+        Commands::Pr(pr_args) => pr_args.run_pull_request(sign_config).await,
+        Commands::Commit(commit_args) => commit_args.run_commit(sign_config).await,
         Commands::Push(push_args) => push_args.run_push().await,
         Commands::Label(label_args) => label_args.run_label().await,
-        Commands::Release(rel_args) => rel_args.run_release(sign).await,
+        Commands::Release(rel_args) => rel_args.run_release(sign_config).await,
         Commands::Bsky(bsky_args) => bsky_args.run().await,
     };
 

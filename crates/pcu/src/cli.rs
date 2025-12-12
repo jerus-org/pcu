@@ -43,6 +43,9 @@ pub struct Cli {
     #[clap(short, long)]
     /// Require the user to sign the update commit with their GPG key
     pub sign: Option<Sign>,
+    #[clap(long)]
+    /// Disable adding a signoff (Signed-off-by) line to commit messages
+    pub no_signoff: bool,
     /// Command to execute
     #[command(subcommand)]
     pub command: Commands,
@@ -198,4 +201,85 @@ fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     };
 
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SignConfig;
+    use clap::Parser;
+
+    #[test]
+    fn test_cli_default_signoff_enabled() {
+        // Test that by default, signoff is enabled
+        let args =
+            Cli::try_parse_from(["pcu", "commit", "--commit-message", "test message"]).unwrap();
+        assert!(
+            !args.no_signoff,
+            "Default should have signoff enabled (no_signoff=false)"
+        );
+
+        // Simulate what main.rs does
+        let sign = args.sign.unwrap_or_default();
+        let sign_config = SignConfig::with_signoff(sign, !args.no_signoff);
+        assert!(
+            sign_config.is_signoff_enabled(),
+            "SignConfig should have signoff enabled by default"
+        );
+    }
+
+    #[test]
+    fn test_cli_no_signoff_flag() {
+        // Test that --no-signoff flag disables signoff
+        let args = Cli::try_parse_from([
+            "pcu",
+            "--no-signoff",
+            "commit",
+            "--commit-message",
+            "test message",
+        ])
+        .unwrap();
+        assert!(
+            args.no_signoff,
+            "--no-signoff flag should set no_signoff to true"
+        );
+
+        // Simulate what main.rs does
+        let sign = args.sign.unwrap_or_default();
+        let sign_config = SignConfig::with_signoff(sign, !args.no_signoff);
+        assert!(
+            !sign_config.is_signoff_enabled(),
+            "SignConfig should have signoff disabled with --no-signoff"
+        );
+    }
+
+    #[test]
+    fn test_cli_no_signoff_with_explicit_sign() {
+        // Test that --no-signoff works with explicit --sign option
+        let args = Cli::try_parse_from([
+            "pcu",
+            "--sign",
+            "none",
+            "--no-signoff",
+            "commit",
+            "--commit-message",
+            "test",
+        ])
+        .unwrap();
+        assert!(args.no_signoff);
+
+        let sign = args.sign.unwrap_or_default();
+        let sign_config = SignConfig::with_signoff(sign, !args.no_signoff);
+
+        // Should be Sign::None with signoff disabled
+        assert_eq!(
+            sign_config.sign,
+            Sign::None,
+            "Should use Sign::None variant"
+        );
+        assert!(
+            !sign_config.is_signoff_enabled(),
+            "signoff should be disabled"
+        );
+    }
 }

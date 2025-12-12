@@ -7,7 +7,7 @@ use config::Config;
 use gen_bsky::Draft;
 use site_config::SiteConfig;
 
-use crate::{CIExit, Client, Error, GitOps, Sign};
+use crate::{CIExit, Client, Error, GitOps, SignConfig};
 
 const DEFAULT_PATH: &str = "content/blog";
 
@@ -70,11 +70,11 @@ impl CmdDraft {
         log::info!("Referrers written: {posts:#?}");
         log::info!("Bluesky posts written: {posts:#?}");
 
-        let sign = Sign::Gpg;
+        let sign_config = SignConfig::default();
         // Commit the posts to the git repo
         let commit_message = "chore: add drafted bluesky posts to git repo";
         client
-            .commit_changed_files(sign, commit_message, "", None)
+            .commit_changed_files(sign_config, commit_message, "", None)
             .await?;
 
         Ok(CIExit::DraftedForBluesky)
