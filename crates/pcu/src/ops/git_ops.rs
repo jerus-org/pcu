@@ -74,7 +74,7 @@ impl SignConfig {
 }
 
 /// Generate a signoff line from a git signature
-/// Returns a string in the format: "Signed-off-by: Name <email>"
+/// Returns a string in the format: "Signed-off-by: Name \<email\>"
 fn generate_signoff(sig: &Signature) -> String {
     format!(
         "Signed-off-by: {} <{}>",
