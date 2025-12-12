@@ -1,7 +1,7 @@
 use clap::Parser;
 
 use super::{CIExit, Commands, GitOps};
-use crate::{Error, Sign};
+use crate::{Error, SignConfig};
 
 /// Configuration for the Commit command
 #[derive(Debug, Parser, Clone)]
@@ -29,11 +29,16 @@ impl Commit {
         None
     }
 
-    pub async fn run_commit(&self, sign: Sign) -> Result<CIExit, Error> {
+    pub async fn run_commit(&self, sign_config: SignConfig) -> Result<CIExit, Error> {
         let client = Commands::Commit(self.clone()).get_client().await?;
 
         client
-            .commit_changed_files(sign, self.commit_message(), &self.prefix, self.tag_opt())
+            .commit_changed_files(
+                sign_config,
+                self.commit_message(),
+                &self.prefix,
+                self.tag_opt(),
+            )
             .await?;
 
         Ok(CIExit::Committed)

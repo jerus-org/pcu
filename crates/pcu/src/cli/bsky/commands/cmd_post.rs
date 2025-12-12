@@ -4,7 +4,7 @@ use clap::Parser;
 use config::Config;
 use gen_bsky::{Post, PostError};
 
-use crate::{cli::push::Push, CIExit, Client, Error, GitOps, Sign};
+use crate::{cli::push::Push, CIExit, Client, Error, GitOps, SignConfig};
 
 #[derive(Debug, Parser, Clone)]
 pub struct CmdPost {
@@ -40,7 +40,7 @@ impl CmdPost {
         }
 
         // Commit to remove the posts successfully sent to Bluesky
-        let sign = Sign::Gpg;
+        let sign_config = SignConfig::default();
         let commit_message = format!(
             "chore: remove {} sent to Bluesky",
             if deleted == 1 {
@@ -51,7 +51,7 @@ impl CmdPost {
         );
 
         client
-            .commit_changed_files(sign, &commit_message, "", None)
+            .commit_changed_files(sign_config, &commit_message, "", None)
             .await?;
 
         if env::var("CI").is_ok() && !self.release {

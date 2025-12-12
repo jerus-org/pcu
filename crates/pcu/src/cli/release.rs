@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 
 use super::{CIExit, Commands};
-use crate::{Client, Error, GitOps, MakeRelease, Sign, Workspace};
+use crate::{Client, Error, GitOps, MakeRelease, SignConfig, Workspace};
 mod mode;
 
 use clap::Parser;
@@ -22,11 +22,11 @@ pub struct Release {
 }
 
 impl Release {
-    pub async fn run_release(self, sign: Sign) -> Result<CIExit, Error> {
+    pub async fn run_release(self, sign_config: SignConfig) -> Result<CIExit, Error> {
         let client = Commands::Release(self.clone()).get_client().await?;
 
         match self.mode {
-            Mode::Version(_) => self.release_version(client, sign).await,
+            Mode::Version(_) => self.release_version(client, sign_config).await,
             Mode::Package(_) => self.release_package(client).await,
             Mode::Workspace => self.release_workspace(client).await,
             Mode::Current(_) => self.release_current(client).await,
@@ -139,7 +139,11 @@ impl Release {
         }
         Ok(CIExit::Released)
     }
-    async fn release_version(self, mut client: Client, sign: Sign) -> Result<CIExit, Error> {
+    async fn release_version(
+        self,
+        mut client: Client,
+        sign_config: SignConfig,
+    ) -> Result<CIExit, Error> {
         let Mode::Version(ref version) = self.mode else {
             log::error!("Semver is required for release");
             return Err(Error::MissingSemver);
@@ -153,7 +157,7 @@ impl Release {
             client.owner(),
             client.repo()
         );
-        log::trace!("Signing: {sign:?}");
+        log::trace!("Signing: {:?}", sign_config.sign);
         log::trace!("Update prlog flag: {}", self.update_prlog);
 
         if self.update_prlog {
@@ -168,7 +172,7 @@ impl Release {
             let commit_message = "chore: update prlog for pr";
 
             client
-                .commit_changed_files(sign, commit_message, &self.prefix, Some(&version))
+                .commit_changed_files(sign_config, commit_message, &self.prefix, Some(&version))
                 .await?;
 
             log::info!("Push the commit");

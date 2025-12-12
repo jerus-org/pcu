@@ -24,11 +24,84 @@ const GIT_USER_SIGNATURE: &str = "user.signingkey";
 const DEFAULT_COMMIT_MESSAGE: &str = "chore: commit staged files";
 const DEFAULT_REBASE_LOGINS: &str = "renovate,mend";
 
-#[derive(ValueEnum, Debug, Default, Clone)]
+#[derive(ValueEnum, Debug, Default, Clone, Copy, PartialEq)]
 pub enum Sign {
     #[default]
     Gpg,
     None,
+}
+
+/// Represents commit signing configuration with optional signoff
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SignConfig {
+    pub sign: Sign,
+    pub signoff: bool,
+}
+
+impl Default for SignConfig {
+    fn default() -> Self {
+        SignConfig {
+            sign: Sign::Gpg,
+            signoff: true,
+        }
+    }
+}
+
+impl SignConfig {
+    /// Create a new SignConfig with the given sign type and signoff enabled
+    pub fn new(sign: Sign) -> Self {
+        SignConfig {
+            sign,
+            signoff: true,
+        }
+    }
+
+    /// Create a new SignConfig with signoff setting
+    pub fn with_signoff(sign: Sign, signoff: bool) -> Self {
+        SignConfig { sign, signoff }
+    }
+
+    /// Check if signoff is enabled
+    pub fn is_signoff_enabled(&self) -> bool {
+        self.signoff
+    }
+
+    /// Set signoff enabled or disabled
+    pub fn set_signoff(mut self, enabled: bool) -> Self {
+        self.signoff = enabled;
+        self
+    }
+}
+
+/// Generate a signoff line from a git signature
+/// Returns a string in the format: "Signed-off-by: Name <email>"
+fn generate_signoff(sig: &Signature) -> String {
+    format!(
+        "Signed-off-by: {} <{}>",
+        sig.name().unwrap_or(""),
+        sig.email().unwrap_or("")
+    )
+}
+
+/// Append signoff to commit message if enabled
+fn append_signoff_to_message(message: &str, sig: &Signature, sign_config: &SignConfig) -> String {
+    if !sign_config.is_signoff_enabled() {
+        return message.to_string();
+    }
+
+    let signoff = generate_signoff(sig);
+
+    // Check if message already contains this exact signoff
+    if message.contains(&signoff) {
+        return message.to_string();
+    }
+
+    // Append signoff with a blank line before it
+    if message.is_empty() {
+        signoff
+    } else {
+        format!("{message}\n\n{signoff}")
+    }
 }
 
 #[derive(Debug, Default)]
@@ -63,14 +136,14 @@ pub trait GitOps {
     #[allow(async_fn_in_trait)]
     async fn commit_changed_files(
         &self,
-        sign: Sign,
+        sign_config: SignConfig,
         commit_message: &str,
         prefix: &str,
         tag_opt: Option<&str>,
     ) -> Result<(), Error>;
     fn commit_staged(
         &self,
-        sign: Sign,
+        sign_config: SignConfig,
         commit_message: &str,
         prefix: &str,
         tag: Option<&str>,
@@ -269,7 +342,7 @@ impl GitOps for Client {
 
     async fn commit_changed_files(
         &self,
-        sign: Sign,
+        sign_config: SignConfig,
         commit_message: &str,
         prefix: &str,
         tag_opt: Option<&str>,
@@ -299,7 +372,7 @@ impl GitOps for Client {
 
         if !files_staged_for_commit.is_empty() {
             log::info!("Commit the staged changes with commit message: {commit_message}");
-            self.commit_staged(sign, commit_message, prefix, tag_opt)?;
+            self.commit_staged(sign_config, commit_message, prefix, tag_opt)?;
             log::debug!("{}", "Check Committed".style(hdr_style));
             log::debug!("WorkDir files:\n\t{:?}", self.repo_files_not_staged()?);
             let files_staged_for_commit = self.repo_files_staged()?;
@@ -314,12 +387,12 @@ impl GitOps for Client {
 
     fn commit_staged(
         &self,
-        sign: Sign,
+        sign_config: SignConfig,
         commit_message: &str,
         prefix: &str,
         tag: Option<&str>,
     ) -> Result<(), Error> {
-        log::trace!("Commit staged with sign {sign:?}");
+        log::trace!("Commit staged with sign {:?}", sign_config.sign);
 
         log::trace!("Checking commit message: `{commit_message}`");
         let commit_message = if !commit_message.is_empty() {
@@ -341,12 +414,17 @@ impl GitOps for Client {
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
         let sig = self.git_repo.signature()?;
 
-        let commit_id = match sign {
+        // Append signoff to commit message if enabled
+        let commit_message_with_signoff =
+            append_signoff_to_message(commit_message, &sig, &sign_config);
+        log::trace!("Commit message with signoff: {commit_message_with_signoff}");
+
+        let commit_id = match sign_config.sign {
             Sign::None => self.git_repo.commit(
                 Some("HEAD"),
                 &sig,
                 &sig,
-                commit_message,
+                &commit_message_with_signoff,
                 &self.git_repo.find_tree(tree_id)?,
                 &[&parent],
             )?,
@@ -354,7 +432,7 @@ impl GitOps for Client {
                 let commit_buffer = self.git_repo.commit_create_buffer(
                     &sig,
                     &sig,
-                    commit_message,
+                    &commit_message_with_signoff,
                     &self.git_repo.find_tree(tree_id)?,
                     &[&parent],
                 )?;
@@ -803,4 +881,119 @@ fn print_long(statuses: &git2::Statuses) -> String {
     }
 
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use git2::Signature;
+    use rstest::rstest;
+
+    #[test]
+    fn test_sign_default() {
+        let sign = Sign::default();
+        assert_eq!(sign, Sign::Gpg, "Default should be Gpg");
+    }
+
+    #[test]
+    fn test_sign_config_default() {
+        let sign_config = SignConfig::default();
+        assert_eq!(sign_config.sign, Sign::Gpg);
+        assert!(sign_config.signoff, "Default should have signoff enabled");
+    }
+
+    #[test]
+    fn test_sign_config_is_signoff_enabled() {
+        let config_enabled = SignConfig::with_signoff(Sign::Gpg, true);
+        assert!(config_enabled.is_signoff_enabled());
+
+        let config_disabled = SignConfig::with_signoff(Sign::Gpg, false);
+        assert!(!config_disabled.is_signoff_enabled());
+
+        let config_none_enabled = SignConfig::with_signoff(Sign::None, true);
+        assert!(config_none_enabled.is_signoff_enabled());
+
+        let config_none_disabled = SignConfig::with_signoff(Sign::None, false);
+        assert!(!config_none_disabled.is_signoff_enabled());
+    }
+
+    #[test]
+    fn test_sign_config_set_signoff() {
+        let config = SignConfig::new(Sign::Gpg);
+        assert!(config.is_signoff_enabled());
+
+        let config_disabled = config.set_signoff(false);
+        assert!(!config_disabled.is_signoff_enabled());
+        assert_eq!(config_disabled.sign, Sign::Gpg);
+
+        let config_none = SignConfig::new(Sign::None);
+        let config_enabled = config_none.set_signoff(true);
+        assert!(config_enabled.is_signoff_enabled());
+        assert_eq!(config_enabled.sign, Sign::None);
+    }
+
+    #[test]
+    fn test_generate_signoff() {
+        let sig = Signature::now("Test User", "test@example.com").unwrap();
+        let signoff = generate_signoff(&sig);
+        assert_eq!(signoff, "Signed-off-by: Test User <test@example.com>");
+    }
+
+    #[rstest]
+    #[case(
+        "feat: add new feature",
+        true,
+        "feat: add new feature\n\nSigned-off-by: Test User <test@example.com>"
+    )]
+    #[case("feat: add new feature", false, "feat: add new feature")]
+    #[case("", true, "Signed-off-by: Test User <test@example.com>")]
+    #[case("", false, "")]
+    fn test_append_signoff_to_message(
+        #[case] message: &str,
+        #[case] signoff_enabled: bool,
+        #[case] expected: &str,
+    ) {
+        let sig = Signature::now("Test User", "test@example.com").unwrap();
+        let sign_config = SignConfig::with_signoff(Sign::Gpg, signoff_enabled);
+        let result = append_signoff_to_message(message, &sig, &sign_config);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_append_signoff_already_contains_signoff() {
+        let sig = Signature::now("Test User", "test@example.com").unwrap();
+        let sign_config = SignConfig::with_signoff(Sign::Gpg, true);
+        let message = "feat: add feature\n\nSigned-off-by: Test User <test@example.com>";
+        let result = append_signoff_to_message(message, &sig, &sign_config);
+        // Should not duplicate the signoff
+        assert_eq!(result, message);
+    }
+
+    #[test]
+    fn test_append_signoff_with_different_signoff() {
+        let sig = Signature::now("Test User", "test@example.com").unwrap();
+        let sign_config = SignConfig::with_signoff(Sign::Gpg, true);
+        let message = "feat: add feature\n\nSigned-off-by: Other User <other@example.com>";
+        let result = append_signoff_to_message(message, &sig, &sign_config);
+        // Should append a second signoff since it's different
+        assert_eq!(result, "feat: add feature\n\nSigned-off-by: Other User <other@example.com>\n\nSigned-off-by: Test User <test@example.com>");
+    }
+
+    #[test]
+    fn test_append_signoff_none_variant() {
+        let sig = Signature::now("Test User", "test@example.com").unwrap();
+        let sign_enabled = SignConfig::with_signoff(Sign::None, true);
+        let sign_disabled = SignConfig::with_signoff(Sign::None, false);
+
+        let message = "chore: update files";
+
+        let result_enabled = append_signoff_to_message(message, &sig, &sign_enabled);
+        assert_eq!(
+            result_enabled,
+            "chore: update files\n\nSigned-off-by: Test User <test@example.com>"
+        );
+
+        let result_disabled = append_signoff_to_message(message, &sig, &sign_disabled);
+        assert_eq!(result_disabled, "chore: update files");
+    }
 }
