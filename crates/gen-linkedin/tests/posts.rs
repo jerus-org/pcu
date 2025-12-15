@@ -4,26 +4,28 @@ use gen_linkedin::{
     posts::{PostsClient, TextPost},
 };
 use url::Url;
+use wiremock::matchers::{header, method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
 async fn create_text_post_sends_expected_request() {
-    let server = httpmock::MockServer::start_async().await;
+    let server = MockServer::start().await;
 
-    let m = server.mock(|when, then| {
-        when.method("POST")
-            .path("/rest/posts")
-            .header("authorization", "Bearer TOKEN")
-            .header("x-restli-protocol-version", "2.0.0")
-            .header("content-type", "application/json");
-        then.status(201)
-            .header("x-restli-id", "urn:li:activity:123")
-            .body("");
-    });
+    Mock::given(method("POST"))
+        .and(path("/rest/posts"))
+        .and(header("authorization", "Bearer TOKEN"))
+        .and(header("x-restli-protocol-version", "2.0.0"))
+        .and(header("content-type", "application/json"))
+        .respond_with(
+            ResponseTemplate::new(201).insert_header("x-restli-id", "urn:li:activity:123"),
+        )
+        .mount(&server)
+        .await;
 
     let token = StaticTokenProvider("TOKEN".to_string());
     let client = Client::new(token)
         .unwrap()
-        .with_base(Url::parse(&server.base_url()).unwrap());
+        .with_base(Url::parse(&server.uri()).unwrap());
     let posts = PostsClient::new(client);
 
     let resp = posts
@@ -31,6 +33,4 @@ async fn create_text_post_sends_expected_request() {
         .await
         .unwrap();
     assert_eq!(resp.id, "urn:li:activity:123");
-
-    m.assert();
 }
