@@ -1,6 +1,7 @@
 mod bsky;
 mod commit;
 mod label;
+mod linkedin;
 mod pull_request;
 mod push;
 mod release;
@@ -13,6 +14,7 @@ use color_eyre::Result;
 use commit::Commit;
 use config::Config;
 use label::Label;
+use linkedin::Linkedin;
 use pull_request::Pr;
 use push::Push;
 use release::Release;
@@ -33,6 +35,8 @@ pub enum CIExit {
     PostedToBluesky,
     NoFilesToProcess,
     NothingToPush,
+    SharedToLinkedIn,
+    NoContentForLinkedIn,
 }
 
 #[derive(Parser, Debug)]
@@ -70,6 +74,8 @@ the lowest number submitted by the `renovate` user")]
     Label(Label),
     /// Post summaries and link to new or changed blog posts to bluesky
     Bsky(Bsky),
+    /// Share release/news posts to LinkedIn
+    Linkedin(Linkedin),
 }
 
 impl Display for Commands {
@@ -81,6 +87,7 @@ impl Display for Commands {
             Commands::Push(_) => write!(f, "push"),
             Commands::Label(_) => write!(f, "label"),
             Commands::Bsky(_) => write!(f, "bluesky"),
+            Commands::Linkedin(_) => write!(f, "linkedin"),
         }
     }
 }
@@ -132,6 +139,9 @@ impl Commands {
                 .set_override("commit_message", "chore: add Bluesky posts to repository")?
                 .set_override("store", bsky.store.clone())?
                 .set_override("command", "bsky")?,
+            Commands::Linkedin(_) => settings
+                .set_override("commit_message", "chore: announce release on LinkedIn")?
+                .set_override("command", "linkedin")?,
         };
 
         settings = if let Commands::Bsky(bsky) = self {

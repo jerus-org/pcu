@@ -29,6 +29,7 @@ color-eyre.workspace = true
 config.workspace = true
 env_logger.workspace = true
 gen-bsky.workspace = true
+gen-linkedin.workspace = true
 git2.workspace = true
 git2_credentials.workspace = true
 gql_client.workspace = true
