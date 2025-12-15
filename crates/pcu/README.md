@@ -36,6 +36,40 @@ A CI utility to update the Unreleased section of the changelog with the title of
 
 ## CLI Usage
 
+### LinkedIn announcements
+
+pcu can share a release announcement to LinkedIn in two ways:
+
+1. As a dedicated subcommand
+   - Build content from PRLOG or pass your own text
+   - Optionally include a GitHub release link
+
+   Examples:
+
+   ```sh
+   # Provide text directly
+   pcu linkedin share --author-urn "urn:li:organization:123" --text "v0.6.2 released"
+
+   # Build from PRLOG release notes
+   pcu linkedin share --author-urn "urn:li:organization:123" --from-release --version 0.6.2 --prefix v
+   ```
+
+2. As part of the release flow
+   - Add the flag to share after the GitHub release is created
+
+   ```sh
+   pcu release version 0.6.2 --prefix v --linkedin-share
+   ```
+
+Configuration (environment variables or pcu.toml):
+- LINKEDIN_ACCESS_TOKEN or key `linkedin_access_token`
+- LINKEDIN_AUTHOR_URN or key `linkedin_author_urn`
+- Optional: `dev_platform`, `username`, `reponame` to compute the GitHub release URL
+
+Notes:
+- The LinkedIn client posts to the Posts REST API and requires header `X-Restli-Protocol-Version: 2.0.0` (handled internally).
+- Tokens must be stored in CI secrets; never commit them.
+
 Install the CLI using cargo install.
 
 ```sh
