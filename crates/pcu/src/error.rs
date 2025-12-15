@@ -76,6 +76,9 @@ pub enum Error {
     DraftError(#[from] gen_bsky::DraftError),
     #[error("gen-bsky post error says: {0:?}")]
     PostError(#[from] gen_bsky::PostError),
+    /// Errors arising from the gen-linkedin client
+    #[error("gen-linkedin says: {0:?}")]
+    LinkedIn(#[from] gen_linkedin::Error),
 }
 
 #[derive(Debug)]

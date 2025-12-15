@@ -29,6 +29,7 @@ async fn main() -> Result<()> {
         Commands::Label(label_args) => label_args.run_label().await,
         Commands::Release(rel_args) => rel_args.run_release(sign_config).await,
         Commands::Bsky(bsky_args) => bsky_args.run().await,
+        Commands::Linkedin(li_args) => li_args.run().await,
     };
 
     match res {
@@ -45,6 +46,8 @@ async fn main() -> Result<()> {
                 CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
                 CIExit::NoFilesToProcess => log::info!("No files to process"),
                 CIExit::NothingToPush => log::info!("No commits to push"),
+                CIExit::SharedToLinkedIn => log::info!("Shared to LinkedIn"),
+                CIExit::NoContentForLinkedIn => log::info!("No LinkedIn content to share"),
             };
             Ok(())
         }
