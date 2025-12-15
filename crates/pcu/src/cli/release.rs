@@ -1,3 +1,42 @@
+use crate::utilities::linkedin_post::{build_release_text, compute_release_url};
+use gen_linkedin::posts::{PostsClient, TextPost};
+use gen_linkedin::{auth::StaticTokenProvider, client::Client as LiClient};
+
+async fn share_release_to_linkedin(prefix: &str, version: &str) -> Result<(), Error> {
+    let settings = super::Commands::Release(Release {
+        update_prlog: false,
+        prefix: prefix.to_string(),
+        linkedin_share: true,
+        mode: Mode::Version(crate::cli::release::mode::Version {
+            version: version.to_string(),
+        }),
+    })
+    .get_settings()?;
+
+    let token = settings
+        .get::<String>("linkedin_access_token")
+        .or_else(|_| {
+            std::env::var("LINKEDIN_ACCESS_TOKEN")
+                .map_err(|_| config::ConfigError::NotFound("linkedin_access_token".into()))
+        })?;
+    let author_urn = settings.get::<String>("linkedin_author_urn").or_else(|_| {
+        std::env::var("LINKEDIN_AUTHOR_URN")
+            .map_err(|_| config::ConfigError::NotFound("linkedin_author_urn".into()))
+    })?;
+
+    let text = build_release_text(&settings, prefix, version)?;
+    let link = compute_release_url(&settings, prefix, Some(version))?;
+
+    let li = LiClient::new(StaticTokenProvider(token))?;
+    let pc = PostsClient::new(li);
+    let mut post = TextPost::new(author_urn, text);
+    if let Some(u) = link {
+        post = post.with_link(u);
+    }
+    let _ = pc.create_text_post(&post).await?;
+    Ok(())
+}
+
 use std::{fs, path::Path};
 
 use super::{CIExit, Commands};
@@ -17,6 +56,9 @@ pub struct Release {
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
+    /// Also share this release to LinkedIn using configured credentials
+    #[arg(long, default_value_t = false)]
+    pub linkedin_share: bool,
     #[command(subcommand)]
     pub mode: Mode,
 }
@@ -189,6 +231,10 @@ impl Release {
         }
 
         client.make_release(&self.prefix, &version).await?;
+
+        if self.linkedin_share {
+            share_release_to_linkedin(&self.prefix, &version).await?;
+        }
 
         Ok(CIExit::Released)
     }
