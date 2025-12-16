@@ -180,6 +180,17 @@ impl DraftBuilder {
         for entry in WalkDir::new(walk_dir).into_iter().flatten() {
             log::debug!("Entry found: {entry:?}");
             if entry.path().extension().unwrap_or_default() == "md" {
+                // Skip files starting with "_" (e.g., _index.md)
+                if let Some(file_name) = entry.path().file_name() {
+                    if file_name.to_string_lossy().starts_with('_') {
+                        log::debug!(
+                            "Skipping file starting with '_': {}",
+                            entry.path().display()
+                        );
+                        continue;
+                    }
+                }
+
                 let entry_as_path = entry.into_path();
                 let Ok(path_to_blog) = entry_as_path.strip_prefix(www_src_root) else {
                     println!("Failed to strip prefix from `{}`", entry_as_path.display());
@@ -1142,5 +1153,56 @@ mod tests {
         builder.with_allow_draft(false);
         builder.with_allow_draft(false);
         assert!(!builder.allow_draft);
+    }
+
+    #[tokio::test]
+    async fn test_excludes_files_starting_with_underscore() {
+        use std::fs;
+        use tempfile::TempDir;
+
+        // Create a temporary directory structure
+        let temp_dir = TempDir::new().unwrap();
+        let content_dir = temp_dir.path().join("content").join("blog");
+        fs::create_dir_all(&content_dir).unwrap();
+
+        // Create test markdown files
+        let regular_file = content_dir.join("regular-post.md");
+        let index_file = content_dir.join("_index.md");
+        let underscore_file = content_dir.join("_draft.md");
+
+        // Write minimal valid front matter and content
+        let valid_content = r#"+++
+title = "Test Post"
+description = "A test post"
+date = 2030-01-01
+draft = false
+
+[taxonomies]
+tags = ["test"]
++++
+
+Test content"#;
+
+        fs::write(&regular_file, valid_content).unwrap();
+        fs::write(&index_file, valid_content).unwrap();
+        fs::write(&underscore_file, valid_content).unwrap();
+
+        // Create builder and test
+        let base_url = Url::parse("https://www.example.com/").unwrap();
+        let mut builder = Draft::builder(base_url, Some(&temp_dir.path().to_path_buf()));
+
+        builder
+            .add_path_or_file("content/blog")
+            .unwrap()
+            .with_allow_draft(true);
+
+        let result = builder.build().await;
+
+        // Should succeed with only the regular file
+        let draft = result.expect("Failed to build draft");
+
+        // Should only have 1 blog post (the regular one), not the _index.md or _draft.md
+        assert_eq!(draft.blog_posts.len(), 1);
+        assert_eq!(draft.blog_posts[0].title(), "Test Post");
     }
 }
