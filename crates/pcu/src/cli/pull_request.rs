@@ -17,6 +17,9 @@ pub struct Pr {
     /// Signal an early exit as the prlog is already updated
     #[clap(short, long, default_value_t = false)]
     pub early_exit: bool,
+    /// Run on main branch from a merge commit (post-merge PR log update)
+    #[clap(short = 'M', long, default_value_t = false)]
+    pub from_merge: bool,
     /// Prefix for the version tag
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
@@ -39,13 +42,17 @@ impl Pr {
         let branch = branch.unwrap_or("main".to_string());
         log::trace!("Branch: {branch:?}");
 
-        if branch == "main" {
+        if branch == "main" && !self.from_merge {
             log::info!("On the default branch, nothing to do here!");
             if self.early_exit {
                 println!("{SIGNAL_HALT}");
             }
 
             return Ok(CIExit::UnChanged);
+        }
+
+        if self.from_merge {
+            log::info!("Running in from-merge mode on branch: {branch}");
         }
 
         log::trace!("*** Get Client ***");

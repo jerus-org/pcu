@@ -87,6 +87,8 @@ impl Client {
         let (github_rest, github_graphql) =
             Client::get_github_apis(settings, &owner, &repo).await?;
 
+        let git_repo = git2::Repository::open(".")?;
+
         log::trace!("Executing for command: {}", &cmd);
         let (branch, pull_request) = if &cmd == "pr" || &cmd == "push" {
             // Use the branch config settings to direct to the appropriate CI environment
@@ -102,7 +104,18 @@ impl Client {
                 Some(branch)
             };
 
-            let pull_request = PullRequest::new_pull_request_opt(settings, &github_graphql).await?;
+            // Check if from_merge flag is set
+            let from_merge = settings.get::<bool>("from_merge").unwrap_or(false);
+
+            let pull_request = if from_merge {
+                log::info!("Using from_merge mode - looking up PR from HEAD commit");
+                Some(
+                    PullRequest::from_head_commit(&git_repo, &github_graphql, &owner, &repo)
+                        .await?,
+                )
+            } else {
+                PullRequest::new_pull_request_opt(settings, &github_graphql).await?
+            };
 
             (branch, pull_request)
         } else {
@@ -117,8 +130,6 @@ impl Client {
             .get("prlog")
             .map_err(|_| Error::DefaultChangeLogNotSet)?;
         let prlog = OsString::from(prlog);
-
-        let git_repo = git2::Repository::open(".")?;
 
         let svs_root = settings
             .get("dev_platform")

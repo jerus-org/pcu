@@ -1,6 +1,7 @@
 use std::env;
 
 use config::Config;
+use git2::Repository;
 
 use crate::Error;
 
@@ -58,6 +59,40 @@ impl PullRequest {
             repo_url,
             pr_number,
         }))
+    }
+
+    /// Create PullRequest from HEAD commit SHA using GitHub GraphQL API
+    ///
+    /// This works for all merge strategies (merge commit, rebase, squash)
+    pub async fn from_head_commit(
+        git_repo: &Repository,
+        graphql: &gql_client::Client,
+        owner: &str,
+        repo: &str,
+    ) -> Result<Self, Error> {
+        // Get HEAD commit SHA
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let commit_sha = commit.id().to_string();
+
+        log::debug!("Looking up PR for commit: {commit_sha}");
+
+        // Query GitHub API to find associated PR
+        let (pr_number, title, pull_request) =
+            super::graphql::get_pull_request_by_commit(graphql, owner, repo, &commit_sha).await?;
+
+        log::debug!("Found PR #{pr_number}: {title}");
+
+        let repo_url = format!("https://github.com/{owner}/{repo}");
+
+        Ok(Self {
+            pull_request,
+            title,
+            owner: owner.to_string(),
+            repo: repo.to_string(),
+            repo_url,
+            pr_number,
+        })
     }
 
     fn get_keys(pull_request: &str) -> Result<(String, String, String, String), Error> {
