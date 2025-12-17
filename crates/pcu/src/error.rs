@@ -50,6 +50,10 @@ pub enum Error {
     UnknownPullRequestFormat(String),
     #[error("No default prlog file found")]
     NoChangeLogFileFound,
+    #[error("HEAD is not a merge commit")]
+    NotAMergeCommit,
+    #[error("Merge commit message does not contain a pull request number")]
+    InvalidMergeCommitMessage,
     #[error("ParseInt says: {0:?}")]
     ParseInt(#[from] ParseIntError),
     #[error("Octocrate says: {0:?}")]

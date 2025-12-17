@@ -120,9 +120,10 @@ impl Commands {
         log::trace!("Initial settings (default, pcu.toml and environment: {settings:#?}");
 
         settings = match self {
-            Commands::Pr(_) => settings
+            Commands::Pr(pr) => settings
                 .set_override("commit_message", "chore: update prlog for pr")?
-                .set_override("command", "pr")?,
+                .set_override("command", "pr")?
+                .set_override("from_merge", pr.from_merge)?,
             Commands::Release(_) => settings
                 .set_override("commit_message", "chore: update prlog for release")?
                 .set_override("command", "release")?,
