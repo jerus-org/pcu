@@ -38,16 +38,9 @@ pub struct Pr {
 
 impl Pr {
     pub async fn run_pull_request(&self, sign_config: SignConfig) -> Result<CIExit, Error> {
-        let branch = env::var("CIRCLE_BRANCH");
-        let branch = branch.unwrap_or("main".to_string());
-        log::trace!("Branch: {branch:?}");
+        let branch = self.get_current_branch();
 
-        if branch == "main" && !self.from_merge {
-            log::info!("On the default branch, nothing to do here!");
-            if self.early_exit {
-                println!("{SIGNAL_HALT}");
-            }
-
+        if self.should_exit_early(&branch)? {
             return Ok(CIExit::UnChanged);
         }
 
@@ -55,31 +48,69 @@ impl Pr {
             log::info!("Running in from-merge mode on branch: {branch}");
         }
 
+        let mut client = match self.get_or_create_client().await {
+            Ok(client) => client,
+            Err(Error::EnvVarPullRequestNotFound) if self.allow_no_pull_request => {
+                log::debug!(
+                    "early exit allowed even though no pull request found in CI environment"
+                );
+                return Ok(CIExit::UnChanged);
+            }
+            Err(e) => return Err(e),
+        };
+
+        self.log_client_info(&client);
+
+        client.create_entry()?;
+        log::debug!("Proposed entry: {:?}", client.entry());
+
+        if !self.update_and_log_prlog(&mut client)? {
+            return Ok(CIExit::UnChanged);
+        }
+
+        self.commit_and_push(client, sign_config).await
+    }
+
+    fn get_current_branch(&self) -> String {
+        let branch = env::var("CIRCLE_BRANCH");
+        let branch = branch.unwrap_or("main".to_string());
+        log::trace!("Branch: {branch:?}");
+        branch
+    }
+
+    fn should_exit_early(&self, branch: &str) -> Result<bool, Error> {
+        if branch == "main" && !self.from_merge {
+            log::info!("On the default branch, nothing to do here!");
+            if self.early_exit {
+                println!("{SIGNAL_HALT}");
+            }
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
+    async fn get_or_create_client(&self) -> Result<Client, Error> {
         log::trace!("*** Get Client ***");
         let client_res = Commands::Pr(self.clone()).get_client().await;
         log::trace!("client_res: {client_res:?}");
         log::trace!("allow_no_pull_request: {}", self.allow_no_pull_request);
-        let mut client = match client_res {
-            Ok(client) => client,
-            Err(e) => {
-                match e {
-                    Error::EnvVarPullRequestNotFound => {
-                        if self.allow_no_pull_request {
-                            log::debug!("early exit allowed even though no pull request found in CI environment");
-                            return Ok(CIExit::UnChanged);
-                        } else {
-                            log::debug!("pull request not found and not allowed");
-                            return Err(e);
-                        }
-                    }
-                    _ => {
-                        log::error!("Error getting client: {e}");
-                        return Err(e);
-                    }
-                };
-            }
-        };
 
+        match client_res {
+            Ok(client) => Ok(client),
+            Err(e) => self.handle_client_error(e),
+        }
+    }
+
+    fn handle_client_error(&self, e: Error) -> Result<Client, Error> {
+        if !matches!(e, Error::EnvVarPullRequestNotFound) {
+            log::error!("Error getting client: {e}");
+        } else {
+            log::debug!("pull request not found and not allowed");
+        }
+        Err(e)
+    }
+
+    fn log_client_info(&self, client: &Client) {
         log::info!(
             "On the `{}` branch, so time to get to work!",
             client.branch_or_main()
@@ -90,55 +121,59 @@ impl Pr {
             client.owner(),
             client.repo()
         );
-
         log::trace!("Full client: {client:#?}");
-        let title = client.title();
+        log::debug!("Pull Request Title: {}", client.title());
+    }
 
-        log::debug!("Pull Request Title: {title}");
-
-        client.create_entry()?;
-
-        log::debug!("Proposed entry: {:?}", client.entry());
-
+    fn update_and_log_prlog(&self, client: &mut Client) -> Result<bool, Error> {
         if log::log_enabled!(log::Level::Info) {
             if let Some((section, entry)) = client.update_prlog()? {
-                let section = match section {
-                    ChangeKind::Added => "Added",
-                    ChangeKind::Changed => "Changed",
-                    ChangeKind::Deprecated => "Deprecated",
-                    ChangeKind::Fixed => "Fixed",
-                    ChangeKind::Removed => "Removed",
-                    ChangeKind::Security => "Security",
-                };
+                let section = self.section_to_string(section);
                 log::info!("Amendment: In section `{section}`, adding `{entry}`");
             } else {
                 log::info!("No update required");
                 if self.early_exit {
                     println!("{SIGNAL_HALT}");
                 }
-                return Ok(CIExit::UnChanged);
-            };
+                return Ok(false);
+            }
         } else if client.update_prlog()?.is_none() {
-            return Ok(CIExit::UnChanged);
+            return Ok(false);
         }
 
         log::debug!("Changelog file name: {}", client.prlog_as_str());
-
         log::trace!(
             "{}",
             crate::cli::print_prlog(client.prlog_as_str(), client.line_limit())
         );
 
-        // Commit the pull request log
+        Ok(true)
+    }
+
+    fn section_to_string(&self, section: ChangeKind) -> &'static str {
+        match section {
+            ChangeKind::Added => "Added",
+            ChangeKind::Changed => "Changed",
+            ChangeKind::Deprecated => "Deprecated",
+            ChangeKind::Fixed => "Fixed",
+            ChangeKind::Removed => "Removed",
+            ChangeKind::Security => "Security",
+        }
+    }
+
+    async fn commit_and_push(
+        &self,
+        client: Client,
+        sign_config: SignConfig,
+    ) -> Result<CIExit, Error> {
         let commit_message = "chore: update prlog for pr";
         client
             .commit_changed_files(sign_config, commit_message, &self.prefix, None)
             .await?;
 
         if self.push {
-            // Push the pull request log (and other commits)
             self.push_the_commit(client)?;
-        };
+        }
 
         Ok(CIExit::Updated)
     }
