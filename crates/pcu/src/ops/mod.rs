@@ -1,4 +1,5 @@
 mod git_ops;
+pub mod git_signature_ops;
 mod make_release;
 pub mod signature_ops;
 mod update_from_pr;

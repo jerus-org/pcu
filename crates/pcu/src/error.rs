@@ -64,6 +64,8 @@ pub enum Error {
     UrlParse(#[from] url::ParseError),
     #[error("Git2 says: {0:?}")]
     Git2(#[from] git2::Error),
+    #[error("Git error: {0}")]
+    GitError(String),
     #[error("io error says: {0:?}")]
     IO(#[from] std::io::Error),
     #[error("utf8 error says: {0:?}")]
