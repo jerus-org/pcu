@@ -42,6 +42,7 @@ owo-colors.workspace = true
 regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sequoia-openpgp.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
