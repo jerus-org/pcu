@@ -106,6 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate tempfile to 3.23.0(pr [#745])
 - deps: update rust crate tokio to 1.48.0(pr [#746])
 - 🐛 post: address potential data race in testing(pr [#748])
+- 🐛 improve error handling for from-merge mode(pr [#754])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1845,6 +1846,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#751]: https://github.com/jerus-org/pcu/pull/751
 [#752]: https://github.com/jerus-org/pcu/pull/752
 [#753]: https://github.com/jerus-org/pcu/pull/753
+[#754]: https://github.com/jerus-org/pcu/pull/754
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
