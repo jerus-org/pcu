@@ -50,10 +50,14 @@ impl Pr {
 
         let mut client = match self.get_or_create_client().await {
             Ok(client) => client,
-            Err(Error::EnvVarPullRequestNotFound) if self.allow_no_pull_request => {
-                log::debug!(
-                    "early exit allowed even though no pull request found in CI environment"
-                );
+            Err(Error::EnvVarPullRequestNotFound)
+                if !self.from_merge && self.allow_no_pull_request =>
+            {
+                log::debug!("early exit allowed - no pull request found in CI environment");
+                return Ok(CIExit::UnChanged);
+            }
+            Err(Error::InvalidMergeCommitMessage) if self.from_merge => {
+                log::info!("No pull request associated with current commit - this may be a direct commit to main");
                 return Ok(CIExit::UnChanged);
             }
             Err(e) => return Err(e),
@@ -102,10 +106,16 @@ impl Pr {
     }
 
     fn handle_client_error(&self, e: Error) -> Result<Client, Error> {
-        if !matches!(e, Error::EnvVarPullRequestNotFound) {
-            log::error!("Error getting client: {e}");
-        } else {
-            log::debug!("pull request not found and not allowed");
+        match &e {
+            Error::EnvVarPullRequestNotFound => {
+                log::debug!("pull request not found in environment variable");
+            }
+            Error::InvalidMergeCommitMessage => {
+                log::debug!("no pull request associated with current commit");
+            }
+            _ => {
+                log::error!("Error getting client: {e}");
+            }
         }
         Err(e)
     }
