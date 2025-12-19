@@ -85,6 +85,9 @@ pub enum Error {
     /// Errors arising from the gen-linkedin client
     #[error("gen-linkedin says: {0:?}")]
     LinkedIn(#[from] gen_linkedin::Error),
+    /// Signature verification failed
+    #[error("Signature verification failed: {0} failure(s) detected")]
+    SignatureVerificationFailed(usize),
 }
 
 #[derive(Debug)]
