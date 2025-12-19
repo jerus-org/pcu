@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use crate::Error;
 
 /// Trust map: email -> list of approved GPG key IDs
 pub type TrustMap = HashMap<String, Vec<String>>;
@@ -43,10 +42,12 @@ impl SignatureStatus {
 pub struct CommitInfo {
     pub sha: String,
     pub author_email: String,
+    #[allow(dead_code)]
     pub author_name: String,
     pub subject: String,
     pub signature_status: SignatureStatus,
     pub key_id: Option<String>,
+    #[allow(dead_code)]
     pub signer: Option<String>,
 }
 
@@ -70,7 +71,12 @@ pub enum VerificationReason {
     /// Trusted identity missing signature (FAIL)
     ImpersonationAttempt,
     /// Trusted identity signed with wrong key (FAIL)
-    KeyMismatch { expected: Vec<String>, actual: Option<String> },
+    KeyMismatch {
+        #[allow(dead_code)]
+        expected: Vec<String>,
+        #[allow(dead_code)]
+        actual: Option<String>,
+    },
     /// Bad signature (FAIL)
     BadSignature,
 }
@@ -82,7 +88,9 @@ impl VerificationReason {
             VerificationReason::TrustedVerified => "Trusted identity (signed, verified)",
             VerificationReason::ExternalUnsigned => "External contributor (unsigned, allowed)",
             VerificationReason::ExternalSigned => "External contributor (signed)",
-            VerificationReason::ImpersonationAttempt => "Impersonation attempt: trusted identity unsigned",
+            VerificationReason::ImpersonationAttempt => {
+                "Impersonation attempt: trusted identity unsigned"
+            }
             VerificationReason::KeyMismatch { .. } => "Key mismatch: signed with unapproved key",
             VerificationReason::BadSignature => "Bad signature",
         }
@@ -101,7 +109,7 @@ pub struct VerificationSummary {
 /// Verify a single commit against the trust map
 pub fn verify_commit(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationResult {
     let is_trusted = trust_map.contains_key(&commit.author_email);
-    
+
     if is_trusted {
         // TRUSTED IDENTITY: Must be signed with approved key
         match &commit.signature_status {
@@ -110,8 +118,10 @@ pub fn verify_commit(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationR
                 if let Some(allowed_keys) = trust_map.get(&commit.author_email) {
                     if let Some(ref key_id) = commit.key_id {
                         // Check if this key is approved
-                        let key_match = allowed_keys.iter().any(|k| key_id.ends_with(k) || k.ends_with(key_id));
-                        
+                        let key_match = allowed_keys
+                            .iter()
+                            .any(|k| key_id.ends_with(k) || k.ends_with(key_id));
+
                         if key_match {
                             VerificationResult {
                                 commit: commit.clone(),
@@ -145,52 +155,50 @@ pub fn verify_commit(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationR
                     }
                 }
             }
-            SignatureStatus::Bad | SignatureStatus::Expired | SignatureStatus::ExpiredKey | SignatureStatus::Revoked => {
-                VerificationResult {
-                    commit: commit.clone(),
-                    passed: false,
-                    reason: VerificationReason::BadSignature,
-                }
-            }
-            SignatureStatus::None => {
-                VerificationResult {
-                    commit: commit.clone(),
-                    passed: false,
-                    reason: VerificationReason::ImpersonationAttempt,
-                }
-            }
+            SignatureStatus::Bad
+            | SignatureStatus::Expired
+            | SignatureStatus::ExpiredKey
+            | SignatureStatus::Revoked => VerificationResult {
+                commit: commit.clone(),
+                passed: false,
+                reason: VerificationReason::BadSignature,
+            },
+            SignatureStatus::None => VerificationResult {
+                commit: commit.clone(),
+                passed: false,
+                reason: VerificationReason::ImpersonationAttempt,
+            },
         }
     } else {
         // EXTERNAL CONTRIBUTOR: Unsigned OK
         match &commit.signature_status {
-            SignatureStatus::Good | SignatureStatus::Unknown => {
-                VerificationResult {
-                    commit: commit.clone(),
-                    passed: true,
-                    reason: VerificationReason::ExternalSigned,
-                }
-            }
-            _ => {
-                VerificationResult {
-                    commit: commit.clone(),
-                    passed: true,
-                    reason: VerificationReason::ExternalUnsigned,
-                }
-            }
+            SignatureStatus::Good | SignatureStatus::Unknown => VerificationResult {
+                commit: commit.clone(),
+                passed: true,
+                reason: VerificationReason::ExternalSigned,
+            },
+            _ => VerificationResult {
+                commit: commit.clone(),
+                passed: true,
+                reason: VerificationReason::ExternalUnsigned,
+            },
         }
     }
 }
 
 /// Verify a list of commits and return summary
-pub fn verify_commits(commits: Vec<CommitInfo>, trust_map: &TrustMap) -> (Vec<VerificationResult>, VerificationSummary) {
+pub fn verify_commits(
+    commits: Vec<CommitInfo>,
+    trust_map: &TrustMap,
+) -> (Vec<VerificationResult>, VerificationSummary) {
     let mut results = Vec::new();
     let mut summary = VerificationSummary::default();
-    
+
     for commit in commits {
         let result = verify_commit(&commit, trust_map);
-        
+
         summary.commits_checked += 1;
-        
+
         match &result.reason {
             VerificationReason::TrustedVerified => {
                 summary.trusted_verified += 1;
@@ -200,21 +208,21 @@ pub fn verify_commits(commits: Vec<CommitInfo>, trust_map: &TrustMap) -> (Vec<Ve
             }
             _ => {}
         }
-        
+
         if !result.passed {
             summary.failures += 1;
         }
-        
+
         results.push(result);
     }
-    
+
     (results, summary)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_trusted_identity_unsigned_fails() {
         let commit = CommitInfo {
@@ -226,16 +234,22 @@ mod tests {
             key_id: None,
             signer: None,
         };
-        
+
         let mut trust_map = TrustMap::new();
-        trust_map.insert("trusted@example.test".to_string(), vec!["TESTKEY12345".to_string()]);
-        
+        trust_map.insert(
+            "trusted@example.test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+
         let result = verify_commit(&commit, &trust_map);
-        
+
         assert!(!result.passed);
-        assert!(matches!(result.reason, VerificationReason::ImpersonationAttempt));
+        assert!(matches!(
+            result.reason,
+            VerificationReason::ImpersonationAttempt
+        ));
     }
-    
+
     #[test]
     fn test_external_contributor_unsigned_passes() {
         let commit = CommitInfo {
@@ -247,16 +261,22 @@ mod tests {
             key_id: None,
             signer: None,
         };
-        
+
         let mut trust_map = TrustMap::new();
-        trust_map.insert("trusted@example.test".to_string(), vec!["TESTKEY12345".to_string()]);
-        
+        trust_map.insert(
+            "trusted@example.test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+
         let result = verify_commit(&commit, &trust_map);
-        
+
         assert!(result.passed);
-        assert!(matches!(result.reason, VerificationReason::ExternalUnsigned));
+        assert!(matches!(
+            result.reason,
+            VerificationReason::ExternalUnsigned
+        ));
     }
-    
+
     #[test]
     fn test_trusted_identity_correct_key_passes() {
         let commit = CommitInfo {
@@ -268,16 +288,19 @@ mod tests {
             key_id: Some("TESTKEY12345".to_string()),
             signer: Some("Trusted User".to_string()),
         };
-        
+
         let mut trust_map = TrustMap::new();
-        trust_map.insert("trusted@example.test".to_string(), vec!["TESTKEY12345".to_string()]);
-        
+        trust_map.insert(
+            "trusted@example.test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+
         let result = verify_commit(&commit, &trust_map);
-        
+
         assert!(result.passed);
         assert!(matches!(result.reason, VerificationReason::TrustedVerified));
     }
-    
+
     #[test]
     fn test_trusted_identity_wrong_key_fails() {
         let commit = CommitInfo {
@@ -289,16 +312,22 @@ mod tests {
             key_id: Some("WRONGKEY99999".to_string()),
             signer: Some("Someone Else".to_string()),
         };
-        
+
         let mut trust_map = TrustMap::new();
-        trust_map.insert("trusted@example.test".to_string(), vec!["TESTKEY12345".to_string()]);
-        
+        trust_map.insert(
+            "trusted@example.test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+
         let result = verify_commit(&commit, &trust_map);
-        
+
         assert!(!result.passed);
-        assert!(matches!(result.reason, VerificationReason::KeyMismatch { .. }));
+        assert!(matches!(
+            result.reason,
+            VerificationReason::KeyMismatch { .. }
+        ));
     }
-    
+
     #[test]
     fn test_verify_commits_summary() {
         let commits = vec![
@@ -321,12 +350,15 @@ mod tests {
                 signer: Some("Trusted".to_string()),
             },
         ];
-        
+
         let mut trust_map = TrustMap::new();
-        trust_map.insert("trusted@example.test".to_string(), vec!["TESTKEY12345".to_string()]);
-        
+        trust_map.insert(
+            "trusted@example.test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+
         let (results, summary) = verify_commits(commits, &trust_map);
-        
+
         assert_eq!(results.len(), 2);
         assert_eq!(summary.commits_checked, 2);
         assert_eq!(summary.trusted_verified, 1);

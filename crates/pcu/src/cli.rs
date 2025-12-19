@@ -150,8 +150,9 @@ impl Commands {
             Commands::Linkedin(_) => settings
                 .set_override("commit_message", "chore: announce release on LinkedIn")?
                 .set_override("command", "linkedin")?,
-            Commands::VerifySignatures(_) => settings
-                .set_override("command", "verify-signatures")?,
+            Commands::VerifySignatures(_) => {
+                settings.set_override("command", "verify-signatures")?
+            }
         };
 
         settings = if let Commands::Bsky(bsky) = self {
