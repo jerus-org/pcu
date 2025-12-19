@@ -92,8 +92,15 @@ impl VerifySignatures {
         if self.post_comment {
             if let Some(pr_number) = self.pr_number {
                 log::info!("Posting verification results to PR #{pr_number}");
-                if let Err(e) =
-                    post_verification_comment(&owner, &repo, pr_number, &results, &summary).await
+                if let Err(e) = post_verification_comment(
+                    &github_rest,
+                    &owner,
+                    &repo,
+                    pr_number,
+                    &results,
+                    &summary,
+                )
+                .await
                 {
                     log::warn!("Failed to post PR comment: {e}");
                     eprintln!("⚠  Warning: Failed to post PR comment: {e}");
@@ -111,6 +118,7 @@ impl VerifySignatures {
 
 /// Post verification results as a PR comment
 async fn post_verification_comment(
+    github: &GitHubAPI,
     owner: &str,
     repo: &str,
     pr_number: u64,
@@ -118,7 +126,7 @@ async fn post_verification_comment(
     summary: &crate::ops::signature_ops::VerificationSummary,
 ) -> Result<(), Error> {
     let comment = build_comment(results, summary)?;
-    post_comment_to_github(owner, repo, pr_number, &comment)?;
+    post_comment_to_github(github, owner, repo, pr_number, &comment).await?;
     Ok(())
 }
 
@@ -232,31 +240,30 @@ fn write_action_required(comment: &mut String) -> std::fmt::Result {
     Ok(())
 }
 
-/// Post comment to GitHub using gh CLI
-fn post_comment_to_github(
+/// Post comment to GitHub using octocrate issues API
+async fn post_comment_to_github(
+    github: &GitHubAPI,
     owner: &str,
     repo: &str,
     pr_number: u64,
     comment: &str,
 ) -> Result<(), Error> {
-    // Post comment using gh CLI
-    let output = std::process::Command::new("gh")
-        .args([
-            "pr",
-            "comment",
-            &pr_number.to_string(),
-            "--repo",
-            &format!("{owner}/{repo}"),
-            "--body",
-            comment,
-        ])
-        .output()
-        .map_err(|e| Error::GpgError(format!("Failed to run gh command: {e}")))?;
+    use octocrate::issues::create_comment::Request;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(Error::GpgError(format!("gh pr comment failed: {stderr}")));
-    }
+    // Create request body for the comment
+    let request_body = Request {
+        body: comment.to_string(),
+    };
+
+    // Post comment to the pull request (uses issues API)
+    // PRs use the issues API for comments in GitHub
+    github
+        .issues
+        .create_comment(owner, repo, pr_number as i64)
+        .body(&request_body)
+        .send()
+        .await
+        .map_err(|e| Error::GpgError(format!("Failed to post PR comment: {e}")))?;
 
     Ok(())
 }
