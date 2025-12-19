@@ -184,116 +184,128 @@ async fn post_verification_comment(
     results: &[crate::ops::signature_ops::VerificationResult],
     summary: &crate::ops::signature_ops::VerificationSummary,
 ) -> Result<(), Error> {
+    let comment = build_comment(results, summary)?;
+    post_comment_to_github(owner, repo, pr_number, &comment)?;
+    Ok(())
+}
+
+/// Build the verification comment body
+fn build_comment(
+    results: &[crate::ops::signature_ops::VerificationResult],
+    summary: &crate::ops::signature_ops::VerificationSummary,
+) -> Result<String, Error> {
     use std::fmt::Write;
 
     let mut comment = String::new();
+    let write_err = |e| Error::GpgError(format!("Failed to write comment: {e}"));
 
     if summary.failures > 0 {
         writeln!(&mut comment, "## ❌ Commit Signature Verification - FAILED")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
+            .map_err(write_err)?;
+        writeln!(&mut comment).map_err(write_err)?;
         writeln!(
             &mut comment,
             "**⚠️ Security Alert:** One or more commits failed signature verification."
         )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
+        .map_err(write_err)?;
+        writeln!(&mut comment).map_err(write_err)?;
 
         // List failed commits
-        writeln!(&mut comment, "### Failed Commits")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
+        writeln!(&mut comment, "### Failed Commits").map_err(write_err)?;
+        writeln!(&mut comment).map_err(write_err)?;
 
-        for result in results.iter().filter(|r| !r.passed) {
-            let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
-            writeln!(
-                &mut comment,
-                "- `{}` {} - {}",
-                sha_short,
-                result.commit.subject,
-                result.reason.display_message()
-            )
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        }
+        write_failed_commits(&mut comment, results).map_err(write_err)?;
 
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment, "### Summary")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(
-            &mut comment,
-            "- **Commits checked**: {}",
-            summary.commits_checked
-        )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(
-            &mut comment,
-            "- **Trusted verified**: {}",
-            summary.trusted_verified
-        )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(
-            &mut comment,
-            "- **External contributors**: {}",
-            summary.external_contributors
-        )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment, "- **Failures**: ❗ {}", summary.failures)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment, "### Action Required")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment, "- Review the failed commits immediately")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment, "- Verify the committer's identity")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(
-            &mut comment,
-            "- **DO NOT MERGE** if impersonation is suspected"
-        )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
+        writeln!(&mut comment).map_err(write_err)?;
+        write_summary(&mut comment, summary, true).map_err(write_err)?;
+        writeln!(&mut comment).map_err(write_err)?;
+        write_action_required(&mut comment).map_err(write_err)?;
     } else {
         writeln!(
             &mut comment,
             "## ✅ Commit Signature Verification - Success"
         )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
+        .map_err(write_err)?;
+        writeln!(&mut comment).map_err(write_err)?;
         writeln!(&mut comment, "All commits have been verified successfully.")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment, "### Summary")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(
-            &mut comment,
-            "- **Commits checked**: {}",
-            summary.commits_checked
-        )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(
-            &mut comment,
-            "- **Trusted verified**: {}",
-            summary.trusted_verified
-        )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(
-            &mut comment,
-            "- **External contributors**: {}",
-            summary.external_contributors
-        )
-        .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment)
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
-        writeln!(&mut comment, "No impersonation attempts detected.")
-            .map_err(|e| Error::GpgError(format!("Failed to write comment: {e}")))?;
+            .map_err(write_err)?;
+        writeln!(&mut comment).map_err(write_err)?;
+        write_summary(&mut comment, summary, false).map_err(write_err)?;
+        writeln!(&mut comment).map_err(write_err)?;
+        writeln!(&mut comment, "No impersonation attempts detected.").map_err(write_err)?;
     }
 
+    Ok(comment)
+}
+
+/// Write failed commits section
+fn write_failed_commits(
+    comment: &mut String,
+    results: &[crate::ops::signature_ops::VerificationResult],
+) -> std::fmt::Result {
+    use std::fmt::Write;
+
+    for result in results.iter().filter(|r| !r.passed) {
+        let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
+        writeln!(
+            comment,
+            "- `{}` {} - {}",
+            sha_short,
+            result.commit.subject,
+            result.reason.display_message()
+        )?;
+    }
+    Ok(())
+}
+
+/// Write summary section
+fn write_summary(
+    comment: &mut String,
+    summary: &crate::ops::signature_ops::VerificationSummary,
+    include_failures: bool,
+) -> std::fmt::Result {
+    use std::fmt::Write;
+
+    writeln!(comment, "### Summary")?;
+    writeln!(
+        comment,
+        "- **Commits checked**: {}",
+        summary.commits_checked
+    )?;
+    writeln!(
+        comment,
+        "- **Trusted verified**: {}",
+        summary.trusted_verified
+    )?;
+    writeln!(
+        comment,
+        "- **External contributors**: {}",
+        summary.external_contributors
+    )?;
+    if include_failures {
+        writeln!(comment, "- **Failures**: ❗ {}", summary.failures)?;
+    }
+    Ok(())
+}
+
+/// Write action required section
+fn write_action_required(comment: &mut String) -> std::fmt::Result {
+    use std::fmt::Write;
+
+    writeln!(comment, "### Action Required")?;
+    writeln!(comment, "- Review the failed commits immediately")?;
+    writeln!(comment, "- Verify the committer's identity")?;
+    writeln!(comment, "- **DO NOT MERGE** if impersonation is suspected")?;
+    Ok(())
+}
+
+/// Post comment to GitHub using gh CLI
+fn post_comment_to_github(
+    owner: &str,
+    repo: &str,
+    pr_number: u64,
+    comment: &str,
+) -> Result<(), Error> {
     // Post comment using gh CLI
     let output = std::process::Command::new("gh")
         .args([
@@ -303,7 +315,7 @@ async fn post_verification_comment(
             "--repo",
             &format!("{owner}/{repo}"),
             "--body",
-            &comment,
+            comment,
         ])
         .output()
         .map_err(|e| Error::GpgError(format!("Failed to run gh command: {e}")))?;
