@@ -111,78 +111,81 @@ pub fn verify_commit(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationR
     let is_trusted = trust_map.contains_key(&commit.author_email);
 
     if is_trusted {
-        // TRUSTED IDENTITY: Must be signed with approved key
-        match &commit.signature_status {
-            SignatureStatus::Good | SignatureStatus::Unknown => {
-                // Check if key is in allowlist
-                if let Some(allowed_keys) = trust_map.get(&commit.author_email) {
-                    if let Some(ref key_id) = commit.key_id {
-                        // Check if this key is approved
-                        let key_match = allowed_keys
-                            .iter()
-                            .any(|k| key_id.ends_with(k) || k.ends_with(key_id));
-
-                        if key_match {
-                            VerificationResult {
-                                commit: commit.clone(),
-                                passed: true,
-                                reason: VerificationReason::TrustedVerified,
-                            }
-                        } else {
-                            VerificationResult {
-                                commit: commit.clone(),
-                                passed: false,
-                                reason: VerificationReason::KeyMismatch {
-                                    expected: allowed_keys.clone(),
-                                    actual: commit.key_id.clone(),
-                                },
-                            }
-                        }
-                    } else {
-                        // Signed status but no key ID?
-                        VerificationResult {
-                            commit: commit.clone(),
-                            passed: false,
-                            reason: VerificationReason::ImpersonationAttempt,
-                        }
-                    }
-                } else {
-                    // Should not happen (is_trusted but no entry)
-                    VerificationResult {
-                        commit: commit.clone(),
-                        passed: false,
-                        reason: VerificationReason::ImpersonationAttempt,
-                    }
-                }
-            }
-            SignatureStatus::Bad
-            | SignatureStatus::Expired
-            | SignatureStatus::ExpiredKey
-            | SignatureStatus::Revoked => VerificationResult {
-                commit: commit.clone(),
-                passed: false,
-                reason: VerificationReason::BadSignature,
-            },
-            SignatureStatus::None => VerificationResult {
-                commit: commit.clone(),
-                passed: false,
-                reason: VerificationReason::ImpersonationAttempt,
-            },
-        }
+        verify_trusted_commit(commit, trust_map)
     } else {
-        // EXTERNAL CONTRIBUTOR: Unsigned OK
-        match &commit.signature_status {
-            SignatureStatus::Good | SignatureStatus::Unknown => VerificationResult {
-                commit: commit.clone(),
-                passed: true,
-                reason: VerificationReason::ExternalSigned,
-            },
-            _ => VerificationResult {
-                commit: commit.clone(),
-                passed: true,
-                reason: VerificationReason::ExternalUnsigned,
-            },
+        verify_external_commit(commit)
+    }
+}
+
+/// Verify a commit from a trusted identity
+fn verify_trusted_commit(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationResult {
+    match &commit.signature_status {
+        SignatureStatus::Good | SignatureStatus::Unknown => {
+            verify_trusted_signature(commit, trust_map)
         }
+        SignatureStatus::Bad
+        | SignatureStatus::Expired
+        | SignatureStatus::ExpiredKey
+        | SignatureStatus::Revoked => {
+            create_result(commit, false, VerificationReason::BadSignature)
+        }
+        SignatureStatus::None => {
+            create_result(commit, false, VerificationReason::ImpersonationAttempt)
+        }
+    }
+}
+
+/// Verify the signature of a trusted commit
+fn verify_trusted_signature(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationResult {
+    let Some(allowed_keys) = trust_map.get(&commit.author_email) else {
+        return create_result(commit, false, VerificationReason::ImpersonationAttempt);
+    };
+
+    let Some(ref key_id) = commit.key_id else {
+        return create_result(commit, false, VerificationReason::ImpersonationAttempt);
+    };
+
+    if is_key_approved(key_id, allowed_keys) {
+        create_result(commit, true, VerificationReason::TrustedVerified)
+    } else {
+        create_result(
+            commit,
+            false,
+            VerificationReason::KeyMismatch {
+                expected: allowed_keys.clone(),
+                actual: commit.key_id.clone(),
+            },
+        )
+    }
+}
+
+/// Check if a key ID is approved in the allowed keys list
+fn is_key_approved(key_id: &str, allowed_keys: &[String]) -> bool {
+    allowed_keys
+        .iter()
+        .any(|k| key_id.ends_with(k) || k.ends_with(key_id))
+}
+
+/// Verify a commit from an external contributor
+fn verify_external_commit(commit: &CommitInfo) -> VerificationResult {
+    match &commit.signature_status {
+        SignatureStatus::Good | SignatureStatus::Unknown => {
+            create_result(commit, true, VerificationReason::ExternalSigned)
+        }
+        _ => create_result(commit, true, VerificationReason::ExternalUnsigned),
+    }
+}
+
+/// Helper to create a VerificationResult
+fn create_result(
+    commit: &CommitInfo,
+    passed: bool,
+    reason: VerificationReason,
+) -> VerificationResult {
+    VerificationResult {
+        commit: commit.clone(),
+        passed,
+        reason,
     }
 }
 
