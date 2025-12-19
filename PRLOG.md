@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ exclude files starting with underscore from Bluesky drafts(pr [#752])
 - ✨ add --from-merge flag to support PR log updates on main branch(pr [#753])
 - ✅ Add verify-signatures subcommand for anti-impersonation(pr [#756])
+- ✨ add PR comment reporting for signature verification(pr [#759])
 
 ### Changed
 
@@ -1853,6 +1854,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#756]: https://github.com/jerus-org/pcu/pull/756
 [#757]: https://github.com/jerus-org/pcu/pull/757
 [#758]: https://github.com/jerus-org/pcu/pull/758
+[#759]: https://github.com/jerus-org/pcu/pull/759
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
