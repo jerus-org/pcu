@@ -1,6 +1,7 @@
 use super::signature_ops::TrustMap;
 use crate::Error;
-use octocrate::GitHubAPI;
+use octocrate::{Collaborator, GitHubAPI};
+use std::process::Command;
 
 /// Fetch trusted collaborators and their GPG keys from GitHub
 ///
@@ -36,8 +37,26 @@ pub async fn fetch_trust_list(
         trusted_collaborators.len()
     );
 
-    // Build trust map
     let mut trust_map = TrustMap::new();
+    let total_keys = process_collaborators(github, trusted_collaborators, &mut trust_map).await?;
+
+    log::info!("Imported {total_keys} GPG key(s)");
+    log::info!(
+        "Built trust map with {} email→key mapping(s)",
+        trust_map.len()
+    );
+
+    // Also add GitHub's web-flow key for merge commits
+    add_github_webflow_key(&mut trust_map)?;
+
+    Ok(trust_map)
+}
+
+async fn process_collaborators(
+    github: &GitHubAPI,
+    trusted_collaborators: Vec<octocrate::Collaborator>,
+    trust_map: &mut TrustMap,
+) -> Result<usize, Error> {
     let mut total_keys = 0;
 
     for collaborator in trusted_collaborators {
@@ -57,58 +76,95 @@ pub async fn fetch_trust_list(
             continue;
         }
 
-        // Process each GPG key
-        for key in gpg_keys {
-            total_keys += 1;
-
-            // Extract key ID (last 16 characters of the key_id)
-            let key_id = key.key_id.clone();
-
-            // Map each email in the key to this key ID
-            for email_obj in &key.emails {
-                if let Some(email) = &email_obj.email {
-                    // Add to trust map
-                    trust_map
-                        .entry(email.clone())
-                        .or_default()
-                        .push(key_id.clone());
-
-                    log::trace!("Added trust mapping (aggregate count only in logs)");
-                }
-            }
-
-            // Also add GitHub noreply email formats
-            // These are used for web commits and bot commits
-            let noreply_email = format!("{username}@users.noreply.github.com");
-            trust_map
-                .entry(noreply_email)
-                .or_default()
-                .push(key_id.clone());
-
-            // Also add numeric ID format
-            let user_id = collaborator.id;
-            let id_email = format!("{user_id}+{username}@users.noreply.github.com");
-            trust_map.entry(id_email).or_default().push(key_id.clone());
-        }
+        total_keys += process_gpg_keys(gpg_keys, &collaborator, trust_map)?;
     }
 
-    log::info!("Imported {total_keys} GPG key(s)");
-    log::info!(
-        "Built trust map with {} email→key mapping(s)",
-        trust_map.len()
-    );
+    Ok(total_keys)
+}
 
-    // Also add GitHub's web-flow key for merge commits
-    add_github_webflow_key(&mut trust_map);
+fn process_gpg_keys(
+    gpg_keys: Vec<octocrate::GpgKey>,
+    collaborator: &Collaborator,
+    trust_map: &mut TrustMap,
+) -> Result<usize, Error> {
+    let username = &collaborator.login;
+    let user_id = collaborator.id;
+    let key_count = gpg_keys.len();
 
-    Ok(trust_map)
+    // Process each GPG key
+    for key in gpg_keys {
+        // Extract key ID
+        let key_id = &key.key_id;
+
+        // Import the public key into GPG keyring for git verification
+        if let Some(ref raw_key) = key.raw_key {
+            import_key_to_gpg(raw_key)?;
+        }
+
+        // Map each email in the key to this key ID
+        for email_obj in &key.emails {
+            if let Some(email) = &email_obj.email {
+                trust_map
+                    .entry(email.clone())
+                    .or_default()
+                    .push(key_id.clone());
+
+                log::trace!("Added trust mapping (aggregate count only in logs)");
+            }
+        }
+
+        // Also add GitHub noreply email formats
+        let noreply_email = format!("{username}@users.noreply.github.com");
+        trust_map
+            .entry(noreply_email)
+            .or_default()
+            .push(key_id.clone());
+
+        // Also add numeric ID format
+        let id_email = format!("{user_id}+{username}@users.noreply.github.com");
+        trust_map.entry(id_email).or_default().push(key_id.clone());
+    }
+
+    Ok(key_count)
+}
+
+/// Import a GPG public key into the system keyring
+///
+/// This is needed so that `git show --show-signature` can verify signatures.
+/// The key is imported via `gpg --import`.
+fn import_key_to_gpg(raw_key: &str) -> Result<(), Error> {
+    let mut child = Command::new("gpg")
+        .arg("--import")
+        .arg("--quiet")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| Error::GitError(format!("Failed to spawn gpg: {e}")))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        use std::io::Write;
+        stdin
+            .write_all(raw_key.as_bytes())
+            .map_err(|e| Error::GitError(format!("Failed to write to gpg stdin: {e}")))?;
+    }
+
+    let status = child
+        .wait()
+        .map_err(|e| Error::GitError(format!("Failed to wait for gpg: {e}")))?;
+
+    if !status.success() {
+        return Err(Error::GitError("GPG import failed".to_string()));
+    }
+
+    Ok(())
 }
 
 /// Add GitHub's web-flow GPG key for merge commits
 ///
 /// GitHub signs merge commits with their web-flow key.
 /// Key ID: B5690EEEBB952194
-fn add_github_webflow_key(trust_map: &mut TrustMap) {
+fn add_github_webflow_key(trust_map: &mut TrustMap) -> Result<(), Error> {
     const GITHUB_WEBFLOW_KEY: &str = "B5690EEEBB952194";
     const GITHUB_WEBFLOW_EMAIL: &str = "noreply@github.com";
 
@@ -118,6 +174,29 @@ fn add_github_webflow_key(trust_map: &mut TrustMap) {
         .entry(GITHUB_WEBFLOW_EMAIL.to_string())
         .or_default()
         .push(GITHUB_WEBFLOW_KEY.to_string());
+
+    // Import GitHub's web-flow key into GPG
+    // Fetch from GitHub's public key server
+    let webflow_key_url = "https://github.com/web-flow.gpg";
+
+    let output = Command::new("curl")
+        .arg("-sL")
+        .arg("--proto")
+        .arg("=https")
+        .arg("--tlsv1.2")
+        .arg(webflow_key_url)
+        .output()
+        .map_err(|e| Error::GitError(format!("Failed to fetch GitHub web-flow key: {e}")))?;
+
+    if output.status.success() {
+        let key_data = String::from_utf8_lossy(&output.stdout);
+        import_key_to_gpg(&key_data)?;
+        log::debug!("Imported GitHub web-flow key");
+    } else {
+        log::warn!("Failed to fetch GitHub web-flow key, merge commits may not verify");
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -128,7 +207,8 @@ mod tests {
     fn test_add_github_webflow_key() {
         let mut trust_map = TrustMap::new();
 
-        add_github_webflow_key(&mut trust_map);
+        // May fail to fetch/import key in test environment, but should add to trust map
+        let _ = add_github_webflow_key(&mut trust_map);
 
         assert!(trust_map.contains_key("noreply@github.com"));
         assert!(trust_map["noreply@github.com"].contains(&"B5690EEEBB952194".to_string()));
