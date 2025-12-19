@@ -34,6 +34,7 @@ octocrate = { version = "2.2.0", features = [
     "apps",
     "pulls",
     "repos",
+    "users",
     "rustls-tls",
 ], default-features = false }
 owo-colors = "4.2.3"
