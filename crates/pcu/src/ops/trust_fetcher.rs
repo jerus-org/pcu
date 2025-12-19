@@ -1,6 +1,7 @@
 use super::signature_ops::TrustMap;
 use crate::Error;
 use octocrate::GitHubAPI;
+use std::process::Command;
 
 /// Fetch trusted collaborators and their GPG keys from GitHub
 ///
@@ -64,6 +65,11 @@ pub async fn fetch_trust_list(
             // Extract key ID (last 16 characters of the key_id)
             let key_id = key.key_id.clone();
 
+            // Import the public key into GPG keyring for git verification
+            if let Some(ref raw_key) = key.raw_key {
+                import_key_to_gpg(raw_key)?;
+            }
+
             // Map each email in the key to this key ID
             for email_obj in &key.emails {
                 if let Some(email) = &email_obj.email {
@@ -99,16 +105,48 @@ pub async fn fetch_trust_list(
     );
 
     // Also add GitHub's web-flow key for merge commits
-    add_github_webflow_key(&mut trust_map);
+    add_github_webflow_key(&mut trust_map)?;
 
     Ok(trust_map)
+}
+
+/// Import a GPG public key into the system keyring
+///
+/// This is needed so that `git show --show-signature` can verify signatures.
+/// The key is imported via `gpg --import`.
+fn import_key_to_gpg(raw_key: &str) -> Result<(), Error> {
+    let mut child = Command::new("gpg")
+        .arg("--import")
+        .arg("--quiet")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| Error::GitError(format!("Failed to spawn gpg: {e}")))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        use std::io::Write;
+        stdin
+            .write_all(raw_key.as_bytes())
+            .map_err(|e| Error::GitError(format!("Failed to write to gpg stdin: {e}")))?;
+    }
+
+    let status = child
+        .wait()
+        .map_err(|e| Error::GitError(format!("Failed to wait for gpg: {e}")))?;
+
+    if !status.success() {
+        return Err(Error::GitError("GPG import failed".to_string()));
+    }
+
+    Ok(())
 }
 
 /// Add GitHub's web-flow GPG key for merge commits
 ///
 /// GitHub signs merge commits with their web-flow key.
 /// Key ID: B5690EEEBB952194
-fn add_github_webflow_key(trust_map: &mut TrustMap) {
+fn add_github_webflow_key(trust_map: &mut TrustMap) -> Result<(), Error> {
     const GITHUB_WEBFLOW_KEY: &str = "B5690EEEBB952194";
     const GITHUB_WEBFLOW_EMAIL: &str = "noreply@github.com";
 
@@ -118,6 +156,29 @@ fn add_github_webflow_key(trust_map: &mut TrustMap) {
         .entry(GITHUB_WEBFLOW_EMAIL.to_string())
         .or_default()
         .push(GITHUB_WEBFLOW_KEY.to_string());
+
+    // Import GitHub's web-flow key into GPG
+    // Fetch from GitHub's public key server
+    let webflow_key_url = "https://github.com/web-flow.gpg";
+
+    let output = Command::new("curl")
+        .arg("-sL")
+        .arg("--proto")
+        .arg("=https")
+        .arg("--tlsv1.2")
+        .arg(webflow_key_url)
+        .output()
+        .map_err(|e| Error::GitError(format!("Failed to fetch GitHub web-flow key: {e}")))?;
+
+    if output.status.success() {
+        let key_data = String::from_utf8_lossy(&output.stdout);
+        import_key_to_gpg(&key_data)?;
+        log::debug!("Imported GitHub web-flow key");
+    } else {
+        log::warn!("Failed to fetch GitHub web-flow key, merge commits may not verify");
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -128,7 +189,8 @@ mod tests {
     fn test_add_github_webflow_key() {
         let mut trust_map = TrustMap::new();
 
-        add_github_webflow_key(&mut trust_map);
+        // May fail to fetch/import key in test environment, but should add to trust map
+        let _ = add_github_webflow_key(&mut trust_map);
 
         assert!(trust_map.contains_key("noreply@github.com"));
         assert!(trust_map["noreply@github.com"].contains(&"B5690EEEBB952194".to_string()));
