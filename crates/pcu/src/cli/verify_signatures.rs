@@ -48,37 +48,13 @@ impl VerifySignatures {
     pub async fn run_verify(self) -> Result<CIExit, Error> {
         log::info!("=== Commit Signature Verification ===");
 
-        // Get GitHub API token
-        let github_token = env::var("GITHUB_TOKEN").map_err(|_| {
-            Error::GpgError("GITHUB_TOKEN environment variable not set".to_string())
-        })?;
-
-        // Initialize GitHub API client
-        let pat = PersonalAccessToken::new(github_token);
-        let config = APIConfig::with_token(pat).shared();
-        let github_rest = GitHubAPI::new(&config);
+        let github_rest = initialize_github_client()?;
 
         // Open git repository
         let git_repo = git2::Repository::open(".")?;
 
         // Get owner and repo (auto-detect from git config if not provided)
-        let (owner, repo) = if let (Some(o), Some(r)) = (&self.repo_owner, &self.repo_name) {
-            (o.clone(), r.clone())
-        } else {
-            // Try to auto-detect from git remote
-            let remote = git_repo.find_remote("origin")?;
-            let url = remote
-                .url()
-                .ok_or_else(|| Error::GitError("No URL for origin remote".to_string()))?;
-
-            // Parse GitHub URL (https://github.com/owner/repo.git or git@github.com:owner/repo.git)
-            let (parsed_owner, parsed_repo) = parse_github_url(url)?;
-
-            (
-                self.repo_owner.unwrap_or(parsed_owner),
-                self.repo_name.unwrap_or(parsed_repo),
-            )
-        };
+        let (owner, repo) = detect_repository(&git_repo, &self.repo_owner, &self.repo_name)?;
 
         println!("\n{}\n", "=== Commit Signature Verification ===".bold());
         println!("Repository: {owner}/{repo}\n");
@@ -102,57 +78,14 @@ impl VerifySignatures {
         let (results, summary) = verify_commits(commits, &trust_map);
 
         // Step 4: Display results (privacy-safe)
-        for result in &results {
-            let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
-            let status_symbol = if result.passed {
-                "✓".green().bold().to_string()
-            } else {
-                "✗".red().bold().to_string()
-            };
-
-            println!(
-                "{} {}   {} {}",
-                status_symbol,
-                if result.passed { "OK" } else { "FAIL" },
-                sha_short.bold(),
-                result.commit.subject
-            );
-
-            // Show reason (privacy-safe, no PII)
-            println!("    {}", result.reason.display_message());
-            println!();
-        }
+        display_results(&results);
 
         // Step 5: Display summary
-        println!("{}\n", "=== Verification Summary ===".bold());
-        println!("Commits checked:         {}", summary.commits_checked);
-        println!(
-            "Trusted verified:        {}",
-            summary.trusted_verified.to_string().green()
-        );
-        println!(
-            "External contributors:   {}",
-            summary.external_contributors.to_string().green()
-        );
+        display_summary(&summary);
 
-        if summary.failures > 0 {
-            println!(
-                "Failures:                {}\n",
-                summary.failures.to_string().red().bold()
-            );
-            println!("{}", "✗ Signature verification FAILED!".red().bold());
-            println!("\n{}:", "Action required".bold());
-            println!("  - Review failed commits immediately");
-            println!("  - Verify the committer's identity");
-            println!("  - Do NOT merge if impersonation is suspected\n");
-
-            if self.fail_on_unsigned {
-                return Err(Error::SignatureVerificationFailed(summary.failures));
-            }
-        } else {
-            println!();
-            println!("{}", "✓ All signature checks passed!".green().bold());
-            println!("\nNo impersonation attempts detected.\n");
+        // Early return on failure if requested
+        if summary.failures > 0 && self.fail_on_unsigned {
+            return Err(Error::SignatureVerificationFailed(summary.failures));
         }
 
         // Step 6: Post PR comment if requested
@@ -326,6 +259,94 @@ fn post_comment_to_github(
     }
 
     Ok(())
+}
+
+/// Initialize GitHub API client
+fn initialize_github_client() -> Result<GitHubAPI, Error> {
+    let github_token = env::var("GITHUB_TOKEN")
+        .map_err(|_| Error::GpgError("GITHUB_TOKEN environment variable not set".to_string()))?;
+
+    let pat = PersonalAccessToken::new(github_token);
+    let config = APIConfig::with_token(pat).shared();
+    Ok(GitHubAPI::new(&config))
+}
+
+/// Detect repository owner and name from git config or CLI args
+fn detect_repository(
+    git_repo: &git2::Repository,
+    repo_owner: &Option<String>,
+    repo_name: &Option<String>,
+) -> Result<(String, String), Error> {
+    if let (Some(o), Some(r)) = (repo_owner, repo_name) {
+        return Ok((o.clone(), r.clone()));
+    }
+
+    // Try to auto-detect from git remote
+    let remote = git_repo.find_remote("origin")?;
+    let url = remote
+        .url()
+        .ok_or_else(|| Error::GitError("No URL for origin remote".to_string()))?;
+
+    let (parsed_owner, parsed_repo) = parse_github_url(url)?;
+
+    Ok((
+        repo_owner.clone().unwrap_or(parsed_owner),
+        repo_name.clone().unwrap_or(parsed_repo),
+    ))
+}
+
+/// Display verification results for each commit
+fn display_results(results: &[crate::ops::signature_ops::VerificationResult]) {
+    for result in results {
+        let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
+        let status_symbol = if result.passed {
+            "✓".green().bold().to_string()
+        } else {
+            "✗".red().bold().to_string()
+        };
+
+        println!(
+            "{} {}   {} {}",
+            status_symbol,
+            if result.passed { "OK" } else { "FAIL" },
+            sha_short.bold(),
+            result.commit.subject
+        );
+
+        // Show reason (privacy-safe, no PII)
+        println!("    {}", result.reason.display_message());
+        println!();
+    }
+}
+
+/// Display verification summary
+fn display_summary(summary: &crate::ops::signature_ops::VerificationSummary) {
+    println!("{}\n", "=== Verification Summary ===".bold());
+    println!("Commits checked:         {}", summary.commits_checked);
+    println!(
+        "Trusted verified:        {}",
+        summary.trusted_verified.to_string().green()
+    );
+    println!(
+        "External contributors:   {}",
+        summary.external_contributors.to_string().green()
+    );
+
+    if summary.failures > 0 {
+        println!(
+            "Failures:                {}\n",
+            summary.failures.to_string().red().bold()
+        );
+        println!("{}", "✗ Signature verification FAILED!".red().bold());
+        println!("\n{}:", "Action required".bold());
+        println!("  - Review failed commits immediately");
+        println!("  - Verify the committer's identity");
+        println!("  - Do NOT merge if impersonation is suspected\n");
+    } else {
+        println!();
+        println!("{}", "✓ All signature checks passed!".green().bold());
+        println!("\nNo impersonation attempts detected.\n");
+    }
 }
 
 /// Parse GitHub URL to extract owner and repo
