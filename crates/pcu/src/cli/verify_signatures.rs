@@ -139,7 +139,7 @@ impl VerifySignatures {
             println!("  - Do NOT merge if impersonation is suspected\n");
 
             if self.fail_on_unsigned {
-                return Ok(CIExit::VerificationFailed);
+                return Err(Error::SignatureVerificationFailed(summary.failures));
             }
         } else {
             println!();
@@ -147,11 +147,11 @@ impl VerifySignatures {
             println!("\nNo impersonation attempts detected.\n");
         }
 
-        Ok(if summary.failures == 0 {
-            CIExit::VerificationPassed
+        if summary.failures > 0 {
+            Err(Error::SignatureVerificationFailed(summary.failures))
         } else {
-            CIExit::VerificationFailed
-        })
+            Ok(CIExit::VerificationPassed)
+        }
     }
 }
 
