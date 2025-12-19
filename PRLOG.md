@@ -111,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🐛 improve error handling for from-merge mode(pr [#754])
 - 🐛 return error on verification failure for proper exit code(pr [#757])
 - 🐛 import GPG keys into system keyring for git verification(pr [#758])
+- 🐛 use octocrate issues API instead of gh CLI for PR comments(pr [#760])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1855,6 +1856,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#757]: https://github.com/jerus-org/pcu/pull/757
 [#758]: https://github.com/jerus-org/pcu/pull/758
 [#759]: https://github.com/jerus-org/pcu/pull/759
+[#760]: https://github.com/jerus-org/pcu/pull/760
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
