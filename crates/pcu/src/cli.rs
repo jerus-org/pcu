@@ -40,7 +40,6 @@ pub enum CIExit {
     SharedToLinkedIn,
     NoContentForLinkedIn,
     VerificationPassed,
-    VerificationFailed,
 }
 
 #[derive(Parser, Debug)]

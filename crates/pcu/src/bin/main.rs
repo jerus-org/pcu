@@ -50,7 +50,6 @@ async fn main() -> Result<()> {
                 CIExit::SharedToLinkedIn => log::info!("Shared to LinkedIn"),
                 CIExit::NoContentForLinkedIn => log::info!("No LinkedIn content to share"),
                 CIExit::VerificationPassed => log::info!("✓ All signature checks passed!"),
-                CIExit::VerificationFailed => log::error!("✗ Signature verification FAILED!"),
             };
             Ok(())
         }
