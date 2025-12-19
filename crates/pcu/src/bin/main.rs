@@ -30,6 +30,7 @@ async fn main() -> Result<()> {
         Commands::Release(rel_args) => rel_args.run_release(sign_config).await,
         Commands::Bsky(bsky_args) => bsky_args.run().await,
         Commands::Linkedin(li_args) => li_args.run().await,
+        Commands::VerifySignatures(verify_args) => verify_args.run_verify().await,
     };
 
     match res {
@@ -48,6 +49,8 @@ async fn main() -> Result<()> {
                 CIExit::NothingToPush => log::info!("No commits to push"),
                 CIExit::SharedToLinkedIn => log::info!("Shared to LinkedIn"),
                 CIExit::NoContentForLinkedIn => log::info!("No LinkedIn content to share"),
+                CIExit::VerificationPassed => log::info!("✓ All signature checks passed!"),
+                CIExit::VerificationFailed => log::error!("✗ Signature verification FAILED!"),
             };
             Ok(())
         }

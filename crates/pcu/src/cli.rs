@@ -5,6 +5,7 @@ mod linkedin;
 mod pull_request;
 mod push;
 mod release;
+mod verify_signatures;
 
 use std::{env, fmt::Display, fs};
 
@@ -18,6 +19,7 @@ use linkedin::Linkedin;
 use pull_request::Pr;
 use push::Push;
 use release::Release;
+use verify_signatures::VerifySignatures;
 
 use crate::{Client, Error, GitOps, Sign};
 
@@ -37,6 +39,8 @@ pub enum CIExit {
     NothingToPush,
     SharedToLinkedIn,
     NoContentForLinkedIn,
+    VerificationPassed,
+    VerificationFailed,
 }
 
 #[derive(Parser, Debug)]
@@ -76,6 +80,8 @@ the lowest number submitted by the `renovate` user")]
     Bsky(Bsky),
     /// Share release/news posts to LinkedIn
     Linkedin(Linkedin),
+    /// Verify commit signatures to prevent identity impersonation
+    VerifySignatures(VerifySignatures),
 }
 
 impl Display for Commands {
@@ -88,6 +94,7 @@ impl Display for Commands {
             Commands::Label(_) => write!(f, "label"),
             Commands::Bsky(_) => write!(f, "bluesky"),
             Commands::Linkedin(_) => write!(f, "linkedin"),
+            Commands::VerifySignatures(_) => write!(f, "verify-signatures"),
         }
     }
 }
@@ -143,6 +150,9 @@ impl Commands {
             Commands::Linkedin(_) => settings
                 .set_override("commit_message", "chore: announce release on LinkedIn")?
                 .set_override("command", "linkedin")?,
+            Commands::VerifySignatures(_) => {
+                settings.set_override("command", "verify-signatures")?
+            }
         };
 
         settings = if let Commands::Bsky(bsky) = self {
