@@ -32,6 +32,7 @@ log = "0.4.28"
 named-colour = { version = "0.3.25", features = ["extended"] }
 octocrate = { version = "2.2.0", features = [
     "apps",
+    "issues",
     "pulls",
     "repos",
     "users",
