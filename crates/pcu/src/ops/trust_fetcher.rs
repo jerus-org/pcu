@@ -1,6 +1,6 @@
 use super::signature_ops::TrustMap;
 use crate::Error;
-use octocrate::GitHubAPI;
+use octocrate::{Collaborator, GitHubAPI};
 use std::process::Command;
 
 /// Fetch trusted collaborators and their GPG keys from GitHub
@@ -37,8 +37,26 @@ pub async fn fetch_trust_list(
         trusted_collaborators.len()
     );
 
-    // Build trust map
     let mut trust_map = TrustMap::new();
+    let total_keys = process_collaborators(github, trusted_collaborators, &mut trust_map).await?;
+
+    log::info!("Imported {total_keys} GPG key(s)");
+    log::info!(
+        "Built trust map with {} email→key mapping(s)",
+        trust_map.len()
+    );
+
+    // Also add GitHub's web-flow key for merge commits
+    add_github_webflow_key(&mut trust_map)?;
+
+    Ok(trust_map)
+}
+
+async fn process_collaborators(
+    github: &GitHubAPI,
+    trusted_collaborators: Vec<octocrate::Collaborator>,
+    trust_map: &mut TrustMap,
+) -> Result<usize, Error> {
     let mut total_keys = 0;
 
     for collaborator in trusted_collaborators {
@@ -58,56 +76,56 @@ pub async fn fetch_trust_list(
             continue;
         }
 
-        // Process each GPG key
-        for key in gpg_keys {
-            total_keys += 1;
-
-            // Extract key ID (last 16 characters of the key_id)
-            let key_id = key.key_id.clone();
-
-            // Import the public key into GPG keyring for git verification
-            if let Some(ref raw_key) = key.raw_key {
-                import_key_to_gpg(raw_key)?;
-            }
-
-            // Map each email in the key to this key ID
-            for email_obj in &key.emails {
-                if let Some(email) = &email_obj.email {
-                    // Add to trust map
-                    trust_map
-                        .entry(email.clone())
-                        .or_default()
-                        .push(key_id.clone());
-
-                    log::trace!("Added trust mapping (aggregate count only in logs)");
-                }
-            }
-
-            // Also add GitHub noreply email formats
-            // These are used for web commits and bot commits
-            let noreply_email = format!("{username}@users.noreply.github.com");
-            trust_map
-                .entry(noreply_email)
-                .or_default()
-                .push(key_id.clone());
-
-            // Also add numeric ID format
-            let user_id = collaborator.id;
-            let id_email = format!("{user_id}+{username}@users.noreply.github.com");
-            trust_map.entry(id_email).or_default().push(key_id.clone());
-        }
+        total_keys += process_gpg_keys(gpg_keys, &collaborator, trust_map)?;
     }
 
-    log::info!("Imported {total_keys} GPG key(s)");
-    log::info!(
-        "Built trust map with {} email→key mapping(s)",
-        trust_map.len()
-    );
+    Ok(total_keys)
+}
 
-    // Also add GitHub's web-flow key for merge commits
-    add_github_webflow_key(&mut trust_map)?;
+fn process_gpg_keys(
+    gpg_keys: Vec<octocrate::GpgKey>,
+    collaborator: &Collaborator,
+    trust_map: &mut TrustMap,
+) -> Result<usize, Error> {
+    let username = &collaborator.login;
+    let user_id = collaborator.id;
+    let key_count = gpg_keys.len();
 
-    Ok(trust_map)
+    // Process each GPG key
+    for key in gpg_keys {
+        // Extract key ID
+        let key_id = &key.key_id;
+
+        // Import the public key into GPG keyring for git verification
+        if let Some(ref raw_key) = key.raw_key {
+            import_key_to_gpg(raw_key)?;
+        }
+
+        // Map each email in the key to this key ID
+        for email_obj in &key.emails {
+            if let Some(email) = &email_obj.email {
+                trust_map
+                    .entry(email.clone())
+                    .or_default()
+                    .push(key_id.clone());
+
+                log::trace!("Added trust mapping (aggregate count only in logs)");
+            }
+        }
+
+        // Also add GitHub noreply email formats
+        let noreply_email = format!("{username}@users.noreply.github.com");
+        trust_map
+            .entry(noreply_email)
+            .or_default()
+            .push(key_id.clone());
+
+        // Also add numeric ID format
+        let id_email = format!("{user_id}+{username}@users.noreply.github.com");
+        trust_map.entry(id_email).or_default().push(key_id.clone());
+    }
+
+    Ok(key_count)
 }
 
 /// Import a GPG public key into the system keyring
