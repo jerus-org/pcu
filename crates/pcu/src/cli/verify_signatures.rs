@@ -42,6 +42,11 @@ pub struct VerifySignatures {
     /// PR number to comment on (required if --post-comment is used)
     #[clap(long, required_if_eq("post_comment", "true"))]
     pub pr_number: Option<u64>,
+
+    /// GitHub token for read-only access (fetching trust list)
+    /// If not provided, will use GITHUB_TOKEN env var
+    #[clap(long)]
+    pub github_token: Option<String>,
 }
 
 impl VerifySignatures {
@@ -54,15 +59,21 @@ impl VerifySignatures {
         // Get owner and repo (auto-detect from git config if not provided)
         let (owner, repo) = detect_repository(&git_repo, &self.repo_owner, &self.repo_name)?;
 
-        // Initialize GitHub client (required for fetching trust list)
-        let github_rest = initialize_github_client()?;
+        // Initialize GitHub client for read-only operations (fetching trust list)
+        // Uses --github-token flag or falls back to GITHUB_TOKEN env var
+        let env_token = env::var("GITHUB_TOKEN").ok();
+        let token = self.github_token.as_deref().or(env_token.as_deref());
+        let readonly_client = initialize_github_client_with_token(
+            token,
+            "Read-only GitHub token not provided (use --github-token or set GITHUB_TOKEN env var)",
+        )?;
 
         println!("\n{}\n", "=== Commit Signature Verification ===".bold());
         println!("Repository: {owner}/{repo}\n");
 
         // Step 1: Fetch trust list from GitHub
         log::info!("Fetching trust list from GitHub...");
-        let trust_map = fetch_trust_list(&github_rest, &owner, &repo).await?;
+        let trust_map = fetch_trust_list(&readonly_client, &owner, &repo).await?;
 
         // Step 2: Extract commits from git
         log::info!("Extracting commits from {}..{}", self.base, self.head);
@@ -93,18 +104,29 @@ impl VerifySignatures {
         if self.post_comment {
             if let Some(pr_number) = self.pr_number {
                 log::info!("Posting verification results to PR #{pr_number}");
-                if let Err(e) = post_verification_comment(
-                    &github_rest,
-                    &owner,
-                    &repo,
-                    pr_number,
-                    &results,
-                    &summary,
-                )
-                .await
-                {
-                    log::warn!("Failed to post PR comment: {e}");
-                    eprintln!("⚠  Warning: Failed to post PR comment: {e}");
+
+                // Create a separate client with write access for posting comments
+                // This requires GITHUB_TOKEN env var with write permissions
+                match initialize_github_client_from_env() {
+                    Ok(write_client) => {
+                        if let Err(e) = post_verification_comment(
+                            &write_client,
+                            &owner,
+                            &repo,
+                            pr_number,
+                            &results,
+                            &summary,
+                        )
+                        .await
+                        {
+                            log::warn!("Failed to post PR comment: {e}");
+                            eprintln!("⚠  Warning: Failed to post PR comment: {e}");
+                        }
+                    }
+                    Err(e) => {
+                        log::warn!("Cannot post PR comment - GITHUB_TOKEN env var not set for write access: {e}");
+                        eprintln!("⚠  Warning: Cannot post PR comment - GITHUB_TOKEN env var required for write access");
+                    }
                 }
             }
         }
@@ -320,10 +342,24 @@ async fn find_existing_verification_comment(
     Ok(None)
 }
 
-/// Initialize GitHub API client
-fn initialize_github_client() -> Result<GitHubAPI, Error> {
+/// Initialize GitHub API client from GITHUB_TOKEN env var
+fn initialize_github_client_from_env() -> Result<GitHubAPI, Error> {
     let github_token = env::var("GITHUB_TOKEN")
         .map_err(|_| Error::GpgError("GITHUB_TOKEN environment variable not set".to_string()))?;
+
+    let pat = PersonalAccessToken::new(github_token);
+    let config = APIConfig::with_token(pat).shared();
+    Ok(GitHubAPI::new(&config))
+}
+
+/// Initialize GitHub API client with provided token or fallback
+fn initialize_github_client_with_token(
+    token: Option<&str>,
+    error_msg: &str,
+) -> Result<GitHubAPI, Error> {
+    let github_token = token
+        .map(String::from)
+        .ok_or_else(|| Error::GpgError(error_msg.to_string()))?;
 
     let pat = PersonalAccessToken::new(github_token);
     let config = APIConfig::with_token(pat).shared();
