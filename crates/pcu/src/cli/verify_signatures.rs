@@ -42,13 +42,16 @@ pub struct VerifySignatures {
     /// PR number to comment on (required if --post-comment is used)
     #[clap(long, required_if_eq("post_comment", "true"))]
     pub pr_number: Option<u64>,
+
+    /// GitHub token for read-only access (fetching trust list)
+    /// If not provided, will use GITHUB_TOKEN env var
+    #[clap(long)]
+    pub github_token: Option<String>,
 }
 
 impl VerifySignatures {
     pub async fn run_verify(self) -> Result<CIExit, Error> {
         log::info!("=== Commit Signature Verification ===");
-
-        let github_rest = initialize_github_client()?;
 
         // Open git repository
         let git_repo = git2::Repository::open(".")?;
@@ -56,12 +59,21 @@ impl VerifySignatures {
         // Get owner and repo (auto-detect from git config if not provided)
         let (owner, repo) = detect_repository(&git_repo, &self.repo_owner, &self.repo_name)?;
 
+        // Initialize GitHub client for read-only operations (fetching trust list)
+        // Uses --github-token flag or falls back to GITHUB_TOKEN env var
+        let env_token = env::var("GITHUB_TOKEN").ok();
+        let token = self.github_token.as_deref().or(env_token.as_deref());
+        let readonly_client = initialize_github_client_with_token(
+            token,
+            "Read-only GitHub token not provided (use --github-token or set GITHUB_TOKEN env var)",
+        )?;
+
         println!("\n{}\n", "=== Commit Signature Verification ===".bold());
         println!("Repository: {owner}/{repo}\n");
 
         // Step 1: Fetch trust list from GitHub
         log::info!("Fetching trust list from GitHub...");
-        let trust_map = fetch_trust_list(&github_rest, &owner, &repo).await?;
+        let trust_map = fetch_trust_list(&readonly_client, &owner, &repo).await?;
 
         // Step 2: Extract commits from git
         log::info!("Extracting commits from {}..{}", self.base, self.head);
@@ -92,18 +104,29 @@ impl VerifySignatures {
         if self.post_comment {
             if let Some(pr_number) = self.pr_number {
                 log::info!("Posting verification results to PR #{pr_number}");
-                if let Err(e) = post_verification_comment(
-                    &github_rest,
-                    &owner,
-                    &repo,
-                    pr_number,
-                    &results,
-                    &summary,
-                )
-                .await
-                {
-                    log::warn!("Failed to post PR comment: {e}");
-                    eprintln!("⚠  Warning: Failed to post PR comment: {e}");
+
+                // Create a separate client with write access for posting comments
+                // This requires GITHUB_TOKEN env var with write permissions
+                match initialize_github_client_from_env() {
+                    Ok(write_client) => {
+                        if let Err(e) = post_verification_comment(
+                            &write_client,
+                            &owner,
+                            &repo,
+                            pr_number,
+                            &results,
+                            &summary,
+                        )
+                        .await
+                        {
+                            log::warn!("Failed to post PR comment: {e}");
+                            eprintln!("⚠  Warning: Failed to post PR comment: {e}");
+                        }
+                    }
+                    Err(e) => {
+                        log::warn!("Cannot post PR comment - GITHUB_TOKEN env var not set for write access: {e}");
+                        eprintln!("⚠  Warning: Cannot post PR comment - GITHUB_TOKEN env var required for write access");
+                    }
                 }
             }
         }
@@ -241,6 +264,7 @@ fn write_action_required(comment: &mut String) -> std::fmt::Result {
 }
 
 /// Post comment to GitHub using octocrate issues API
+/// Updates existing comment if found, otherwise creates a new one
 async fn post_comment_to_github(
     github: &GitHubAPI,
     owner: &str,
@@ -248,30 +272,94 @@ async fn post_comment_to_github(
     pr_number: u64,
     comment: &str,
 ) -> Result<(), Error> {
-    use octocrate::issues::create_comment::Request;
+    use octocrate::issues::create_comment::Request as CreateRequest;
+    use octocrate::issues::update_comment::Request as UpdateRequest;
 
-    // Create request body for the comment
-    let request_body = Request {
-        body: comment.to_string(),
-    };
+    // First, try to find an existing verification comment
+    let existing_comment_id =
+        find_existing_verification_comment(github, owner, repo, pr_number).await?;
 
-    // Post comment to the pull request (uses issues API)
-    // PRs use the issues API for comments in GitHub
-    github
-        .issues
-        .create_comment(owner, repo, pr_number as i64)
-        .body(&request_body)
-        .send()
-        .await
-        .map_err(|e| Error::GpgError(format!("Failed to post PR comment: {e}")))?;
+    if let Some(comment_id) = existing_comment_id {
+        // Update existing comment
+        log::info!("Updating existing PR comment (ID: {comment_id})");
+        let update_body = UpdateRequest {
+            body: comment.to_string(),
+        };
+
+        github
+            .issues
+            .update_comment(owner, repo, comment_id)
+            .body(&update_body)
+            .send()
+            .await
+            .map_err(|e| Error::GpgError(format!("Failed to update PR comment: {e}")))?;
+    } else {
+        // Create new comment
+        log::info!("Creating new PR comment");
+        let create_body = CreateRequest {
+            body: comment.to_string(),
+        };
+
+        github
+            .issues
+            .create_comment(owner, repo, pr_number as i64)
+            .body(&create_body)
+            .send()
+            .await
+            .map_err(|e| Error::GpgError(format!("Failed to create PR comment: {e}")))?;
+    }
 
     Ok(())
 }
 
-/// Initialize GitHub API client
-fn initialize_github_client() -> Result<GitHubAPI, Error> {
+/// Find existing verification comment on the PR
+/// Returns the comment ID if found
+async fn find_existing_verification_comment(
+    github: &GitHubAPI,
+    owner: &str,
+    repo: &str,
+    pr_number: u64,
+) -> Result<Option<i64>, Error> {
+    // List all comments on the PR
+    let comments = github
+        .issues
+        .list_comments(owner, repo, pr_number as i64)
+        .send()
+        .await
+        .map_err(|e| Error::GpgError(format!("Failed to list PR comments: {e}")))?;
+
+    // Look for a comment containing our signature header
+    for comment in comments {
+        if let Some(body) = &comment.body {
+            if body.contains("## ❌ Commit Signature Verification")
+                || body.contains("## ✅ Commit Signature Verification")
+            {
+                return Ok(Some(comment.id));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Initialize GitHub API client from GITHUB_TOKEN env var
+fn initialize_github_client_from_env() -> Result<GitHubAPI, Error> {
     let github_token = env::var("GITHUB_TOKEN")
         .map_err(|_| Error::GpgError("GITHUB_TOKEN environment variable not set".to_string()))?;
+
+    let pat = PersonalAccessToken::new(github_token);
+    let config = APIConfig::with_token(pat).shared();
+    Ok(GitHubAPI::new(&config))
+}
+
+/// Initialize GitHub API client with provided token or fallback
+fn initialize_github_client_with_token(
+    token: Option<&str>,
+    error_msg: &str,
+) -> Result<GitHubAPI, Error> {
+    let github_token = token
+        .map(String::from)
+        .ok_or_else(|| Error::GpgError(error_msg.to_string()))?;
 
     let pat = PersonalAccessToken::new(github_token);
     let config = APIConfig::with_token(pat).shared();
