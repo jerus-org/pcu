@@ -48,13 +48,14 @@ impl VerifySignatures {
     pub async fn run_verify(self) -> Result<CIExit, Error> {
         log::info!("=== Commit Signature Verification ===");
 
-        let github_rest = initialize_github_client()?;
-
         // Open git repository
         let git_repo = git2::Repository::open(".")?;
 
         // Get owner and repo (auto-detect from git config if not provided)
         let (owner, repo) = detect_repository(&git_repo, &self.repo_owner, &self.repo_name)?;
+
+        // Initialize GitHub client (required for fetching trust list)
+        let github_rest = initialize_github_client()?;
 
         println!("\n{}\n", "=== Commit Signature Verification ===".bold());
         println!("Repository: {owner}/{repo}\n");
@@ -241,6 +242,7 @@ fn write_action_required(comment: &mut String) -> std::fmt::Result {
 }
 
 /// Post comment to GitHub using octocrate issues API
+/// Updates existing comment if found, otherwise creates a new one
 async fn post_comment_to_github(
     github: &GitHubAPI,
     owner: &str,
@@ -248,24 +250,74 @@ async fn post_comment_to_github(
     pr_number: u64,
     comment: &str,
 ) -> Result<(), Error> {
-    use octocrate::issues::create_comment::Request;
+    use octocrate::issues::create_comment::Request as CreateRequest;
+    use octocrate::issues::update_comment::Request as UpdateRequest;
 
-    // Create request body for the comment
-    let request_body = Request {
-        body: comment.to_string(),
-    };
+    // First, try to find an existing verification comment
+    let existing_comment_id =
+        find_existing_verification_comment(github, owner, repo, pr_number).await?;
 
-    // Post comment to the pull request (uses issues API)
-    // PRs use the issues API for comments in GitHub
-    github
-        .issues
-        .create_comment(owner, repo, pr_number as i64)
-        .body(&request_body)
-        .send()
-        .await
-        .map_err(|e| Error::GpgError(format!("Failed to post PR comment: {e}")))?;
+    if let Some(comment_id) = existing_comment_id {
+        // Update existing comment
+        log::info!("Updating existing PR comment (ID: {comment_id})");
+        let update_body = UpdateRequest {
+            body: comment.to_string(),
+        };
+
+        github
+            .issues
+            .update_comment(owner, repo, comment_id)
+            .body(&update_body)
+            .send()
+            .await
+            .map_err(|e| Error::GpgError(format!("Failed to update PR comment: {e}")))?;
+    } else {
+        // Create new comment
+        log::info!("Creating new PR comment");
+        let create_body = CreateRequest {
+            body: comment.to_string(),
+        };
+
+        github
+            .issues
+            .create_comment(owner, repo, pr_number as i64)
+            .body(&create_body)
+            .send()
+            .await
+            .map_err(|e| Error::GpgError(format!("Failed to create PR comment: {e}")))?;
+    }
 
     Ok(())
+}
+
+/// Find existing verification comment on the PR
+/// Returns the comment ID if found
+async fn find_existing_verification_comment(
+    github: &GitHubAPI,
+    owner: &str,
+    repo: &str,
+    pr_number: u64,
+) -> Result<Option<i64>, Error> {
+    // List all comments on the PR
+    let comments = github
+        .issues
+        .list_comments(owner, repo, pr_number as i64)
+        .send()
+        .await
+        .map_err(|e| Error::GpgError(format!("Failed to list PR comments: {e}")))?;
+
+    // Look for a comment containing our signature header
+    for comment in comments {
+        if let Some(body) = &comment.body {
+            if body.contains("## ❌ Commit Signature Verification")
+                || body.contains("## ✅ Commit Signature Verification")
+            {
+                return Ok(Some(comment.id));
+            }
+        }
+    }
+
+    Ok(None)
 }
 
 /// Initialize GitHub API client
