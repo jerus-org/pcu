@@ -24,7 +24,7 @@ parameters:
     default: false
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@2.16.0
+  toolkit: jerus-org/circleci-toolkit@2.17.2
 
 executors:
   rust-env:
