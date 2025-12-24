@@ -115,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🐛 use octocrate issues API instead of gh CLI for PR comments(pr [#760])
 - deps: update rust crate git2 to 0.20.3(pr [#762])
 - deps: update rust crate log to 0.4.29(pr [#763])
+- deps: update rust crate reqwest to 0.12.28(pr [#764])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1863,6 +1864,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#761]: https://github.com/jerus-org/pcu/pull/761
 [#762]: https://github.com/jerus-org/pcu/pull/762
 [#763]: https://github.com/jerus-org/pcu/pull/763
+[#764]: https://github.com/jerus-org/pcu/pull/764
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
