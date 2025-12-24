@@ -36,7 +36,7 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-wiremock = "0.6"
+wiremock = "0.6.5"
 
 [lints]
 workspace = true
