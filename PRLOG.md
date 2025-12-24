@@ -117,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate log to 0.4.29(pr [#763])
 - deps: update rust crate reqwest to 0.12.28(pr [#764])
 - deps: update rust crate serde_json to 1.0.147(pr [#765])
+- deps: update rust crate toml to 0.9.10(pr [#766])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1867,6 +1868,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#763]: https://github.com/jerus-org/pcu/pull/763
 [#764]: https://github.com/jerus-org/pcu/pull/764
 [#765]: https://github.com/jerus-org/pcu/pull/765
+[#766]: https://github.com/jerus-org/pcu/pull/766
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
