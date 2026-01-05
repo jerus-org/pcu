@@ -1,7 +1,7 @@
 version: 2.1
 
 parameters:
-  min-rust-version:
+  min_rust_version:
     type: string
     default: "1.81"
   fingerprint:
@@ -12,19 +12,14 @@ parameters:
     default: false
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@2.16.0
+  toolkit: jerus-org/circleci-toolkit@4.0.1
 
-executors:
-  rust-env:
-    docker:
-      - image: jerusdp/ci-rust:<<pipeline.parameters.min-rust-version>>
-  base-env:
-    docker:
-      - image: jerusdp/ci-rust:base
+# Custom executors removed - using toolkit rolling executors instead
 
 jobs:
   tools:
-    executor: rust-env
+    executor:
+      name: toolkit/rust_env_rolling
     steps:
       - run:
           name: Run tools
@@ -46,6 +41,6 @@ workflows:
             - bot-check
             # - pcu-app
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
           remove_ssh_key: false
           when_update_pcu: << pipeline.parameters.update_pcu >>

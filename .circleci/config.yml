@@ -1,21 +1,21 @@
 version: 2.1
 
 parameters:
-  min-rust-version:
+  min_rust_version:
     type: string
     default: "1.87"
   fingerprint:
     type: string
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
-  validation-flag:
+  validation_flag:
     type: boolean
     default: false
     description: "If true, the validation pipeline will be executed."
-  success-flag:
+  success_flag:
     type: boolean
     default: false
     description: "If true, the success pipeline will be executed."
-  release-flag:
+  release_flag:
     type: boolean
     default: false
     description: "If true, the release pipeline will be executed."
@@ -24,19 +24,16 @@ parameters:
     default: false
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@2.16.0
+  toolkit: jerus-org/circleci-toolkit@4.0.1
 
-executors:
-  rust-env:
-    docker:
-      - image: jerusdp/ci-rust:<<pipeline.parameters.min-rust-version>>
-  base-env:
-    docker:
-      - image: jerusdp/ci-rust:base
+# Custom executors removed - using toolkit rolling executors instead:
+#   - toolkit/rust_env_rolling for Rust jobs
+#   - toolkit/base_env for base jobs
 
 jobs:
   test-setup:
-    executor: rust-env
+    executor:
+      name: toolkit/rust_env_rolling
     parameters:
       ssh_fingerprint:
         type: string
@@ -91,7 +88,8 @@ jobs:
             - bash.env
 
   test-commit:
-    executor: rust-env
+    executor:
+      name: toolkit/rust_env_rolling
     parameters:
       ssh_fingerprint:
         type: string
@@ -142,7 +140,8 @@ jobs:
             fi
 
   test-push:
-    executor: rust-env
+    executor:
+      name: toolkit/rust_env_rolling
     parameters:
       ssh_fingerprint:
         type: string
@@ -190,7 +189,8 @@ jobs:
             bin/pcu << parameters.pcu_verbosity >> push ${no_push}
 
   test-bsky-directory:
-    executor: rust-env
+    executor:
+      name: toolkit/rust_env_rolling
     parameters:
       ssh_fingerprint:
         type: string
@@ -259,7 +259,8 @@ jobs:
             git status
 
   test-bsky-file:
-    executor: rust-env
+    executor:
+      name: toolkit/rust_env_rolling
     parameters:
       ssh_fingerprint:
         type: string
@@ -351,8 +352,8 @@ workflows:
             equal: ["main", << pipeline.git.branch >>]
         - not:
             equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - not: << pipeline.parameters.success-flag >>
-        - not: << pipeline.parameters.validation-flag >>
+        - not: << pipeline.parameters.success_flag >>
+        - not: << pipeline.parameters.validation_flag >>
 
     jobs:
       - toolkit/choose_pipeline:
@@ -364,13 +365,13 @@ workflows:
       or:
         - equal: ["main", << pipeline.git.branch >>]
         - and:
-            - << pipeline.parameters.validation-flag >>
+            - << pipeline.parameters.validation_flag >>
             - not:
                 equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-            - not: << pipeline.parameters.success-flag >>
+            - not: << pipeline.parameters.success_flag >>
     jobs:
       - toolkit/label:
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
           context: pcu-app
           filters:
             branches:
@@ -378,16 +379,16 @@ workflows:
                 - main
       - toolkit/required_builds:
           name: required-builds
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
       - toolkit/optional_builds:
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
       - toolkit/test_doc_build:
           name: docs
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
       - toolkit/common_tests:
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
       - toolkit/idiomatic_rust:
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
       - test-setup:
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
           context:
@@ -479,7 +480,7 @@ workflows:
             - bot-check
             - pcu-app
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
           pcu_verbosity: "-vvvv"
 
   on_success:
@@ -489,9 +490,9 @@ workflows:
             equal: ["main", <<pipeline.git.branch >>]
         - not:
             equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - << pipeline.parameters.success-flag >>
-        - not: << pipeline.parameters.validation-flag >>
-        - not: << pipeline.parameters.release-flag >>
+        - << pipeline.parameters.success_flag >>
+        - not: << pipeline.parameters.validation_flag >>
+        - not: << pipeline.parameters.release_flag >>
 
     jobs:
       - toolkit/end_success
@@ -503,15 +504,15 @@ workflows:
             - and:
                 - equal: [scheduled_pipeline, << pipeline.trigger_source >>]
                 - equal: ["release check", << pipeline.schedule.name >>]
-            - <<  pipeline.parameters.release-flag >>
-        - not: << pipeline.parameters.success-flag >>
-        - not: << pipeline.parameters.validation-flag >>
-        - <<  pipeline.parameters.release-flag >>
+            - <<  pipeline.parameters.release_flag >>
+        - not: << pipeline.parameters.success_flag >>
+        - not: << pipeline.parameters.validation_flag >>
+        - <<  pipeline.parameters.release_flag >>
     jobs:
       - toolkit/make_release:
           context:
             - release
             - bot-check
           ssh_fingerprint: << pipeline.parameters.fingerprint >>
-          min_rust_version: << pipeline.parameters.min-rust-version >>
+          min_rust_version: << pipeline.parameters.min_rust_version >>
           when_update_pcu: << pipeline.parameters.update_pcu >>
