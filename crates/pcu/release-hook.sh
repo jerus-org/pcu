@@ -5,13 +5,13 @@ set -exo pipefail
 # Called by cargo release via pre-release-hook
 
 NAME="CHANGELOG.md"
-PACKAGE=pcu
+PACKAGE="pcu"
 REPO_DIR="../.."
 
 # CRATE_VERSION is set by cargo release
-VERSION="${CRATE_VERSION:-$1}"
+VERSION="${CRATE_VERSION:-${1}}"
 
-if [ -z "$VERSION" ]; then
+if [[ -z "${VERSION}" ]]; then
     echo "Error: No version specified (set CRATE_VERSION or pass as argument)"
     exit 1
 fi

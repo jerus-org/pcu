@@ -4,11 +4,11 @@ set -exo pipefail
 # Usage: ./scripts/release-prlog.sh <version>
 # Example: ./scripts/release-prlog.sh 0.7.0
 
-VERSION=$1
+VERSION="${1}"
 DATE=$(date +%Y-%m-%d)
 TAG="prlog-v${VERSION}"
 
-if [ -z "$VERSION" ]; then
+if [[ -z "${VERSION}" ]]; then
     echo "Usage: $0 <version>"
     exit 1
 fi
