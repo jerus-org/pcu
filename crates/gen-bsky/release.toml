@@ -1,4 +1,5 @@
-pre-release-commit-message = "chore: Release gen-bsky"
+pre-release-commit-message = "chore: Release gen-bsky v{{version}}"
 tag-message = "{{tag_name}}"
-tag-name = "{{prefix}}v{{version}}"
+tag-name = "gen-bsky-v{{version}}"
+pre-release-hook = ["./release-hook.sh"]
 pre-release-replacements = []
