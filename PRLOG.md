@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Add verify-signatures subcommand for anti-impersonation(pr [#756])
 - ✨ add PR comment reporting for signature verification(pr [#759])
 - ✨ improve PR comment handling and support forked PR verification(pr [#761])
+- add per-crate release workflow with independent versioning(pr [#773])
 
 ### Changed
 
@@ -1879,6 +1880,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#769]: https://github.com/jerus-org/pcu/pull/769
 [#771]: https://github.com/jerus-org/pcu/pull/771
 [#772]: https://github.com/jerus-org/pcu/pull/772
+[#773]: https://github.com/jerus-org/pcu/pull/773
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
