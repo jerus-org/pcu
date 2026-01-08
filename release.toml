@@ -2,8 +2,6 @@ sign-tag = true
 sign-commit = true
 consolidate-commits = true
 allow-branch = ["main"]
-pre-release-replacements = [
-    { file = "PRLOG.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}", exactly = 1 },
-    { file = "PRLOG.md", search = "\\[Unreleased\\]:", replace = "[{{version}}]:", exactly = 1 },
-    { file = "PRLOG.md", search = "\\.\\.\\.HEAD", replace = "...{{tag_name}}", exactly = 1 },
-]
+# PRLOG.md is now managed independently via scripts/release-prlog.sh
+# Each crate has its own tag prefix and CHANGELOG generation
+pre-release-replacements = []
