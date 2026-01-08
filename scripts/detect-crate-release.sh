@@ -21,7 +21,7 @@ if [[ "${BUMP}" = "none" ]]; then
     exit 0
 fi
 
-VERSION=$(nextsv --number calculate --prefix "${TAG_PREFIX}" --subdir "${SUBDIR}")
+VERSION=$(nextsv --number calculate --prefix "${TAG_PREFIX}" --subdir "${SUBDIR}" | tail -1)
 
 echo "Release needed: ${BUMP} -> ${VERSION}"
 echo "RELEASE_NEEDED=true"

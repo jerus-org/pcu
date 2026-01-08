@@ -12,7 +12,10 @@ if [[ -z "${CRATE_NAME}" ]] || [[ -z "${TARGET_VERSION}" ]]; then
     exit 1
 fi
 
-if curl -s "https://crates.io/api/v1/crates/${CRATE_NAME}/versions" | \
+# crates.io API requires a user agent per their data access policy
+USER_AGENT="pcu-release-script/1.0 (https://github.com/jerus-org/pcu)"
+
+if curl -s -H "User-Agent: ${USER_AGENT}" "https://crates.io/api/v1/crates/${CRATE_NAME}/versions" | \
    jq -e ".versions[] | select(.num == \"${TARGET_VERSION}\")" > /dev/null 2>&1; then
     echo "Version ${TARGET_VERSION} exists on crates.io"
     exit 0
