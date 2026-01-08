@@ -70,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ♻️ refactor(bsky)-use config builder for settings overrides(pr [#747])
 - 👷 ci(circleci)-skip security workflow on main branch(pr [#749])
 - chore-migrate to circleci-toolkit v4.0.1 with rolling images(pr [#772])
+- chore-update prlog compare link to use prlog-v prefix(pr [#774])
 
 ### Fixed
 
@@ -1881,6 +1882,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#771]: https://github.com/jerus-org/pcu/pull/771
 [#772]: https://github.com/jerus-org/pcu/pull/772
 [#773]: https://github.com/jerus-org/pcu/pull/773
+[#774]: https://github.com/jerus-org/pcu/pull/774
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
