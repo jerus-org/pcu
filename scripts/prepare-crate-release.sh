@@ -40,7 +40,17 @@ else
     echo "Version not on crates.io, will publish"
 fi
 
-# Step 3: Execute cargo release (no push)
+# Step 3: Commit any pending Cargo.lock changes from prior releases
+# This handles the case where a dependency crate was just released
+if git diff --quiet Cargo.lock 2>/dev/null; then
+    echo "Cargo.lock is clean"
+else
+    echo "=== Committing Cargo.lock changes from dependency updates ==="
+    git add Cargo.lock
+    git commit -S -s -m "chore: update Cargo.lock for ${PACKAGE} release"
+fi
+
+# Step 4: Execute cargo release (no push)
 echo "=== Running cargo release for ${PACKAGE} ==="
 if [[ "${DRY_RUN}" = "--dry-run" ]]; then
     echo "[DRY-RUN] Would run: cargo release -p ${PACKAGE} ${PUBLISH_FLAG} --no-push --execute ${SEMVER}"
