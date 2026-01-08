@@ -3,18 +3,13 @@ version: 2.1
 parameters:
   min_rust_version:
     type: string
-    default: "1.81"
+    default: "1.87"
   fingerprint:
     type: string
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
-  update_pcu:
-    type: boolean
-    default: false
 
 orbs:
   toolkit: jerus-org/circleci-toolkit@4.0.1
-
-# Custom executors removed - using toolkit rolling executors instead
 
 jobs:
   tools:
@@ -22,25 +17,152 @@ jobs:
       name: toolkit/rust_env_rolling
     steps:
       - run:
-          name: Run tools
+          name: Verify tools
           command: |
             set -ex
             nextsv --version
             pcu --version
             cargo release --version
-            cargo audit --version
-            git --version
+            gen-changelog --version
+            jq --version
+
+  prepare-crate:
+    parameters:
+      package:
+        type: string
+      tag_prefix:
+        type: string
+      subdir:
+        type: string
+    executor:
+      name: toolkit/rust_env_rolling
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - << pipeline.parameters.fingerprint >>
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Prepare << parameters.package >> release
+          command: |
+            set -exo pipefail
+            chmod +x scripts/*.sh
+            chmod +x << parameters.subdir >>/release-hook.sh
+            ./scripts/prepare-crate-release.sh "<< parameters.package >>" "<< parameters.tag_prefix >>" "<< parameters.subdir >>"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .git
+            - << parameters.subdir >>
+
+  aggregate-push:
+    executor:
+      name: toolkit/rust_env_rolling
+    steps:
+      - attach_workspace:
+          at: .
+      - add_ssh_keys:
+          fingerprints:
+            - << pipeline.parameters.fingerprint >>
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Push all crate releases
+          command: |
+            set -exo pipefail
+            # Check if there are any tags to push
+            if git tag --points-at HEAD | grep -q .; then
+              git push origin main --tags
+            else
+              echo "No new tags to push - skipping"
+            fi
+
+  release-prlog:
+    executor:
+      name: toolkit/rust_env_rolling
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - << pipeline.parameters.fingerprint >>
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: Detect and release PRLOG
+          command: |
+            set -exo pipefail
+            chmod +x scripts/*.sh
+
+            # Use standard v prefix for PRLOG (not prlog-v)
+            BUMP=$(nextsv calculate --prefix "v" 2>/dev/null || echo "first")
+
+            if [ "$BUMP" = "none" ]; then
+              echo "No PRLOG release needed"
+              exit 0
+            fi
+
+            if [ "$BUMP" = "first" ]; then
+              # First release after switching to new system
+              CURRENT=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v0.6.3")
+              VERSION=$(echo "$CURRENT" | sed 's/v//' | awk -F. '{print $1"."$2+1".0"}')
+            else
+              VERSION=$(nextsv --number calculate --prefix "v" | tail -1)
+            fi
+
+            ./scripts/release-prlog.sh "$VERSION"
+            git push origin main --tags
 
 workflows:
   release:
     jobs:
       - tools
-      - toolkit/make_release:
+
+      # Parallel: Prepare all crate releases (NO PUSH)
+      - prepare-crate:
+          name: prepare-pcu
+          requires: [tools]
+          package: pcu
+          tag_prefix: "pcu-v"
+          subdir: "crates/pcu"
           context:
             - release
             - bot-check
-            # - pcu-app
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
-          min_rust_version: << pipeline.parameters.min_rust_version >>
-          remove_ssh_key: false
-          when_update_pcu: << pipeline.parameters.update_pcu >>
+
+      - prepare-crate:
+          name: prepare-gen-bsky
+          requires: [tools]
+          package: gen-bsky
+          tag_prefix: "gen-bsky-v"
+          subdir: "crates/gen-bsky"
+          context:
+            - release
+            - bot-check
+
+      - prepare-crate:
+          name: prepare-gen-linkedin
+          requires: [tools]
+          package: gen-linkedin
+          tag_prefix: "gen-linkedin-v"
+          subdir: "crates/gen-linkedin"
+          context:
+            - release
+            - bot-check
+
+      # Sequential: Push all crate releases atomically
+      - aggregate-push:
+          requires:
+            - prepare-pcu
+            - prepare-gen-bsky
+            - prepare-gen-linkedin
+          context:
+            - release
+            - bot-check
+
+      # Sequential: PRLOG release (after all crates pushed)
+      - release-prlog:
+          requires:
+            - aggregate-push
+          context:
+            - release
+            - bot-check
