@@ -12,7 +12,7 @@ REPO_DIR="../.."
 VERSION="${CRATE_VERSION:-${1}}"
 
 if [[ -z "${VERSION}" ]]; then
-    echo "Error: No version specified (set CRATE_VERSION or pass as argument)"
+    echo "Error: No version specified (set CRATE_VERSION or pass as argument)" >&2
     exit 1
 fi
 
