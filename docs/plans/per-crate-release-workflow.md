@@ -3,7 +3,7 @@
 ## Overview
 
 Update the release workflow to support **independent versioning** for:
-1. **PRLOG.md** - workspace-level PR log with `prlog-v` prefix tags
+1. **PRLOG.md** - workspace-level PR log with standard `v` prefix tags
 2. **Each crate** - individual CHANGELOGs generated via `gen-changelog`
 
 ## Design Decisions
@@ -11,7 +11,8 @@ Update the release workflow to support **independent versioning** for:
 ### Independent Versioning
 - PRLOG tracks all workspace changes (code, CI, docs, etc.)
 - Crate CHANGELOGs track only changes affecting that crate
-- Each component has its own tag prefix: `prlog-v`, `pcu-v`, `gen-bsky-v`, `gen-linkedin-v`
+- PRLOG uses standard `v` prefix tags to maintain compatibility with existing links
+- Each crate has its own tag prefix: `pcu-v`, `gen-bsky-v`, `gen-linkedin-v`
 
 ### PRLOG Ordering: After Crate Releases
 PRLOG releases **after** all crate releases complete:
@@ -33,10 +34,10 @@ Check crates.io API before publishing to handle recovery from partial failures:
 Use `nextsv` to automatically detect which components need releases:
 
 ```bash
-# PRLOG version (workspace-wide)
-nextsv calculate --prefix "prlog-v"
+# PRLOG version (workspace-wide, standard v prefix)
+nextsv calculate --prefix "v"
 
-# Per-crate versions (filtered by subdir)
+# Per-crate versions (filtered by subdir, crate-specific prefixes)
 nextsv calculate --prefix "pcu-v" --subdir "crates/pcu"
 nextsv calculate --prefix "gen-bsky-v" --subdir "crates/gen-bsky"
 nextsv calculate --prefix "gen-linkedin-v" --subdir "crates/gen-linkedin"

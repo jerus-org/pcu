@@ -3,13 +3,16 @@ set -exo pipefail
 
 # Usage: ./scripts/release-prlog.sh <version>
 # Example: ./scripts/release-prlog.sh 0.7.0
+#
+# PRLOG uses standard v prefix tags (v0.7.0) to maintain compatibility
+# with existing version links. Crate releases use crate-specific prefixes.
 
 VERSION="${1}"
 DATE=$(date +%Y-%m-%d)
-TAG="prlog-v${VERSION}"
+TAG="v${VERSION}"
 
 if [[ -z "${VERSION}" ]]; then
-    echo "Usage: $0 <version>"
+    echo "Usage: $0 <version>" >&2
     exit 1
 fi
 
