@@ -125,6 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate wiremock to 0.6.5(pr [#768])
 - deps: update tracing packages(pr [#769])
 - deps: update rust crate tempfile to 3.24.0(pr [#771])
+- correct release script issues found during testing(pr [#775])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1883,6 +1884,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#772]: https://github.com/jerus-org/pcu/pull/772
 [#773]: https://github.com/jerus-org/pcu/pull/773
 [#774]: https://github.com/jerus-org/pcu/pull/774
+[#775]: https://github.com/jerus-org/pcu/pull/775
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
