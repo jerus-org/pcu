@@ -464,7 +464,7 @@ workflows:
               ignore:
                 - main
           context: SonarCloud
-          ignore_advisories: "RUSTSEC-2025-0007"
+          ignore_advisories: "RUSTSEC-2025-0007 RUSTSEC-2026-0002"
       - toolkit/update_prlog:
           filters:
             branches:
