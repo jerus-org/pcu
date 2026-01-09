@@ -275,7 +275,12 @@ jobs:
           name: Remove original SSH key from agent
           command: |
             ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
+            # GitHub App integration doesn't create id_rsa.pub, handle gracefully
+            if [ -f ~/.ssh/id_rsa.pub ]; then
+              ssh-add -d ~/.ssh/id_rsa.pub
+            else
+              echo "No id_rsa.pub found (GitHub App integration) - skipping removal"
+            fi
             ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
@@ -309,7 +314,12 @@ jobs:
           name: Remove original SSH key from agent
           command: |
             ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
+            # GitHub App integration doesn't create id_rsa.pub, handle gracefully
+            if [ -f ~/.ssh/id_rsa.pub ]; then
+              ssh-add -d ~/.ssh/id_rsa.pub
+            else
+              echo "No id_rsa.pub found (GitHub App integration) - skipping removal"
+            fi
             ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config

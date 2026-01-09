@@ -132,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - reset pcu version to match crates.io(pr [#777])
 - release crates sequentially for dependency order(pr [#778])
 - sync Cargo.lock with pcu version 0.6.2(pr [#779])
+- handle missing id_rsa.pub for GitHub App integration(pr [#782])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1897,6 +1898,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#779]: https://github.com/jerus-org/pcu/pull/779
 [#780]: https://github.com/jerus-org/pcu/pull/780
 [#781]: https://github.com/jerus-org/pcu/pull/781
+[#782]: https://github.com/jerus-org/pcu/pull/782
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
