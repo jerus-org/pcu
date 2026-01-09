@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ improve PR comment handling and support forked PR verification(pr [#761])
 - add per-crate release workflow with independent versioning(pr [#773])
 - implement Phase 2 CI integration for per-crate releases(pr [#776])
+- enhanced crate release workflow using toolkit(pr [#781])
 
 ### Changed
 
@@ -1895,6 +1896,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#778]: https://github.com/jerus-org/pcu/pull/778
 [#779]: https://github.com/jerus-org/pcu/pull/779
 [#780]: https://github.com/jerus-org/pcu/pull/780
+[#781]: https://github.com/jerus-org/pcu/pull/781
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
