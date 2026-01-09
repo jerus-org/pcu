@@ -75,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore-update prlog compare link to use prlog-v prefix(pr [#774])
 - revert-undo PRLOG v0.6.3 release(pr [#780])
 - 📝 revert(PRLOG)-remove outdated version details(pr [#783])
+- 👷 ci(circleci)-update circleci-toolkit orb version to v4.02(pr [#784])
 
 ### Fixed
 
@@ -1901,6 +1902,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#781]: https://github.com/jerus-org/pcu/pull/781
 [#782]: https://github.com/jerus-org/pcu/pull/782
 [#783]: https://github.com/jerus-org/pcu/pull/783
+[#784]: https://github.com/jerus-org/pcu/pull/784
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
