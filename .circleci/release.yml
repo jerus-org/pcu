@@ -11,6 +11,130 @@ parameters:
 orbs:
   toolkit: jerus-org/circleci-toolkit@4.0.1
 
+# Custom commands for crate-specific release detection
+# These enhance the toolkit by supporting --prefix and --subdir for nextsv
+commands:
+  get_crate_version:
+    description: >
+      Calculate the next version for a specific crate using prefix and subdir.
+      Sets SEMVER environment variable. Enhanced version of toolkit/get_next_version
+      that supports crate-specific tag prefixes.
+    parameters:
+      package:
+        type: string
+        description: "Package name"
+      tag_prefix:
+        type: string
+        description: "Tag prefix for this crate (e.g., pcu-v, gen-bsky-v)"
+      subdir:
+        type: string
+        description: "Subdirectory containing the crate"
+    steps:
+      - run:
+          name: Calculate next version for << parameters.package >>
+          command: |
+            set -eo pipefail
+
+            BUMP=$(nextsv calculate --prefix "<< parameters.tag_prefix >>" --subdir "<< parameters.subdir >>" 2>/dev/null || echo "none")
+
+            if [ "$BUMP" = "none" ]; then
+              echo "No release needed for << parameters.package >>"
+              echo "export SEMVER=none" >> "$BASH_ENV"
+              exit 0
+            fi
+
+            VERSION=$(nextsv --number calculate --prefix "<< parameters.tag_prefix >>" --subdir "<< parameters.subdir >>" | tail -1)
+            echo "Release needed for << parameters.package >>: $BUMP -> $VERSION"
+            echo "export SEMVER=$VERSION" >> "$BASH_ENV"
+
+  check_crates_io:
+    description: >
+      Check if a version already exists on crates.io.
+      Sets SKIP_PUBLISH=true if version exists, empty otherwise.
+      Used for recovery scenarios where crates.io publish succeeded but workflow failed.
+    parameters:
+      package:
+        type: string
+        description: "Crate name on crates.io"
+    steps:
+      - run:
+          name: Check crates.io for << parameters.package >>@${SEMVER}
+          command: |
+            set -eo pipefail
+
+            if [ "$SEMVER" = "none" ]; then
+              echo "No version to check"
+              exit 0
+            fi
+
+            USER_AGENT="pcu-release-script/1.0 (https://github.com/jerus-org/pcu)"
+
+            if curl -s -H "User-Agent: ${USER_AGENT}" "https://crates.io/api/v1/crates/<< parameters.package >>/versions" | \
+               jq -e ".versions[] | select(.num == \"${SEMVER}\")" > /dev/null 2>&1; then
+              echo "Version ${SEMVER} exists on crates.io - will skip publish"
+              echo "export SKIP_PUBLISH=true" >> "$BASH_ENV"
+            else
+              echo "Version ${SEMVER} not found on crates.io - will publish"
+              echo "export SKIP_PUBLISH=false" >> "$BASH_ENV"
+            fi
+
+  # Wrapper command that handles conditional publishing
+  make_crate_release:
+    description: >
+      Make cargo release and GitHub release for a crate.
+      Handles conditional publishing based on SKIP_PUBLISH environment variable.
+    parameters:
+      package:
+        type: string
+        description: "Package name"
+      tag_prefix:
+        type: string
+        description: "Tag prefix for GitHub release"
+    steps:
+      - run:
+          name: Make cargo release for << parameters.package >>
+          command: |
+            set -exo pipefail
+
+            if [ "$SEMVER" = "none" ]; then
+              echo "No version to release - skipping"
+              exit 0
+            fi
+
+            echo "Releasing << parameters.package >> version $SEMVER"
+
+            if [ "$SKIP_PUBLISH" = "true" ]; then
+              publish_flag="--no-publish"
+              echo "Skipping publish (version already on crates.io)"
+            else
+              publish_flag=""
+              echo "Will publish to crates.io"
+            fi
+
+            cargo release \
+              -vv \
+              $publish_flag \
+              --execute \
+              --no-confirm \
+              --sign-tag \
+              --package << parameters.package >> \
+              "$SEMVER"
+      - run:
+          name: Create GitHub release for << parameters.package >>
+          command: |
+            set -exo pipefail
+
+            if [ "$SEMVER" = "none" ]; then
+              echo "No version to release - skipping GitHub release"
+              exit 0
+            fi
+
+            pcu -vv \
+              release \
+              --prefix << parameters.tag_prefix >> \
+              version \
+              ${SEMVER}
+
 jobs:
   tools:
     executor:
@@ -23,10 +147,17 @@ jobs:
             nextsv --version
             pcu --version
             cargo release --version
-            gen-changelog --version
             jq --version
 
-  release-crates:
+  # Release a single crate using custom commands with toolkit setup
+  release-crate:
+    parameters:
+      package:
+        type: string
+      tag_prefix:
+        type: string
+      subdir:
+        type: string
     executor:
       name: toolkit/rust_env_rolling
     steps:
@@ -34,34 +165,26 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - << pipeline.parameters.fingerprint >>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
-      - run:
-          name: Make scripts executable
-          command: |
-            chmod +x scripts/*.sh
-            chmod +x crates/*/release-hook.sh
-      # Phase 1: Release library crates (no internal dependencies)
-      - run:
-          name: Release gen-bsky (if needed)
-          command: ./scripts/prepare-crate-release.sh gen-bsky gen-bsky-v crates/gen-bsky
-      - run:
-          name: Release gen-linkedin (if needed)
-          command: ./scripts/prepare-crate-release.sh gen-linkedin gen-linkedin-v crates/gen-linkedin
-      # Phase 2: Release dependent crates
-      - run:
-          name: Release pcu (if needed)
-          command: ./scripts/prepare-crate-release.sh pcu pcu-v crates/pcu
-      # Push all changes atomically
-      - run:
-          name: Push all releases
-          command: |
-            set -exo pipefail
-            if git tag --points-at HEAD | grep -q .; then
-              git push origin main --tags
-            else
-              echo "No new tags to push - skipping"
-            fi
+      # Step 1: Detect if release needed (enhanced with prefix/subdir)
+      - get_crate_version:
+          package: << parameters.package >>
+          tag_prefix: << parameters.tag_prefix >>
+          subdir: << parameters.subdir >>
+      # Step 2: Check crates.io for recovery scenarios
+      - check_crates_io:
+          package: << parameters.package >>
+      # Step 3: Run cargo release and create GitHub release
+      - make_crate_release:
+          package: << parameters.package >>
+          tag_prefix: << parameters.tag_prefix >>
 
   release-prlog:
     executor:
@@ -71,6 +194,12 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - << pipeline.parameters.fingerprint >>
+      - run:
+          name: Remove original SSH key from agent
+          command: |
+            ssh-add -l
+            ssh-add -d ~/.ssh/id_rsa.pub
+            ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
       - run:
@@ -79,21 +208,15 @@ jobs:
             set -exo pipefail
             chmod +x scripts/*.sh
 
-            # Use standard v prefix for PRLOG (not prlog-v)
-            BUMP=$(nextsv calculate --prefix "v" 2>/dev/null || echo "first")
+            # Use standard v prefix for PRLOG
+            BUMP=$(nextsv calculate --prefix "v" 2>/dev/null || echo "none")
 
             if [ "$BUMP" = "none" ]; then
               echo "No PRLOG release needed"
               exit 0
             fi
 
-            if [ "$BUMP" = "first" ]; then
-              # First release after switching to new system
-              CURRENT=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v0.6.3")
-              VERSION=$(echo "$CURRENT" | sed 's/v//' | awk -F. '{print $1"."$2+1".0"}')
-            else
-              VERSION=$(nextsv --number calculate --prefix "v" | tail -1)
-            fi
+            VERSION=$(nextsv --number calculate --prefix "v" | tail -1)
 
             ./scripts/release-prlog.sh "$VERSION"
             git push origin main --tags
@@ -103,17 +226,44 @@ workflows:
     jobs:
       - tools
 
-      # Release all crates in dependency order within a single job
-      - release-crates:
+      # Phase 1: Release library crates (no internal dependencies, can run in parallel)
+      - release-crate:
+          name: release-gen-bsky
           requires: [tools]
+          package: gen-bsky
+          tag_prefix: "gen-bsky-v"
+          subdir: "crates/gen-bsky"
           context:
             - release
             - bot-check
 
-      # PRLOG release (after all crates released)
+      - release-crate:
+          name: release-gen-linkedin
+          requires: [tools]
+          package: gen-linkedin
+          tag_prefix: "gen-linkedin-v"
+          subdir: "crates/gen-linkedin"
+          context:
+            - release
+            - bot-check
+
+      # Phase 2: Release pcu (depends on library crates)
+      - release-crate:
+          name: release-pcu
+          requires:
+            - release-gen-bsky
+            - release-gen-linkedin
+          package: pcu
+          tag_prefix: "pcu-v"
+          subdir: "crates/pcu"
+          context:
+            - release
+            - bot-check
+
+      # Phase 3: Release PRLOG (after all crates released)
       - release-prlog:
           requires:
-            - release-crates
+            - release-pcu
           context:
             - release
             - bot-check
