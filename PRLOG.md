@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.6.3] - 2026-01-09
+
+### Added
+
 - ✨ add URL parse error handling(pr [#667])
 - ✨ add default directory path functions(pr [#683])
 - ✨ implement commit message signoff with --no-signoff flag(pr [#750])
@@ -1899,7 +1907,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#780]: https://github.com/jerus-org/pcu/pull/780
 [#781]: https://github.com/jerus-org/pcu/pull/781
 [#782]: https://github.com/jerus-org/pcu/pull/782
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
+[0.6.3]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.3
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jerus-org/pcu/compare/v0.4.54...v0.4.55
