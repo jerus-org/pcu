@@ -198,19 +198,21 @@ commands:
 
             cargo release $release_args "$VERSION"
 
-  # Enhanced make_github_release with prefix support
+  # Enhanced make_github_release with package support
   make_github_release:
     description: >
       Create a GitHub release using the pcu utility.
+      When package is provided, uses 'pcu release package' which derives the correct tag prefix.
+      When package is empty, uses 'pcu release version' with the specified prefix.
     parameters:
       prefix:
         type: string
         default: "v"
-        description: "Tag prefix for the release"
+        description: "Tag prefix for the release (used when package is empty)"
       package:
         type: string
         default: ""
-        description: "Package name (for workspace releases)"
+        description: "Package name - when provided, derives tag prefix automatically"
       verbosity:
         type: string
         default: "-vv"
@@ -233,13 +235,17 @@ commands:
               exit 0
             fi
 
-            pcu_args="<< parameters.verbosity >> release --prefix << parameters.prefix >>"
-
-            if [ "<< parameters.update_prlog >>" = "true" ]; then
-              pcu_args="$pcu_args --update-prlog"
+            if [ "<< parameters.package >>" != "" ]; then
+              # Use package subcommand - derives tag prefix from package name
+              pcu << parameters.verbosity >> release package "<< parameters.package >>"
+            else
+              # Use version subcommand with explicit prefix
+              pcu_args="<< parameters.verbosity >> release --prefix << parameters.prefix >>"
+              if [ "<< parameters.update_prlog >>" = "true" ]; then
+                pcu_args="$pcu_args --update-prlog"
+              fi
+              pcu $pcu_args version "$VERSION"
             fi
-
-            pcu $pcu_args version "$VERSION"
 
 jobs:
   tools:
@@ -259,10 +265,6 @@ jobs:
   release-crate:
     parameters:
       package:
-        type: string
-      tag_prefix:
-        type: string
-      subdir:
         type: string
     executor:
       name: toolkit/rust_env_rolling
@@ -284,11 +286,9 @@ jobs:
             ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
-      # Step 1: Detect if release needed (with prefix/subdir for crate-specific detection)
+      # Step 1: Detect if release needed (package implies prefix/subdir in nextsv)
       - get_next_version:
           package: << parameters.package >>
-          prefix: << parameters.tag_prefix >>
-          subdir: << parameters.subdir >>
       # Step 2: Check crates.io for recovery scenarios
       - check_crates_io_version:
           package: << parameters.package >>
@@ -298,7 +298,6 @@ jobs:
           verbosity: "-vv"
       # Step 4: Create GitHub release
       - make_github_release:
-          prefix: << parameters.tag_prefix >>
           package: << parameters.package >>
           verbosity: "-vv"
 
@@ -352,8 +351,6 @@ workflows:
           name: release-gen-bsky
           requires: [tools]
           package: gen-bsky
-          tag_prefix: "gen-bsky-v"
-          subdir: "crates/gen-bsky"
           context:
             - release
             - bot-check
@@ -362,8 +359,6 @@ workflows:
           name: release-gen-linkedin
           requires: [tools]
           package: gen-linkedin
-          tag_prefix: "gen-linkedin-v"
-          subdir: "crates/gen-linkedin"
           context:
             - release
             - bot-check
@@ -375,8 +370,6 @@ workflows:
             - release-gen-bsky
             - release-gen-linkedin
           package: pcu
-          tag_prefix: "pcu-v"
-          subdir: "crates/pcu"
           context:
             - release
             - bot-check
