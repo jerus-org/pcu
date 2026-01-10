@@ -8,11 +8,11 @@ NAME="CHANGELOG.md"
 PACKAGE="gen-bsky"
 REPO_DIR="../.."
 
-# CRATE_VERSION is set by cargo release
-VERSION="${CRATE_VERSION:-${1}}"
+# NEW_VERSION is set by cargo release
+VERSION="${NEW_VERSION:-${1}}"
 
 if [[ -z "${VERSION}" ]]; then
-    echo "Error: No version specified (set CRATE_VERSION or pass as argument)" >&2
+    echo "Error: No version specified (set NEW_VERSION or pass as argument)" >&2
     exit 1
 fi
 
