@@ -346,7 +346,10 @@ workflows:
     jobs:
       - tools
 
-      # Phase 1: Release library crates (no internal dependencies, can run in parallel)
+      # Sequential release chain to avoid Cargo.lock conflicts
+      # Each job pushes before the next starts, so checkout gets latest commits
+
+      # Step 1: Release gen-bsky
       - release-crate:
           name: release-gen-bsky
           requires: [tools]
@@ -355,29 +358,27 @@ workflows:
             - release
             - bot-check
 
+      # Step 2: Release gen-linkedin (after gen-bsky to avoid Cargo.lock conflict)
       - release-crate:
           name: release-gen-linkedin
-          requires: [tools]
+          requires: [release-gen-bsky]
           package: gen-linkedin
           context:
             - release
             - bot-check
 
-      # Phase 2: Release pcu (depends on library crates)
+      # Step 3: Release pcu (depends on library crates)
       - release-crate:
           name: release-pcu
-          requires:
-            - release-gen-bsky
-            - release-gen-linkedin
+          requires: [release-gen-linkedin]
           package: pcu
           context:
             - release
             - bot-check
 
-      # Phase 3: Release PRLOG (after all crates released)
+      # Step 4: Release PRLOG (after all crates released)
       - release-prlog:
-          requires:
-            - release-pcu
+          requires: [release-pcu]
           context:
             - release
             - bot-check

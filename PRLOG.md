@@ -137,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - handle missing id_rsa.pub for GitHub App integration(pr [#782])
 - remove redundant prefix/subdir/tag_prefix params(pr [#785])
 - use NEW_VERSION env var in release hooks(pr [#786])
+- make release jobs fully sequential(pr [#787])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1907,6 +1908,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#784]: https://github.com/jerus-org/pcu/pull/784
 [#785]: https://github.com/jerus-org/pcu/pull/785
 [#786]: https://github.com/jerus-org/pcu/pull/786
+[#787]: https://github.com/jerus-org/pcu/pull/787
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
