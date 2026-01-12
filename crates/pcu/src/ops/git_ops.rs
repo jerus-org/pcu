@@ -610,18 +610,18 @@ impl GitOps for Client {
 
         log::trace!("Found {prs:?} open PRs");
 
-        let mut qualified_authors = DEFAULT_REBASE_LOGINS
-            .split(',')
-            .map(|i| i.to_string())
-            .collect::<Vec<String>>();
-
-        for a in authors {
-            qualified_authors.push(a.clone());
-        }
+        let qualified_authors: Vec<String> = if authors.is_empty() {
+            DEFAULT_REBASE_LOGINS
+                .split(',')
+                .map(|i| i.to_string())
+                .collect()
+        } else {
+            authors.to_vec()
+        };
 
         let mut prs: Vec<_> = prs
             .iter()
-            .filter(|pr| authors.contains(&pr.login))
+            .filter(|pr| qualified_authors.contains(&pr.login))
             .collect();
 
         if prs.is_empty() {
