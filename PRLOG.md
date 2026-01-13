@@ -139,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - use NEW_VERSION env var in release hooks(pr [#786])
 - make release jobs fully sequential(pr [#787])
 - use correct authors list in label_next_pr filter(pr [#788])
+- ci: correct pcu release command syntax(pr [#789])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1911,6 +1912,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#786]: https://github.com/jerus-org/pcu/pull/786
 [#787]: https://github.com/jerus-org/pcu/pull/787
 [#788]: https://github.com/jerus-org/pcu/pull/788
+[#789]: https://github.com/jerus-org/pcu/pull/789
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
