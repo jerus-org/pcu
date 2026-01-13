@@ -235,17 +235,19 @@ commands:
               exit 0
             fi
 
+            pcu_args="<< parameters.verbosity >> release"
+
             if [ "<< parameters.package >>" != "" ]; then
-              # Use package subcommand - derives tag prefix from package name
-              pcu << parameters.verbosity >> release package "<< parameters.package >>"
+              pcu_args="$pcu_args --package << parameters.package >>"
             else
-              # Use version subcommand with explicit prefix
-              pcu_args="<< parameters.verbosity >> release --prefix << parameters.prefix >>"
-              if [ "<< parameters.update_prlog >>" = "true" ]; then
-                pcu_args="$pcu_args --update-prlog"
-              fi
-              pcu $pcu_args version "$VERSION"
+              pcu_args="$pcu_args --prefix << parameters.prefix >>"
             fi
+
+            if [ "<< parameters.update_prlog >>" = "true" ]; then
+              pcu_args="$pcu_args --update-prlog"
+            fi
+
+            pcu $pcu_args
 
 jobs:
   tools:
