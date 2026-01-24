@@ -9,7 +9,7 @@ parameters:
     default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@4.2.0
+  toolkit: jerus-org/circleci-toolkit@4.2.1
 
 # Commands designed for future migration to circleci-toolkit
 # These extend existing toolkit patterns with backward-compatible parameters

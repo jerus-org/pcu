@@ -24,7 +24,7 @@ parameters:
     default: false
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@4.2.0
+  toolkit: jerus-org/circleci-toolkit@4.2.1
 
 # Custom executors removed - using toolkit rolling executors instead:
 #   - toolkit/rust_env_rolling for Rust jobs
