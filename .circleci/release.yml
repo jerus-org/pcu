@@ -61,7 +61,7 @@ commands:
             nextsv_args="<< parameters.verbosity >> -bn calculate"
 
             if [ "<< parameters.package >>" != "" ]; then
-              nextsv_args="$nextsv_args --package << parameters.package >>"
+              nextsv_args="$nextsv_args package << parameters.package >>"
             fi
 
             if [ "<< parameters.prefix >>" != "" ]; then
@@ -173,7 +173,7 @@ commands:
             release_args="--execute --no-confirm --sign-tag"
 
             if [ "<< parameters.package >>" != "" ]; then
-              release_args="$release_args --package << parameters.package >>"
+              release_args="$release_args package << parameters.package >>"
             fi
 
             if [ "<< parameters.no_push >>" = "true" ]; then
@@ -238,7 +238,7 @@ commands:
             pcu_args="<< parameters.verbosity >> release"
 
             if [ "<< parameters.package >>" != "" ]; then
-              pcu_args="$pcu_args --package << parameters.package >>"
+              pcu_args="$pcu_args package << parameters.package >>"
             else
               pcu_args="$pcu_args --prefix << parameters.prefix >>"
             fi
