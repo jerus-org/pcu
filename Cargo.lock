@@ -229,7 +229,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e099e5171f79faef52364ef0657a4cab086a71b384a779a29597a91b780de0d5"
 dependencies = [
  "atrium-xrpc",
- "reqwest",
+ "reqwest 0.12.28",
 ]
 
 [[package]]
@@ -1182,7 +1182,7 @@ dependencies = [
 name = "gen-linkedin"
 version = "0.1.0"
 dependencies = [
- "reqwest",
+ "reqwest 0.13.1",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
@@ -1276,7 +1276,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8353b9411850e8b5b5c27742751dbc6c50f4e3a4221019a15e64d57ce2ee859"
 dependencies = [
  "log",
- "reqwest",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
 ]
@@ -2140,7 +2140,7 @@ dependencies = [
  "chrono",
  "jsonwebtoken",
  "octocrate-types",
- "reqwest",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -2709,6 +2709,37 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "webpki-roots",
+]
+
+[[package]]
+name = "reqwest"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04e9018c9d814e5f30cc16a0f03271aeab3571e609612d9fe78c1aa8d11c2f62"
+dependencies = [
+ "base64",
+ "bytes",
+ "futures-core",
+ "http",
+ "http-body",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "js-sys",
+ "log",
+ "percent-encoding",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "sync_wrapper",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tower-service",
+ "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
