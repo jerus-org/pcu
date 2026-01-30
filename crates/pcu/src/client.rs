@@ -276,8 +276,8 @@ impl Client {
     }
 
     pub fn set_title(&mut self, title: &str) {
-        if self.pull_request.is_some() {
-            self.pull_request.as_mut().unwrap().title = title.to_string();
+        if let Some(pr) = self.pull_request.as_mut() {
+            pr.title = title.to_string();
         }
     }
 
