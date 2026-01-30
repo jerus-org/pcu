@@ -158,34 +158,32 @@ impl FrontMatter {
     }
 
     pub(super) fn bluesky_description(&self) -> &str {
-        if self.bluesky.is_some() {
-            return self.bluesky.as_ref().unwrap().description();
+        if let Some(bs) = self.bluesky.as_ref() {
+            return bs.description();
         }
 
-        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky().is_some() {
-            return self
-                .extra
-                .as_ref()
-                .unwrap()
-                .bluesky()
-                .unwrap()
-                .description();
+        if let Some(e) = self.extra.as_ref() {
+            if let Some(bs) = e.bluesky() {
+                return bs.description();
+            }
         }
 
         &self.description
     }
 
     pub(super) fn bluesky_tags(&self) -> Vec<String> {
-        if self.bluesky.is_some() {
-            return self.bluesky.as_ref().unwrap().hashtags();
+        if let Some(bs) = self.bluesky.as_ref() {
+            return bs.hashtags();
         }
 
-        if self.extra.is_some() && self.extra.as_ref().unwrap().bluesky().is_some() {
-            return self.extra.as_ref().unwrap().bluesky().unwrap().hashtags();
+        if let Some(e) = self.extra.as_ref() {
+            if let Some(bs) = e.bluesky() {
+                return bs.hashtags();
+            }
         }
 
-        if self.taxonomies.is_some() {
-            return self.taxonomies.as_ref().unwrap().hashtags();
+        if let Some(t) = self.taxonomies.as_ref() {
+            return t.hashtags();
         }
 
         Vec::new()
