@@ -140,6 +140,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - make release jobs fully sequential(pr [#787])
 - use correct authors list in label_next_pr filter(pr [#788])
 - ci: correct pcu release command syntax(pr [#789])
+- deps: update dependency toolkit to v4.2.1(pr [#790])
+- deps: update rust crate chrono to 0.4.43(pr [#792])
+- deps: update rust crate clap to 4.5.54(pr [#793])
+- deps: update rust crate bsky-sdk to 0.1.23(pr [#791])
+- deps: update dependency toolkit to v4.2.2(pr [#800])
 
 ## [0.5.0] - 2025-08-12
 
@@ -1913,6 +1918,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#787]: https://github.com/jerus-org/pcu/pull/787
 [#788]: https://github.com/jerus-org/pcu/pull/788
 [#789]: https://github.com/jerus-org/pcu/pull/789
+[#790]: https://github.com/jerus-org/pcu/pull/790
+[#792]: https://github.com/jerus-org/pcu/pull/792
+[#793]: https://github.com/jerus-org/pcu/pull/793
+[#791]: https://github.com/jerus-org/pcu/pull/791
+[#800]: https://github.com/jerus-org/pcu/pull/800
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
