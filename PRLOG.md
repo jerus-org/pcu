@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 👷 ci(circleci)-update release script arguments(pr [#804])
 - 👷 ci(circleci)-improve release process and recovery scenarios(pr [#805])
+- 👷 ci(circleci)-add package parameterization to calculate-versions(pr [#806])
 
 ## [0.6.4] - 2026-01-30
 
@@ -1944,6 +1945,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#799]: https://github.com/jerus-org/pcu/pull/799
 [#804]: https://github.com/jerus-org/pcu/pull/804
 [#805]: https://github.com/jerus-org/pcu/pull/805
+[#806]: https://github.com/jerus-org/pcu/pull/806
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.4...HEAD
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
