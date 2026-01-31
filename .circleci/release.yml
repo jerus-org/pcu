@@ -337,6 +337,9 @@ jobs:
   calculate-versions:
     executor:
       name: toolkit/rust_env_rolling
+    parameters:
+      package:
+        type: string
     steps:
       - checkout
       - run:
@@ -350,8 +353,8 @@ jobs:
             echo ""
 
             # Calculate crate version
-            echo "--- Crate: gen-orb-mcp ---"
-            CRATE_VERSION=$(nextsv -bn calculate --package gen-orb-mcp 2>/dev/null || echo "")
+            echo "--- Crate: << parameters.package >> ---"
+            CRATE_VERSION=$(nextsv -bn calculate --package << parameters.package >>)
             if [ -z "$CRATE_VERSION" ]; then
               CRATE_VERSION="none"
               echo "Result: No crate release needed"
@@ -364,7 +367,7 @@ jobs:
 
             # Calculate workspace version
             echo "--- Workspace (PRLOG) ---"
-            WORKSPACE_VERSION=$(nextsv -bn calculate --prefix "v" 2>/dev/null || echo "")
+            WORKSPACE_VERSION=$(nextsv -bn calculate --prefix "v")
             if [ -z "$WORKSPACE_VERSION" ]; then
               WORKSPACE_VERSION="none"
               echo "Result: No workspace release needed"
@@ -515,17 +518,29 @@ workflows:
 
       # Calculate and display versions for review
       - calculate-versions:
+          name: gen-bsky-version
+          package: gen-bsky
+          requires: [tools]
+
+      - calculate-versions:
+          name: gen-linkedin-version
+          package: gen-linkedin
+          requires: [tools]
+
+      - calculate-versions:
+          name: pcu-version
+          package: pcu
           requires: [tools]
 
       # Manual approval gate - review calculated versions before release
       - approve-release:
           type: approval
-          requires: [calculate-versions]
+          requires: [gen-bsky-version, gen-linkedin-version, pcu-version]
 
       # Step 1: Release gen-bsky
       - release-crate:
           name: release-gen-bsky
-          requires: [tools]
+          requires: [approve-release]
           package: gen-bsky
           context:
             - release
