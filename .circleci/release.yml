@@ -61,7 +61,7 @@ commands:
             nextsv_args="<< parameters.verbosity >> -bn calculate"
 
             if [ "<< parameters.package >>" != "" ]; then
-              nextsv_args="$nextsv_args package << parameters.package >>"
+              nextsv_args="$nextsv_args --package << parameters.package >>"
             fi
 
             if [ "<< parameters.prefix >>" != "" ]; then
@@ -73,7 +73,7 @@ commands:
             fi
 
             # Calculate version
-            version=$(nextsv $nextsv_args 2>/dev/null || echo "")
+            version=$(nextsv $nextsv_args)
 
             if [ -z "$version" ]; then
               echo "No release needed"
@@ -173,7 +173,7 @@ commands:
             release_args="--execute --no-confirm --sign-tag"
 
             if [ "<< parameters.package >>" != "" ]; then
-              release_args="$release_args package << parameters.package >>"
+              release_args="$release_args --package << parameters.package >>"
             fi
 
             if [ "<< parameters.no_push >>" = "true" ]; then
