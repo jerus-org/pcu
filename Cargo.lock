@@ -1271,9 +1271,9 @@ checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 
 [[package]]
 name = "gql_client"
-version = "1.0.8"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8353b9411850e8b5b5c27742751dbc6c50f4e3a4221019a15e64d57ce2ee859"
+checksum = "4642704b9650be83d5a0eae63da30acb4c87a2de195a921f79a910d0566285c0"
 dependencies = [
  "log",
  "reqwest 0.12.28",
