@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 👷 ci(circleci)-improve release process and recovery scenarios(pr [#805])
 - 👷 ci(circleci)-add package parameterization to calculate-versions(pr [#806])
 
+### Fixed
+
+- deps: update rust crate clap to 4.5.56(pr [#801])
+
 ## [0.6.4] - 2026-01-30
 
 ### Added
@@ -1946,6 +1950,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#804]: https://github.com/jerus-org/pcu/pull/804
 [#805]: https://github.com/jerus-org/pcu/pull/805
 [#806]: https://github.com/jerus-org/pcu/pull/806
+[#801]: https://github.com/jerus-org/pcu/pull/801
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.4...HEAD
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
