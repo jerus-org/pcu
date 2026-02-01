@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.6.5] - 2026-02-01
+
 ### Changed
 
 - 👷 ci(circleci)-update release script arguments(pr [#804])
@@ -1959,7 +1967,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#802]: https://github.com/jerus-org/pcu/pull/802
 [#803]: https://github.com/jerus-org/pcu/pull/803
 [#808]: https://github.com/jerus-org/pcu/pull/808
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.4...HEAD
+[0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
 [0.4.56]: https://github.com/jerus-org/pcu/compare/v0.4.55...v0.4.56
