@@ -381,7 +381,7 @@ jobs:
             echo "=============================================="
             echo "                  SUMMARY"
             echo "=============================================="
-            echo "Crate (gen-orb-mcp):  $CRATE_VERSION"
+            echo "Crate (<< parameters.package >>):  $CRATE_VERSION"
             echo "Workspace (PRLOG):    $WORKSPACE_VERSION"
             echo "=============================================="
             echo ""
@@ -405,6 +405,9 @@ jobs:
     parameters:
       package:
         type: string
+      no_push:
+        type: boolean
+        default: false
       version:
         type: string
         default: ""
@@ -442,6 +445,7 @@ jobs:
       # Step 4: Run cargo release (respects SKIP_PUBLISH and SKIP_RELEASE)
       - make_cargo_release:
           package: << parameters.package >>
+          no_push: << parameters.no_push >>
           verbosity: "-vv"
       # Step 5: Update pcu to latest version (command not yet in toolkit release)
       - run:
@@ -542,6 +546,7 @@ workflows:
           name: release-gen-bsky
           requires: [approve-release]
           package: gen-bsky
+          no_push: true
           context:
             - release
             - bot-check
@@ -551,6 +556,7 @@ workflows:
           name: release-gen-linkedin
           requires: [release-gen-bsky]
           package: gen-linkedin
+          no_push: true
           context:
             - release
             - bot-check
@@ -560,6 +566,7 @@ workflows:
           name: release-pcu
           requires: [release-gen-linkedin]
           package: pcu
+          no_push: true
           context:
             - release
             - bot-check
