@@ -24,7 +24,8 @@ parameters:
     default: false
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@4.2.3
+  # cci-ignore-next-line
+  toolkit: jerus-org/circleci-toolkit@4.2.2
 
 # Custom executors removed - using toolkit rolling executors instead:
 #   - toolkit/rust_env_rolling for Rust jobs
@@ -379,7 +380,13 @@ workflows:
               only:
                 - main
       - toolkit/required_builds:
-          name: required-builds
+          name: required-builds-all
+          min_rust_version: << pipeline.parameters.min_rust_version >>
+      - toolkit/required_builds:
+          name: build-<< matrix.cargo_package >>
+          matrix:
+            parameters:
+              cargo_package: [gen-bsky, gen-linkedin, pcu]
           min_rust_version: << pipeline.parameters.min_rust_version >>
       - toolkit/optional_builds:
           min_rust_version: << pipeline.parameters.min_rust_version >>
@@ -408,7 +415,10 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - toolkit/security
-            - required-builds
+            - required-builds-all
+            # cci-ignore-next-line
+            - build-pcu
+            - toolkit/required_builds
             - docs
             - toolkit/idiomatic_rust
       - test-push:
@@ -423,7 +433,9 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - toolkit/security
-            - required-builds
+            - required-builds-all
+            # cci-ignore-next-line
+            - build-pcu
             - docs
             - toolkit/idiomatic_rust
       - test-bsky-directory:
@@ -439,7 +451,9 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - toolkit/security
-            - required-builds
+            - required-builds-all
+            # cci-ignore-next-line
+            - build-gen-bsky
             - docs
             - toolkit/idiomatic_rust
       - test-bsky-file:
@@ -455,7 +469,9 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - toolkit/security
-            - required-builds
+            - required-builds-all
+            # cci-ignore-next-line
+            - build-gen-bsky
             - docs
             - toolkit/idiomatic_rust
 

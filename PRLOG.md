@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 👷 ci(circleci)-update release script arguments(pr [#804])
 - 👷 ci(circleci)-improve release process and recovery scenarios(pr [#805])
 - 👷 ci(circleci)-add package parameterization to calculate-versions(pr [#806])
+- Fix/url-serde-requirement(pr [#808])
 
 ### Fixed
 
@@ -1957,6 +1958,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#807]: https://github.com/jerus-org/pcu/pull/807
 [#802]: https://github.com/jerus-org/pcu/pull/802
 [#803]: https://github.com/jerus-org/pcu/pull/803
+[#808]: https://github.com/jerus-org/pcu/pull/808
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.4...HEAD
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
