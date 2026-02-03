@@ -7,11 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Security
 
-### Changed
-
-### Fixed
+- Dependencies: bump bytes from 1.11.0 to 1.11.1 in the cargo group across 1 directory(pr [#809])
 
 ## [0.6.5] - 2026-02-01
 
@@ -1967,6 +1965,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#802]: https://github.com/jerus-org/pcu/pull/802
 [#803]: https://github.com/jerus-org/pcu/pull/803
 [#808]: https://github.com/jerus-org/pcu/pull/808
+[#809]: https://github.com/jerus-org/pcu/pull/809
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
