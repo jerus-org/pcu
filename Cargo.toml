@@ -22,7 +22,7 @@ config = {version = "0.15.19", features = ["toml"], default-features = false}
 env_logger = "0.11.8"
 gen-bsky = { path = "crates/gen-bsky", version = "0.1.7" }
 gen-linkedin = { path = "crates/gen-linkedin", version = "0.1.0" }
-git2 = "0.20.3"
+git2 = "0.20.4"
 git2_credentials = "0.15.0"
 gql_client = "1.1.0"
 keep-a-changelog = "0.1.4"
