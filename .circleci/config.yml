@@ -371,6 +371,25 @@ workflows:
                 equal: [scheduled_pipeline, << pipeline.trigger_source >>]
             - not: << pipeline.parameters.success_flag >>
     jobs:
+      # Signature verification for trusted PRs (with write access for comments)
+      - toolkit/verify_commit_signatures:
+          name: verify_commit_signatures_trusted
+          context: bot-check
+          post_comment: true
+          update_pcu: false
+          filters:
+            branches:
+              ignore:
+                - main
+                - /pull\/[0-9]+/
+      # Signature verification for forked PRs (read-only, no comments)
+      - toolkit/verify_commit_signatures:
+          name: verify_commit_signatures_forked
+          post_comment: false
+          update_pcu: false
+          filters:
+            branches:
+              only: /pull\/[0-9]+/
       - toolkit/label:
           min_rust_version: << pipeline.parameters.min_rust_version >>
           context: pcu-app
@@ -414,7 +433,7 @@ workflows:
           requires:
             - test-setup
             - toolkit/common_tests
-            - toolkit/security
+            - security audit only
             - required-builds-all
             # cci-ignore-next-line
             - build-pcu
@@ -432,7 +451,7 @@ workflows:
           requires:
             - test-setup
             - toolkit/common_tests
-            - toolkit/security
+            - security audit only
             - required-builds-all
             # cci-ignore-next-line
             - build-pcu
@@ -450,7 +469,7 @@ workflows:
           requires:
             - test-setup
             - toolkit/common_tests
-            - toolkit/security
+            - security audit only
             - required-builds-all
             # cci-ignore-next-line
             - build-gen-bsky
@@ -468,7 +487,7 @@ workflows:
           requires:
             - test-setup
             - toolkit/common_tests
-            - toolkit/security
+            - security audit only
             - required-builds-all
             # cci-ignore-next-line
             - build-gen-bsky
@@ -476,18 +495,30 @@ workflows:
             - toolkit/idiomatic_rust
 
       - toolkit/security:
+          name: security audit only
+          sonarcloud: false
           filters:
             branches:
               ignore:
                 - main
+          ignore_advisories: "RUSTSEC-2025-0007 RUSTSEC-2026-0002"
+      - toolkit/security:
+          name: security with sonarcloud
           context: SonarCloud
+          filters:
+            branches:
+              ignore:
+                - /pull\/[0-9]+/
+                - main
           ignore_advisories: "RUSTSEC-2025-0007 RUSTSEC-2026-0002"
       - toolkit/update_prlog:
           filters:
             branches:
               ignore:
+                - /pull\/[0-9]+/
                 - main
           requires:
+            - verify_commit_signatures_trusted
             - test-push
             - test-commit
             - test-bsky-directory
