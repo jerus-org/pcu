@@ -2,7 +2,7 @@
 
 A library to generate a bluesky feed post from the front matter metadata in markdown source file for a web document.
 
-[![Rust 1.87+][version-badge]][version-url]
+[![Rust 1.88+][version-badge]][version-url]
 [![circleci-badge]][circleci-url]
 [![Crates.io][crates-badge]][crates-url]
 [![Docs][docs-badge]][docs-url]
