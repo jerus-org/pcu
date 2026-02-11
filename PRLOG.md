@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- add security improvements to CI(pr [#815])
+
 ### Changed
 
 - chore-align toolkit version to v4.4.2(pr [#814])
@@ -1971,6 +1975,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#808]: https://github.com/jerus-org/pcu/pull/808
 [#809]: https://github.com/jerus-org/pcu/pull/809
 [#814]: https://github.com/jerus-org/pcu/pull/814
+[#815]: https://github.com/jerus-org/pcu/pull/815
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
