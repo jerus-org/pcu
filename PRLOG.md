@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - chore-align toolkit version to v4.4.2(pr [#814])
 
+### Fixed
+
+- deps: update rust crate clap to 4.5.58(pr [#816])
+
 ### Security
 
 - Dependencies: bump bytes from 1.11.0 to 1.11.1 in the cargo group across 1 directory(pr [#809])
@@ -1976,6 +1980,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#809]: https://github.com/jerus-org/pcu/pull/809
 [#814]: https://github.com/jerus-org/pcu/pull/814
 [#815]: https://github.com/jerus-org/pcu/pull/815
+[#816]: https://github.com/jerus-org/pcu/pull/816
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
