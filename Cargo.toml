@@ -19,7 +19,7 @@ clap = "4.5.58"
 clap-verbosity-flag = "3.0.4"
 color-eyre = "0.6.5"
 config = {version = "0.15.19", features = ["toml"], default-features = false}
-env_logger = "0.11.8"
+env_logger = "0.11.9"
 gen-bsky = { path = "crates/gen-bsky", version = "0.1.7" }
 gen-linkedin = { path = "crates/gen-linkedin", version = "0.1.0" }
 git2 = "0.20.4"
