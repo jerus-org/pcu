@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate toml to 0.9.12(pr [#820])
 - deps: update rust crate sequoia-openpgp to 2.2.0(pr [#821])
 - deps: update rust crate tempfile to 3.25.0(pr [#822])
+- deps: update rust crate toml to v1(pr [#823])
 
 ### Security
 
@@ -1993,6 +1994,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#820]: https://github.com/jerus-org/pcu/pull/820
 [#821]: https://github.com/jerus-org/pcu/pull/821
 [#822]: https://github.com/jerus-org/pcu/pull/822
+[#823]: https://github.com/jerus-org/pcu/pull/823
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
