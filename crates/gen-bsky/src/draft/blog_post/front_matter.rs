@@ -603,7 +603,7 @@ mod tests {
         assert!(date.time.is_some());
         assert_eq!(date.time.unwrap().hour, 15);
         assert_eq!(date.time.unwrap().minute, 30);
-        assert_eq!(date.time.unwrap().second, 0);
+        assert_eq!(date.time.unwrap().second, Some(0));
         assert!(date.offset.is_some());
     }
 
@@ -669,6 +669,6 @@ mod tests {
         assert!(fm.date.is_some());
         let date = fm.date.unwrap();
         assert_eq!(date.date.unwrap().year, 2025);
-        assert_eq!(date.time.unwrap().nanosecond, 123456000);
+        assert_eq!(date.time.unwrap().nanosecond, Some(123456000));
     }
 }
