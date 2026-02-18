@@ -202,17 +202,38 @@ impl Pr {
         let res = client.push_commit(&self.prefix, None, false, &bot_user_name);
         let hdr_style = Style::new().bold().underline();
         log::debug!("{}", "Check Push".style(hdr_style));
-        log::debug!("Branch status: {}", client.branch_status()?);
+        let branch_status = client.branch_status()?;
+        log::debug!("Branch status: {branch_status}");
 
         match res {
-            Ok(()) => Ok(CIExit::Updated),
+            Ok(()) => {
+                // libgit2 can return Ok(()) even when the remote rejects the push
+                // (e.g. branch protection rules). Verify the commit actually landed
+                // by checking whether the branch is still ahead of the remote.
+                let ahead = branch_status.ahead;
+                if ahead > 0 {
+                    let msg = format!(
+                        "Push appeared to succeed but branch is still {ahead} commit(s) ahead \
+                         of remote — the push was likely rejected silently (e.g. branch \
+                         protection rules or authentication failure)"
+                    );
+                    if self.allow_push_fail {
+                        log::warn!("{msg}");
+                        Ok(CIExit::UnChanged)
+                    } else {
+                        Err(Error::GitError(msg))
+                    }
+                } else {
+                    Ok(CIExit::Updated)
+                }
+            }
             Err(e) => {
                 if self.allow_push_fail
                     && e.to_string()
                         .contains("cannot push non-fastforwardable reference")
                 {
                     log::info!(
-                        "Cannot psh non-fastforwardable reference, presuming change made already in parallel job."
+                        "Cannot push non-fastforwardable reference, presuming change made already in parallel job."
                     );
                     Ok(CIExit::UnChanged)
                 } else {
