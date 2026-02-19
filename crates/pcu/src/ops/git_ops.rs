@@ -521,25 +521,18 @@ impl GitOps for Client {
     ) -> Result<(), Error> {
         log::trace!("version: {version:?} and no_push: {no_push}");
         let mut remote = self.git_repo.find_remote("origin")?;
-        log::trace!("Pushing changes to {:?}", remote.name());
+        let remote_url = remote.url().unwrap_or("<unknown>").to_string();
+        log::info!("Push target: {remote_url}");
         let mut callbacks = RemoteCallbacks::new();
         let git_config = git2::Config::open_default().unwrap();
         let mut ch = CredentialHandler::new(git_config);
         callbacks.credentials(move |url, username, allowed| {
+            log::info!(
+                "Push auth: url={url}, username={}, credential_types={allowed:?}",
+                username.unwrap_or("<none>")
+            );
             ch.try_next_credential(url, username, allowed)
         });
-        // callbacks.credentials(move |_url, username_from_url, _allowed_types| {
-        //     if let Some(username_from_url) = username_from_url {
-        //         log::trace!("Using username from url: {}", username_from_url);
-        //         Cred::ssh_key_from_agent(username_from_url)
-        //     } else {
-        //         log::trace!("Using ssh key from bot user name: {}", bot_user_name);
-        //         let cred = Cred::ssh_key_from_agent(bot_user_name);
-        //         log::trace!("cred: {}",
-        //              if cred.is_ok() { "is ok" } else { "is error"});
-        //          cred
-        //     }
-        // });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
 
@@ -580,6 +573,10 @@ impl GitOps for Client {
         let git_config = git2::Config::open_default().unwrap();
         let mut ch = CredentialHandler::new(git_config);
         call_backs.credentials(move |url, username, allowed| {
+            log::info!(
+                "Push auth: url={url}, username={}, credential_types={allowed:?}",
+                username.unwrap_or("<none>")
+            );
             ch.try_next_credential(url, username, allowed)
         });
         call_backs.push_transfer_progress(progress_bar);
