@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate toml to v1(pr [#823])
 - detect silent push rejection via branch-ahead check(pr [#827])
 - pr: detect push rejection via fetch-and-recheck(pr [#828])
+- pr: include push identity in rejection error(pr [#830])
 - git: log push URL and credential type(pr [#829])
 
 ### Security
@@ -2000,6 +2001,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#823]: https://github.com/jerus-org/pcu/pull/823
 [#827]: https://github.com/jerus-org/pcu/pull/827
 [#828]: https://github.com/jerus-org/pcu/pull/828
+[#830]: https://github.com/jerus-org/pcu/pull/830
 [#829]: https://github.com/jerus-org/pcu/pull/829
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5

@@ -238,14 +238,16 @@ impl Pr {
                 Ok(())
             } else {
                 Err(Error::GitError(format!(
-                    "Push race: branch is {ahead} ahead and {behind} behind remote after fetch"
+                    "Push race: branch is {ahead} ahead and {behind} behind remote after fetch \
+                     (push identity: {bot_user_name})"
                 )))
             }
         } else {
             // ahead > 0, behind = 0: server rejected the push (silent or non-fast-forward).
             Err(Error::GitError(format!(
                 "Push rejected by server: branch is still {ahead} commit(s) ahead after fetch \
-                 — check branch protection rules or authentication"
+                 (push identity: {bot_user_name}) — check branch protection rules or \
+                 authentication, and review the GitHub audit log"
             )))
         }
     }
