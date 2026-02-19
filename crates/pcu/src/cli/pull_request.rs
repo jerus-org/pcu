@@ -188,7 +188,7 @@ impl Pr {
         Ok(CIExit::Updated)
     }
 
-    fn push_the_commit(&self, client: Client) -> Result<CIExit, Error> {
+    fn push_the_commit(&self, client: Client) -> Result<(), Error> {
         if log::log_enabled!(log::Level::Trace) {
             log::trace!("*** Push the commit ***");
         } else {
@@ -200,46 +200,53 @@ impl Pr {
         log::debug!("Using bot user name: {bot_user_name}");
 
         let res = client.push_commit(&self.prefix, None, false, &bot_user_name);
+
+        // Propagate hard errors immediately (anything other than non-fast-forward,
+        // which may be a race condition that fetch-and-check can diagnose).
+        if let Err(e) = &res {
+            if !e
+                .to_string()
+                .contains("cannot push non-fastforwardable reference")
+            {
+                return Err(Error::GitError(e.to_string()));
+            }
+        }
+
+        // Fetch to get the true remote state, then check ahead/behind to distinguish:
+        //   ahead=0           → push succeeded
+        //   ahead>0, behind>0 → race condition (parallel job pushed first)
+        //   ahead>0, behind=0 → genuine server rejection (silent or non-fast-forward)
+        client.fetch_origin()?;
+
         let hdr_style = Style::new().bold().underline();
         log::debug!("{}", "Check Push".style(hdr_style));
         let branch_status = client.branch_status()?;
-        log::debug!("Branch status: {branch_status}");
+        log::debug!("Branch status after fetch: {branch_status}");
 
-        match res {
-            Ok(()) => {
-                // libgit2 can return Ok(()) even when the remote rejects the push
-                // (e.g. branch protection rules). Verify the commit actually landed
-                // by checking whether the branch is still ahead of the remote.
-                let ahead = branch_status.ahead;
-                if ahead > 0 {
-                    let msg = format!(
-                        "Push appeared to succeed but branch is still {ahead} commit(s) ahead \
-                         of remote — the push was likely rejected silently (e.g. branch \
-                         protection rules or authentication failure)"
-                    );
-                    if self.allow_push_fail {
-                        log::warn!("{msg}");
-                        Ok(CIExit::UnChanged)
-                    } else {
-                        Err(Error::GitError(msg))
-                    }
-                } else {
-                    Ok(CIExit::Updated)
-                }
+        let ahead = branch_status.ahead;
+        let behind = branch_status.behind;
+
+        if ahead == 0 {
+            Ok(())
+        } else if behind > 0 {
+            // Race: a parallel job pushed first; branch has diverged.
+            if self.allow_push_fail {
+                log::info!(
+                    "Race condition: branch is {ahead} ahead and {behind} behind — \
+                     assuming parallel job succeeded."
+                );
+                Ok(())
+            } else {
+                Err(Error::GitError(format!(
+                    "Push race: branch is {ahead} ahead and {behind} behind remote after fetch"
+                )))
             }
-            Err(e) => {
-                if self.allow_push_fail
-                    && e.to_string()
-                        .contains("cannot push non-fastforwardable reference")
-                {
-                    log::info!(
-                        "Cannot push non-fastforwardable reference, presuming change made already in parallel job."
-                    );
-                    Ok(CIExit::UnChanged)
-                } else {
-                    Err(e)
-                }
-            }
+        } else {
+            // ahead > 0, behind = 0: server rejected the push (silent or non-fast-forward).
+            Err(Error::GitError(format!(
+                "Push rejected by server: branch is still {ahead} commit(s) ahead after fetch \
+                 — check branch protection rules or authentication"
+            )))
         }
     }
 }
