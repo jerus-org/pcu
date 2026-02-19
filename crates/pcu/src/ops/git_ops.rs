@@ -7,7 +7,8 @@ use std::{
 
 use clap::ValueEnum;
 use git2::{
-    BranchType, Direction, Oid, PushOptions, RemoteCallbacks, Signature, Status, StatusOptions,
+    BranchType, Direction, FetchOptions, Oid, PushOptions, RemoteCallbacks, Signature, Status,
+    StatusOptions,
 };
 use git2_credentials::CredentialHandler;
 use log::log_enabled;
@@ -127,6 +128,7 @@ impl Display for BranchReport {
 }
 
 pub trait GitOps {
+    fn fetch_origin(&self) -> Result<(), Error>;
     fn branch_status(&self) -> Result<BranchReport, Error>;
     fn branch_list(&self) -> Result<String, Error>;
     fn repo_status(&self) -> Result<String, Error>;
@@ -658,6 +660,20 @@ impl GitOps for Client {
         output = format!("{output}\n");
 
         Ok(output)
+    }
+
+    fn fetch_origin(&self) -> Result<(), Error> {
+        let mut remote = self.git_repo.find_remote("origin")?;
+        let mut callbacks = RemoteCallbacks::new();
+        let git_config = git2::Config::open_default().unwrap();
+        let mut ch = CredentialHandler::new(git_config);
+        callbacks.credentials(move |url, username, allowed| {
+            ch.try_next_credential(url, username, allowed)
+        });
+        let mut fetch_opts = FetchOptions::new();
+        fetch_opts.remote_callbacks(callbacks);
+        remote.fetch(&[] as &[&str], Some(&mut fetch_opts), None)?;
+        Ok(())
     }
 
     fn branch_status(&self) -> Result<BranchReport, Error> {
