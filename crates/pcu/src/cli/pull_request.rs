@@ -204,7 +204,10 @@ impl Pr {
         // Propagate hard errors immediately (anything other than non-fast-forward,
         // which may be a race condition that fetch-and-check can diagnose).
         if let Err(e) = &res {
-            if !e.to_string().contains("cannot push non-fastforwardable reference") {
+            if !e
+                .to_string()
+                .contains("cannot push non-fastforwardable reference")
+            {
                 return Err(Error::GitError(e.to_string()));
             }
         }
