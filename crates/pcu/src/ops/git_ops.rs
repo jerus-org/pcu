@@ -523,15 +523,28 @@ impl GitOps for Client {
         let mut remote = self.git_repo.find_remote("origin")?;
         let remote_url = remote.url().unwrap_or("<unknown>").to_string();
         log::info!("Push target: {remote_url}");
+
+        // Use the stored GitHub token directly for HTTPS remotes (GitHub App
+        // installation token or PAT), falling back to CredentialHandler (SSH
+        // key agent) for SSH remotes.  This ensures pcu always authenticates
+        // as its intended identity regardless of how CircleCI triggered the
+        // pipeline (OAuth/SSH vs GitHub App/HTTPS).
+        let token_connect = self.github_token.clone();
         let mut callbacks = RemoteCallbacks::new();
-        let git_config = git2::Config::open_default().unwrap();
-        let mut ch = CredentialHandler::new(git_config);
         callbacks.credentials(move |url, username, allowed| {
             log::info!(
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            ch.try_next_credential(url, username, allowed)
+            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT)
+                && !token_connect.is_empty()
+            {
+                log::info!("Authenticating with GitHub App/PAT token");
+                git2::Cred::userpass_plaintext("x-access-token", &token_connect)
+            } else {
+                let git_config = git2::Config::open_default().unwrap();
+                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
+            }
         });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
@@ -569,15 +582,21 @@ impl GitOps for Client {
         };
 
         log::trace!("Push refs: {push_refs:?}");
+        let token_push = self.github_token.clone();
         let mut call_backs = RemoteCallbacks::new();
-        let git_config = git2::Config::open_default().unwrap();
-        let mut ch = CredentialHandler::new(git_config);
         call_backs.credentials(move |url, username, allowed| {
             log::info!(
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            ch.try_next_credential(url, username, allowed)
+            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token_push.is_empty()
+            {
+                log::info!("Authenticating with GitHub App/PAT token");
+                git2::Cred::userpass_plaintext("x-access-token", &token_push)
+            } else {
+                let git_config = git2::Config::open_default().unwrap();
+                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
+            }
         });
         call_backs.push_transfer_progress(progress_bar);
         let mut push_opts = PushOptions::new();
