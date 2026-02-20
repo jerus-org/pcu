@@ -20,6 +20,7 @@ pub struct Client {
     pub(crate) git_repo: Repository,
     pub(crate) github_rest: GitHubAPI,
     pub(crate) github_graphql: gql_client::Client,
+    pub(crate) github_token: String,
     pub(crate) owner: String,
     pub(crate) repo: String,
     pub(crate) default_branch: String,
@@ -84,7 +85,7 @@ impl Client {
         let line_limit = settings.get::<usize>("line_limit").unwrap_or(10);
 
         log::trace!("Getting the github api with {settings:#?}, {owner}, {repo}");
-        let (github_rest, github_graphql) =
+        let (github_rest, github_graphql, github_token) =
             Client::get_github_apis(settings, &owner, &repo).await?;
 
         let git_repo = git2::Repository::open(".")?;
@@ -148,6 +149,7 @@ impl Client {
             git_repo,
             github_rest,
             github_graphql,
+            github_token,
             default_branch,
             branch,
             owner,
@@ -166,7 +168,7 @@ impl Client {
         settings: &Config,
         owner: &str,
         repo: &str,
-    ) -> Result<(GitHubAPI, gql_client::Client), Error> {
+    ) -> Result<(GitHubAPI, gql_client::Client, String), Error> {
         let bld_style = Style::new().bold();
         log::info!("\n***Get GitHub API instance***\n");
         log::trace!("Settings: {settings:#?}");
@@ -232,7 +234,7 @@ impl Client {
 
         let github_rest = GitHubAPI::new(&config);
 
-        Ok((github_rest, github_graphql))
+        Ok((github_rest, github_graphql, token))
     }
 
     pub fn branch_or_main(&self) -> &str {
