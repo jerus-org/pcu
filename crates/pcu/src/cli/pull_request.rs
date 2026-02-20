@@ -199,6 +199,19 @@ impl Pr {
         let bot_user_name = std::env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
         log::debug!("Using bot user name: {bot_user_name}");
 
+        // Read the git-configured identity — this is what git itself will use for the push,
+        // independent of what we believe is configured via environment variables.
+        let git_identity = client
+            .git_repo
+            .config()
+            .ok()
+            .map(|cfg| {
+                let name = cfg.get_string("user.name").unwrap_or_default();
+                let email = cfg.get_string("user.email").unwrap_or_default();
+                format!("{name} <{email}>")
+            })
+            .unwrap_or_else(|| "<unknown>".to_string());
+
         let res = client.push_commit(&self.prefix, None, false, &bot_user_name);
 
         // Propagate hard errors immediately (anything other than non-fast-forward,
@@ -239,14 +252,14 @@ impl Pr {
             } else {
                 Err(Error::GitError(format!(
                     "Push race: branch is {ahead} ahead and {behind} behind remote after fetch \
-                     (push identity: {bot_user_name})"
+                     (push identity: {git_identity})"
                 )))
             }
         } else {
             // ahead > 0, behind = 0: server rejected the push (silent or non-fast-forward).
             Err(Error::GitError(format!(
                 "Push rejected by server: branch is still {ahead} commit(s) ahead after fetch \
-                 (push identity: {bot_user_name}) — check branch protection rules or \
+                 (push identity: {git_identity}) — check branch protection rules or \
                  authentication, and review the GitHub audit log"
             )))
         }
