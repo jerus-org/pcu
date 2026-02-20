@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pr: detect push rejection via fetch-and-recheck(pr [#828])
 - pr: include push identity in rejection error(pr [#830])
 - git: log push URL and credential type(pr [#829])
+- pr: use git config identity in push error message(pr [#831])
 
 ### Security
 
@@ -2003,6 +2004,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#828]: https://github.com/jerus-org/pcu/pull/828
 [#830]: https://github.com/jerus-org/pcu/pull/830
 [#829]: https://github.com/jerus-org/pcu/pull/829
+[#831]: https://github.com/jerus-org/pcu/pull/831
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
