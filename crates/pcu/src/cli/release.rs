@@ -497,6 +497,29 @@ impl Release {
     }
 }
 
+fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
+    let mut output = String::new();
+
+    if let Ok(change_log) = fs::read_to_string(prlog_path) {
+        let mut line_count = 0;
+        if line_limit == 0 {
+            line_limit = change_log.lines().count();
+        };
+
+        output.push_str("\n*****Changelog*****:\n----------------------------");
+        for line in change_log.lines() {
+            output.push_str(format!("{line}\n").as_str());
+            line_count += 1;
+            if line_count >= line_limit {
+                break;
+            }
+        }
+        output.push_str("----------------------------\n");
+    };
+
+    output
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -570,27 +593,4 @@ mod tests {
             unsafe { std::env::set_var("BASH_ENV", v) };
         }
     }
-}
-
-fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
-    let mut output = String::new();
-
-    if let Ok(change_log) = fs::read_to_string(prlog_path) {
-        let mut line_count = 0;
-        if line_limit == 0 {
-            line_limit = change_log.lines().count();
-        };
-
-        output.push_str("\n*****Changelog*****:\n----------------------------");
-        for line in change_log.lines() {
-            output.push_str(format!("{line}\n").as_str());
-            line_count += 1;
-            if line_count >= line_limit {
-                break;
-            }
-        }
-        output.push_str("----------------------------\n");
-    };
-
-    output
 }
