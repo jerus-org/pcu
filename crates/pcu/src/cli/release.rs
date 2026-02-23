@@ -497,6 +497,81 @@ impl Release {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Read;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_resolve_version_returns_explicit() {
+        assert_eq!(resolve_version(&Some("1.2.3".to_string())), "1.2.3");
+    }
+
+    // Env-var-dependent cases run sequentially within one function to avoid
+    // races with other tests that might concurrently read SEMVER / NEXT_VERSION.
+    #[test]
+    fn test_resolve_version_env_fallbacks() {
+        // Explicit arg overrides any env var.
+        unsafe { std::env::set_var("SEMVER", "9.9.9") };
+        assert_eq!(resolve_version(&Some("1.0.0".to_string())), "1.0.0");
+
+        // SEMVER is used when arg is None.
+        unsafe { std::env::remove_var("NEXT_VERSION") };
+        assert_eq!(resolve_version(&None), "9.9.9");
+
+        // NEXT_VERSION is used when SEMVER is absent.
+        unsafe {
+            std::env::remove_var("SEMVER");
+            std::env::set_var("NEXT_VERSION", "3.1.0");
+        }
+        assert_eq!(resolve_version(&None), "3.1.0");
+
+        // Returns "none" when neither env var is set.
+        unsafe { std::env::remove_var("NEXT_VERSION") };
+        assert_eq!(resolve_version(&None), "none");
+    }
+
+    // BASH_ENV tests run sequentially within one function to avoid races.
+    #[test]
+    fn test_write_to_bash_env() {
+        let saved_bash_env = std::env::var("BASH_ENV").ok();
+
+        // Returns Ok(()) with no side-effects when BASH_ENV is not set.
+        unsafe { std::env::remove_var("BASH_ENV") };
+        assert!(write_to_bash_env("KEY", "val").is_ok());
+
+        // Writes a single `export KEY=VALUE` line.
+        let mut tmp = NamedTempFile::new().unwrap();
+        let path = tmp.path().to_str().unwrap().to_string();
+        unsafe { std::env::set_var("BASH_ENV", &path) };
+        write_to_bash_env("SKIP_PUBLISH", "true").unwrap();
+        unsafe { std::env::remove_var("BASH_ENV") };
+        let mut contents = String::new();
+        tmp.read_to_string(&mut contents).unwrap();
+        assert_eq!(contents, "export SKIP_PUBLISH=true\n");
+
+        // Successive calls append separate lines.
+        let mut tmp2 = NamedTempFile::new().unwrap();
+        let path2 = tmp2.path().to_str().unwrap().to_string();
+        unsafe { std::env::set_var("BASH_ENV", &path2) };
+        write_to_bash_env("SKIP_RELEASE", "false").unwrap();
+        write_to_bash_env("SKIP_PUBLISH", "false").unwrap();
+        unsafe { std::env::remove_var("BASH_ENV") };
+        let mut contents2 = String::new();
+        tmp2.read_to_string(&mut contents2).unwrap();
+        assert_eq!(
+            contents2,
+            "export SKIP_RELEASE=false\nexport SKIP_PUBLISH=false\n"
+        );
+
+        // Restore BASH_ENV if it was set before the test.
+        if let Some(v) = saved_bash_env {
+            unsafe { std::env::set_var("BASH_ENV", v) };
+        }
+    }
+}
+
 fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     let mut output = String::new();
 
