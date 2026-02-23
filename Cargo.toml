@@ -32,6 +32,7 @@ log = "0.4.29"
 named-colour = { version = "0.3.25", features = ["extended"] }
 octocrate = { version = "2.2.0", features = [
     "apps",
+    "file-body",
     "issues",
     "pulls",
     "repos",
@@ -44,7 +45,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tempfile = "3.25.0"
 thiserror = "2.0.18"
-tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.49.0", features = ["fs", "macros", "rt-multi-thread"] }
 toml = "1.0.1"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["std", "env-filter"] }
