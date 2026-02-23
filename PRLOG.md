@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate uuid to 1.21.0(pr [#840])
 - deps: update dependency toolkit to v4.4.3(pr [#841])
 - deps: update rust crate clap to 4.5.60(pr [#842])
+- deps: update rust crate toml to 1.0.3(pr [#843])
 
 ### Security
 
@@ -2021,6 +2022,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#840]: https://github.com/jerus-org/pcu/pull/840
 [#841]: https://github.com/jerus-org/pcu/pull/841
 [#842]: https://github.com/jerus-org/pcu/pull/842
+[#843]: https://github.com/jerus-org/pcu/pull/843
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
