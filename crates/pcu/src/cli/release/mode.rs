@@ -33,10 +33,10 @@ pub struct CheckVersionPublished {
 
 /// Check if the release tag already exists on the remote.
 /// Writes SKIP_RELEASE=true/false to $BASH_ENV.
-/// Tag is constructed as <package>-v<version>.
+/// Tag is constructed as `<package>`-v`<version>`.
 #[derive(Debug, Parser, Clone)]
 pub struct CheckTag {
-    /// Package name (tag constructed as <package>-v<VERSION>)
+    /// Package name (tag constructed as `<package>`-v`<VERSION>`)
     pub package: String,
     /// Version (reads $SEMVER or $NEXT_VERSION if not provided)
     #[arg(short, long)]
@@ -47,7 +47,7 @@ pub struct CheckTag {
 /// move the signed tag to the amended commit.
 #[derive(Debug, Parser, Clone)]
 pub struct InjectPubkey {
-    /// Package name (locates crates/<package>/Cargo.toml and constructs tag)
+    /// Package name (locates crates/`<package>`/Cargo.toml and constructs tag)
     pub package: String,
     /// Version string (reads $SEMVER or $NEXT_VERSION if not provided)
     #[arg(short, long)]
