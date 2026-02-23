@@ -39,7 +39,7 @@ octocrate = { version = "2.2.0", features = [
     "users",
     "rustls-tls",
 ], default-features = false }
-owo-colors = "4.2.3"
+owo-colors = "4.3.0"
 regex = "1.12.3"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
