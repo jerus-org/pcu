@@ -101,28 +101,49 @@ fn process_gpg_keys(
             import_key_to_gpg(raw_key)?;
         }
 
-        // Map each email in the key to this key ID
+        // Collect all key IDs: primary key plus all subkeys.
+        // git reports the signing subkey's ID in %GK, not the primary key ID.
+        // The GitHub API returns subkeys in key.subkeys[].key_id, so we add
+        // them all to the trust map so subkey-signed commits verify correctly.
+        let mut all_key_ids: Vec<String> = vec![key_id.clone()];
+        for subkey in &key.subkeys {
+            if let Some(ref subkey_id) = subkey.key_id {
+                if !subkey_id.is_empty() {
+                    all_key_ids.push(subkey_id.clone());
+                }
+            }
+        }
+        log::trace!(
+            "Processing GPG key with {} id(s) (primary + subkeys)",
+            all_key_ids.len()
+        );
+
+        // Map each email to all key IDs (primary and subkeys)
         for email_obj in &key.emails {
             if let Some(email) = &email_obj.email {
-                trust_map
-                    .entry(email.clone())
-                    .or_default()
-                    .push(key_id.clone());
-
+                for kid in &all_key_ids {
+                    trust_map
+                        .entry(email.clone())
+                        .or_default()
+                        .push(kid.clone());
+                }
                 log::trace!("Added trust mapping (aggregate count only in logs)");
             }
         }
 
-        // Also add GitHub noreply email formats
+        // Also add GitHub noreply email formats with all key IDs
         let noreply_email = format!("{username}@users.noreply.github.com");
-        trust_map
-            .entry(noreply_email)
-            .or_default()
-            .push(key_id.clone());
-
-        // Also add numeric ID format
         let id_email = format!("{user_id}+{username}@users.noreply.github.com");
-        trust_map.entry(id_email).or_default().push(key_id.clone());
+        for kid in &all_key_ids {
+            trust_map
+                .entry(noreply_email.clone())
+                .or_default()
+                .push(kid.clone());
+            trust_map
+                .entry(id_email.clone())
+                .or_default()
+                .push(kid.clone());
+        }
     }
 
     Ok(key_count)
@@ -202,6 +223,85 @@ fn add_github_webflow_key(trust_map: &mut TrustMap) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use octocrate::{Collaborator, GpgKey};
+
+    fn make_collaborator(login: &str, id: i64) -> Collaborator {
+        serde_json::from_str(&format!(
+            r#"{{"login":"{login}","id":{id},"node_id":"","avatar_url":"","gravatar_id":null,
+               "url":"","html_url":"","followers_url":"","following_url":"",
+               "gists_url":"","starred_url":"","subscriptions_url":"",
+               "organizations_url":"","repos_url":"","events_url":"",
+               "received_events_url":"","type":"User","site_admin":false,
+               "permissions":{{"pull":true,"push":true,"admin":false}},
+               "role_name":"write"}}"#
+        ))
+        .unwrap()
+    }
+
+    fn make_gpg_key(primary_id: &str, email: &str, subkey_ids: &[&str]) -> GpgKey {
+        let subkeys_json: String = subkey_ids
+            .iter()
+            .map(|k| {
+                format!(
+                    r#"{{"can_certify":null,"can_encrypt_comms":null,"can_encrypt_storage":null,
+                        "can_sign":true,"created_at":null,"emails":null,"expires_at":null,
+                        "id":null,"key_id":"{k}","primary_key_id":null,"public_key":null,
+                        "raw_key":null,"revoked":null,"subkeys":null}}"#
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+
+        serde_json::from_str(&format!(
+            r#"{{"can_certify":false,"can_encrypt_comms":false,"can_encrypt_storage":false,
+               "can_sign":true,"created_at":"2025-01-01T00:00:00Z",
+               "emails":[{{"email":"{email}","verified":true}}],
+               "expires_at":null,"id":1,"key_id":"{primary_id}","name":null,
+               "primary_key_id":null,"public_key":"test","raw_key":null,
+               "revoked":false,"subkeys":[{subkeys_json}]}}"#
+        ))
+        .unwrap()
+    }
+
+    // Test key IDs are fictional hex strings; they are not real GPG keys.
+    const TEST_PRIMARY_KEY: &str = "1A2B3C4D5E6F7A8B";
+    const TEST_SUBKEY: &str = "9C0D1E2F3A4B5C6D";
+    const TEST_USER: &str = "test-user-999";
+    const TEST_USER_ID: i64 = 999_000_001;
+
+    #[test]
+    fn test_subkey_ids_added_to_trust_map() {
+        let collaborator = make_collaborator(TEST_USER, TEST_USER_ID);
+        let email = format!("{TEST_USER}@example.test");
+        let key = make_gpg_key(TEST_PRIMARY_KEY, &email, &[TEST_SUBKEY]);
+        let mut trust_map = TrustMap::new();
+        process_gpg_keys(vec![key], &collaborator, &mut trust_map).unwrap();
+
+        let noreply = format!("{TEST_USER}@users.noreply.github.com");
+        let keys = trust_map.get(&noreply).unwrap();
+        assert!(
+            keys.contains(&TEST_PRIMARY_KEY.to_string()),
+            "primary key ID should be in trust map"
+        );
+        assert!(
+            keys.contains(&TEST_SUBKEY.to_string()),
+            "subkey ID should be in trust map"
+        );
+    }
+
+    #[test]
+    fn test_primary_key_only_still_works() {
+        let collaborator = make_collaborator(TEST_USER, TEST_USER_ID);
+        let email = format!("{TEST_USER}@example.test");
+        let key = make_gpg_key(TEST_PRIMARY_KEY, &email, &[]);
+        let mut trust_map = TrustMap::new();
+        process_gpg_keys(vec![key], &collaborator, &mut trust_map).unwrap();
+
+        let noreply = format!("{TEST_USER}@users.noreply.github.com");
+        let keys = trust_map.get(&noreply).unwrap();
+        assert_eq!(keys.len(), 1, "only primary key should be present");
+        assert!(keys.contains(&TEST_PRIMARY_KEY.to_string()));
+    }
 
     #[test]
     fn test_add_github_webflow_key() {
