@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - auth: warn when falling back to PAT(pr [#837])
 - verify: include subkey IDs in GPG trust map(pr [#838])
 - deps: update rust crate uuid to 1.21.0(pr [#840])
+- deps: update dependency toolkit to v4.4.3(pr [#841])
 
 ### Security
 
@@ -2017,6 +2018,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#838]: https://github.com/jerus-org/pcu/pull/838
 [#839]: https://github.com/jerus-org/pcu/pull/839
 [#840]: https://github.com/jerus-org/pcu/pull/840
+[#841]: https://github.com/jerus-org/pcu/pull/841
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
