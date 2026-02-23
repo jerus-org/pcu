@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.6.6] - 2026-02-23
+
+### Added
+
 - add security improvements to CI(pr [#815])
 - add release utility subcommands(pr [#839])
 
@@ -2025,7 +2033,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#842]: https://github.com/jerus-org/pcu/pull/842
 [#843]: https://github.com/jerus-org/pcu/pull/843
 [#844]: https://github.com/jerus-org/pcu/pull/844
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.5...HEAD
+[0.6.6]: https://github.com/jerus-org/pcu/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
 [0.5.0]: https://github.com/jerus-org/pcu/compare/v0.4.56...v0.5.0
