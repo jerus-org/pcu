@@ -37,7 +37,7 @@ async fn share_release_to_linkedin(prefix: &str, version: &str) -> Result<(), Er
     Ok(())
 }
 
-use std::{fs, path::Path};
+use std::{fs, io::Write, path::Path, process::Command};
 
 use super::{CIExit, Commands};
 use crate::{Client, Error, GitOps, MakeRelease, SignConfig, Workspace};
@@ -45,7 +45,36 @@ mod mode;
 
 use clap::Parser;
 use mode::Mode;
+use octocrate::{APIConfig, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
+
+/// Resolve a version from an optional CLI argument, falling back to $SEMVER or $NEXT_VERSION.
+/// Returns "none" when no version is available.
+fn resolve_version(version_opt: &Option<String>) -> String {
+    if let Some(v) = version_opt {
+        return v.clone();
+    }
+    std::env::var("SEMVER")
+        .or_else(|_| std::env::var("NEXT_VERSION"))
+        .unwrap_or_else(|_| "none".to_string())
+}
+
+/// Append `export KEY=VALUE\n` to the file named by $BASH_ENV.
+/// Logs a warning if $BASH_ENV is unset (e.g. running locally).
+fn write_to_bash_env(key: &str, value: &str) -> Result<(), Error> {
+    let bash_env = std::env::var("BASH_ENV").unwrap_or_default();
+    if bash_env.is_empty() {
+        log::warn!("$BASH_ENV not set — {key}={value} will not persist to subsequent CI steps");
+        return Ok(());
+    }
+    let mut file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(&bash_env)?;
+    writeln!(file, "export {key}={value}")?;
+    log::debug!("Wrote {key}={value} to $BASH_ENV ({bash_env})");
+    Ok(())
+}
 
 #[derive(Debug, Parser, Clone)]
 pub struct Release {
@@ -72,6 +101,10 @@ impl Release {
             Mode::Package(_) => self.release_package(client).await,
             Mode::Workspace => self.release_workspace(client).await,
             Mode::Current(_) => self.release_current(client).await,
+            Mode::CheckVersionPublished(_) => self.check_version_published().await,
+            Mode::CheckTag(_) => self.check_tag(client).await,
+            Mode::InjectPubkey(_) => self.inject_pubkey().await,
+            Mode::UploadAsset(_) => self.upload_asset(client).await,
         }
     }
 
@@ -238,6 +271,230 @@ impl Release {
 
         Ok(CIExit::Released)
     }
+
+    /// Check if a crate version is already published to crates.io.
+    ///
+    /// Uses `kdeets` (pre-installed in ci-container) to query the sparse registry
+    /// cache, avoiding crates.io rate limiting. See jerus-org/kdeets#170 for a
+    /// future library API that would replace this subprocess call.
+    ///
+    /// Writes `SKIP_PUBLISH=true/false` to `$BASH_ENV`.
+    async fn check_version_published(self) -> Result<CIExit, Error> {
+        let Mode::CheckVersionPublished(ref cmd) = self.mode else {
+            return Err(Error::NoPackageSpecified);
+        };
+
+        let version = resolve_version(&cmd.version);
+
+        if version == "none" {
+            log::info!("No version to check — setting SKIP_PUBLISH=false");
+            write_to_bash_env("SKIP_PUBLISH", "false")?;
+            return Ok(CIExit::Released);
+        }
+
+        log::info!(
+            "Checking if {package} {version} is on crates.io",
+            package = cmd.package
+        );
+
+        let output = Command::new("kdeets")
+            .args(["--no-colour", "crate", &cmd.package, "-l"])
+            .output()
+            .map_err(|e| Error::GitError(format!("Failed to run kdeets: {e}")))?;
+
+        let kdeets_output = String::from_utf8_lossy(&output.stdout);
+        let version_exists = kdeets_output
+            .lines()
+            .any(|line| line.split_whitespace().last() == Some(version.as_str()));
+
+        if version_exists {
+            log::info!("Version {version} already on crates.io — setting SKIP_PUBLISH=true");
+            write_to_bash_env("SKIP_PUBLISH", "true")?;
+        } else {
+            log::info!("Version {version} not on crates.io — setting SKIP_PUBLISH=false");
+            write_to_bash_env("SKIP_PUBLISH", "false")?;
+        }
+
+        Ok(CIExit::Released)
+    }
+
+    /// Check if the release tag already exists on the remote.
+    ///
+    /// Tag is constructed as `<package>-v<VERSION>`. Uses the GitHub API via
+    /// the existing `client.tag_exists()` method.
+    ///
+    /// Writes `SKIP_RELEASE=true/false` to `$BASH_ENV`.
+    async fn check_tag(self, client: Client) -> Result<CIExit, Error> {
+        let Mode::CheckTag(ref cmd) = self.mode else {
+            return Err(Error::NoPackageSpecified);
+        };
+
+        let version = resolve_version(&cmd.version);
+
+        if version == "none" {
+            log::info!("No version to check — setting SKIP_RELEASE=false");
+            write_to_bash_env("SKIP_RELEASE", "false")?;
+            return Ok(CIExit::Released);
+        }
+
+        let tag = format!("{}-v{}", cmd.package, version);
+        log::info!("Checking if tag {tag} exists on remote");
+
+        if client.tag_exists(&tag).await {
+            log::info!("Tag {tag} already exists — setting SKIP_RELEASE=true");
+            write_to_bash_env("SKIP_RELEASE", "true")?;
+        } else {
+            log::info!("Tag {tag} not found — setting SKIP_RELEASE=false");
+            write_to_bash_env("SKIP_RELEASE", "false")?;
+        }
+
+        Ok(CIExit::Released)
+    }
+
+    /// Inject the confirmed signing pubkey into `Cargo.toml`, amend the release
+    /// commit produced by `cargo release --no-push`, and move the signed tag to
+    /// the amended commit.
+    ///
+    /// Reads pubkey from `--pubkey` flag or `$BINSTALL_SIGNING_PUBKEY`.
+    /// Silently skips when version is "none" or pubkey is unavailable.
+    async fn inject_pubkey(self) -> Result<CIExit, Error> {
+        let Mode::InjectPubkey(ref cmd) = self.mode else {
+            return Err(Error::NoPackageSpecified);
+        };
+
+        let version = resolve_version(&cmd.version);
+
+        if version == "none" {
+            log::info!("No version set — skipping pubkey injection");
+            return Ok(CIExit::Released);
+        }
+
+        let pubkey = cmd
+            .pubkey
+            .as_deref()
+            .map(String::from)
+            .or_else(|| std::env::var("BINSTALL_SIGNING_PUBKEY").ok());
+
+        let Some(pubkey) = pubkey else {
+            log::info!("No signing pubkey available — skipping Cargo.toml update");
+            return Ok(CIExit::Released);
+        };
+
+        let tag = format!("{}-v{}", cmd.package, version);
+        let cargo_toml_path = format!("crates/{}/Cargo.toml", cmd.package);
+
+        // Replace the pubkey value in Cargo.toml (uses | as delimiter to avoid
+        // conflicts with the pubkey's base62 characters)
+        let content = fs::read_to_string(&cargo_toml_path)?;
+        let updated = regex::Regex::new(r#"pubkey = ".*""#)?
+            .replace(&content, format!(r#"pubkey = "{pubkey}""#).as_str())
+            .into_owned();
+        fs::write(&cargo_toml_path, &updated)?;
+        log::info!("Updated {cargo_toml_path} with confirmed signing pubkey");
+
+        // Stage the updated Cargo.toml
+        let status = Command::new("git")
+            .args(["add", &cargo_toml_path])
+            .status()
+            .map_err(|e| Error::GitError(format!("Failed to run git add: {e}")))?;
+        if !status.success() {
+            return Err(Error::GitError("git add failed".to_string()));
+        }
+
+        // Amend the release commit to include the pubkey
+        let status = Command::new("git")
+            .args(["commit", "--amend", "--no-edit", "-S"])
+            .status()
+            .map_err(|e| Error::GitError(format!("Failed to run git commit --amend: {e}")))?;
+        if !status.success() {
+            return Err(Error::GitError("git commit --amend failed".to_string()));
+        }
+
+        // Move the signed tag to the amended commit
+        let status = Command::new("git")
+            .args(["tag", "-f", "-s", &tag, "-m", &tag])
+            .status()
+            .map_err(|e| Error::GitError(format!("Failed to run git tag: {e}")))?;
+        if !status.success() {
+            return Err(Error::GitError(format!("git tag -f -s {tag} failed")));
+        }
+
+        log::info!("Release commit amended and tag {tag} moved to amended commit");
+        Ok(CIExit::Released)
+    }
+
+    /// Upload a binary asset to an existing GitHub release.
+    ///
+    /// Looks up the release ID via `get_release_by_tag`, then uploads to
+    /// `uploads.github.com` using a dedicated `APIConfig` (octocrate's
+    /// `upload_release_asset` requires this separate base URL).
+    async fn upload_asset(self, client: Client) -> Result<CIExit, Error> {
+        let Mode::UploadAsset(ref cmd) = self.mode else {
+            return Err(Error::NoPackageSpecified);
+        };
+
+        let asset_name = cmd
+            .asset_name
+            .as_deref()
+            .map(String::from)
+            .or_else(|| {
+                cmd.asset_path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+            })
+            .ok_or_else(|| Error::GitError("Could not determine asset name".to_string()))?;
+
+        if !cmd.asset_path.exists() {
+            return Err(Error::GitError(format!(
+                "Asset file not found: {}",
+                cmd.asset_path.display()
+            )));
+        }
+
+        log::info!("Looking up GitHub release for tag {}", cmd.tag);
+
+        let release = client
+            .github_rest
+            .repos
+            .get_release_by_tag(client.owner(), client.repo(), &cmd.tag)
+            .send()
+            .await?;
+
+        log::info!("Found release {} (id={})", release.tag_name, release.id);
+
+        // GitHub binary uploads must go to uploads.github.com, not api.github.com.
+        // A dedicated APIConfig with the upload base URL is required.
+        let upload_token = PersonalAccessToken::new(client.github_token.clone());
+        let upload_config = APIConfig::new("https://uploads.github.com", upload_token);
+        let upload_api = octocrate::GitHubAPI::new(&upload_config);
+
+        let file = tokio::fs::File::open(&cmd.asset_path).await?;
+        let content_length = file.metadata().await?.len();
+
+        // Minisign signatures are text; binaries use octet-stream
+        let content_type = if asset_name.ends_with(".sig") {
+            "text/plain"
+        } else {
+            "application/octet-stream"
+        };
+
+        let query = octocrate::repos::upload_release_asset::Query::builder()
+            .name(asset_name.clone())
+            .build();
+
+        upload_api
+            .repos
+            .upload_release_asset(client.owner(), client.repo(), release.id)
+            .query(&query)
+            .header("Content-Type", content_type)
+            .header("Content-Length", content_length.to_string())
+            .file(file)
+            .send()
+            .await?;
+
+        log::info!("Successfully uploaded {asset_name}");
+        Ok(CIExit::Released)
+    }
 }
 
 fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
@@ -261,4 +518,79 @@ fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     };
 
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Read;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_resolve_version_returns_explicit() {
+        assert_eq!(resolve_version(&Some("1.2.3".to_string())), "1.2.3");
+    }
+
+    // Env-var-dependent cases run sequentially within one function to avoid
+    // races with other tests that might concurrently read SEMVER / NEXT_VERSION.
+    #[test]
+    fn test_resolve_version_env_fallbacks() {
+        // Explicit arg overrides any env var.
+        unsafe { std::env::set_var("SEMVER", "9.9.9") };
+        assert_eq!(resolve_version(&Some("1.0.0".to_string())), "1.0.0");
+
+        // SEMVER is used when arg is None.
+        unsafe { std::env::remove_var("NEXT_VERSION") };
+        assert_eq!(resolve_version(&None), "9.9.9");
+
+        // NEXT_VERSION is used when SEMVER is absent.
+        unsafe {
+            std::env::remove_var("SEMVER");
+            std::env::set_var("NEXT_VERSION", "3.1.0");
+        }
+        assert_eq!(resolve_version(&None), "3.1.0");
+
+        // Returns "none" when neither env var is set.
+        unsafe { std::env::remove_var("NEXT_VERSION") };
+        assert_eq!(resolve_version(&None), "none");
+    }
+
+    // BASH_ENV tests run sequentially within one function to avoid races.
+    #[test]
+    fn test_write_to_bash_env() {
+        let saved_bash_env = std::env::var("BASH_ENV").ok();
+
+        // Returns Ok(()) with no side-effects when BASH_ENV is not set.
+        unsafe { std::env::remove_var("BASH_ENV") };
+        assert!(write_to_bash_env("KEY", "val").is_ok());
+
+        // Writes a single `export KEY=VALUE` line.
+        let mut tmp = NamedTempFile::new().unwrap();
+        let path = tmp.path().to_str().unwrap().to_string();
+        unsafe { std::env::set_var("BASH_ENV", &path) };
+        write_to_bash_env("SKIP_PUBLISH", "true").unwrap();
+        unsafe { std::env::remove_var("BASH_ENV") };
+        let mut contents = String::new();
+        tmp.read_to_string(&mut contents).unwrap();
+        assert_eq!(contents, "export SKIP_PUBLISH=true\n");
+
+        // Successive calls append separate lines.
+        let mut tmp2 = NamedTempFile::new().unwrap();
+        let path2 = tmp2.path().to_str().unwrap().to_string();
+        unsafe { std::env::set_var("BASH_ENV", &path2) };
+        write_to_bash_env("SKIP_RELEASE", "false").unwrap();
+        write_to_bash_env("SKIP_PUBLISH", "false").unwrap();
+        unsafe { std::env::remove_var("BASH_ENV") };
+        let mut contents2 = String::new();
+        tmp2.read_to_string(&mut contents2).unwrap();
+        assert_eq!(
+            contents2,
+            "export SKIP_RELEASE=false\nexport SKIP_PUBLISH=false\n"
+        );
+
+        // Restore BASH_ENV if it was set before the test.
+        if let Some(v) = saved_bash_env {
+            unsafe { std::env::set_var("BASH_ENV", v) };
+        }
+    }
 }
