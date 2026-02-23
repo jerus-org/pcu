@@ -209,8 +209,8 @@ impl Client {
                 let pat = settings
                     .get::<String>("pat")
                     .map_err(|_| Error::NoGitHubAPIAuth)?;
-                log::info!(
-                    "Falling back to {} for authentication",
+                log::warn!(
+                    "Falling back to {} for authentication — PAT lacks branch protection bypass authority",
                     "Personal Access Token".style(bld_style)
                 );
 
