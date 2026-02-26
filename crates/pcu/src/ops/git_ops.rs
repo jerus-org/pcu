@@ -7,8 +7,8 @@ use std::{
 
 use clap::ValueEnum;
 use git2::{
-    BranchType, Direction, FetchOptions, Oid, PushOptions, RemoteCallbacks, Signature, Status,
-    StatusOptions,
+    build::CheckoutBuilder, BranchType, Direction, FetchOptions, Oid, PushOptions, RemoteCallbacks,
+    Signature, Status, StatusOptions,
 };
 use git2_credentials::CredentialHandler;
 use log::log_enabled;
@@ -129,6 +129,8 @@ impl Display for BranchReport {
 
 pub trait GitOps {
     fn fetch_origin(&self) -> Result<(), Error>;
+    fn fetch_branch(&self, branch: &str) -> Result<(), Error>;
+    fn checkout_branch(&self, branch: &str) -> Result<(), Error>;
     fn branch_status(&self) -> Result<BranchReport, Error>;
     fn branch_list(&self) -> Result<String, Error>;
     fn repo_status(&self) -> Result<String, Error>;
@@ -689,6 +691,58 @@ impl GitOps for Client {
         let mut fetch_opts = FetchOptions::new();
         fetch_opts.remote_callbacks(callbacks);
         remote.fetch(&[] as &[&str], Some(&mut fetch_opts), None)?;
+        Ok(())
+    }
+
+    fn fetch_branch(&self, branch: &str) -> Result<(), Error> {
+        let token = self.github_token.clone();
+        let mut remote = self.git_repo.find_remote("origin")?;
+
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(move |url, username, allowed| {
+            log::info!(
+                "Fetch auth: url={url}, username={}, credential_types={allowed:?}",
+                username.unwrap_or("<none>")
+            );
+            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token.is_empty() {
+                git2::Cred::userpass_plaintext("x-access-token", &token)
+            } else {
+                let git_config = git2::Config::open_default().unwrap();
+                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
+            }
+        });
+
+        let mut fetch_opts = FetchOptions::new();
+        fetch_opts.remote_callbacks(callbacks);
+
+        let refspec = format!("refs/heads/{branch}:refs/remotes/origin/{branch}");
+        remote.fetch(&[&refspec], Some(&mut fetch_opts), None)?;
+
+        log::debug!("Fetched branch: {branch}");
+        Ok(())
+    }
+
+    fn checkout_branch(&self, branch: &str) -> Result<(), Error> {
+        let origin_ref = format!("origin/{branch}");
+        let remote_branch = self.git_repo.find_branch(&origin_ref, BranchType::Remote)?;
+        let commit = remote_branch.get().peel_to_commit()?;
+
+        // Create or fast-forward local branch to match the remote
+        match self.git_repo.find_branch(branch, BranchType::Local) {
+            Ok(local_branch) => {
+                let mut reference = local_branch.into_reference();
+                reference.set_target(commit.id(), "checkout: fast-forward")?;
+            }
+            Err(_) => {
+                self.git_repo.branch(branch, &commit, false)?;
+            }
+        }
+
+        self.git_repo.set_head(&format!("refs/heads/{branch}"))?;
+        self.git_repo
+            .checkout_head(Some(CheckoutBuilder::default().force()))?;
+
+        log::debug!("Checked out branch: {branch}");
         Ok(())
     }
 

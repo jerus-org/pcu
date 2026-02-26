@@ -31,6 +31,7 @@ async fn main() -> Result<()> {
         Commands::Bsky(bsky_args) => bsky_args.run().await,
         Commands::Linkedin(li_args) => li_args.run().await,
         Commands::VerifySignatures(verify_args) => verify_args.run_verify().await,
+        Commands::Checkout(checkout_args) => checkout_args.run_checkout().await,
     };
 
     match res {
@@ -50,6 +51,7 @@ async fn main() -> Result<()> {
                 CIExit::SharedToLinkedIn => log::info!("Shared to LinkedIn"),
                 CIExit::NoContentForLinkedIn => log::info!("No LinkedIn content to share"),
                 CIExit::VerificationPassed => log::info!("✓ All signature checks passed!"),
+                CIExit::SwitchedBranch(s) => log::info!("Switched to branch: {s}"),
             };
             Ok(())
         }
