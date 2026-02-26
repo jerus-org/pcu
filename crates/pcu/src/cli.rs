@@ -1,4 +1,5 @@
 mod bsky;
+mod checkout;
 mod commit;
 mod label;
 mod linkedin;
@@ -10,6 +11,7 @@ mod verify_signatures;
 use std::{env, fmt::Display, fs};
 
 use bsky::Bsky;
+use checkout::Checkout;
 use clap::{Parser, Subcommand};
 use color_eyre::Result;
 use commit::Commit;
@@ -40,6 +42,7 @@ pub enum CIExit {
     SharedToLinkedIn,
     NoContentForLinkedIn,
     VerificationPassed,
+    SwitchedBranch(String),
 }
 
 #[derive(Parser, Debug)]
@@ -72,7 +75,7 @@ pub enum Commands {
     /// Apply a label to a pull request.
     #[clap(long_about = "
 Apply a label to a pull request.
-In default use applies the `rebase` label to the pull request with 
+In default use applies the `rebase` label to the pull request with
 the lowest number submitted by the `renovate` user")]
     Label(Label),
     /// Post summaries and link to new or changed blog posts to bluesky
@@ -81,6 +84,8 @@ the lowest number submitted by the `renovate` user")]
     Linkedin(Linkedin),
     /// Verify commit signatures to prevent identity impersonation
     VerifySignatures(VerifySignatures),
+    /// Fetch and switch to a branch, updating CI environment variables
+    Checkout(Checkout),
 }
 
 impl Display for Commands {
@@ -94,6 +99,7 @@ impl Display for Commands {
             Commands::Bsky(_) => write!(f, "bluesky"),
             Commands::Linkedin(_) => write!(f, "linkedin"),
             Commands::VerifySignatures(_) => write!(f, "verify-signatures"),
+            Commands::Checkout(_) => write!(f, "checkout"),
         }
     }
 }
@@ -152,6 +158,7 @@ impl Commands {
             Commands::VerifySignatures(_) => {
                 settings.set_override("command", "verify-signatures")?
             }
+            Commands::Checkout(_) => settings.set_override("command", "checkout")?,
         };
 
         settings = if let Commands::Bsky(bsky) = self {
