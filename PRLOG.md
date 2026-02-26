@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.6.7] - 2026-02-26
+
+### Added
+
 - add checkout subcommand(pr [#847])
 
 ### Fixed
@@ -2037,7 +2045,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#844]: https://github.com/jerus-org/pcu/pull/844
 [#846]: https://github.com/jerus-org/pcu/pull/846
 [#847]: https://github.com/jerus-org/pcu/pull/847
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.6...HEAD
+[0.6.7]: https://github.com/jerus-org/pcu/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/jerus-org/pcu/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/jerus-org/pcu/compare/v0.5.0...v0.6.4
