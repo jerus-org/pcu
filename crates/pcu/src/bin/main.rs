@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
         Commands::Bsky(bsky_args) => bsky_args.run().await,
         Commands::Linkedin(li_args) => li_args.run().await,
         Commands::VerifySignatures(verify_args) => verify_args.run_verify().await,
-        Commands::Checkout(checkout_args) => checkout_args.run_checkout().await,
+        Commands::Checkout(checkout_args) => checkout_args.run().await,
     };
 
     match res {

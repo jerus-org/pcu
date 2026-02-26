@@ -23,15 +23,12 @@ pub fn write_ci_branch_export(branch: &str, path: &str) -> Result<(), Error> {
 
 /// Write `export CIRCLE_BRANCH=<branch>` to the file named by `$BASH_ENV`.
 ///
-/// Silently succeeds (with a warning log) when `BASH_ENV` is not set.
+/// Returns `Err` when `BASH_ENV` is not set, allowing the caller to decide
+/// how to handle the missing environment (e.g. warn and continue or fail).
 pub fn export_ci_branch(branch: &str) -> Result<(), Error> {
-    match env::var(BASH_ENV_VAR) {
-        Ok(path) => write_ci_branch_export(branch, &path),
-        Err(_) => {
-            log::warn!("{BASH_ENV_VAR} not set; {CIRCLE_BRANCH_VAR} not updated in environment");
-            Ok(())
-        }
-    }
+    let path = env::var(BASH_ENV_VAR)
+        .map_err(|_| Error::GitError(format!("{BASH_ENV_VAR} is not set")))?;
+    write_ci_branch_export(branch, &path)
 }
 
 #[cfg(test)]
@@ -85,9 +82,7 @@ mod tests {
     }
 
     #[test]
-    fn test_export_ci_branch_no_bash_env_succeeds_silently() {
-        // Temporarily ensure BASH_ENV is not set for this test.
-        // We use a unique var name to detect it; if set, skip gracefully.
+    fn test_export_ci_branch_no_bash_env_returns_err() {
         let saved = env::var(BASH_ENV_VAR).ok();
         env::remove_var(BASH_ENV_VAR);
 
@@ -97,6 +92,10 @@ mod tests {
             env::set_var(BASH_ENV_VAR, v);
         }
 
-        assert!(result.is_ok());
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("BASH_ENV is not set"));
     }
 }

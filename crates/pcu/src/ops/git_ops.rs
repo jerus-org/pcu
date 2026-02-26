@@ -695,21 +695,12 @@ impl GitOps for Client {
     }
 
     fn fetch_branch(&self, branch: &str) -> Result<(), Error> {
-        let token = self.github_token.clone();
         let mut remote = self.git_repo.find_remote("origin")?;
-
+        let git_config = git2::Config::open_default().unwrap();
+        let mut ch = CredentialHandler::new(git_config);
         let mut callbacks = RemoteCallbacks::new();
         callbacks.credentials(move |url, username, allowed| {
-            log::info!(
-                "Fetch auth: url={url}, username={}, credential_types={allowed:?}",
-                username.unwrap_or("<none>")
-            );
-            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token.is_empty() {
-                git2::Cred::userpass_plaintext("x-access-token", &token)
-            } else {
-                let git_config = git2::Config::open_default().unwrap();
-                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
-            }
+            ch.try_next_credential(url, username, allowed)
         });
 
         let mut fetch_opts = FetchOptions::new();

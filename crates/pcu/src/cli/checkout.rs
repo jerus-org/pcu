@@ -1,12 +1,8 @@
-use std::env;
-
 use clap::Parser;
 use color_eyre::Result;
 
 use super::{CIExit, Commands, GitOps};
 use crate::{export_ci_branch, Error};
-
-const BASH_ENV_VAR: &str = "BASH_ENV";
 
 #[derive(Debug, Parser, Clone)]
 pub struct Checkout {
@@ -16,19 +12,16 @@ pub struct Checkout {
 }
 
 impl Checkout {
-    pub async fn run_checkout(&self) -> Result<CIExit, Error> {
+    pub async fn run(&self) -> Result<CIExit, Error> {
         let client = Commands::Checkout(self.clone()).get_client().await?;
 
         client.fetch_branch(&self.branch)?;
         client.checkout_branch(&self.branch)?;
 
-        if env::var(BASH_ENV_VAR).is_ok() {
-            export_ci_branch(&self.branch)?;
-        } else {
-            log::warn!("{BASH_ENV_VAR} not set; CIRCLE_BRANCH not updated in environment");
+        if let Err(e) = export_ci_branch(&self.branch) {
+            log::warn!("{e}");
         }
 
-        log::info!("Switched to branch: {}", self.branch);
         Ok(CIExit::SwitchedBranch(self.branch.clone()))
     }
 }
