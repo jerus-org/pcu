@@ -4,9 +4,6 @@ parameters:
   min_rust_version:
     type: string
     default: "1.88"
-  fingerprint:
-    type: string
-    default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
   validation_flag:
     type: boolean
     default: false
@@ -24,10 +21,6 @@ jobs:
     executor:
       name: toolkit/rust_env_rolling
     parameters:
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
       pcu_verbosity:
         type: string
         default: "-vv"
@@ -42,15 +35,6 @@ jobs:
         description: "The commit message to use for the pcu test push"
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
       - run:
@@ -80,10 +64,6 @@ jobs:
     executor:
       name: toolkit/rust_env_rolling
     parameters:
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
       pcu_verbosity:
         type: string
         default: "-vv"
@@ -98,15 +78,6 @@ jobs:
         description: "The commit message to use for the pcu test push"
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
       # Start with the test setup workspace
@@ -132,10 +103,6 @@ jobs:
     executor:
       name: toolkit/rust_env_rolling
     parameters:
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
       pcu_verbosity:
         type: string
         default: "-vv"
@@ -146,15 +113,6 @@ jobs:
         description: "Whether or not prevent final push of commit"
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
       # Start with the test setup workspace
@@ -181,10 +139,6 @@ jobs:
     executor:
       name: toolkit/rust_env_rolling
     parameters:
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
       pcu_verbosity:
         type: string
         default: "-vv"
@@ -195,15 +149,6 @@ jobs:
         description: "Whether or not prevent final push of commit"
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
       # Start with the test setup workspace
@@ -251,10 +196,6 @@ jobs:
     executor:
       name: toolkit/rust_env_rolling
     parameters:
-      ssh_fingerprint:
-        type: string
-        description: |
-          The fingerprint of the ssh key to use
       pcu_verbosity:
         type: string
         default: "-vv"
@@ -265,15 +206,6 @@ jobs:
         description: "Whether or not prevent final push of commit"
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - <<parameters.ssh_fingerprint>>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            ssh-add -d ~/.ssh/id_rsa.pub
-            ssh-add -l
       - toolkit/gpg_key
       - toolkit/git_config
       # Start with the test setup workspace
@@ -395,14 +327,12 @@ workflows:
       - toolkit/idiomatic_rust:
           min_rust_version: << pipeline.parameters.min_rust_version >>
       - test-setup:
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
           context:
             - release
             - bot-check
             - pcu-app
 
       - test-commit:
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
           context:
             - release
@@ -419,7 +349,6 @@ workflows:
             - docs
             - toolkit/idiomatic_rust
       - test-push:
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
           context:
@@ -436,7 +365,6 @@ workflows:
             - docs
             - toolkit/idiomatic_rust
       - test-bsky-directory:
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
           context:
@@ -454,7 +382,6 @@ workflows:
             - docs
             - toolkit/idiomatic_rust
       - test-bsky-file:
-          ssh_fingerprint: << pipeline.parameters.fingerprint >>
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
           context:
@@ -479,7 +406,7 @@ workflows:
             branches:
               ignore:
                 - main
-          ignore_advisories: "RUSTSEC-2025-0007 RUSTSEC-2026-0002"
+          ignore_advisories: "RUSTSEC-2026-0002"
       - toolkit/security:
           name: security with sonarcloud
           context: SonarCloud
@@ -488,6 +415,6 @@ workflows:
               ignore:
                 - /pull\/[0-9]+/
                 - main
-          ignore_advisories: "RUSTSEC-2025-0007 RUSTSEC-2026-0002"
+          ignore_advisories: "RUSTSEC-2026-0002"
 
 
