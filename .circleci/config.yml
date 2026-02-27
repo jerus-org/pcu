@@ -10,7 +10,7 @@ parameters:
     description: "If true, the validation pipeline will be executed."
 orbs:
   # cci-ignore-next-line
-  toolkit: jerus-org/circleci-toolkit@4.5.3
+  toolkit: jerus-org/circleci-toolkit@4.5.4
 
 # Custom executors removed - using toolkit rolling executors instead:
 #   - toolkit/rust_env_rolling for Rust jobs
