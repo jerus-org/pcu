@@ -1,0 +1,82 @@
+version: 2.1
+
+# Triggered by GitHub "pull_request merged" event (configured in CircleCI project
+# settings under "Triggers"). Runs independently of the push-triggered config.yml,
+# so the PRLOG update commit does not re-trigger this workflow.
+#
+# NOTE: The GitHub "pr merged" event sets both pipeline.git.branch AND
+# CIRCLE_BRANCH to the PR's HEAD branch (deleted after merge). The custom
+# update-prlog-on-main job switches to main via pcu checkout --branch main,
+# which fetches, switches branch, AND overrides CIRCLE_BRANCH in $BASH_ENV.
+#
+# Workflow:
+#   update_prlog  - adds merged PR entry to PRLOG.md, commits and pushes to main
+#   label         - labels the next queued Renovate PR so it is rebased and runs
+
+parameters:
+  update_pcu:
+    type: boolean
+    default: true
+    description: "If true, pcu is updated from its main github branch before running."
+
+orbs:
+  toolkit: jerus-org/circleci-toolkit@4.5.3
+
+jobs:
+  update-prlog-on-main:
+    # SOURCE: toolkit@4.5.3/jobs/update_prlog
+    # ENHANCEMENT: Uses `pcu checkout --branch main` to handle the GitHub "pr merged"
+    #   event, which sets pipeline.git.branch AND CIRCLE_BRANCH to the PR's HEAD
+    #   branch (now deleted). pcu checkout fetches, switches branch, AND overrides
+    #   CIRCLE_BRANCH in $BASH_ENV — replacing three bash lines with one command.
+    # PLAN: Propose target_branch parameter upstream to toolkit/update_prlog@4.5.4
+    executor: toolkit/rust_env_rolling
+    steps:
+      - checkout
+      - when:
+          condition: << pipeline.parameters.update_pcu >>
+          steps:
+            - toolkit/install_latest_pcu
+      - run:
+          name: Switch to main branch
+          command: pcu checkout --branch main
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - run:
+          name: pcu version
+          command: pcu --version
+      - run:
+          name: Update PRLOG or halt
+          command: |
+            set -e
+
+            # Capture stderr separately so debug logs are visible even when
+            # the step halts (successful pipelines don't surface logs otherwise).
+            result=$(pcu -vvv pr --early-exit --push --from-merge \
+              2>/tmp/pcu_debug.log) || {
+              echo "=== pcu stderr (error) ==="
+              cat /tmp/pcu_debug.log
+              exit 1
+            }
+
+            echo "=== pcu stderr (debug) ==="
+            cat /tmp/pcu_debug.log
+            echo "=== pcu result: '$result' ==="
+
+            if [ "$result" == "halt" ]; then
+              circleci-agent step halt
+            fi
+
+workflows:
+  update_prlog:
+    jobs:
+      - update-prlog-on-main:
+          context:
+            - release
+            - bot-check
+            - pcu-app
+      - toolkit/label:
+          min_rust_version: "1.88"
+          context: pcu-app
+          requires:
+            - update-prlog-on-main
