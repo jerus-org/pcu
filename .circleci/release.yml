@@ -1,328 +1,43 @@
 version: 2.1
 
+# Triggered manually or via scheduled pipeline (configured in CircleCI project
+# settings). Runs independently of the push-triggered config.yml.
+#
+# Workflow:
+#   tools             - verify required tools are present and log versions
+#   calculate-versions - calculate next versions for all crates and workspace
+#                        BEFORE the approval gate so the reviewer knows exactly
+#                        what will be released; versions are persisted to workspace
+#   approve-release   - manual gate: review calculated versions before approving
+#   release-gen-bsky  - release gen-bsky crate (sequential to avoid Cargo.lock conflicts)
+#   release-gen-linkedin - release gen-linkedin crate
+#   release-pcu       - release pcu crate
+#   toolkit/release_prlog - create workspace v* release and update PRLOG.md
+
 parameters:
-  min_rust_version:
+  gen_bsky_version:
     type: string
-    default: "1.88"
-  fingerprint:
+    default: ""
+    description: "Override gen-bsky crate version (empty = nextsv auto-detect)"
+  gen_linkedin_version:
     type: string
-    default: SHA256:OkxsH8Z6Iim6WDJBaII9eTT9aaO1f3eDc6IpsgYYPVg
+    default: ""
+    description: "Override gen-linkedin crate version (empty = nextsv auto-detect)"
+  pcu_version:
+    type: string
+    default: ""
+    description: "Override pcu crate version (empty = nextsv auto-detect)"
+  workspace_version:
+    type: string
+    default: ""
+    description: "Override workspace v* version (empty = nextsv auto-detect)"
 
 orbs:
-  # cci-ignore-next-line
-  toolkit: jerus-org/circleci-toolkit@4.4.3
-
-# Commands designed for future migration to circleci-toolkit
-# These extend existing toolkit patterns with backward-compatible parameters
-commands:
-  # Enhanced version of toolkit/get_next_version with prefix and subdir support
-  # Backward compatible: existing behavior when prefix/subdir not provided
-  get_next_version:
-    description: >
-      Calculate the next version number and save it to the NEXT_VERSION environment variable.
-      Enhanced version that supports --prefix and --subdir for crate-specific version detection.
-      When prefix/subdir are empty, behaves identically to toolkit/get_next_version.
-    parameters:
-      version:
-        type: string
-        default: ""
-        description: "Specific version number to release (overrides calculation)"
-      package:
-        type: string
-        default: ""
-        description: "Package to release and/or publish"
-      prefix:
-        type: string
-        default: ""
-        description: "Tag prefix for version detection (e.g., gen-orb-mcp-v)"
-      subdir:
-        type: string
-        default: ""
-        description: "Subdirectory containing the crate (for monorepo support)"
-      verbosity:
-        type: string
-        default: "-q"
-        description: "Verbosity flag for nextsv command"
-    steps:
-      - run:
-          name: Calculate next version
-          command: |
-            set -eo pipefail
-
-            # If specific version provided, use it directly
-            if [ "<< parameters.version >>" != "" ]; then
-              version="<< parameters.version >>"
-              echo "Using specified version: $version"
-              echo "export NEXT_VERSION=$version" >> "$BASH_ENV"
-              echo "export SEMVER=$version" >> "$BASH_ENV"
-              exit 0
-            fi
-
-            # Build nextsv arguments
-            nextsv_args="<< parameters.verbosity >> -bn calculate"
-
-            if [ "<< parameters.package >>" != "" ]; then
-              nextsv_args="$nextsv_args --package << parameters.package >>"
-            fi
-
-            if [ "<< parameters.prefix >>" != "" ]; then
-              nextsv_args="$nextsv_args --prefix << parameters.prefix >>"
-            fi
-
-            if [ "<< parameters.subdir >>" != "" ]; then
-              nextsv_args="$nextsv_args --subdir << parameters.subdir >>"
-            fi
-
-            # Calculate version
-            version=$(nextsv $nextsv_args 2>/dev/null || echo "")
-
-            if [ -z "$version" ]; then
-              echo "No release needed"
-              version="none"
-            else
-              echo "Next version: $version"
-            fi
-
-            # Set both NEXT_VERSION (toolkit standard) and SEMVER (for make_cargo_release)
-            echo "export NEXT_VERSION=$version" >> "$BASH_ENV"
-            echo "export SEMVER=$version" >> "$BASH_ENV"
-
-  # New command: Check if version exists on crates.io
-  # Used for recovery scenarios where publish succeeded but workflow failed
-  check_crates_io_version:
-    description: >
-      Check if a version already exists on crates.io.
-      Sets SKIP_PUBLISH=true if version exists, false otherwise.
-      Used for recovery scenarios where crates.io publish succeeded but workflow failed afterward.
-    parameters:
-      package:
-        type: string
-        description: "Crate name on crates.io"
-    steps:
-      - run:
-          name: Check crates.io for << parameters.package >>
-          command: |
-            set -eo pipefail
-
-            # Use SEMVER or NEXT_VERSION (whichever is set)
-            VERSION="${SEMVER:-${NEXT_VERSION:-none}}"
-
-            if [ "$VERSION" = "none" ]; then
-              echo "No version to check"
-              echo "export SKIP_PUBLISH=false" >> "$BASH_ENV"
-              exit 0
-            fi
-
-            USER_AGENT="circleci-toolkit/1.0 (https://github.com/jerus-org/circleci-toolkit)"
-
-            if curl -s -H "User-Agent: ${USER_AGENT}" "https://crates.io/api/v1/crates/<< parameters.package >>/versions" | \
-               jq -e ".versions[] | select(.num == \"${VERSION}\")" > /dev/null 2>&1; then
-              echo "Version ${VERSION} exists on crates.io - will skip publish"
-              echo "export SKIP_PUBLISH=true" >> "$BASH_ENV"
-            else
-              echo "Version ${VERSION} not found on crates.io - will publish"
-              echo "export SKIP_PUBLISH=false" >> "$BASH_ENV"
-            fi
-
-  # New command: Check if release tag already exists
-  # Used for recovery scenarios where tag was created but workflow failed
-  check_tag_exists:
-    description: >
-      Check if the release tag already exists.
-      Sets SKIP_RELEASE=true if tag exists, false otherwise.
-      Used for recovery scenarios where release partially succeeded.
-    parameters:
-      package:
-        type: string
-        description: "Package name (used to construct tag name)"
-    steps:
-      - run:
-          name: Check if tag exists for << parameters.package >>
-          command: |
-            set -eo pipefail
-
-            # Use SEMVER or NEXT_VERSION (whichever is set)
-            VERSION="${SEMVER:-${NEXT_VERSION:-none}}"
-
-            if [ "$VERSION" = "none" ]; then
-              echo "No version to check"
-              echo "export SKIP_RELEASE=false" >> "$BASH_ENV"
-              exit 0
-            fi
-
-            TAG="<< parameters.package >>-v${VERSION}"
-
-            # Fetch tags from remote
-            git fetch --tags
-
-            if git tag -l "$TAG" | grep -q .; then
-              echo "Tag ${TAG} already exists - will skip release"
-              echo "export SKIP_RELEASE=true" >> "$BASH_ENV"
-            else
-              echo "Tag ${TAG} not found - will proceed with release"
-              echo "export SKIP_RELEASE=false" >> "$BASH_ENV"
-            fi
-
-  # Enhanced make_cargo_release with conditional publish support
-  # Backward compatible: publishes by default unless SKIP_PUBLISH=true or publish=false
-  # Also respects SKIP_RELEASE=true to skip entirely when tag already exists
-  make_cargo_release:
-    description: >
-      Make a release using cargo release.
-      Enhanced version that respects SKIP_PUBLISH environment variable for recovery scenarios.
-      When SKIP_PUBLISH=true, adds --no-publish flag to skip crates.io publish.
-      The publish parameter controls default behavior; SKIP_PUBLISH overrides it at runtime.
-    parameters:
-      package:
-        type: string
-        default: ""
-        description: "Package to release"
-      verbosity:
-        type: string
-        default: "-vv"
-        description: "Verbosity for cargo release"
-      publish:
-        type: boolean
-        default: true
-        description: "If true, the release will be published to crates.io"
-      no_push:
-        type: boolean
-        default: false
-        description: "Whether cargo release should push the changes"
-    steps:
-      - run:
-          name: List changes using cargo release
-          command: |
-            set -exo pipefail
-            cargo release changes
-      - run:
-          name: Execute cargo release
-          command: |
-            set -exo pipefail
-
-            # Check if release should be skipped (tag already exists)
-            if [ "$SKIP_RELEASE" = "true" ]; then
-              echo "Skipping release (tag already exists)"
-              exit 0
-            fi
-
-            # Use SEMVER or NEXT_VERSION
-            VERSION="${SEMVER:-${NEXT_VERSION:-none}}"
-
-            if [ "$VERSION" = "none" ]; then
-              echo "No version to release - skipping"
-              exit 0
-            fi
-
-            echo "Releasing version: $VERSION"
-
-            # Build cargo release arguments
-            release_args="--execute --no-confirm --sign-tag"
-
-            if [ "<< parameters.package >>" != "" ]; then
-              release_args="$release_args --package << parameters.package >>"
-            fi
-
-            if [ "<< parameters.no_push >>" = "true" ]; then
-              release_args="$release_args --no-push"
-            fi
-
-            # Handle publish: parameter controls default, SKIP_PUBLISH overrides at runtime
-            if [ "<< parameters.publish >>" = "false" ]; then
-              release_args="$release_args --no-publish"
-              echo "Publishing disabled by parameter"
-            elif [ "$SKIP_PUBLISH" = "true" ]; then
-              release_args="$release_args --no-publish"
-              echo "Skipping publish (version already on crates.io)"
-            fi
-
-            # Map verbosity
-            case "<< parameters.verbosity >>" in
-              "-vvv"|"-vvvv")
-                release_args="-vv $release_args"
-                ;;
-            esac
-
-            cargo release $release_args "$VERSION"
-
-  # Enhanced make_github_release with package support
-  make_github_release:
-    description: >
-      Create a GitHub release using the pcu utility.
-      When package is provided, uses 'pcu release package' which derives the correct tag prefix.
-      When package is empty, uses 'pcu release version' with the specified prefix.
-    parameters:
-      prefix:
-        type: string
-        default: "v"
-        description: "Tag prefix for the release (used when package is empty)"
-      package:
-        type: string
-        default: ""
-        description: "Package name - when provided, derives tag prefix automatically"
-      verbosity:
-        type: string
-        default: "-vv"
-        description: "Verbosity for pcu command"
-      update_prlog:
-        type: boolean
-        default: false
-        description: "Update PRLOG when creating the release"
-    steps:
-      - run:
-          name: Create GitHub release
-          command: |
-            set -exo pipefail
-
-            # Use SEMVER or NEXT_VERSION
-            VERSION="${SEMVER:-${NEXT_VERSION:-none}}"
-
-            if [ "$VERSION" = "none" ]; then
-              echo "No version to release - skipping GitHub release"
-              exit 0
-            fi
-
-            # Determine the tag name
-            if [ "<< parameters.package >>" != "" ]; then
-              TAG="<< parameters.package >>-v${VERSION}"
-            else
-              TAG="<< parameters.prefix >>${VERSION}"
-            fi
-
-            # Check if GitHub release already exists using API
-            # Extract owner/repo from git remote
-            REPO_URL=$(git remote get-url origin)
-            REPO_PATH=$(echo "$REPO_URL" | sed -E 's|.*github\.com[:/]||' | sed 's|\.git$||')
-
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${REPO_PATH}/releases/tags/${TAG}")
-
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "GitHub release ${TAG} already exists - skipping"
-              exit 0
-            fi
-            echo "GitHub release ${TAG} not found (HTTP ${HTTP_STATUS}) - will create"
-
-            pcu_args="<< parameters.verbosity >> release"
-
-            if [ "<< parameters.package >>" != "" ]; then
-              pcu_args="$pcu_args package << parameters.package >>"
-            else
-              pcu_args="$pcu_args version --prefix << parameters.prefix >>"
-            fi
-
-            if [ "<< parameters.update_prlog >>" = "true" ]; then
-              pcu_args="$pcu_args --update-prlog"
-            fi
-
-            pcu $pcu_args
+  toolkit: jerus-org/circleci-toolkit@4.5.3
 
 jobs:
   tools:
-    executor:
-      name: toolkit/rust_env_rolling
+    executor: toolkit/rust_env_rolling
     steps:
       - run:
           name: Verify tools
@@ -332,248 +47,75 @@ jobs:
             pcu --version
             cargo release --version
             jq --version
-
-  # Calculate and display versions for approval
-  calculate-versions:
-    executor:
-      name: toolkit/rust_env_rolling
-    parameters:
-      package:
-        type: string
-    steps:
-      - checkout
-      - run:
-          name: Calculate release versions
-          command: |
-            set -eo pipefail
-
-            echo "=============================================="
-            echo "         RELEASE VERSION CALCULATION"
-            echo "=============================================="
-            echo ""
-
-            # Calculate crate version
-            echo "--- Crate: << parameters.package >> ---"
-            CRATE_VERSION=$(nextsv -bn calculate --package << parameters.package >>)
-            if [ -z "$CRATE_VERSION" ]; then
-              CRATE_VERSION="none"
-              echo "Result: No crate release needed"
-              echo "Reason: No changes to crates/gen-orb-mcp/ or its dependencies"
-            else
-              echo "Result: Will release version $CRATE_VERSION"
-              echo "Changes detected in crate scope (code, deps, or Cargo.lock)"
-            fi
-            echo ""
-
-            # Calculate workspace version
-            echo "--- Workspace (PRLOG) ---"
-            WORKSPACE_VERSION=$(nextsv -bn calculate --prefix "v")
-            if [ -z "$WORKSPACE_VERSION" ]; then
-              WORKSPACE_VERSION="none"
-              echo "Result: No workspace release needed"
-              echo "Reason: No changes since last v* tag"
-            else
-              echo "Result: Will release version $WORKSPACE_VERSION"
-              echo "Changes detected in workspace scope"
-            fi
-            echo ""
-
-            echo "=============================================="
-            echo "                  SUMMARY"
-            echo "=============================================="
-            echo "Crate (<< parameters.package >>):  $CRATE_VERSION"
-            echo "Workspace (PRLOG):    $WORKSPACE_VERSION"
-            echo "=============================================="
-            echo ""
-
-            # Validation rules
-            echo "--- Validation ---"
-            if [ "$CRATE_VERSION" != "none" ] && [ "$WORKSPACE_VERSION" = "none" ]; then
-              echo "WARNING: Crate release without workspace release is unusual"
-              echo "         Workspace should increment when crate changes"
-            fi
-
-            if [ "$CRATE_VERSION" = "none" ] && [ "$WORKSPACE_VERSION" = "none" ]; then
-              echo "INFO: No releases needed - workflow will skip release steps"
-            fi
-
-            echo ""
-            echo "Please review the versions above and approve to proceed."
-
-  # Release a single crate
-  release-crate:
-    parameters:
-      package:
-        type: string
-      no_push:
-        type: boolean
-        default: false
-      version:
-        type: string
-        default: ""
-        description: "Specific version to release (overrides auto-detection)"
-    executor:
-      name: toolkit/rust_env_rolling
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - << pipeline.parameters.fingerprint >>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            # GitHub App integration doesn't create id_rsa.pub, handle gracefully
-            if [ -f ~/.ssh/id_rsa.pub ]; then
-              ssh-add -d ~/.ssh/id_rsa.pub
-            else
-              echo "No id_rsa.pub found (GitHub App integration) - skipping removal"
-            fi
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      # Step 1: Detect if release needed (or use specified version)
-      - get_next_version:
-          package: << parameters.package >>
-          version: << parameters.version >>
-      # Step 2: Check crates.io for recovery scenarios
-      - check_crates_io_version:
-          package: << parameters.package >>
-      # Step 3: Check if tag already exists for recovery scenarios
-      - check_tag_exists:
-          package: << parameters.package >>
-      # Step 4: Run cargo release (respects SKIP_PUBLISH and SKIP_RELEASE)
-      - make_cargo_release:
-          package: << parameters.package >>
-          no_push: << parameters.no_push >>
-          verbosity: "-vv"
-      # Step 5: Update pcu to latest version (command not yet in toolkit release)
-      - run:
-          name: Update to latest pcu
-          command: |
-            cargo install --force --git https://github.com/jerus-org/pcu --branch main
-      # Step 6: Create GitHub release
-      - make_github_release:
-          package: << parameters.package >>
-          verbosity: "-vv"
-
-  release-prlog:
-    executor:
-      name: toolkit/rust_env_rolling
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - << pipeline.parameters.fingerprint >>
-      - run:
-          name: Remove original SSH key from agent
-          command: |
-            ssh-add -l
-            # GitHub App integration doesn't create id_rsa.pub, handle gracefully
-            if [ -f ~/.ssh/id_rsa.pub ]; then
-              ssh-add -d ~/.ssh/id_rsa.pub
-            else
-              echo "No id_rsa.pub found (GitHub App integration) - skipping removal"
-            fi
-            ssh-add -l
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - run:
-          name: Detect and release PRLOG
-          command: |
-            set -exo pipefail
-            chmod +x scripts/*.sh
-
-            # Check if any v* tag exists (bootstrap detection)
-            if ! git tag -l 'v*' | grep -q .; then
-              echo "No v* tag found - checking for bootstrap version in PRLOG.md"
-              # Extract first version from PRLOG.md (bootstrap case)
-              BOOTSTRAP_VERSION=$(grep -oP '## \[\K[0-9]+\.[0-9]+\.[0-9]+' PRLOG.md | head -1 || echo "")
-              if [ -n "$BOOTSTRAP_VERSION" ]; then
-                echo "Bootstrap: Creating initial tag v${BOOTSTRAP_VERSION}"
-                git tag -s -m "v${BOOTSTRAP_VERSION}" "v${BOOTSTRAP_VERSION}"
-                git push origin main --tags
-                exit 0
-              fi
-              echo "No bootstrap version found in PRLOG.md"
-              exit 0
-            fi
-
-            # Use standard v prefix for PRLOG
-            BUMP=$(nextsv calculate --prefix "v" 2>/dev/null || echo "none")
-
-            if [ "$BUMP" = "none" ]; then
-              echo "No PRLOG release needed"
-              exit 0
-            fi
-
-            VERSION=$(nextsv --number calculate --prefix "v" | tail -1)
-
-            ./scripts/release-prlog.sh "$VERSION"
-            git push origin main --tags
+            rsign --version
 
 workflows:
   release:
     jobs:
       - tools
 
-      # Sequential release chain to avoid Cargo.lock conflicts
-      # Each job pushes before the next starts, so checkout gets latest commits
-
-      # Calculate and display versions for review
-      - calculate-versions:
-          name: gen-bsky-version
-          package: gen-bsky
+      # Calculate versions BEFORE the approval gate so the reviewer knows
+      # exactly what will be released. The approved versions are persisted to
+      # the workspace and used unchanged by the release jobs after approval.
+      - toolkit/calculate_versions:
+          name: calculate-versions
           requires: [tools]
+          crates: |
+            gen-bsky:gen-bsky-v
+            gen-linkedin:gen-linkedin-v
+            pcu:pcu-v
+          crate_version_overrides: |
+            gen-bsky:<< pipeline.parameters.gen_bsky_version >>
+            gen-linkedin:<< pipeline.parameters.gen_linkedin_version >>
+            pcu:<< pipeline.parameters.pcu_version >>
+          workspace_version_override: << pipeline.parameters.workspace_version >>
 
-      - calculate-versions:
-          name: gen-linkedin-version
-          package: gen-linkedin
-          requires: [tools]
-
-      - calculate-versions:
-          name: pcu-version
-          package: pcu
-          requires: [tools]
-
-      # Manual approval gate - review calculated versions before release
       - approve-release:
           type: approval
-          requires: [gen-bsky-version, gen-linkedin-version, pcu-version]
+          requires: [calculate-versions]
 
-      # Step 1: Release gen-bsky
-      - release-crate:
+      # Sequential release chain to avoid Cargo.lock conflicts.
+      # Each job pushes via GitHub App before the next starts,
+      # so the next checkout gets the latest committed state.
+      - toolkit/release_crate:
           name: release-gen-bsky
           requires: [approve-release]
           package: gen-bsky
-          no_push: true
+          crate_tag_prefix: gen-bsky-v
+          build_binary: true
+          binary_name: gen-bsky
           context:
             - release
             - bot-check
+            - pcu-app
 
-      # Step 2: Release gen-linkedin (after gen-bsky to avoid Cargo.lock conflict)
-      - release-crate:
+      - toolkit/release_crate:
           name: release-gen-linkedin
           requires: [release-gen-bsky]
           package: gen-linkedin
-          no_push: true
+          crate_tag_prefix: gen-linkedin-v
+          build_binary: true
+          binary_name: gen-linkedin
           context:
             - release
             - bot-check
+            - pcu-app
 
-      # Step 3: Release pcu (depends on library crates)
-      - release-crate:
+      - toolkit/release_crate:
           name: release-pcu
           requires: [release-gen-linkedin]
           package: pcu
-          no_push: true
+          crate_tag_prefix: pcu-v
+          build_binary: true
+          binary_name: pcu
           context:
             - release
             - bot-check
+            - pcu-app
 
-      # Step 4: Release PRLOG (after all crates released)
-      - release-prlog:
+      - toolkit/release_prlog:
           requires: [release-pcu]
           context:
             - release
             - bot-check
+            - pcu-app
