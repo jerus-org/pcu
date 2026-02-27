@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- chore-modernise CI pipelines(pr [#848])
 - chore-remove SSH keys from test jobs(pr [#851])
 
 ### Fixed
@@ -2047,6 +2048,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#844]: https://github.com/jerus-org/pcu/pull/844
 [#846]: https://github.com/jerus-org/pcu/pull/846
 [#847]: https://github.com/jerus-org/pcu/pull/847
+[#848]: https://github.com/jerus-org/pcu/pull/848
 [#850]: https://github.com/jerus-org/pcu/pull/850
 [#851]: https://github.com/jerus-org/pcu/pull/851
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.7...HEAD
