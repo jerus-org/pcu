@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - chore-modernise CI pipelines(pr [#848])
 - chore-remove SSH keys from test jobs(pr [#851])
+- chore-use toolkit/update_prlog@4.6.0(pr [#856])
 
 ### Fixed
 
@@ -2059,6 +2060,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#853]: https://github.com/jerus-org/pcu/pull/853
 [#854]: https://github.com/jerus-org/pcu/pull/854
 [#855]: https://github.com/jerus-org/pcu/pull/855
+[#856]: https://github.com/jerus-org/pcu/pull/856
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.7...HEAD
 [0.6.7]: https://github.com/jerus-org/pcu/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/jerus-org/pcu/compare/v0.6.5...v0.6.6
