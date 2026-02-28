@@ -20,7 +20,7 @@ parameters:
     description: "If true, pcu is updated from its main github branch before running."
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@4.5.4
+  toolkit: jerus-org/circleci-toolkit@4.5.5
 
 jobs:
   update-prlog-on-main:
