@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add missing PR #848 to PRLOG(pr [#852])
 - remove build_binary from library crates(pr [#853])
 - deps: update dependency toolkit to v4.5.4(pr [#854])
+- deps: update dependency toolkit to v4.5.5(pr [#855])
 
 ## [0.6.7] - 2026-02-26
 
@@ -2057,6 +2058,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#852]: https://github.com/jerus-org/pcu/pull/852
 [#853]: https://github.com/jerus-org/pcu/pull/853
 [#854]: https://github.com/jerus-org/pcu/pull/854
+[#855]: https://github.com/jerus-org/pcu/pull/855
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.7...HEAD
 [0.6.7]: https://github.com/jerus-org/pcu/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/jerus-org/pcu/compare/v0.6.5...v0.6.6
