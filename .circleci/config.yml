@@ -4,13 +4,9 @@ parameters:
   min_rust_version:
     type: string
     default: "1.88"
-  validation_flag:
-    type: boolean
-    default: false
-    description: "If true, the validation pipeline will be executed."
 orbs:
   # cci-ignore-next-line
-  toolkit: jerus-org/circleci-toolkit@4.5.5
+  toolkit: jerus-org/circleci-toolkit@4.7.0
 
 # Custom executors removed - using toolkit rolling executors instead:
 #   - toolkit/rust_env_rolling for Rust jobs
@@ -266,28 +262,7 @@ jobs:
             git status
 
 workflows:
-  check_last_commit:
-    when:
-      and:
-        - not:
-            equal: ["main", << pipeline.git.branch >>]
-        - not:
-            equal: [scheduled_pipeline, << pipeline.trigger_source >>]
-        - not: << pipeline.parameters.validation_flag >>
-
-    jobs:
-      - toolkit/choose_pipeline:
-          name: choose pipeline based on committer
-          context: bot-check
-
   validation:
-    when:
-      or:
-        - equal: ["main", << pipeline.git.branch >>]
-        - and:
-            - << pipeline.parameters.validation_flag >>
-            - not:
-                equal: [scheduled_pipeline, << pipeline.trigger_source >>]
     jobs:
       # Signature verification for trusted PRs (with write access for comments)
       - toolkit/verify_commit_signatures:
@@ -308,10 +283,10 @@ workflows:
           filters:
             branches:
               only: /pull\/[0-9]+/
-      - toolkit/required_builds:
+      - toolkit/required_builds_rolling:
           name: required-builds-all
           min_rust_version: << pipeline.parameters.min_rust_version >>
-      - toolkit/required_builds:
+      - toolkit/required_builds_rolling:
           name: build-<< matrix.cargo_package >>
           matrix:
             parameters:
@@ -345,7 +320,6 @@ workflows:
             - required-builds-all
             # cci-ignore-next-line
             - build-pcu
-            - toolkit/required_builds
             - docs
             - toolkit/idiomatic_rust
       - test-push:
