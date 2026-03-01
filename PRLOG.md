@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- chore-rolling builds, remove check_last_commit, bump toolkit to 4.7.0(pr [#857])
+
 ## [0.6.8] - 2026-02-28
 
 ### Changed
@@ -2061,6 +2067,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#854]: https://github.com/jerus-org/pcu/pull/854
 [#855]: https://github.com/jerus-org/pcu/pull/855
 [#856]: https://github.com/jerus-org/pcu/pull/856
+[#857]: https://github.com/jerus-org/pcu/pull/857
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.8...HEAD
 [0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
 [0.6.7]: https://github.com/jerus-org/pcu/compare/v0.6.6...v0.6.7
 [0.6.6]: https://github.com/jerus-org/pcu/compare/v0.6.5...v0.6.6
