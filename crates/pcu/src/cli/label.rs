@@ -6,7 +6,7 @@ use crate::Error;
 /// Configuration for the Rebase command
 #[derive(Debug, Parser, Clone)]
 pub struct Label {
-    /// Override the default allowed authors (renovate, mend) when selecting the pull
+    /// Override the default allowed authors (renovate, mend, app/renovate) when selecting the pull
     /// request to label
     #[arg(short, long)]
     pub author: Vec<String>,
