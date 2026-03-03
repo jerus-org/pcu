@@ -1180,7 +1180,7 @@ dependencies = [
 
 [[package]]
 name = "gen-linkedin"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "reqwest 0.13.2",
  "serde",
