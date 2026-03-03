@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - chore-rolling builds, remove check_last_commit, bump toolkit to 4.7.0(pr [#857])
 
+### Fixed
+
+- add app/renovate to default label authors(pr [#858])
+
 ## [0.6.8] - 2026-02-28
 
 ### Changed
@@ -2068,6 +2072,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#855]: https://github.com/jerus-org/pcu/pull/855
 [#856]: https://github.com/jerus-org/pcu/pull/856
 [#857]: https://github.com/jerus-org/pcu/pull/857
+[#858]: https://github.com/jerus-org/pcu/pull/858
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.8...HEAD
 [0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
 [0.6.7]: https://github.com/jerus-org/pcu/compare/v0.6.6...v0.6.7
