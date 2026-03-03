@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add app/renovate to default label authors(pr [#858])
 - deps: update rust crate tokio to 1.50.0(pr [#859])
+- align validation workflow with reference pattern(pr [#860])
 
 ## [0.6.8] - 2026-02-28
 
@@ -2075,6 +2076,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#857]: https://github.com/jerus-org/pcu/pull/857
 [#858]: https://github.com/jerus-org/pcu/pull/858
 [#859]: https://github.com/jerus-org/pcu/pull/859
+[#860]: https://github.com/jerus-org/pcu/pull/860
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.8...HEAD
 [0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
 [0.6.7]: https://github.com/jerus-org/pcu/compare/v0.6.6...v0.6.7
