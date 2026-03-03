@@ -23,7 +23,7 @@ use crate::{
 
 const GIT_USER_SIGNATURE: &str = "user.signingkey";
 const DEFAULT_COMMIT_MESSAGE: &str = "chore: commit staged files";
-const DEFAULT_REBASE_LOGINS: &str = "renovate,mend";
+const DEFAULT_REBASE_LOGINS: &str = "renovate,mend,app/renovate";
 
 #[derive(ValueEnum, Debug, Default, Clone, Copy, PartialEq)]
 pub enum Sign {
@@ -965,6 +965,22 @@ mod tests {
     use super::*;
     use git2::Signature;
     use rstest::rstest;
+
+    #[test]
+    fn test_default_rebase_logins_includes_app_renovate() {
+        let logins: Vec<&str> = DEFAULT_REBASE_LOGINS.split(',').collect();
+        assert!(
+            logins.contains(&"app/renovate"),
+            "DEFAULT_REBASE_LOGINS should include 'app/renovate' (GitHub App bot login), got: {logins:?}"
+        );
+    }
+
+    #[test]
+    fn test_default_rebase_logins_preserves_existing_defaults() {
+        let logins: Vec<&str> = DEFAULT_REBASE_LOGINS.split(',').collect();
+        assert!(logins.contains(&"renovate"), "should include 'renovate'");
+        assert!(logins.contains(&"mend"), "should include 'mend'");
+    }
 
     #[test]
     fn test_sign_default() {

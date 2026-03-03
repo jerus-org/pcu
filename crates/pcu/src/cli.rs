@@ -76,7 +76,7 @@ pub enum Commands {
     #[clap(long_about = "
 Apply a label to a pull request.
 In default use applies the `rebase` label to the pull request with
-the lowest number submitted by the `renovate` user")]
+the lowest number submitted by the `renovate` or `app/renovate` user")]
     Label(Label),
     /// Post summaries and link to new or changed blog posts to bluesky
     Bsky(Bsky),
