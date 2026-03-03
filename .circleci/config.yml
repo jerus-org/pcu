@@ -292,20 +292,35 @@ workflows:
             parameters:
               cargo_package: [gen-bsky, gen-linkedin, pcu]
           min_rust_version: << pipeline.parameters.min_rust_version >>
+          filters:
+            branches:
+              ignore: main
       - toolkit/optional_builds:
           min_rust_version: << pipeline.parameters.min_rust_version >>
+          filters:
+            branches:
+              ignore: main
       - toolkit/test_doc_build:
           name: docs
           min_rust_version: << pipeline.parameters.min_rust_version >>
+          filters:
+            branches:
+              ignore: main
       - toolkit/common_tests_rolling:
           min_rust_version: << pipeline.parameters.min_rust_version >>
       - toolkit/idiomatic_rust:
           min_rust_version: << pipeline.parameters.min_rust_version >>
+          filters:
+            branches:
+              ignore: main
       - test-setup:
           context:
             - release
             - bot-check
             - pcu-app
+          filters:
+            branches:
+              ignore: main
 
       - test-commit:
           pcu_verbosity: "-vvvv"
@@ -313,10 +328,13 @@ workflows:
             - release
             - bot-check
             - pcu-app
+          filters:
+            branches:
+              ignore: main
           requires:
             - test-setup
             - toolkit/common_tests_rolling
-            - security audit only
+            - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
             - build-pcu
@@ -329,10 +347,13 @@ workflows:
             - release
             - bot-check
             - pcu-app
+          filters:
+            branches:
+              ignore: main
           requires:
             - test-setup
             - toolkit/common_tests_rolling
-            - security audit only
+            - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
             - build-pcu
@@ -346,10 +367,13 @@ workflows:
             - bot-check
             - pcu-app
             - bluesky
+          filters:
+            branches:
+              ignore: main
           requires:
             - test-setup
             - toolkit/common_tests_rolling
-            - security audit only
+            - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
             - build-gen-bsky
@@ -363,10 +387,13 @@ workflows:
             - bot-check
             - pcu-app
             - bluesky
+          filters:
+            branches:
+              ignore: main
           requires:
             - test-setup
             - toolkit/common_tests_rolling
-            - security audit only
+            - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
             - build-gen-bsky
@@ -378,8 +405,9 @@ workflows:
           sonarcloud: false
           filters:
             branches:
-              ignore:
+              only:
                 - main
+                - /pull\/[0-9]+/
           ignore_advisories: "RUSTSEC-2026-0002"
       - toolkit/security:
           name: security with sonarcloud
