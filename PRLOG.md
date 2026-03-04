@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add --allow-empty flag to bsky draft(pr [#863])
 - skip PR link when description is empty(pr [#864])
 - use container pcu in update_prlog(pr [#866])
+- list external contributors in verify-signatures report(pr [#865])
 
 ## [0.6.9] - 2026-03-03
 
@@ -2093,6 +2094,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#863]: https://github.com/jerus-org/pcu/pull/863
 [#864]: https://github.com/jerus-org/pcu/pull/864
 [#866]: https://github.com/jerus-org/pcu/pull/866
+[#865]: https://github.com/jerus-org/pcu/pull/865
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.9...HEAD
 [0.6.9]: https://github.com/jerus-org/pcu/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
