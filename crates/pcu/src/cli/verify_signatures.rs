@@ -474,3 +474,111 @@ fn parse_github_url(url: &str) -> Result<(String, String), Error> {
         "Unable to parse GitHub URL: {url}"
     )))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ops::signature_ops::{
+        CommitInfo, SignatureStatus, VerificationReason, VerificationResult, VerificationSummary,
+    };
+
+    fn make_external_result(sha: &str, email: &str) -> VerificationResult {
+        VerificationResult {
+            commit: CommitInfo {
+                sha: sha.to_string(),
+                author_email: email.to_string(),
+                author_name: "External User".to_string(),
+                subject: "external commit".to_string(),
+                signature_status: SignatureStatus::None,
+                key_id: None,
+                signer: None,
+            },
+            passed: true,
+            reason: VerificationReason::ExternalUnsigned,
+        }
+    }
+
+    /// RED: issue #862 — success comment must include "External Contributors" section
+    /// when there are external contributor results
+    #[test]
+    fn test_build_comment_includes_external_contributors_section() {
+        let results = vec![make_external_result(
+            "a1b2c3d4e5f6",
+            "renovate[bot]@users.noreply.github.com",
+        )];
+        let summary = VerificationSummary {
+            commits_checked: 1,
+            trusted_verified: 0,
+            external_contributors: 1,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        assert!(
+            comment.contains("External Contributors"),
+            "Comment should contain 'External Contributors' section, got:\n{comment}"
+        );
+    }
+
+    /// RED: issue #862 — success comment must include author email of external contributor
+    #[test]
+    fn test_build_comment_includes_external_contributor_email() {
+        let results = vec![make_external_result(
+            "a1b2c3d4e5f6",
+            "renovate[bot]@users.noreply.github.com",
+        )];
+        let summary = VerificationSummary {
+            commits_checked: 1,
+            trusted_verified: 0,
+            external_contributors: 1,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        assert!(
+            comment.contains("renovate[bot]@users.noreply.github.com"),
+            "Comment should include external contributor email, got:\n{comment}"
+        );
+    }
+
+    /// RED: issue #862 — success comment must include short SHA of external contributor commit
+    #[test]
+    fn test_build_comment_includes_external_contributor_sha() {
+        let results = vec![make_external_result(
+            "a1b2c3d4e5f6",
+            "renovate[bot]@users.noreply.github.com",
+        )];
+        let summary = VerificationSummary {
+            commits_checked: 1,
+            trusted_verified: 0,
+            external_contributors: 1,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        // short SHA = first 8 chars
+        assert!(
+            comment.contains("a1b2c3d4"),
+            "Comment should include short SHA of external contributor, got:\n{comment}"
+        );
+    }
+
+    /// Verify that the comment does NOT include external contributor section
+    /// when there are no external contributors (regression guard)
+    #[test]
+    fn test_build_comment_no_external_contributors_no_section() {
+        let results = vec![];
+        let summary = VerificationSummary {
+            commits_checked: 0,
+            trusted_verified: 0,
+            external_contributors: 0,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        assert!(
+            !comment.contains("### External Contributors"),
+            "Comment should not contain external contributors section when there are none, got:\n{comment}"
+        );
+    }
+}
