@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use config::Config;
-use gen_bsky::Draft;
+use gen_bsky::{Draft, DraftError};
 use site_config::SiteConfig;
 
 use crate::{CIExit, Client, Error, GitOps, SignConfig};
@@ -53,6 +53,9 @@ pub struct CmdDraft {
     /// Allow bluesky posts for draft blog posts
     #[arg(long, default_value_t = false)]
     pub allow_draft: bool,
+    /// Warn instead of failing when no blog posts match the date filter
+    #[arg(long, default_value_t = false)]
+    pub allow_empty: bool,
     /// Root folder for the website source
     #[arg(short, long, default_value = ".")]
     pub www_src_root: PathBuf,
@@ -87,7 +90,14 @@ impl CmdDraft {
 
         builder.with_allow_draft(self.allow_draft);
 
-        let mut posts = builder.build().await?;
+        let mut posts = match builder.build().await {
+            Ok(p) => p,
+            Err(DraftError::BlogPostListEmpty) if self.allow_empty => {
+                log::warn!("No blog posts found matching the filter — skipping (--allow-empty)");
+                return Ok(CIExit::NoBlogPostsForBluesky);
+            }
+            Err(e) => return Err(Error::DraftError(e)),
+        };
         log::info!("Initial posts: {posts:#?}");
 
         posts
