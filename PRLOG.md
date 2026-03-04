@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - chore-update toolkit to 4.7.1(pr [#861])
 
+### Fixed
+
+- add --allow-empty flag to bsky draft(pr [#863])
+
 ## [0.6.9] - 2026-03-03
 
 ### Changed
@@ -2084,6 +2088,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#859]: https://github.com/jerus-org/pcu/pull/859
 [#860]: https://github.com/jerus-org/pcu/pull/860
 [#861]: https://github.com/jerus-org/pcu/pull/861
+[#863]: https://github.com/jerus-org/pcu/pull/863
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.9...HEAD
 [0.6.9]: https://github.com/jerus-org/pcu/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
