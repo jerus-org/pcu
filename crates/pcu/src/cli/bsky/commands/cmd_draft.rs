@@ -4,10 +4,37 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use config::Config;
-use gen_bsky::Draft;
+use gen_bsky::{Draft, DraftError};
 use site_config::SiteConfig;
 
 use crate::{CIExit, Client, Error, GitOps, SignConfig};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// RED: CmdDraft must have an `allow_empty` field (issue #813)
+    #[test]
+    fn test_cmd_draft_has_allow_empty_field() {
+        let cmd = CmdDraft {
+            filter: None,
+            paths: vec![],
+            date: None,
+            allow_draft: false,
+            allow_empty: false,
+            www_src_root: PathBuf::from("."),
+        };
+        assert!(!cmd.allow_empty);
+    }
+
+    /// RED: CIExit must have a NoBlogPostsForBluesky variant (issue #813)
+    #[test]
+    fn test_no_blog_posts_for_bluesky_ci_exit() {
+        let exit = CIExit::NoBlogPostsForBluesky;
+        // Pattern match to prove the variant exists
+        assert!(matches!(exit, CIExit::NoBlogPostsForBluesky));
+    }
+}
 
 const DEFAULT_PATH: &str = "content/blog";
 
@@ -26,6 +53,9 @@ pub struct CmdDraft {
     /// Allow bluesky posts for draft blog posts
     #[arg(long, default_value_t = false)]
     pub allow_draft: bool,
+    /// Warn instead of failing when no blog posts match the date filter
+    #[arg(long, default_value_t = false)]
+    pub allow_empty: bool,
     /// Root folder for the website source
     #[arg(short, long, default_value = ".")]
     pub www_src_root: PathBuf,
@@ -60,7 +90,14 @@ impl CmdDraft {
 
         builder.with_allow_draft(self.allow_draft);
 
-        let mut posts = builder.build().await?;
+        let mut posts = match builder.build().await {
+            Ok(p) => p,
+            Err(DraftError::BlogPostListEmpty) if self.allow_empty => {
+                log::warn!("No blog posts found matching the filter — skipping (--allow-empty)");
+                return Ok(CIExit::NoBlogPostsForBluesky);
+            }
+            Err(e) => return Err(Error::DraftError(e)),
+        };
         log::info!("Initial posts: {posts:#?}");
 
         posts
