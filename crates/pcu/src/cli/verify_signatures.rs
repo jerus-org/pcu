@@ -93,7 +93,7 @@ impl VerifySignatures {
         display_results(&results);
 
         // Step 5: Display summary
-        display_summary(&summary);
+        display_summary(&summary, &results);
 
         // Early return on failure if requested
         if summary.failures > 0 && self.fail_on_unsigned {
@@ -182,6 +182,12 @@ fn build_comment(
 
         writeln!(&mut comment).map_err(write_err)?;
         write_summary(&mut comment, summary, true).map_err(write_err)?;
+
+        if summary.external_contributors > 0 {
+            writeln!(&mut comment).map_err(write_err)?;
+            write_external_contributors(&mut comment, results).map_err(write_err)?;
+        }
+
         writeln!(&mut comment).map_err(write_err)?;
         write_action_required(&mut comment).map_err(write_err)?;
     } else {
@@ -195,6 +201,12 @@ fn build_comment(
             .map_err(write_err)?;
         writeln!(&mut comment).map_err(write_err)?;
         write_summary(&mut comment, summary, false).map_err(write_err)?;
+
+        if summary.external_contributors > 0 {
+            writeln!(&mut comment).map_err(write_err)?;
+            write_external_contributors(&mut comment, results).map_err(write_err)?;
+        }
+
         writeln!(&mut comment).map_err(write_err)?;
         writeln!(&mut comment, "No impersonation attempts detected.").map_err(write_err)?;
     }
@@ -260,6 +272,40 @@ fn write_action_required(comment: &mut String) -> std::fmt::Result {
     writeln!(comment, "- Review the failed commits immediately")?;
     writeln!(comment, "- Verify the committer's identity")?;
     writeln!(comment, "- **DO NOT MERGE** if impersonation is suspected")?;
+    Ok(())
+}
+
+/// Write external contributors table section
+fn write_external_contributors(
+    comment: &mut String,
+    results: &[crate::ops::signature_ops::VerificationResult],
+) -> std::fmt::Result {
+    use crate::ops::signature_ops::VerificationReason;
+    use std::fmt::Write;
+
+    writeln!(comment, "### External Contributors")?;
+    writeln!(comment)?;
+    writeln!(comment, "| Commit | Author | Status |")?;
+    writeln!(comment, "|--------|--------|--------|")?;
+
+    for result in results.iter().filter(|r| {
+        matches!(
+            r.reason,
+            VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+        )
+    }) {
+        let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
+        let status = match &result.reason {
+            VerificationReason::ExternalUnsigned => "Unsigned (expected for bots/external)",
+            VerificationReason::ExternalSigned => "Signed",
+            _ => "",
+        };
+        writeln!(
+            comment,
+            "| `{}` | `{}` | {} |",
+            sha_short, result.commit.author_email, status
+        )?;
+    }
     Ok(())
 }
 
@@ -415,7 +461,12 @@ fn display_results(results: &[crate::ops::signature_ops::VerificationResult]) {
 }
 
 /// Display verification summary
-fn display_summary(summary: &crate::ops::signature_ops::VerificationSummary) {
+fn display_summary(
+    summary: &crate::ops::signature_ops::VerificationSummary,
+    results: &[crate::ops::signature_ops::VerificationResult],
+) {
+    use crate::ops::signature_ops::VerificationReason;
+
     println!("{}\n", "=== Verification Summary ===".bold());
     println!("Commits checked:         {}", summary.commits_checked);
     println!(
@@ -441,6 +492,26 @@ fn display_summary(summary: &crate::ops::signature_ops::VerificationSummary) {
         println!();
         println!("{}", "✓ All signature checks passed!".green().bold());
         println!("\nNo impersonation attempts detected.\n");
+    }
+
+    // List external contributors with their identities
+    let external: Vec<_> = results
+        .iter()
+        .filter(|r| {
+            matches!(
+                r.reason,
+                VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+            )
+        })
+        .collect();
+
+    if !external.is_empty() {
+        println!("{}", "External Contributors:".bold());
+        for result in external {
+            let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
+            println!("  {} {}", sha_short.bold(), result.commit.author_email);
+        }
+        println!();
     }
 }
 
@@ -473,4 +544,112 @@ fn parse_github_url(url: &str) -> Result<(String, String), Error> {
     Err(Error::GitError(format!(
         "Unable to parse GitHub URL: {url}"
     )))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ops::signature_ops::{
+        CommitInfo, SignatureStatus, VerificationReason, VerificationResult, VerificationSummary,
+    };
+
+    fn make_external_result(sha: &str, email: &str) -> VerificationResult {
+        VerificationResult {
+            commit: CommitInfo {
+                sha: sha.to_string(),
+                author_email: email.to_string(),
+                author_name: "External User".to_string(),
+                subject: "external commit".to_string(),
+                signature_status: SignatureStatus::None,
+                key_id: None,
+                signer: None,
+            },
+            passed: true,
+            reason: VerificationReason::ExternalUnsigned,
+        }
+    }
+
+    /// RED: issue #862 — success comment must include "External Contributors" section
+    /// when there are external contributor results
+    #[test]
+    fn test_build_comment_includes_external_contributors_section() {
+        let results = vec![make_external_result(
+            "a1b2c3d4e5f6",
+            "renovate[bot]@users.noreply.github.com",
+        )];
+        let summary = VerificationSummary {
+            commits_checked: 1,
+            trusted_verified: 0,
+            external_contributors: 1,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        assert!(
+            comment.contains("External Contributors"),
+            "Comment should contain 'External Contributors' section, got:\n{comment}"
+        );
+    }
+
+    /// RED: issue #862 — success comment must include author email of external contributor
+    #[test]
+    fn test_build_comment_includes_external_contributor_email() {
+        let results = vec![make_external_result(
+            "a1b2c3d4e5f6",
+            "renovate[bot]@users.noreply.github.com",
+        )];
+        let summary = VerificationSummary {
+            commits_checked: 1,
+            trusted_verified: 0,
+            external_contributors: 1,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        assert!(
+            comment.contains("renovate[bot]@users.noreply.github.com"),
+            "Comment should include external contributor email, got:\n{comment}"
+        );
+    }
+
+    /// RED: issue #862 — success comment must include short SHA of external contributor commit
+    #[test]
+    fn test_build_comment_includes_external_contributor_sha() {
+        let results = vec![make_external_result(
+            "a1b2c3d4e5f6",
+            "renovate[bot]@users.noreply.github.com",
+        )];
+        let summary = VerificationSummary {
+            commits_checked: 1,
+            trusted_verified: 0,
+            external_contributors: 1,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        // short SHA = first 8 chars
+        assert!(
+            comment.contains("a1b2c3d4"),
+            "Comment should include short SHA of external contributor, got:\n{comment}"
+        );
+    }
+
+    /// Verify that the comment does NOT include external contributor section
+    /// when there are no external contributors (regression guard)
+    #[test]
+    fn test_build_comment_no_external_contributors_no_section() {
+        let results = vec![];
+        let summary = VerificationSummary {
+            commits_checked: 0,
+            trusted_verified: 0,
+            external_contributors: 0,
+            failures: 0,
+        };
+
+        let comment = build_comment(&results, &summary).unwrap();
+        assert!(
+            !comment.contains("### External Contributors"),
+            "Comment should not contain external contributors section when there are none, got:\n{comment}"
+        );
+    }
 }
