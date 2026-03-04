@@ -666,4 +666,54 @@ mod tests {
 
         Ok(())
     }
+
+    /// RED: issue #144 — PrTitle must have a `pr_body` field
+    #[test]
+    fn test_pr_title_has_pr_body_field() {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_body(Some("Some description".to_string()));
+        assert_eq!(pr_title.pr_body, Some("Some description".to_string()));
+    }
+
+    /// RED: issue #144 — when pr_url is set but pr_body is empty,
+    /// the entry must use `(pr #N)` not `(pr [#N])`
+    #[test]
+    fn test_empty_pr_body_produces_unlinked_entry() -> Result<(), Error> {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_id(5);
+        pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
+        pr_title.set_pr_body(Some(String::new())); // empty body
+        pr_title.calculate_section_and_entry();
+        // With an empty body, the link should be suppressed → `(pr #5)`
+        assert_eq!(pr_title.entry, "add new feature(pr #5)");
+        Ok(())
+    }
+
+    /// RED: issue #144 — when pr_url is set and pr_body is non-empty,
+    /// the entry must still use `(pr [#N])` (existing behaviour preserved)
+    #[test]
+    fn test_non_empty_pr_body_produces_linked_entry() -> Result<(), Error> {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_id(5);
+        pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
+        pr_title.set_pr_body(Some("Some description".to_string()));
+        pr_title.calculate_section_and_entry();
+        // With a non-empty body, the link should be present → `(pr [#5])`
+        assert_eq!(pr_title.entry, "add new feature(pr [#5])");
+        Ok(())
+    }
+
+    /// RED: issue #144 — when pr_body is None (unset), existing behaviour
+    /// should be preserved: pr_url present → use linked format
+    #[test]
+    fn test_no_pr_body_set_preserves_linked_entry() -> Result<(), Error> {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_id(5);
+        pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
+        // pr_body left as None (not set)
+        pr_title.calculate_section_and_entry();
+        // Without a body set, the existing behaviour applies: link present
+        assert_eq!(pr_title.entry, "add new feature(pr [#5])");
+        Ok(())
+    }
 }
