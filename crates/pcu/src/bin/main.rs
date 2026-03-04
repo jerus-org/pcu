@@ -50,6 +50,9 @@ async fn main() -> Result<()> {
                 CIExit::NothingToPush => log::info!("No commits to push"),
                 CIExit::SharedToLinkedIn => log::info!("Shared to LinkedIn"),
                 CIExit::NoContentForLinkedIn => log::info!("No LinkedIn content to share"),
+                CIExit::NoBlogPostsForBluesky => {
+                    log::warn!("No blog posts to draft for Bluesky")
+                }
                 CIExit::VerificationPassed => log::info!("✓ All signature checks passed!"),
                 CIExit::SwitchedBranch(s) => log::info!("Switched to branch: {s}"),
             };

@@ -41,6 +41,7 @@ pub enum CIExit {
     NothingToPush,
     SharedToLinkedIn,
     NoContentForLinkedIn,
+    NoBlogPostsForBluesky,
     VerificationPassed,
     SwitchedBranch(String),
 }
