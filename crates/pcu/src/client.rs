@@ -257,6 +257,14 @@ impl Client {
         }
     }
 
+    pub fn body(&self) -> &str {
+        if let Some(pr) = self.pull_request.as_ref() {
+            &pr.body
+        } else {
+            ""
+        }
+    }
+
     pub fn pr_number(&self) -> i64 {
         if let Some(pr) = self.pull_request.as_ref() {
             pr.pr_number

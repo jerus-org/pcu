@@ -9,6 +9,7 @@ use crate::Error;
 pub(crate) struct PullRequest {
     pub(crate) pull_request: String,
     pub(crate) title: String,
+    pub(crate) body: String,
     #[allow(dead_code)]
     pub(crate) owner: String,
     #[allow(dead_code)]
@@ -48,12 +49,13 @@ impl PullRequest {
         let pr_number = pr_number.parse::<i64>()?;
 
         log::debug!("********* Using GraphQL");
-        let title =
+        let (title, body) =
             super::graphql::get_pull_request_title(graphql, &owner, &repo, pr_number).await?;
 
         Ok(Some(Self {
             pull_request,
             title,
+            body,
             owner,
             repo,
             repo_url,
@@ -78,7 +80,7 @@ impl PullRequest {
         log::debug!("Looking up PR for commit: {commit_sha}");
 
         // Query GitHub API to find associated PR
-        let (pr_number, title, pull_request) =
+        let (pr_number, title, pull_request, body) =
             super::graphql::get_pull_request_by_commit(graphql, owner, repo, &commit_sha).await?;
 
         log::debug!("Found PR #{pr_number}: {title}");
@@ -88,6 +90,7 @@ impl PullRequest {
         Ok(Self {
             pull_request,
             title,
+            body,
             owner: owner.to_string(),
             repo: repo.to_string(),
             repo_url,

@@ -12,6 +12,7 @@ pub struct PrTitle {
     pub title: String,
     pub pr_id: Option<i64>,
     pub pr_url: Option<Url>,
+    pub pr_body: Option<String>,
     pub commit_emoji: Option<String>,
     pub commit_type: Option<String>,
     pub commit_scope: Option<String>,
@@ -43,6 +44,7 @@ impl PrTitle {
                 title,
                 pr_id: None,
                 pr_url: None,
+                pr_body: None,
                 commit_emoji,
                 commit_type,
                 commit_scope,
@@ -55,6 +57,7 @@ impl PrTitle {
                 title: title.to_string(),
                 pr_id: None,
                 pr_url: None,
+                pr_body: None,
                 commit_emoji: None,
                 commit_type: None,
                 commit_scope: None,
@@ -75,6 +78,19 @@ impl PrTitle {
 
     pub fn set_pr_url(&mut self, url: Url) {
         self.pr_url = Some(url);
+    }
+
+    pub fn set_pr_body(&mut self, body: Option<String>) {
+        self.pr_body = body;
+    }
+
+    /// Returns true if a non-empty PR body is available, meaning the PR
+    /// URL link should be included in the changelog entry.
+    fn has_pr_body(&self) -> bool {
+        match &self.pr_body {
+            Some(body) => !body.is_empty(),
+            None => true, // When body is not set, preserve existing behaviour (link present)
+        }
     }
 
     pub fn calculate_section_and_entry(&mut self) {
@@ -140,7 +156,7 @@ impl PrTitle {
         }
 
         if let Some(id) = self.pr_id {
-            if self.pr_url.is_some() {
+            if self.pr_url.is_some() && self.has_pr_body() {
                 entry = format!("{entry}(pr [#{id}])");
             } else {
                 entry = format!("{entry}(pr #{id})");
@@ -269,8 +285,8 @@ impl PrTitle {
             }
         }
 
-        // add link to the url if it exists
-        if self.pr_url.is_some() {
+        // add link to the url if it exists and the PR has a non-empty body
+        if self.pr_url.is_some() && self.has_pr_body() {
             change_log.add_link(
                 &format!("[#{}]:", self.pr_id.unwrap()),
                 &self.pr_url.clone().unwrap().to_string(),
@@ -587,6 +603,7 @@ mod tests {
             title: "add new feature".to_string(),
             pr_id: Some(5),
             pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
+            pr_body: None,
             commit_emoji: None,
             commit_type: Some("feat".to_string()),
             commit_scope: None,
@@ -632,6 +649,7 @@ mod tests {
             title: "add new feature".to_string(),
             pr_id: Some(5),
             pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
+            pr_body: None,
             commit_emoji: None,
             commit_type: Some("feat".to_string()),
             commit_scope: None,
@@ -664,6 +682,56 @@ mod tests {
         // tidy up the test environment
         std::fs::remove_dir_all(temp_dir)?;
 
+        Ok(())
+    }
+
+    /// RED: issue #144 — PrTitle must have a `pr_body` field
+    #[test]
+    fn test_pr_title_has_pr_body_field() {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_body(Some("Some description".to_string()));
+        assert_eq!(pr_title.pr_body, Some("Some description".to_string()));
+    }
+
+    /// RED: issue #144 — when pr_url is set but pr_body is empty,
+    /// the entry must use `(pr #N)` not `(pr [#N])`
+    #[test]
+    fn test_empty_pr_body_produces_unlinked_entry() -> Result<(), Error> {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_id(5);
+        pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
+        pr_title.set_pr_body(Some(String::new())); // empty body
+        pr_title.calculate_section_and_entry();
+        // With an empty body, the link should be suppressed → `(pr #5)`
+        assert_eq!(pr_title.entry, "add new feature(pr #5)");
+        Ok(())
+    }
+
+    /// RED: issue #144 — when pr_url is set and pr_body is non-empty,
+    /// the entry must still use `(pr [#N])` (existing behaviour preserved)
+    #[test]
+    fn test_non_empty_pr_body_produces_linked_entry() -> Result<(), Error> {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_id(5);
+        pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
+        pr_title.set_pr_body(Some("Some description".to_string()));
+        pr_title.calculate_section_and_entry();
+        // With a non-empty body, the link should be present → `(pr [#5])`
+        assert_eq!(pr_title.entry, "add new feature(pr [#5])");
+        Ok(())
+    }
+
+    /// RED: issue #144 — when pr_body is None (unset), existing behaviour
+    /// should be preserved: pr_url present → use linked format
+    #[test]
+    fn test_no_pr_body_set_preserves_linked_entry() -> Result<(), Error> {
+        let mut pr_title = PrTitle::parse("feat: add new feature").unwrap();
+        pr_title.set_pr_id(5);
+        pr_title.set_pr_url(Url::parse("https://github.com/jerus-org/pcu/pull/5")?);
+        // pr_body left as None (not set)
+        pr_title.calculate_section_and_entry();
+        // Without a body set, the existing behaviour applies: link present
+        assert_eq!(pr_title.entry, "add new feature(pr [#5])");
         Ok(())
     }
 }

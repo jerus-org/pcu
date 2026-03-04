@@ -22,6 +22,7 @@ struct Repository {
 struct PullRequest {
     number: i64,
     title: String,
+    body: String,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -37,13 +38,14 @@ pub(crate) async fn get_pull_request_title(
     owner: &str,
     name: &str,
     number: i64,
-) -> Result<String, Error> {
+) -> Result<(String, String), Error> {
     let query = r#"
             query($owner:String!, $name:String!, $number:Int!){
                 repository(owner: $owner, name: $name) {
                     pullRequest(number: $number) {
                         number
                         title
+                        body
                     }
                 }
             }
@@ -66,6 +68,7 @@ pub(crate) async fn get_pull_request_title(
     log::trace!("data: {data:?}");
 
     let title = data.repository.pull_request.title;
+    let body = data.repository.pull_request.body;
 
-    Ok(title)
+    Ok((title, body))
 }
