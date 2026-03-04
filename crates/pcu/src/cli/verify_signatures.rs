@@ -93,7 +93,7 @@ impl VerifySignatures {
         display_results(&results);
 
         // Step 5: Display summary
-        display_summary(&summary);
+        display_summary(&summary, &results);
 
         // Early return on failure if requested
         if summary.failures > 0 && self.fail_on_unsigned {
@@ -182,6 +182,12 @@ fn build_comment(
 
         writeln!(&mut comment).map_err(write_err)?;
         write_summary(&mut comment, summary, true).map_err(write_err)?;
+
+        if summary.external_contributors > 0 {
+            writeln!(&mut comment).map_err(write_err)?;
+            write_external_contributors(&mut comment, results).map_err(write_err)?;
+        }
+
         writeln!(&mut comment).map_err(write_err)?;
         write_action_required(&mut comment).map_err(write_err)?;
     } else {
@@ -195,6 +201,12 @@ fn build_comment(
             .map_err(write_err)?;
         writeln!(&mut comment).map_err(write_err)?;
         write_summary(&mut comment, summary, false).map_err(write_err)?;
+
+        if summary.external_contributors > 0 {
+            writeln!(&mut comment).map_err(write_err)?;
+            write_external_contributors(&mut comment, results).map_err(write_err)?;
+        }
+
         writeln!(&mut comment).map_err(write_err)?;
         writeln!(&mut comment, "No impersonation attempts detected.").map_err(write_err)?;
     }
@@ -260,6 +272,40 @@ fn write_action_required(comment: &mut String) -> std::fmt::Result {
     writeln!(comment, "- Review the failed commits immediately")?;
     writeln!(comment, "- Verify the committer's identity")?;
     writeln!(comment, "- **DO NOT MERGE** if impersonation is suspected")?;
+    Ok(())
+}
+
+/// Write external contributors table section
+fn write_external_contributors(
+    comment: &mut String,
+    results: &[crate::ops::signature_ops::VerificationResult],
+) -> std::fmt::Result {
+    use crate::ops::signature_ops::VerificationReason;
+    use std::fmt::Write;
+
+    writeln!(comment, "### External Contributors")?;
+    writeln!(comment)?;
+    writeln!(comment, "| Commit | Author | Status |")?;
+    writeln!(comment, "|--------|--------|--------|")?;
+
+    for result in results.iter().filter(|r| {
+        matches!(
+            r.reason,
+            VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+        )
+    }) {
+        let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
+        let status = match &result.reason {
+            VerificationReason::ExternalUnsigned => "Unsigned (expected for bots/external)",
+            VerificationReason::ExternalSigned => "Signed",
+            _ => "",
+        };
+        writeln!(
+            comment,
+            "| `{}` | `{}` | {} |",
+            sha_short, result.commit.author_email, status
+        )?;
+    }
     Ok(())
 }
 
@@ -415,7 +461,12 @@ fn display_results(results: &[crate::ops::signature_ops::VerificationResult]) {
 }
 
 /// Display verification summary
-fn display_summary(summary: &crate::ops::signature_ops::VerificationSummary) {
+fn display_summary(
+    summary: &crate::ops::signature_ops::VerificationSummary,
+    results: &[crate::ops::signature_ops::VerificationResult],
+) {
+    use crate::ops::signature_ops::VerificationReason;
+
     println!("{}\n", "=== Verification Summary ===".bold());
     println!("Commits checked:         {}", summary.commits_checked);
     println!(
@@ -441,6 +492,26 @@ fn display_summary(summary: &crate::ops::signature_ops::VerificationSummary) {
         println!();
         println!("{}", "✓ All signature checks passed!".green().bold());
         println!("\nNo impersonation attempts detected.\n");
+    }
+
+    // List external contributors with their identities
+    let external: Vec<_> = results
+        .iter()
+        .filter(|r| {
+            matches!(
+                r.reason,
+                VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+            )
+        })
+        .collect();
+
+    if !external.is_empty() {
+        println!("{}", "External Contributors:".bold());
+        for result in external {
+            let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
+            println!("  {} {}", sha_short.bold(), result.commit.author_email);
+        }
+        println!();
     }
 }
 
