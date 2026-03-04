@@ -9,6 +9,33 @@ use site_config::SiteConfig;
 
 use crate::{CIExit, Client, Error, GitOps, SignConfig};
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// RED: CmdDraft must have an `allow_empty` field (issue #813)
+    #[test]
+    fn test_cmd_draft_has_allow_empty_field() {
+        let cmd = CmdDraft {
+            filter: None,
+            paths: vec![],
+            date: None,
+            allow_draft: false,
+            allow_empty: false,
+            www_src_root: PathBuf::from("."),
+        };
+        assert!(!cmd.allow_empty);
+    }
+
+    /// RED: CIExit must have a NoBlogPostsForBluesky variant (issue #813)
+    #[test]
+    fn test_no_blog_posts_for_bluesky_ci_exit() {
+        let exit = CIExit::NoBlogPostsForBluesky;
+        // Pattern match to prove the variant exists
+        assert!(matches!(exit, CIExit::NoBlogPostsForBluesky));
+    }
+}
+
 const DEFAULT_PATH: &str = "content/blog";
 
 #[derive(Debug, Parser, Clone)]
