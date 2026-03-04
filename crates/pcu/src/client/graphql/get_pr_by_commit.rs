@@ -28,6 +28,7 @@ struct AssociatedPullRequests {
 struct PullRequest {
     number: i64,
     title: String,
+    body: String,
     url: String,
     #[serde(rename = "mergedAt")]
     merged_at: Option<String>,
@@ -48,7 +49,7 @@ pub(crate) async fn get_pull_request_by_commit(
     owner: &str,
     name: &str,
     commit_sha: &str,
-) -> Result<(i64, String, String), Error> {
+) -> Result<(i64, String, String, String), Error> {
     let query = r#"
             query($owner: String!, $name: String!, $oid: GitObjectID!) {
                 repository(owner: $owner, name: $name) {
@@ -58,6 +59,7 @@ pub(crate) async fn get_pull_request_by_commit(
                                 nodes {
                                     number
                                     title
+                                    body
                                     url
                                     mergedAt
                                 }
@@ -103,5 +105,5 @@ pub(crate) async fn get_pull_request_by_commit(
         .or_else(|| prs.first())
         .ok_or(Error::InvalidMergeCommitMessage)?;
 
-    Ok((pr.number, pr.title.clone(), pr.url.clone()))
+    Ok((pr.number, pr.title.clone(), pr.url.clone(), pr.body.clone()))
 }

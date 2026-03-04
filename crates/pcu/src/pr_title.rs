@@ -12,6 +12,7 @@ pub struct PrTitle {
     pub title: String,
     pub pr_id: Option<i64>,
     pub pr_url: Option<Url>,
+    pub pr_body: Option<String>,
     pub commit_emoji: Option<String>,
     pub commit_type: Option<String>,
     pub commit_scope: Option<String>,
@@ -43,6 +44,7 @@ impl PrTitle {
                 title,
                 pr_id: None,
                 pr_url: None,
+                pr_body: None,
                 commit_emoji,
                 commit_type,
                 commit_scope,
@@ -55,6 +57,7 @@ impl PrTitle {
                 title: title.to_string(),
                 pr_id: None,
                 pr_url: None,
+                pr_body: None,
                 commit_emoji: None,
                 commit_type: None,
                 commit_scope: None,
@@ -75,6 +78,19 @@ impl PrTitle {
 
     pub fn set_pr_url(&mut self, url: Url) {
         self.pr_url = Some(url);
+    }
+
+    pub fn set_pr_body(&mut self, body: Option<String>) {
+        self.pr_body = body;
+    }
+
+    /// Returns true if a non-empty PR body is available, meaning the PR
+    /// URL link should be included in the changelog entry.
+    fn has_pr_body(&self) -> bool {
+        match &self.pr_body {
+            Some(body) => !body.is_empty(),
+            None => true, // When body is not set, preserve existing behaviour (link present)
+        }
     }
 
     pub fn calculate_section_and_entry(&mut self) {
@@ -140,7 +156,7 @@ impl PrTitle {
         }
 
         if let Some(id) = self.pr_id {
-            if self.pr_url.is_some() {
+            if self.pr_url.is_some() && self.has_pr_body() {
                 entry = format!("{entry}(pr [#{id}])");
             } else {
                 entry = format!("{entry}(pr #{id})");
@@ -269,8 +285,8 @@ impl PrTitle {
             }
         }
 
-        // add link to the url if it exists
-        if self.pr_url.is_some() {
+        // add link to the url if it exists and the PR has a non-empty body
+        if self.pr_url.is_some() && self.has_pr_body() {
             change_log.add_link(
                 &format!("[#{}]:", self.pr_id.unwrap()),
                 &self.pr_url.clone().unwrap().to_string(),
@@ -587,6 +603,7 @@ mod tests {
             title: "add new feature".to_string(),
             pr_id: Some(5),
             pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
+            pr_body: None,
             commit_emoji: None,
             commit_type: Some("feat".to_string()),
             commit_scope: None,
@@ -632,6 +649,7 @@ mod tests {
             title: "add new feature".to_string(),
             pr_id: Some(5),
             pr_url: Some(Url::parse("https://github.com/jerus-org/pcu/pull/5")?),
+            pr_body: None,
             commit_emoji: None,
             commit_type: Some("feat".to_string()),
             commit_scope: None,
