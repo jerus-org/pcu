@@ -1,7 +1,33 @@
 #![allow(dead_code)]
+use std::{future::Future, pin::Pin, time::Duration};
+
 use serde::{Deserialize, Serialize};
 
 use crate::{Error, GraphQLWrapper};
+
+/// Default number of retry attempts when `associatedPullRequests` returns empty.
+const DEFAULT_RETRY_ATTEMPTS: u32 = 3;
+
+/// Default base delay between retry attempts (seconds).
+const DEFAULT_BASE_DELAY_SECS: u64 = 5;
+
+/// Configuration for retry-with-exponential-backoff behaviour.
+#[derive(Debug, Clone)]
+struct RetryConfig {
+    /// Maximum number of retry attempts (not counting the initial try).
+    max_retries: u32,
+    /// Base delay for the first retry.  Subsequent retries double this value.
+    base_delay: Duration,
+}
+
+impl Default for RetryConfig {
+    fn default() -> Self {
+        Self {
+            max_retries: DEFAULT_RETRY_ATTEMPTS,
+            base_delay: Duration::from_secs(DEFAULT_BASE_DELAY_SECS),
+        }
+    }
+}
 
 #[derive(Deserialize, Debug, Clone)]
 struct Data {
@@ -41,9 +67,118 @@ struct Vars {
     oid: String,
 }
 
+/// The outcome of a single query attempt, used by the retry loop.
+#[derive(Debug)]
+enum QueryOutcome {
+    /// A PR was found.
+    Found(i64, String, String, String),
+    /// The query succeeded but `associatedPullRequests` returned no nodes, or
+    /// the commit object was not yet indexed.  Retrying may help.
+    TransientEmpty,
+    /// A hard error occurred (auth failure, network error, …).  Do not retry.
+    HardError(Error),
+}
+
+/// Select the best PR from a non-empty list and return the tuple fields.
+fn select_pr(prs: &[PullRequest]) -> Option<(i64, String, String, String)> {
+    let pr = prs
+        .iter()
+        .filter(|pr| pr.merged_at.is_some())
+        .max_by_key(|pr| pr.merged_at.as_ref())
+        .or_else(|| prs.first())?;
+    Some((pr.number, pr.title.clone(), pr.url.clone(), pr.body.clone()))
+}
+
+/// Core retry loop — separated from the GraphQL call so that tests can inject
+/// a fake query provider without hitting the network.
+///
+/// `query_fn` is called once per attempt and must return the raw
+/// `Result<Data, Error>` that a single GraphQL call would produce.
+///
+/// Retries only the transient-empty case (empty `associatedPullRequests` or
+/// commit object not yet indexed). Hard errors are propagated immediately.
+async fn get_pull_request_by_commit_with_retry<F>(
+    query_fn: F,
+    config: RetryConfig,
+) -> Result<(i64, String, String, String), Error>
+where
+    F: Fn() -> Pin<Box<dyn Future<Output = Result<Data, Error>> + Send>>,
+{
+    let mut attempt = 0u32;
+    let mut delay = config.base_delay;
+
+    loop {
+        let outcome = match query_fn().await {
+            Err(e) => QueryOutcome::HardError(e),
+            Ok(data) => match data.repository.object {
+                None => {
+                    // Commit not yet indexed — transient, worth retrying.
+                    log::debug!(
+                        "Commit object not found in GitHub index (attempt {attempt}), will retry"
+                    );
+                    QueryOutcome::TransientEmpty
+                }
+                Some(commit) => {
+                    let prs = commit.associated_pull_requests.nodes;
+                    if prs.is_empty() {
+                        log::debug!(
+                            "associatedPullRequests returned empty (attempt {attempt}), \
+                             will retry"
+                        );
+                        QueryOutcome::TransientEmpty
+                    } else {
+                        match select_pr(&prs) {
+                            Some(result) => {
+                                QueryOutcome::Found(result.0, result.1, result.2, result.3)
+                            }
+                            None => QueryOutcome::HardError(Error::InvalidMergeCommitMessage),
+                        }
+                    }
+                }
+            },
+        };
+
+        match outcome {
+            QueryOutcome::Found(number, title, url, body) => {
+                return Ok((number, title, url, body));
+            }
+            QueryOutcome::HardError(e) => {
+                return Err(e);
+            }
+            QueryOutcome::TransientEmpty => {
+                if attempt >= config.max_retries {
+                    log::warn!(
+                        "Exhausted {max} retries waiting for associatedPullRequests; \
+                         giving up",
+                        max = config.max_retries
+                    );
+                    return Err(Error::InvalidMergeCommitMessage);
+                }
+                log::info!(
+                    "Retrying in {secs}s (attempt {attempt}/{max})",
+                    secs = delay.as_secs(),
+                    max = config.max_retries,
+                );
+                tokio::time::sleep(delay).await;
+                delay *= 2;
+                attempt += 1;
+            }
+        }
+    }
+}
+
 /// Get pull request information from a commit SHA
 ///
-/// This works for all merge strategies (merge commit, rebase, squash)
+/// This works for all merge strategies (merge commit, rebase, squash).
+///
+/// When `associatedPullRequests` returns an empty list (which can happen
+/// transiently in the seconds immediately after a PR merge while GitHub's
+/// internal index catches up), the function retries up to
+/// [`DEFAULT_RETRY_ATTEMPTS`] times with exponential back-off starting at
+/// [`DEFAULT_BASE_DELAY_SECS`] seconds (5 s → 10 s → 20 s).
+///
+/// Hard errors (network failures, authentication errors, repository not
+/// found) are **not** retried.
 pub(crate) async fn get_pull_request_by_commit(
     github_graphql: &gql_client::Client,
     owner: &str,
@@ -70,42 +205,33 @@ pub(crate) async fn get_pull_request_by_commit(
             }
             "#;
 
-    let vars = Vars {
-        owner: owner.to_string(),
-        name: name.to_string(),
-        oid: commit_sha.to_string(),
+    let owner = owner.to_string();
+    let name = name.to_string();
+    let oid = commit_sha.to_string();
+    let github_graphql = github_graphql.clone();
+    let query = query.to_string();
+
+    let query_fn = move || -> Pin<Box<dyn Future<Output = Result<Data, Error>> + Send>> {
+        let vars = Vars {
+            owner: owner.clone(),
+            name: name.clone(),
+            oid: oid.clone(),
+        };
+        let github_graphql = github_graphql.clone();
+        let query = query.clone();
+        Box::pin(async move {
+            let data_res = github_graphql
+                .query_with_vars_unwrap::<Data, Vars>(&query, vars)
+                .await;
+
+            log::trace!("data_res: {data_res:?}");
+            let data = data_res.map_err(GraphQLWrapper::from)?;
+            log::trace!("data: {data:?}");
+            Ok(data)
+        })
     };
 
-    let data_res = github_graphql
-        .query_with_vars_unwrap::<Data, Vars>(query, vars)
-        .await;
-
-    log::trace!("data_res: {data_res:?}");
-
-    let data = data_res.map_err(GraphQLWrapper::from)?;
-
-    log::trace!("data: {data:?}");
-
-    let commit = data
-        .repository
-        .object
-        .ok_or(Error::InvalidMergeCommitMessage)?;
-
-    let prs = commit.associated_pull_requests.nodes;
-
-    if prs.is_empty() {
-        return Err(Error::InvalidMergeCommitMessage);
-    }
-
-    // If multiple PRs are associated, prefer the most recently merged one
-    let pr = prs
-        .iter()
-        .filter(|pr| pr.merged_at.is_some())
-        .max_by_key(|pr| pr.merged_at.as_ref())
-        .or_else(|| prs.first())
-        .ok_or(Error::InvalidMergeCommitMessage)?;
-
-    Ok((pr.number, pr.title.clone(), pr.url.clone(), pr.body.clone()))
+    get_pull_request_by_commit_with_retry(query_fn, RetryConfig::default()).await
 }
 
 #[cfg(test)]
@@ -186,10 +312,7 @@ mod tests {
 
         let result = get_pull_request_by_commit_with_retry(query_fn, config).await;
 
-        assert!(
-            result.is_ok(),
-            "Expected Ok after retry, got: {result:?}"
-        );
+        assert!(result.is_ok(), "Expected Ok after retry, got: {result:?}");
         let (number, title, url, body) = result.unwrap();
         assert_eq!(number, 42);
         assert_eq!(title, "PR #42");
@@ -197,7 +320,10 @@ mod tests {
         assert_eq!(body, "Body of PR #42");
 
         let final_count = *call_count.lock().unwrap();
-        assert_eq!(final_count, 2, "Expected exactly 2 calls (initial + 1 retry)");
+        assert_eq!(
+            final_count, 2,
+            "Expected exactly 2 calls (initial + 1 retry)"
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -316,7 +442,10 @@ mod tests {
         );
 
         let final_count = *call_count.lock().unwrap();
-        assert_eq!(final_count, 1, "Expected only 1 call — no retries for hard errors");
+        assert_eq!(
+            final_count, 1,
+            "Expected only 1 call — no retries for hard errors"
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -343,7 +472,12 @@ mod tests {
         }"#;
 
         let data: Data = serde_json::from_str(response).unwrap();
-        let prs = &data.repository.object.unwrap().associated_pull_requests.nodes;
+        let prs = &data
+            .repository
+            .object
+            .unwrap()
+            .associated_pull_requests
+            .nodes;
         assert_eq!(prs.len(), 1);
         assert_eq!(prs[0].number, 99);
         assert_eq!(prs[0].title, "feat: add retry");
@@ -362,7 +496,12 @@ mod tests {
         }"#;
 
         let data: Data = serde_json::from_str(response).unwrap();
-        let prs = &data.repository.object.unwrap().associated_pull_requests.nodes;
+        let prs = &data
+            .repository
+            .object
+            .unwrap()
+            .associated_pull_requests
+            .nodes;
         assert!(prs.is_empty());
     }
 
