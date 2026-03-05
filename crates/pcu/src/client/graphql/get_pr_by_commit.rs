@@ -89,6 +89,30 @@ fn select_pr(prs: &[PullRequest]) -> Option<(i64, String, String, String)> {
     Some((pr.number, pr.title.clone(), pr.url.clone(), pr.body.clone()))
 }
 
+/// Classify a single query result as found, transient-empty, or a hard error.
+fn classify_query_result(result: Result<Data, Error>, attempt: u32) -> QueryOutcome {
+    match result {
+        Err(e) => QueryOutcome::HardError(e),
+        Ok(data) => classify_data(data, attempt),
+    }
+}
+
+fn classify_data(data: Data, attempt: u32) -> QueryOutcome {
+    let Some(commit) = data.repository.object else {
+        log::debug!("Commit object not found in GitHub index (attempt {attempt}), will retry");
+        return QueryOutcome::TransientEmpty;
+    };
+    let prs = commit.associated_pull_requests.nodes;
+    if prs.is_empty() {
+        log::debug!("associatedPullRequests returned empty (attempt {attempt}), will retry");
+        return QueryOutcome::TransientEmpty;
+    }
+    match select_pr(&prs) {
+        Some(result) => QueryOutcome::Found(result.0, result.1, result.2, result.3),
+        None => QueryOutcome::HardError(Error::InvalidMergeCommitMessage),
+    }
+}
+
 /// Core retry loop — separated from the GraphQL call so that tests can inject
 /// a fake query provider without hitting the network.
 ///
@@ -108,35 +132,7 @@ where
     let mut delay = config.base_delay;
 
     loop {
-        let outcome = match query_fn().await {
-            Err(e) => QueryOutcome::HardError(e),
-            Ok(data) => match data.repository.object {
-                None => {
-                    // Commit not yet indexed — transient, worth retrying.
-                    log::debug!(
-                        "Commit object not found in GitHub index (attempt {attempt}), will retry"
-                    );
-                    QueryOutcome::TransientEmpty
-                }
-                Some(commit) => {
-                    let prs = commit.associated_pull_requests.nodes;
-                    if prs.is_empty() {
-                        log::debug!(
-                            "associatedPullRequests returned empty (attempt {attempt}), \
-                             will retry"
-                        );
-                        QueryOutcome::TransientEmpty
-                    } else {
-                        match select_pr(&prs) {
-                            Some(result) => {
-                                QueryOutcome::Found(result.0, result.1, result.2, result.3)
-                            }
-                            None => QueryOutcome::HardError(Error::InvalidMergeCommitMessage),
-                        }
-                    }
-                }
-            },
-        };
+        let outcome = classify_query_result(query_fn().await, attempt);
 
         match outcome {
             QueryOutcome::Found(number, title, url, body) => {
