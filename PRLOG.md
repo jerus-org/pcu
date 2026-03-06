@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - list external contributors in verify-signatures report(pr [#865])
 - retry PR lookup when associatedPullRequests returns empty(pr [#867])
 - deps: update rust crate base64 to 0.22.1(pr [#869])
+- deps: update dependency toolkit to v4.8.0(pr [#873])
 
 ## [0.6.9] - 2026-03-03
 
@@ -2104,6 +2105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#867]: https://github.com/jerus-org/pcu/pull/867
 [#868]: https://github.com/jerus-org/pcu/pull/868
 [#869]: https://github.com/jerus-org/pcu/pull/869
+[#873]: https://github.com/jerus-org/pcu/pull/873
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.9...HEAD
 [0.6.9]: https://github.com/jerus-org/pcu/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
