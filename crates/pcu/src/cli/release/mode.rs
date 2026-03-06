@@ -57,6 +57,29 @@ pub struct InjectPubkey {
     pub pubkey: Option<String>,
 }
 
+/// Attest a published crate with SLSA v0.2 provenance, signed via Sigstore
+/// keyless (CircleCI OIDC → Fulcio → Rekor), and upload the bundle to the
+/// GitHub release.
+///
+/// Requires CIRCLE_OIDC_TOKEN_V2 with audience "sigstore" in the environment.
+#[derive(Debug, Parser, Clone)]
+pub struct Attest {
+    /// Package name on crates.io (e.g. gen-changelog)
+    pub package: String,
+    /// Tag prefix for the GitHub release (e.g. "gen-changelog-v")
+    #[arg(long)]
+    pub crate_tag_prefix: String,
+    /// Version to attest (reads $SEMVER or $NEXT_VERSION if not provided)
+    #[arg(short, long)]
+    pub version: Option<String>,
+    /// Seconds to wait before downloading (allows crates.io indexing after publish)
+    #[arg(long, default_value_t = 30)]
+    pub crates_io_delay: u64,
+    /// Maximum download retry attempts
+    #[arg(long, default_value_t = 5)]
+    pub max_attempts: u32,
+}
+
 /// Upload a binary asset to an existing GitHub release.
 #[derive(Debug, Parser, Clone)]
 pub struct UploadAsset {
@@ -85,6 +108,8 @@ pub enum Mode {
     InjectPubkey(InjectPubkey),
     /// Upload a binary asset to a GitHub release
     UploadAsset(UploadAsset),
+    /// Attest a published crate with SLSA provenance via Sigstore keyless signing
+    Attest(Attest),
 }
 
 // impl FromStr for Mode {

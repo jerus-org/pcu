@@ -78,6 +78,8 @@ pub enum Error {
     CargoToml(#[from] cargo_toml::Error),
     #[error("toml deserialization error says: {0:?}")]
     Toml(#[from] toml::de::Error),
+    #[error("serde_json error says: {0:?}")]
+    SerdeJson(#[from] serde_json::Error),
     #[error("gen-bsky draft error says: {0:?}")]
     DraftError(#[from] gen_bsky::DraftError),
     #[error("gen-bsky post error says: {0:?}")]
@@ -88,6 +90,9 @@ pub enum Error {
     /// Signature verification failed
     #[error("Signature verification failed: {0} failure(s) detected")]
     SignatureVerificationFailed(usize),
+    /// SLSA attestation error
+    #[error("Attestation error: {0}")]
+    Attestation(String),
 }
 
 #[derive(Debug)]
