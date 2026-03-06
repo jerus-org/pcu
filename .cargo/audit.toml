@@ -1,0 +1,23 @@
+# cargo audit configuration
+# Advisories ignored here must also be listed in ignore_advisories in
+# .circleci/config.yml (toolkit/security job parameter).
+
+[advisories]
+ignore = [
+    # RUSTSEC-2023-0071: rsa 0.9.10 - Marvin Attack timing side-channel (CVSS 5.9 medium).
+    # No fixed version of rsa available. Transitive: sigstore 0.13.0 → rsa.
+    # pcu uses sigstore only for CI attestation signing (not decryption), so the
+    # practical risk is low. Remove when sigstore updates rsa.
+    "RUSTSEC-2023-0071",
+
+    # RUSTSEC-2024-0370: proc-macro-error 1.0.4 - unmaintained crate.
+    # Transitive: sigstore 0.13.0 → json-syntax → locspan-derive → proc-macro-error.
+    # No alternative available until sigstore or json-syntax migrate away from it.
+    # Watch for sigstore 0.14+ or a json-syntax update.
+    "RUSTSEC-2024-0370",
+
+    # RUSTSEC-2026-0002: lru 0.12.5 - unsound IterMut (Stacked Borrows violation).
+    # Transitive: bsky-sdk 0.1.23 → atrium-api → atrium-common → lru.
+    # No fixed version of bsky-sdk available. pcu does not use lru directly.
+    "RUSTSEC-2026-0002",
+]

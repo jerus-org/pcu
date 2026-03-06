@@ -8,7 +8,19 @@
 # More documentation for the advisories section can be found here:
 # https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
 [advisories]
-ignore = []
+ignore = [
+    # rsa 0.9.10: Marvin Attack timing side-channel (CVSS 5.9 medium).
+    # No fixed version of rsa is available. Transitive via sigstore 0.13.0.
+    # pcu uses sigstore only for signing CI attestations (not for decryption
+    # operations), so the risk is low. Remove when sigstore updates rsa.
+    { id = "RUSTSEC-2023-0071", reason = "transitive via sigstore 0.13.0; no fix available upstream" },
+    # proc-macro-error 1.0.4: unmaintained. Transitive via
+    # sigstore 0.13.0 → json-syntax → locspan-derive. No alternative upstream.
+    { id = "RUSTSEC-2024-0370", reason = "transitive via sigstore 0.13.0; no fix available upstream" },
+    # lru 0.12.5: unsound IterMut. Transitive via bsky-sdk 0.1.23 → atrium-api.
+    # No fixed version of bsky-sdk available. pcu does not use lru directly.
+    { id = "RUSTSEC-2026-0002", reason = "transitive via bsky-sdk 0.1.23; no fix available upstream" },
+]
 
 # This section is considered when running `cargo deny check licenses`
 # More documentation for the licenses section can be found here:
