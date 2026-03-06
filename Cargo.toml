@@ -48,7 +48,7 @@ thiserror = "2.0.18"
 sha2 = "0.10.9"
 sigstore = { version = "0.13", default-features = false, features = ["sign", "sigstore-trust-root", "rustls-tls"] }
 tokio = { version = "1.50.0", features = ["fs", "macros", "rt-multi-thread", "time"] }
-toml = "1.0.3"
+toml = "1.0.4"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["std", "env-filter"] }
 rstest = "0.26.1"
