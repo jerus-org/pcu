@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- add pcu release attest command(pr [#868])
+
 ### Changed
 
 - chore-update toolkit to 4.7.1(pr [#861])
@@ -2097,6 +2101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#866]: https://github.com/jerus-org/pcu/pull/866
 [#865]: https://github.com/jerus-org/pcu/pull/865
 [#867]: https://github.com/jerus-org/pcu/pull/867
+[#868]: https://github.com/jerus-org/pcu/pull/868
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.9...HEAD
 [0.6.9]: https://github.com/jerus-org/pcu/compare/v0.6.8...v0.6.9
 [0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
