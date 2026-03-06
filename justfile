@@ -28,7 +28,7 @@ doc $RUSTDOCFLAGS="-D warnings":
 
 # run all unit tests
 unit-tests:
-    cargo test --all
+    cargo nextest run --all
 
 # run various auditing tools to assure we are legal and safe
 audit:
