@@ -105,6 +105,7 @@ impl Release {
             Mode::CheckTag(_) => self.check_tag(client).await,
             Mode::InjectPubkey(_) => self.inject_pubkey().await,
             Mode::UploadAsset(_) => self.upload_asset(client).await,
+            Mode::Attest(_) => self.attest(client).await,
         }
     }
 
@@ -423,6 +424,211 @@ impl Release {
         Ok(CIExit::Released)
     }
 
+    /// Attest a published crate with SLSA v0.2 provenance signed via Sigstore keyless.
+    ///
+    /// Steps:
+    /// 1. Download the .crate from crates.io (with retry for indexing delay)
+    /// 2. Compute SHA256 of the downloaded artifact
+    /// 3. Generate SLSA v0.2 provenance JSON recording source, environment, and artifact
+    /// 4. Sign the .crate with cosign-compatible keyless signing (CircleCI OIDC → Fulcio → Rekor)
+    /// 5. Upload the .sigstore.json bundle and provenance.json to the GitHub release
+    ///
+    /// Requires CIRCLE_OIDC_TOKEN_V2 with audience "sigstore" in the environment.
+    async fn attest(self, client: Client) -> Result<CIExit, Error> {
+        let Mode::Attest(ref cmd) = self.mode else {
+            return Err(Error::NoPackageSpecified);
+        };
+
+        let version = resolve_version(&cmd.version);
+        if should_skip_attest(&version) {
+            log::info!("No version to attest — skipping");
+            return Ok(CIExit::Released);
+        }
+
+        let pkg = &cmd.package;
+        let crate_filename = format!("{pkg}-{version}.crate");
+        let crate_url = format!("https://static.crates.io/crates/{pkg}/{crate_filename}");
+        let bundle_filename = format!("{crate_filename}.sigstore.json");
+        let provenance_filename = format!("{pkg}-{version}.provenance.json");
+        let attest_dir = std::path::Path::new("/tmp/attestation");
+        std::fs::create_dir_all(attest_dir)?;
+        let crate_path = attest_dir.join(&crate_filename);
+
+        // Step 1: Download .crate from crates.io with retry
+        log::info!(
+            "Waiting {}s for crates.io indexing before download...",
+            cmd.crates_io_delay
+        );
+        tokio::time::sleep(std::time::Duration::from_secs(cmd.crates_io_delay)).await;
+
+        let mut downloaded = false;
+        for attempt in 1..=cmd.max_attempts {
+            let crate_path_str = crate_path
+                .to_str()
+                .ok_or_else(|| Error::Attestation("Invalid crate path".to_string()))?;
+            let status = std::process::Command::new("curl")
+                .args(["-sSfL", &crate_url, "-o", crate_path_str])
+                .status()?;
+            if status.success() {
+                log::info!("Downloaded {crate_filename} (attempt {attempt})");
+                downloaded = true;
+                break;
+            }
+            log::warn!("Download attempt {attempt} failed ({status})");
+            if attempt < cmd.max_attempts {
+                log::info!("Retrying in 30s...");
+                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            }
+        }
+        if !downloaded {
+            return Err(Error::Attestation(format!(
+                "Failed to download {crate_filename} after {} attempts",
+                cmd.max_attempts
+            )));
+        }
+
+        // Step 2: Read bytes and compute SHA256
+        let crate_bytes = std::fs::read(&crate_path)?;
+        use sha2::Digest as _;
+        let hash_hex = format!("{:x}", sha2::Sha256::digest(&crate_bytes));
+        log::info!("SHA256({crate_filename}) = {hash_hex}");
+
+        // Step 3: Generate SLSA v0.2 provenance JSON
+        let build_started = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+        let rust_version = std::process::Command::new("rustc")
+            .arg("--version")
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+            .unwrap_or_else(|_| "unknown".to_string());
+
+        let provenance = serde_json::json!({
+            "builder": {
+                "id": std::env::var("CIRCLE_BUILD_URL").unwrap_or_default()
+            },
+            "buildType": "https://github.com/jerus-org/circleci-toolkit",
+            "invocation": {
+                "configSource": {
+                    "uri": std::env::var("CIRCLE_REPOSITORY_URL").unwrap_or_default(),
+                    "digest": { "sha1": std::env::var("CIRCLE_SHA1").unwrap_or_default() },
+                    "entryPoint": ".circleci/release.yml"
+                },
+                "parameters": {
+                    "package": pkg,
+                    "version": &version,
+                    "rust_version": &rust_version
+                },
+                "environment": {
+                    "CIRCLE_BUILD_URL": std::env::var("CIRCLE_BUILD_URL").unwrap_or_default(),
+                    "CIRCLE_WORKFLOW_ID": std::env::var("CIRCLE_WORKFLOW_ID").unwrap_or_default(),
+                    "CIRCLE_PROJECT_USERNAME": std::env::var("CIRCLE_PROJECT_USERNAME").unwrap_or_default(),
+                    "CIRCLE_PROJECT_REPONAME": std::env::var("CIRCLE_PROJECT_REPONAME").unwrap_or_default()
+                }
+            },
+            "metadata": {
+                "buildStartedOn": build_started,
+                "completeness": { "parameters": true, "environment": true, "materials": true },
+                "reproducible": false
+            },
+            "materials": [
+                {
+                    "uri": std::env::var("CIRCLE_REPOSITORY_URL").unwrap_or_default(),
+                    "digest": { "sha1": std::env::var("CIRCLE_SHA1").unwrap_or_default() }
+                }
+            ],
+            "subject": [
+                {
+                    "name": &crate_filename,
+                    "digest": { "sha256": &hash_hex }
+                }
+            ]
+        });
+
+        let provenance_path = attest_dir.join(&provenance_filename);
+        std::fs::write(&provenance_path, serde_json::to_string_pretty(&provenance)?)?;
+        log::info!("Generated provenance: {provenance_filename}");
+
+        // Step 4: Sign with Sigstore keyless (CircleCI OIDC → Fulcio → Rekor)
+        let oidc_token_str = get_oidc_token()?;
+        let identity_token = parse_identity_token(&oidc_token_str)?;
+
+        log::info!("Fetching Sigstore trust root...");
+        let signing_context = sigstore::bundle::sign::SigningContext::async_production()
+            .await
+            .map_err(|e| {
+                Error::Attestation(format!(
+                    "Failed to initialise Sigstore signing context: {e}"
+                ))
+            })?;
+
+        log::info!("Obtaining Fulcio signing certificate via CircleCI OIDC...");
+        let session = signing_context
+            .signer(identity_token)
+            .await
+            .map_err(|e| Error::Attestation(format!("Failed to create signing session: {e}")))?;
+
+        log::info!("Signing {crate_filename}...");
+        let cursor = std::io::Cursor::new(crate_bytes);
+        let artifact = session
+            .sign(cursor)
+            .await
+            .map_err(|e| Error::Attestation(format!("Signing failed: {e}")))?;
+
+        let bundle = artifact.to_bundle();
+        let bundle_json = serde_json::to_string_pretty(&bundle)
+            .map_err(|e| Error::Attestation(format!("Bundle serialisation failed: {e}")))?;
+
+        let bundle_path = attest_dir.join(&bundle_filename);
+        std::fs::write(&bundle_path, &bundle_json)?;
+        log::info!("Bundle written: {bundle_filename}");
+
+        // Step 5: Upload bundle and provenance to GitHub release
+        let release_tag = format!("{}{}", cmd.crate_tag_prefix, version);
+        log::info!("Uploading attestation assets to release {release_tag}...");
+
+        let release = client
+            .github_rest
+            .repos
+            .get_release_by_tag(client.owner(), client.repo(), &release_tag)
+            .send()
+            .await?;
+
+        let upload_token = PersonalAccessToken::new(client.github_token.clone());
+        let upload_config = APIConfig::new("https://uploads.github.com", upload_token);
+        let upload_api = octocrate::GitHubAPI::new(&upload_config);
+
+        for (path, name) in [
+            (&bundle_path, bundle_filename.as_str()),
+            (&provenance_path, provenance_filename.as_str()),
+        ] {
+            let file = tokio::fs::File::open(path).await?;
+            let content_length = file.metadata().await?.len();
+            let query = octocrate::repos::upload_release_asset::Query::builder()
+                .name(name)
+                .build();
+            upload_api
+                .repos
+                .upload_release_asset(client.owner(), client.repo(), release.id)
+                .query(&query)
+                .header("Content-Type", "application/octet-stream")
+                .header("Content-Length", content_length.to_string())
+                .file(file)
+                .send()
+                .await?;
+            log::info!("Uploaded {name}");
+        }
+
+        log::info!("Attestation complete.");
+        log::info!(
+            "Verify with: cosign verify-blob \
+            --certificate-oidc-issuer 'https://oidc.circleci.com/org/<ORG_ID>' \
+            --certificate-identity-regexp 'https://circleci.com/gh/{}/.*' \
+            --bundle '{bundle_filename}' '{crate_filename}'",
+            std::env::var("CIRCLE_PROJECT_USERNAME").unwrap_or_default()
+        );
+
+        Ok(CIExit::Released)
+    }
+
     /// Upload a binary asset to an existing GitHub release.
     ///
     /// Looks up the release ID via `get_release_by_tag`, then uploads to
@@ -497,6 +703,38 @@ impl Release {
     }
 }
 
+/// Returns true if the version string indicates no release is needed.
+fn should_skip_attest(version: &str) -> bool {
+    version == "none"
+}
+
+/// Read the CircleCI OIDC token (v2) from the environment.
+///
+/// Returns `Error::Attestation` with a clear message if the variable is unset.
+fn get_oidc_token() -> Result<String, Error> {
+    std::env::var("CIRCLE_OIDC_TOKEN_V2").map_err(|_| {
+        Error::Attestation(
+            "CIRCLE_OIDC_TOKEN_V2 is not set. \
+            Configure the CircleCI OIDC token with audience 'sigstore' for this job."
+                .to_string(),
+        )
+    })
+}
+
+/// Parse a raw JWT string into a Sigstore `IdentityToken`.
+///
+/// Validates that the token audience is `"sigstore"` as required by Fulcio.
+/// Returns `Error::Attestation` if the token is malformed or has the wrong audience.
+fn parse_identity_token(token: &str) -> Result<sigstore::oauth::IdentityToken, Error> {
+    sigstore::oauth::IdentityToken::try_from(token).map_err(|e| {
+        Error::Attestation(format!(
+            "Invalid OIDC token: {e}. \
+            Ensure CIRCLE_OIDC_TOKEN_V2 has audience 'sigstore' \
+            (set oidc_token_audience: sigstore in the CircleCI job config)."
+        ))
+    })
+}
+
 fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     let mut output = String::new();
 
@@ -518,6 +756,99 @@ fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     };
 
     output
+}
+
+#[cfg(test)]
+mod attest_tests {
+    use super::*;
+
+    /// Build a minimal fake JWT string with the given audience.
+    ///
+    /// Uses standard-no-pad base64 (matching what sigstore's IdentityToken::try_from expects).
+    /// The signature is fake — try_from does not verify it, only parses the payload claims.
+    fn fake_jwt(audience: &str) -> String {
+        use base64::{engine::general_purpose::STANDARD_NO_PAD, Engine as _};
+        let header = STANDARD_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+        let payload = STANDARD_NO_PAD.encode(format!(
+            r#"{{"aud":"{audience}","exp":9999999999,"email":"ci@example.com"}}"#
+        ));
+        format!("{header}.{payload}.fakesig")
+    }
+
+    #[test]
+    fn attest_skips_when_version_is_none() {
+        assert!(
+            should_skip_attest("none"),
+            "version 'none' should trigger skip"
+        );
+    }
+
+    #[test]
+    fn attest_does_not_skip_when_version_is_present() {
+        assert!(
+            !should_skip_attest("1.2.3"),
+            "a real version should not trigger skip"
+        );
+    }
+
+    #[test]
+    fn get_oidc_token_errors_when_env_var_missing() {
+        let saved = std::env::var("CIRCLE_OIDC_TOKEN_V2").ok();
+        unsafe { std::env::remove_var("CIRCLE_OIDC_TOKEN_V2") };
+
+        let result = get_oidc_token();
+
+        if let Some(v) = saved {
+            unsafe { std::env::set_var("CIRCLE_OIDC_TOKEN_V2", v) };
+        }
+
+        assert!(result.is_err(), "should error when env var is absent");
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.contains("CIRCLE_OIDC_TOKEN_V2"),
+            "error should name the missing env var: {msg}"
+        );
+    }
+
+    #[test]
+    fn get_oidc_token_returns_value_when_env_var_set() {
+        let saved = std::env::var("CIRCLE_OIDC_TOKEN_V2").ok();
+        unsafe { std::env::set_var("CIRCLE_OIDC_TOKEN_V2", "some-token") };
+
+        let result = get_oidc_token();
+
+        unsafe { std::env::remove_var("CIRCLE_OIDC_TOKEN_V2") };
+        if let Some(v) = saved {
+            unsafe { std::env::set_var("CIRCLE_OIDC_TOKEN_V2", v) };
+        }
+
+        assert_eq!(result.unwrap(), "some-token");
+    }
+
+    #[test]
+    fn parse_identity_token_rejects_wrong_audience() {
+        let jwt = fake_jwt("org-12345");
+        let result = parse_identity_token(&jwt);
+        assert!(result.is_err(), "wrong audience should be rejected");
+        let msg = result.err().expect("should be Err").to_string();
+        assert!(
+            msg.contains("sigstore") || msg.contains("audience"),
+            "error should mention audience requirement: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_identity_token_accepts_sigstore_audience() {
+        let jwt = fake_jwt("sigstore");
+        let result = parse_identity_token(&jwt);
+        assert!(result.is_ok(), "sigstore audience should be accepted");
+    }
+
+    #[test]
+    fn parse_identity_token_rejects_malformed_jwt() {
+        let result = parse_identity_token("not-a-jwt");
+        assert!(result.is_err(), "malformed JWT should be rejected");
+    }
 }
 
 #[cfg(test)]
