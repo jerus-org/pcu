@@ -55,7 +55,7 @@ unicode-segmentation.workspace = true
 url = { features = ["serde"], workspace = true }
 
 [dev-dependencies]
-base64 = "0.22"
+base64 = "0.22.1"
 rstest.workspace = true
 uuid.workspace = true
 
