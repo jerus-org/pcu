@@ -19,6 +19,7 @@ include = [
 categories = ["development-tools::build-utils", "command-line-utilities"]
 
 [dependencies]
+base64.workspace = true
 base62.workspace = true
 bsky-sdk.workspace = true
 cargo_toml.workspace = true
@@ -43,7 +44,9 @@ regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
+openidconnect.workspace = true
 sigstore.workspace = true
+sigstore_protobuf_specs.workspace = true
 sequoia-openpgp.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
@@ -55,7 +58,6 @@ unicode-segmentation.workspace = true
 url = { features = ["serde"], workspace = true }
 
 [dev-dependencies]
-base64 = "0.22.1"
 rstest.workspace = true
 uuid.workspace = true
 
