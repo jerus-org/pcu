@@ -547,35 +547,11 @@ impl Release {
         std::fs::write(&provenance_path, serde_json::to_string_pretty(&provenance)?)?;
         log::info!("Generated provenance: {provenance_filename}");
 
-        // Step 4: Sign with Sigstore keyless (CircleCI OIDC → Fulcio → Rekor)
+        // Step 4: Sign with Sigstore keyless (CircleCI OIDC → Fulcio v1 → Rekor)
         let oidc_token_str = get_oidc_token()?;
-        let identity_token = parse_identity_token(&oidc_token_str)?;
 
-        log::info!("Fetching Sigstore trust root...");
-        let signing_context = sigstore::bundle::sign::SigningContext::async_production()
-            .await
-            .map_err(|e| {
-                Error::Attestation(format!(
-                    "Failed to initialise Sigstore signing context: {e}"
-                ))
-            })?;
-
-        log::info!("Obtaining Fulcio signing certificate via CircleCI OIDC...");
-        let session = signing_context
-            .signer(identity_token)
-            .await
-            .map_err(|e| Error::Attestation(format!("Failed to create signing session: {e}")))?;
-
-        log::info!("Signing {crate_filename}...");
-        let cursor = std::io::Cursor::new(crate_bytes);
-        let artifact = session
-            .sign(cursor)
-            .await
-            .map_err(|e| Error::Attestation(format!("Signing failed: {e}")))?;
-
-        let bundle = artifact.to_bundle();
-        let bundle_json = serde_json::to_string_pretty(&bundle)
-            .map_err(|e| Error::Attestation(format!("Bundle serialisation failed: {e}")))?;
+        log::info!("Signing {crate_filename} via Fulcio v1 API...");
+        let bundle_json = sign_artifact_fulcio_v1(&crate_bytes, &oidc_token_str).await?;
 
         let bundle_path = attest_dir.join(&bundle_filename);
         std::fs::write(&bundle_path, &bundle_json)?;
@@ -715,24 +691,166 @@ fn get_oidc_token() -> Result<String, Error> {
     std::env::var("CIRCLE_OIDC_TOKEN_V2").map_err(|_| {
         Error::Attestation(
             "CIRCLE_OIDC_TOKEN_V2 is not set. \
-            Configure the CircleCI OIDC token with audience 'sigstore' for this job."
+            Set it to a CircleCI OIDC token with audience 'sigstore'. \
+            Use `circleci run oidc get --claims '{\"aud\":\"sigstore\"}'` to obtain one."
                 .to_string(),
         )
     })
 }
 
-/// Parse a raw JWT string into a Sigstore `IdentityToken`.
+/// Extract the `sub` claim from a raw JWT string without requiring an `email` claim.
 ///
-/// Validates that the token audience is `"sigstore"` as required by Fulcio.
-/// Returns `Error::Attestation` if the token is malformed or has the wrong audience.
-fn parse_identity_token(token: &str) -> Result<sigstore::oauth::IdentityToken, Error> {
-    sigstore::oauth::IdentityToken::try_from(token).map_err(|e| {
-        Error::Attestation(format!(
-            "Invalid OIDC token: {e}. \
-            Ensure CIRCLE_OIDC_TOKEN_V2 has audience 'sigstore' \
-            (set oidc_token_audience: sigstore in the CircleCI job config)."
-        ))
-    })
+/// CircleCI machine OIDC tokens do not include an `email` field; only `sub` is needed
+/// as the challenge value for the Fulcio v1 signing endpoint.
+fn extract_sub_from_jwt(raw_jwt: &str) -> Result<String, Error> {
+    use base64::Engine as _;
+    let parts: Vec<&str> = raw_jwt.split('.').collect();
+    if parts.len() < 2 {
+        return Err(Error::Attestation(
+            "Invalid JWT format: expected at least 2 dot-separated parts".to_string(),
+        ));
+    }
+    // JWT uses base64url (URL_SAFE_NO_PAD); fall back to STANDARD_NO_PAD for test tokens.
+    let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(parts[1])
+        .or_else(|_| base64::engine::general_purpose::STANDARD_NO_PAD.decode(parts[1]))
+        .map_err(|e| Error::Attestation(format!("JWT payload base64 decode failed: {e}")))?;
+    let claims: serde_json::Value = serde_json::from_slice(&payload_bytes)
+        .map_err(|e| Error::Attestation(format!("JWT payload JSON parse failed: {e}")))?;
+    claims["sub"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| Error::Attestation("JWT missing 'sub' claim".to_string()))
+}
+
+/// Decode a PEM certificate string to its raw DER bytes.
+///
+/// Strips the `-----BEGIN ...-----` / `-----END ...-----` header lines and
+/// base64-decodes the remaining content.
+fn pem_to_der(pem_str: &str) -> Result<Vec<u8>, Error> {
+    use base64::Engine as _;
+    let b64: String = pem_str
+        .lines()
+        .filter(|l| !l.starts_with("-----"))
+        .collect::<Vec<_>>()
+        .join("");
+    base64::engine::general_purpose::STANDARD
+        .decode(&b64)
+        .map_err(|e| Error::Attestation(format!("PEM to DER conversion failed: {e}")))
+}
+
+/// Sign `artifact` bytes using the Fulcio v1 API with a CircleCI OIDC token.
+///
+/// The v1 path (`FulcioClient::request_cert`) uses `TokenProvider::Static` and signs
+/// the challenge (= `sub` claim) to prove key possession.  It does NOT require an
+/// `email` claim — making it compatible with CircleCI machine OIDC tokens.
+///
+/// Returns the Sigstore bundle JSON string.
+async fn sign_artifact_fulcio_v1(artifact: &[u8], oidc_token_str: &str) -> Result<String, Error> {
+    use base64::Engine as _;
+    use sha2::Digest as _;
+    use sigstore::crypto::SigningScheme;
+    use sigstore::fulcio::{FulcioClient, TokenProvider, FULCIO_ROOT};
+    use sigstore::rekor::apis::configuration::Configuration as RekorConfiguration;
+    use sigstore::rekor::apis::entries_api::create_log_entry;
+    use sigstore::rekor::models::hashedrekord;
+    use sigstore::rekor::models::proposed_entry::ProposedEntry as ProposedLogEntry;
+    use sigstore_protobuf_specs::dev::sigstore::bundle::v1::bundle;
+    use sigstore_protobuf_specs::dev::sigstore::bundle::v1::verification_material;
+    use sigstore_protobuf_specs::dev::sigstore::bundle::v1::{Bundle, VerificationMaterial};
+    use sigstore_protobuf_specs::dev::sigstore::common::v1::{
+        HashAlgorithm, HashOutput, MessageSignature, X509Certificate, X509CertificateChain,
+    };
+    use sigstore_protobuf_specs::dev::sigstore::rekor::v1::TransparencyLogEntry;
+    use url::Url;
+
+    // Extract sub claim (challenge for Fulcio)
+    let sub = extract_sub_from_jwt(oidc_token_str)?;
+
+    // Build CoreIdToken from raw JWT string
+    let core_token: openidconnect::core::CoreIdToken =
+        serde_json::from_value(serde_json::Value::String(oidc_token_str.to_string()))
+            .map_err(|e| Error::Attestation(format!("Failed to parse OIDC token: {e}")))?;
+
+    // Create Fulcio client with v1 Static provider
+    let fulcio_url = Url::parse(FULCIO_ROOT)
+        .map_err(|e| Error::Attestation(format!("Invalid Fulcio URL: {e}")))?;
+    let fulcio = FulcioClient::new(fulcio_url, TokenProvider::Static((core_token, sub)));
+
+    // Request Fulcio certificate via v1 endpoint
+    log::info!("Requesting Fulcio signing certificate via v1 API...");
+    let (signer, cert_pem) = fulcio
+        .request_cert(SigningScheme::ECDSA_P256_SHA256_ASN1)
+        .await
+        .map_err(|e| Error::Attestation(format!("Fulcio certificate request failed: {e}")))?;
+
+    // Compute SHA256 of artifact
+    let sha256_hash = sha2::Sha256::digest(artifact);
+    let sha256_hex = format!("{:x}", &sha256_hash);
+
+    // Sign artifact bytes
+    let signature_bytes = signer
+        .sign(artifact)
+        .map_err(|e| Error::Attestation(format!("Artifact signing failed: {e}")))?;
+
+    // Convert cert PEM to DER for the bundle
+    let cert_der = pem_to_der(&cert_pem.to_string())?;
+
+    // Submit to Rekor transparency log
+    let proposed_entry = ProposedLogEntry::Hashedrekord {
+        api_version: "0.0.1".to_owned(),
+        spec: hashedrekord::Spec {
+            signature: hashedrekord::Signature {
+                content: base64::engine::general_purpose::STANDARD.encode(&signature_bytes),
+                public_key: hashedrekord::PublicKey::new(
+                    base64::engine::general_purpose::STANDARD.encode(cert_pem.as_ref()),
+                ),
+            },
+            data: hashedrekord::Data {
+                hash: hashedrekord::Hash {
+                    algorithm: hashedrekord::AlgorithmKind::sha256,
+                    value: sha256_hex,
+                },
+            },
+        },
+    };
+
+    log::info!("Submitting to Rekor transparency log...");
+    let log_entry = create_log_entry(&RekorConfiguration::default(), proposed_entry)
+        .await
+        .map_err(|e| Error::Attestation(format!("Rekor submission failed: {e}")))?;
+    let tlog_entry: TransparencyLogEntry = log_entry
+        .try_into()
+        .map_err(|_| Error::Attestation("Rekor returned malformed log entry".to_string()))?;
+
+    // Build Sigstore bundle
+    let x509_chain = X509CertificateChain {
+        certificates: vec![X509Certificate {
+            raw_bytes: cert_der,
+        }],
+    };
+    let verification_material = Some(VerificationMaterial {
+        timestamp_verification_data: None,
+        tlog_entries: vec![tlog_entry],
+        content: Some(verification_material::Content::X509CertificateChain(
+            x509_chain,
+        )),
+    });
+    let message_signature = MessageSignature {
+        message_digest: Some(HashOutput {
+            algorithm: HashAlgorithm::Sha2256.into(),
+            digest: sha256_hash.to_vec(),
+        }),
+        signature: signature_bytes,
+    };
+    let bundle = Bundle {
+        media_type: "application/vnd.dev.sigstore.bundle+json;version=0.2".to_string(),
+        verification_material,
+        content: Some(bundle::Content::MessageSignature(message_signature)),
+    };
+
+    serde_json::to_string_pretty(&bundle)
+        .map_err(|e| Error::Attestation(format!("Bundle serialisation failed: {e}")))
 }
 
 fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
@@ -762,15 +880,15 @@ fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
 mod attest_tests {
     use super::*;
 
-    /// Build a minimal fake JWT string with the given audience.
+    /// Build a minimal fake JWT string.
     ///
-    /// Uses standard-no-pad base64 (matching what sigstore's IdentityToken::try_from expects).
-    /// The signature is fake — try_from does not verify it, only parses the payload claims.
-    fn fake_jwt(audience: &str) -> String {
-        use base64::{engine::general_purpose::STANDARD_NO_PAD, Engine as _};
-        let header = STANDARD_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
-        let payload = STANDARD_NO_PAD.encode(format!(
-            r#"{{"aud":"{audience}","exp":9999999999,"email":"ci@example.com"}}"#
+    /// Uses URL_SAFE_NO_PAD base64 (standard JWT encoding).
+    /// The signature is fake — we only parse the payload claims.
+    fn fake_jwt(sub: &str) -> String {
+        use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+        let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+        let payload = URL_SAFE_NO_PAD.encode(format!(
+            r#"{{"aud":"sigstore","exp":9999999999,"sub":"{sub}"}}"#
         ));
         format!("{header}.{payload}.fakesig")
     }
@@ -826,28 +944,46 @@ mod attest_tests {
     }
 
     #[test]
-    fn parse_identity_token_rejects_wrong_audience() {
-        let jwt = fake_jwt("org-12345");
-        let result = parse_identity_token(&jwt);
-        assert!(result.is_err(), "wrong audience should be rejected");
-        let msg = result.err().expect("should be Err").to_string();
-        assert!(
-            msg.contains("sigstore") || msg.contains("audience"),
-            "error should mention audience requirement: {msg}"
+    fn extract_sub_from_jwt_returns_sub_claim() {
+        let jwt = fake_jwt("https://circleci.com/org/abc/project/xyz/user/u");
+        let result = extract_sub_from_jwt(&jwt);
+        assert!(result.is_ok(), "should extract sub: {result:?}");
+        assert_eq!(
+            result.unwrap(),
+            "https://circleci.com/org/abc/project/xyz/user/u"
         );
     }
 
     #[test]
-    fn parse_identity_token_accepts_sigstore_audience() {
-        let jwt = fake_jwt("sigstore");
-        let result = parse_identity_token(&jwt);
-        assert!(result.is_ok(), "sigstore audience should be accepted");
+    fn extract_sub_from_jwt_errors_on_malformed_jwt() {
+        let result = extract_sub_from_jwt("not-a-jwt");
+        assert!(result.is_err(), "malformed JWT should fail");
     }
 
     #[test]
-    fn parse_identity_token_rejects_malformed_jwt() {
-        let result = parse_identity_token("not-a-jwt");
-        assert!(result.is_err(), "malformed JWT should be rejected");
+    fn extract_sub_from_jwt_errors_when_sub_missing() {
+        use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+        let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+        let payload = URL_SAFE_NO_PAD.encode(r#"{"aud":"sigstore","exp":9999999999}"#);
+        let jwt = format!("{header}.{payload}.fakesig");
+        let result = extract_sub_from_jwt(&jwt);
+        assert!(result.is_err(), "missing sub should fail");
+        assert!(
+            result.unwrap_err().to_string().contains("sub"),
+            "error should mention 'sub'"
+        );
+    }
+
+    #[test]
+    fn pem_to_der_roundtrips_certificate_bytes() {
+        use base64::{engine::general_purpose::STANDARD, Engine as _};
+        // Fabricate a fake "certificate" (just some bytes)
+        let fake_der = b"FAKE_DER_BYTES_0123456789";
+        let b64 = STANDARD.encode(fake_der);
+        let pem = format!("-----BEGIN CERTIFICATE-----\n{b64}\n-----END CERTIFICATE-----\n");
+        let result = pem_to_der(&pem);
+        assert!(result.is_ok(), "pem_to_der should succeed: {result:?}");
+        assert_eq!(result.unwrap(), fake_der);
     }
 }
 
