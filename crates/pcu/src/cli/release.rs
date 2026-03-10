@@ -723,15 +723,19 @@ fn extract_sub_from_jwt(raw_jwt: &str) -> Result<String, Error> {
         .ok_or_else(|| Error::Attestation("JWT missing 'sub' claim".to_string()))
 }
 
-/// Decode a PEM certificate string to its raw DER bytes.
+/// Decode the first PEM certificate block to its raw DER bytes.
 ///
-/// Strips the `-----BEGIN ...-----` / `-----END ...-----` header lines and
-/// base64-decodes the remaining content.
+/// Fulcio v1 returns a certificate chain (leaf + intermediates) as multiple
+/// PEM blocks.  Only the leaf (first block) is needed for the Sigstore bundle.
+/// Joining all blocks before decoding would embed `=` padding mid-string,
+/// causing base64 decode to fail with "Invalid symbol 61".
 fn pem_to_der(pem_str: &str) -> Result<Vec<u8>, Error> {
     use base64::Engine as _;
     let b64: String = pem_str
         .lines()
-        .filter(|l| !l.starts_with("-----"))
+        .skip_while(|l| !l.starts_with("-----BEGIN"))
+        .skip(1)
+        .take_while(|l| !l.starts_with("-----END"))
         .collect::<Vec<_>>()
         .join("");
     base64::engine::general_purpose::STANDARD
@@ -984,6 +988,32 @@ mod attest_tests {
         let result = pem_to_der(&pem);
         assert!(result.is_ok(), "pem_to_der should succeed: {result:?}");
         assert_eq!(result.unwrap(), fake_der);
+    }
+
+    #[test]
+    fn pem_to_der_returns_only_first_cert_from_chain() {
+        use base64::{engine::general_purpose::STANDARD, Engine as _};
+        // Fulcio v1 returns a chain: leaf cert + intermediate(s).
+        // Only the leaf (first block) should be decoded; the intermediate's
+        // base64 padding ('=') must not contaminate the leaf decode.
+        let leaf_der = b"LEAF_CERT_BYTES";
+        let intermediate_der = b"INTERMEDIATE_CERT_BYTES_LONGER";
+        let leaf_b64 = STANDARD.encode(leaf_der);
+        let intermediate_b64 = STANDARD.encode(intermediate_der);
+        let chain_pem = format!(
+            "-----BEGIN CERTIFICATE-----\n{leaf_b64}\n-----END CERTIFICATE-----\n\
+             -----BEGIN CERTIFICATE-----\n{intermediate_b64}\n-----END CERTIFICATE-----\n"
+        );
+        let result = pem_to_der(&chain_pem);
+        assert!(
+            result.is_ok(),
+            "pem_to_der should handle a cert chain: {result:?}"
+        );
+        assert_eq!(
+            result.unwrap(),
+            leaf_der,
+            "should return only the leaf (first) certificate"
+        );
     }
 }
 
