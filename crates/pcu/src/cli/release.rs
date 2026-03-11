@@ -48,6 +48,17 @@ use mode::Mode;
 use octocrate::{APIConfig, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
+/// Returns `true` when a GitHub release should be created.
+///
+/// A release is needed when the git tag exists but no GitHub release has been
+/// created for it yet.  This can happen when a previous pipeline run pushed
+/// the tag but failed before the release-creation step, leaving the repo in a
+/// partial state.  Making this check explicit keeps `release_package`
+/// idempotent: re-triggered pipelines succeed without a 422 conflict error.
+fn should_create_github_release(tag_exists: bool, github_release_exists: bool) -> bool {
+    tag_exists && !github_release_exists
+}
+
 /// Resolve a version from an optional CLI argument, falling back to $SEMVER or $NEXT_VERSION.
 /// Returns "none" when no version is available.
 fn resolve_version(version_opt: &Option<String>) -> String {
@@ -157,11 +168,21 @@ impl Release {
                 let version = package.version;
                 let tag = format!("{prefix}{version}");
                 log::trace!("Checking for tag `{tag}` to make release against.");
-                if !client.tag_exists(&tag).await {
-                    log::error!("Tag does not exist: {tag}");
-                } else {
-                    log::info!("Tag already exists: {tag}, attempt to make release");
+                let tag_exists = client.tag_exists(&tag).await;
+                let release_exists = client
+                    .github_rest
+                    .repos
+                    .get_release_by_tag(client.owner(), client.repo(), &tag)
+                    .send()
+                    .await
+                    .is_ok();
+                if should_create_github_release(tag_exists, release_exists) {
+                    log::info!("Tag {tag} exists, no GitHub release yet — creating");
                     client.make_release(&prefix, &version).await?;
+                } else if release_exists {
+                    log::info!("GitHub release {tag} already exists — skipping creation");
+                } else {
+                    log::error!("Tag does not exist: {tag}");
                 }
                 break;
             }
@@ -204,11 +225,21 @@ impl Release {
                 let version = package.version;
                 let tag = format!("{prefix}{version}");
                 log::trace!("Checking for tag `{tag}` to make release against.");
-                if !client.tag_exists(&tag).await {
-                    log::error!("Tag does not exist: {tag}");
-                } else {
-                    log::info!("Tag already exists: {tag}, attempt to make release");
+                let tag_exists = client.tag_exists(&tag).await;
+                let release_exists = client
+                    .github_rest
+                    .repos
+                    .get_release_by_tag(client.owner(), client.repo(), &tag)
+                    .send()
+                    .await
+                    .is_ok();
+                if should_create_github_release(tag_exists, release_exists) {
+                    log::info!("Tag {tag} exists, no GitHub release yet — creating");
                     client.make_release(&prefix, &version).await?;
+                } else if release_exists {
+                    log::info!("GitHub release {tag} already exists — skipping creation");
+                } else {
+                    log::error!("Tag does not exist: {tag}");
                 }
                 break;
             }
@@ -1013,6 +1044,41 @@ mod attest_tests {
             result.unwrap(),
             leaf_der,
             "should return only the leaf (first) certificate"
+        );
+    }
+}
+
+#[cfg(test)]
+mod release_package_tests {
+    use super::*;
+
+    /// Documents the idempotency rule for GitHub release creation.
+    ///
+    /// A GitHub release must be created when the git tag is present but the
+    /// GitHub release is absent.  When the release already exists the step must
+    /// be a no-op so that re-triggered pipelines (where a previous run pushed
+    /// the tag but failed before creating the release) do not error with a 422.
+    #[test]
+    fn create_release_when_tag_exists_and_release_absent() {
+        assert!(
+            should_create_github_release(true, false),
+            "tag exists, no GitHub release → should create"
+        );
+    }
+
+    #[test]
+    fn skip_release_when_both_tag_and_release_exist() {
+        assert!(
+            !should_create_github_release(true, true),
+            "tag and release both exist → idempotent skip"
+        );
+    }
+
+    #[test]
+    fn skip_release_when_tag_absent() {
+        assert!(
+            !should_create_github_release(false, false),
+            "no tag → nothing to create a release against"
         );
     }
 }
