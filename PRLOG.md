@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - make release_package idempotent when GitHub release exists(pr [#879])
 - deps: update rust crate openidconnect to 4.0.1(pr [#880])
 - deps: update rust crate toml to 1.0.6(pr [#881])
+- deps: update rust crate tempfile to 3.27.0(pr [#882])
 
 ## [0.6.12] - 2026-03-10
 
@@ -2139,6 +2140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#879]: https://github.com/jerus-org/pcu/pull/879
 [#880]: https://github.com/jerus-org/pcu/pull/880
 [#881]: https://github.com/jerus-org/pcu/pull/881
+[#882]: https://github.com/jerus-org/pcu/pull/882
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.12...HEAD
 [0.6.12]: https://github.com/jerus-org/pcu/compare/v0.6.11...v0.6.12
 [0.6.11]: https://github.com/jerus-org/pcu/compare/v0.6.10...v0.6.11
