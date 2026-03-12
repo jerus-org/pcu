@@ -1,6 +1,6 @@
 [package]
 name = "gen-linkedin"
-version = "0.1.7"
+version = "0.1.8"
 edition.workspace = true
 authors.workspace = true
 description = "Minimal LinkedIn Posts API client for CI usage"
