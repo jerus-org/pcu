@@ -467,11 +467,32 @@ impl Release {
         let crate_url = format!("https://static.crates.io/crates/{pkg}/{crate_filename}");
         let bundle_filename = format!("{crate_filename}.sigstore.json");
         let provenance_filename = format!("{pkg}-{version}.provenance.json");
+
+        // Step 1: Check whether attestation assets already exist on the GitHub release.
+        // If both assets are present the previous run completed successfully — skip all work.
+        let release_tag = format!("{}{}", cmd.crate_tag_prefix, version);
+        let release = client
+            .github_rest
+            .repos
+            .get_release_by_tag(client.owner(), client.repo(), &release_tag)
+            .send()
+            .await?;
+        let existing_assets: std::collections::HashSet<String> =
+            release.assets.iter().map(|a| a.name.clone()).collect();
+        if attestation_assets_already_uploaded(
+            &existing_assets,
+            &bundle_filename,
+            &provenance_filename,
+        ) {
+            log::info!("Attestation assets already present on release {release_tag} — skipping");
+            return Ok(CIExit::Released);
+        }
+
         let attest_dir = std::path::Path::new("/tmp/attestation");
         std::fs::create_dir_all(attest_dir)?;
         let crate_path = attest_dir.join(&crate_filename);
 
-        // Step 1: Download .crate from crates.io with retry
+        // Step 2: Download .crate from crates.io with retry
         log::info!(
             "Waiting {}s for crates.io indexing before download...",
             cmd.crates_io_delay
@@ -504,13 +525,13 @@ impl Release {
             )));
         }
 
-        // Step 2: Read bytes and compute SHA256
+        // Step 3: Read bytes and compute SHA256
         let crate_bytes = std::fs::read(&crate_path)?;
         use sha2::Digest as _;
         let hash_hex = format!("{:x}", sha2::Sha256::digest(&crate_bytes));
         log::info!("SHA256({crate_filename}) = {hash_hex}");
 
-        // Step 3: Generate SLSA v0.2 provenance JSON
+        // Step 4: Generate SLSA v0.2 provenance JSON
         let build_started = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
         let rust_version = std::process::Command::new("rustc")
             .arg("--version")
@@ -564,7 +585,7 @@ impl Release {
         std::fs::write(&provenance_path, serde_json::to_string_pretty(&provenance)?)?;
         log::info!("Generated provenance: {provenance_filename}");
 
-        // Step 4: Sign with Sigstore keyless (CircleCI OIDC → Fulcio v1 → Rekor)
+        // Step 5: Sign with Sigstore keyless (CircleCI OIDC → Fulcio v1 → Rekor)
         let oidc_token_str = get_oidc_token()?;
 
         log::info!("Signing {crate_filename} via Fulcio v1 API...");
@@ -574,16 +595,8 @@ impl Release {
         std::fs::write(&bundle_path, &bundle_json)?;
         log::info!("Bundle written: {bundle_filename}");
 
-        // Step 5: Upload bundle and provenance to GitHub release
-        let release_tag = format!("{}{}", cmd.crate_tag_prefix, version);
+        // Step 6: Upload bundle and provenance to GitHub release
         log::info!("Uploading attestation assets to release {release_tag}...");
-
-        let release = client
-            .github_rest
-            .repos
-            .get_release_by_tag(client.owner(), client.repo(), &release_tag)
-            .send()
-            .await?;
 
         let upload_token = PersonalAccessToken::new(client.github_token.clone());
         let upload_config = APIConfig::new("https://uploads.github.com", upload_token);
@@ -699,6 +712,20 @@ impl Release {
 /// Returns true if the version string indicates no release is needed.
 fn should_skip_attest(version: &str) -> bool {
     version == "none"
+}
+
+/// Returns true if all expected attestation assets are already present on the
+/// GitHub release, indicating the upload was completed in a previous run.
+///
+/// When true, the entire attest operation (download, sign, upload) can be
+/// skipped, making `pcu release attest` idempotent on re-runs.
+fn attestation_assets_already_uploaded(
+    existing_asset_names: &std::collections::HashSet<String>,
+    bundle_filename: &str,
+    provenance_filename: &str,
+) -> bool {
+    existing_asset_names.contains(bundle_filename)
+        && existing_asset_names.contains(provenance_filename)
 }
 
 /// Read the CircleCI OIDC token (v2) from the environment.
@@ -1141,5 +1168,50 @@ mod tests {
         if let Some(v) = saved_bash_env {
             unsafe { std::env::set_var("BASH_ENV", v) };
         }
+    }
+
+    #[test]
+    fn attestation_assets_already_uploaded_true_when_both_present() {
+        let existing = std::collections::HashSet::from([
+            "my-crate-1.2.3.crate.sigstore.json".to_string(),
+            "my-crate-1.2.3.provenance.json".to_string(),
+        ]);
+        assert!(attestation_assets_already_uploaded(
+            &existing,
+            "my-crate-1.2.3.crate.sigstore.json",
+            "my-crate-1.2.3.provenance.json",
+        ));
+    }
+
+    #[test]
+    fn attestation_assets_already_uploaded_false_when_both_absent() {
+        let existing = std::collections::HashSet::new();
+        assert!(!attestation_assets_already_uploaded(
+            &existing,
+            "my-crate-1.2.3.crate.sigstore.json",
+            "my-crate-1.2.3.provenance.json",
+        ));
+    }
+
+    #[test]
+    fn attestation_assets_already_uploaded_false_when_only_bundle_present() {
+        let existing =
+            std::collections::HashSet::from(["my-crate-1.2.3.crate.sigstore.json".to_string()]);
+        assert!(!attestation_assets_already_uploaded(
+            &existing,
+            "my-crate-1.2.3.crate.sigstore.json",
+            "my-crate-1.2.3.provenance.json",
+        ));
+    }
+
+    #[test]
+    fn attestation_assets_already_uploaded_false_when_only_provenance_present() {
+        let existing =
+            std::collections::HashSet::from(["my-crate-1.2.3.provenance.json".to_string()]);
+        assert!(!attestation_assets_already_uploaded(
+            &existing,
+            "my-crate-1.2.3.crate.sigstore.json",
+            "my-crate-1.2.3.provenance.json",
+        ));
     }
 }
