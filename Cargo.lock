@@ -2622,9 +2622,9 @@ dependencies = [
 
 [[package]]
 name = "link-bridge"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de5313dafaddb16640f526a1aff70edc9b3bc0074ecd0ad4934963097162b059"
+checksum = "8f7541fa44ca898e83abea72c7c3fdf0277dea9bb2cb4519c9194ee0f5fa386b"
 dependencies = [
  "base62",
  "chrono",
@@ -3103,9 +3103,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.21.3"
+version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
+checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "once_cell_polyfill"
