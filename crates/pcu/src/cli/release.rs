@@ -479,10 +479,12 @@ impl Release {
             .await?;
         let existing_assets: std::collections::HashSet<String> =
             release.assets.iter().map(|a| a.name.clone()).collect();
-        if attestation_assets_already_uploaded(&existing_assets, &bundle_filename, &provenance_filename) {
-            log::info!(
-                "Attestation assets already present on release {release_tag} — skipping"
-            );
+        if attestation_assets_already_uploaded(
+            &existing_assets,
+            &bundle_filename,
+            &provenance_filename,
+        ) {
+            log::info!("Attestation assets already present on release {release_tag} — skipping");
             return Ok(CIExit::Released);
         }
 
@@ -1193,9 +1195,8 @@ mod tests {
 
     #[test]
     fn attestation_assets_already_uploaded_false_when_only_bundle_present() {
-        let existing = std::collections::HashSet::from([
-            "my-crate-1.2.3.crate.sigstore.json".to_string(),
-        ]);
+        let existing =
+            std::collections::HashSet::from(["my-crate-1.2.3.crate.sigstore.json".to_string()]);
         assert!(!attestation_assets_already_uploaded(
             &existing,
             "my-crate-1.2.3.crate.sigstore.json",
@@ -1205,9 +1206,8 @@ mod tests {
 
     #[test]
     fn attestation_assets_already_uploaded_false_when_only_provenance_present() {
-        let existing = std::collections::HashSet::from([
-            "my-crate-1.2.3.provenance.json".to_string(),
-        ]);
+        let existing =
+            std::collections::HashSet::from(["my-crate-1.2.3.provenance.json".to_string()]);
         assert!(!attestation_assets_already_uploaded(
             &existing,
             "my-crate-1.2.3.crate.sigstore.json",
