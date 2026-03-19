@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - GPG-sign workspace version tags(pr [#885])
+- deps: update rust crate base62 to 2.2.4(pr [#886])
 
 ## [0.6.14] - 2026-03-12
 
@@ -2155,6 +2156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#882]: https://github.com/jerus-org/pcu/pull/882
 [#883]: https://github.com/jerus-org/pcu/pull/883
 [#885]: https://github.com/jerus-org/pcu/pull/885
+[#886]: https://github.com/jerus-org/pcu/pull/886
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.14...HEAD
 [0.6.14]: https://github.com/jerus-org/pcu/compare/v0.6.13...v0.6.14
 [0.6.13]: https://github.com/jerus-org/pcu/compare/v0.6.12...v0.6.13
