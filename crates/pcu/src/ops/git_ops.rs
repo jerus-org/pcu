@@ -168,6 +168,7 @@ pub trait GitOps {
         colour: Option<&str>,
     ) -> Result<Option<String>, Error>;
     fn create_tag(&self, tag: &str, commit_id: Oid, sig: &Signature) -> Result<(), Error>;
+    fn create_signed_tag(&self, tag: &str) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn tag_exists(&self, tag: &str) -> bool;
     #[allow(async_fn_in_trait)]
@@ -182,6 +183,30 @@ impl GitOps for Client {
         let mut revwalk = self.git_repo.revwalk()?;
         let reference = format!("refs/tags/{tag}");
         revwalk.push_ref(&reference)?;
+        Ok(())
+    }
+
+    fn create_signed_tag(&self, tag: &str) -> Result<(), Error> {
+        let workdir = self
+            .git_repo
+            .workdir()
+            .ok_or_else(|| Error::GitError("repository has no working directory".into()))?;
+
+        log::trace!("Creating GPG-signed tag {tag} in {}", workdir.display());
+
+        let output = Command::new("git")
+            .args(["tag", "-s", tag, "-m", tag])
+            .current_dir(workdir)
+            .output()?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(Error::GpgError(format!(
+                "failed to create signed tag '{tag}': {stderr}"
+            )));
+        }
+
+        log::info!("Created GPG-signed tag {tag}");
         Ok(())
     }
 
@@ -508,7 +533,11 @@ impl GitOps for Client {
 
         if let Some(version_tag) = tag {
             let version_tag = format!("{prefix}{version_tag}");
-            self.create_tag(&version_tag, commit_id, &sig)?;
+            if requires_signed_tag(&sign_config.sign) {
+                self.create_signed_tag(&version_tag)?;
+            } else {
+                self.create_tag(&version_tag, commit_id, &sig)?;
+            }
         }
 
         Ok(())
@@ -960,6 +989,11 @@ fn print_long(statuses: &git2::Statuses) -> String {
     output
 }
 
+/// Returns `true` when tags created during a commit should be GPG-signed.
+pub(crate) fn requires_signed_tag(sign: &Sign) -> bool {
+    matches!(sign, Sign::Gpg)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1088,5 +1122,21 @@ mod tests {
 
         let result_disabled = append_signoff_to_message(message, &sig, &sign_disabled);
         assert_eq!(result_disabled, "chore: update files");
+    }
+
+    #[test]
+    fn test_requires_signed_tag_gpg() {
+        assert!(
+            requires_signed_tag(&Sign::Gpg),
+            "Sign::Gpg must produce a GPG-signed tag"
+        );
+    }
+
+    #[test]
+    fn test_requires_signed_tag_none() {
+        assert!(
+            !requires_signed_tag(&Sign::None),
+            "Sign::None must not sign the tag"
+        );
     }
 }
