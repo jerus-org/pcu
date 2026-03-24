@@ -6,7 +6,7 @@ parameters:
     default: "1.88"
 orbs:
   # cci-ignore-next-line
-  toolkit: jerus-org/circleci-toolkit@4.8.0
+  toolkit: jerus-org/circleci-toolkit@5.3.8
 
 # Custom executors removed - using toolkit rolling executors instead:
 #   - toolkit/rust_env_rolling for Rust jobs
