@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- remove jq from tools verification(pr [#896])
+
 ## [0.6.15] - 2026-03-19
 
 ### Fixed
@@ -2163,6 +2169,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#887]: https://github.com/jerus-org/pcu/pull/887
 [#888]: https://github.com/jerus-org/pcu/pull/888
 [#889]: https://github.com/jerus-org/pcu/pull/889
+[#896]: https://github.com/jerus-org/pcu/pull/896
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.15...HEAD
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/jerus-org/pcu/compare/v0.6.13...v0.6.14
 [0.6.13]: https://github.com/jerus-org/pcu/compare/v0.6.12...v0.6.13
