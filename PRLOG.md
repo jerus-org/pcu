@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.15] - 2026-03-19
 
 ### Fixed
 
@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate base62 to 2.2.4(pr [#886])
 - deps: update rust crate toml to 1.0.7(pr [#887])
 - deps: update rust crate tracing-subscriber to 0.3.23(pr [#888])
+- deps: update rust crate clap to 4.6.0(pr [#889])
 
 ## [0.6.14] - 2026-03-12
 
@@ -2161,7 +2162,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#886]: https://github.com/jerus-org/pcu/pull/886
 [#887]: https://github.com/jerus-org/pcu/pull/887
 [#888]: https://github.com/jerus-org/pcu/pull/888
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.14...HEAD
+[#889]: https://github.com/jerus-org/pcu/pull/889
+[0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/jerus-org/pcu/compare/v0.6.13...v0.6.14
 [0.6.13]: https://github.com/jerus-org/pcu/compare/v0.6.12...v0.6.13
 [0.6.12]: https://github.com/jerus-org/pcu/compare/v0.6.11...v0.6.12
