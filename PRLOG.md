@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - remove jq from tools verification(pr [#896])
 - deps: update rust crate env_logger to 0.11.10(pr [#891])
+- deps: update rust crate toml to 1.1.0(pr [#893])
 
 ## [0.6.15] - 2026-03-19
 
@@ -2172,6 +2173,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#889]: https://github.com/jerus-org/pcu/pull/889
 [#896]: https://github.com/jerus-org/pcu/pull/896
 [#891]: https://github.com/jerus-org/pcu/pull/891
+[#893]: https://github.com/jerus-org/pcu/pull/893
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.15...HEAD
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/jerus-org/pcu/compare/v0.6.13...v0.6.14
