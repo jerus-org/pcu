@@ -5,7 +5,7 @@ use tracing::instrument;
 
 use crate::{Client, Error, GraphQLWrapper};
 
-pub trait GraphQLGetTag {
+pub(crate) trait GraphQLGetTag {
     #[allow(async_fn_in_trait)]
     async fn get_tag(&self, tag: &str) -> Result<TagTarget, Error>;
 }
