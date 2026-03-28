@@ -15,5 +15,5 @@ pub(crate) use get_pr_by_commit::get_pull_request_by_commit;
 pub(crate) use get_pr_id::GraphQLGetPRId;
 pub(crate) use get_pr_title::get_pull_request_title;
 pub(crate) use get_repo_id::GraphQLGetRepoID;
-pub use get_tag::GraphQLGetTag;
+pub(crate) use get_tag::GraphQLGetTag;
 pub(crate) use label_pr::GraphQLLabelPR;

@@ -6,7 +6,7 @@ parameters:
     default: "1.88"
 orbs:
   # cci-ignore-next-line
-  toolkit: jerus-org/circleci-toolkit@4.8.0
+  toolkit: jerus-org/circleci-toolkit@6.0.0
 
 # Custom executors removed - using toolkit rolling executors instead:
 #   - toolkit/rust_env_rolling for Rust jobs
@@ -283,10 +283,10 @@ workflows:
           filters:
             branches:
               only: /pull\/[0-9]+/
-      - toolkit/required_builds_rolling:
+      - toolkit/required_builds:
           name: required-builds-all
           min_rust_version: << pipeline.parameters.min_rust_version >>
-      - toolkit/required_builds_rolling:
+      - toolkit/required_builds:
           name: build-<< matrix.cargo_package >>
           matrix:
             parameters:
@@ -296,22 +296,19 @@ workflows:
             branches:
               ignore: main
       - toolkit/optional_builds:
-          min_rust_version: << pipeline.parameters.min_rust_version >>
           filters:
             branches:
               ignore: main
       - toolkit/test_doc_build:
           name: docs
-          min_rust_version: << pipeline.parameters.min_rust_version >>
           filters:
             branches:
               ignore: main
-      - toolkit/common_tests_rolling:
+      - toolkit/common_tests:
           min_rust_version: << pipeline.parameters.min_rust_version >>
           test_runner: nextest
           nextest_profile: ci
       - toolkit/idiomatic_rust:
-          min_rust_version: << pipeline.parameters.min_rust_version >>
           filters:
             branches:
               ignore: main
@@ -335,7 +332,7 @@ workflows:
               ignore: main
           requires:
             - test-setup
-            - toolkit/common_tests_rolling
+            - toolkit/common_tests
             - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
@@ -354,7 +351,7 @@ workflows:
               ignore: main
           requires:
             - test-setup
-            - toolkit/common_tests_rolling
+            - toolkit/common_tests
             - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
@@ -374,7 +371,7 @@ workflows:
               ignore: main
           requires:
             - test-setup
-            - toolkit/common_tests_rolling
+            - toolkit/common_tests
             - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
@@ -394,7 +391,7 @@ workflows:
               ignore: main
           requires:
             - test-setup
-            - toolkit/common_tests_rolling
+            - toolkit/common_tests
             - security with sonarcloud
             - required-builds-all
             # cci-ignore-next-line
