@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- chore-update circleci-toolkit to 6.0.0(pr [#897])
+
 ### Fixed
 
 - remove jq from tools verification(pr [#896])
@@ -2174,6 +2178,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#896]: https://github.com/jerus-org/pcu/pull/896
 [#891]: https://github.com/jerus-org/pcu/pull/891
 [#893]: https://github.com/jerus-org/pcu/pull/893
+[#897]: https://github.com/jerus-org/pcu/pull/897
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.15...HEAD
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
 [0.6.14]: https://github.com/jerus-org/pcu/compare/v0.6.13...v0.6.14
