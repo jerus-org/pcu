@@ -490,34 +490,36 @@ impl Release {
         );
         tokio::time::sleep(std::time::Duration::from_secs(cmd.crates_io_delay)).await;
 
-        let mut downloaded = false;
-        for attempt in 1..=cmd.max_attempts {
-            let crate_path_str = crate_path
-                .to_str()
-                .ok_or_else(|| Error::Attestation("Invalid crate path".to_string()))?;
-            let status = std::process::Command::new("curl")
-                .args(["-sSfL", &crate_url, "-o", crate_path_str])
-                .status()?;
-            if status.success() {
-                log::info!("Downloaded {crate_filename} (attempt {attempt})");
-                downloaded = true;
-                break;
-            }
-            log::warn!("Download attempt {attempt} failed ({status})");
-            if attempt < cmd.max_attempts {
-                log::info!("Retrying in 30s...");
-                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-            }
-        }
-        if !downloaded {
-            return Err(Error::Attestation(format!(
-                "Failed to download {crate_filename} after {} attempts",
-                cmd.max_attempts
-            )));
-        }
+        let http_client = reqwest::Client::new();
+        let crate_bytes =
+            download_with_retry(
+                &crate_filename,
+                cmd.max_attempts.into(),
+                std::time::Duration::from_secs(30),
+                || {
+                    let client = http_client.clone();
+                    let url = crate_url.clone();
+                    async move {
+                        let response =
+                            client.get(&url).send().await.map_err(|e| {
+                                Error::Attestation(format!("HTTP request failed: {e}"))
+                            })?;
+                        if !response.status().is_success() {
+                            return Err(Error::Attestation(format!(
+                                "HTTP {} for {url}",
+                                response.status()
+                            )));
+                        }
+                        response.bytes().await.map(|b| b.to_vec()).map_err(|e| {
+                            Error::Attestation(format!("Failed to read response: {e}"))
+                        })
+                    }
+                },
+            )
+            .await?;
+        std::fs::write(&crate_path, &crate_bytes)?;
 
         // Step 3: Read bytes and compute SHA256
-        let crate_bytes = std::fs::read(&crate_path)?;
         use sha2::Digest as _;
         let hash_hex = format!("{:x}", sha2::Sha256::digest(&crate_bytes));
         log::info!("SHA256({crate_filename}) = {hash_hex}");
@@ -919,6 +921,52 @@ fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
 mod attest_tests {
     use super::*;
 
+    #[tokio::test]
+    async fn download_with_retry_succeeds_on_first_attempt() {
+        let result =
+            download_with_retry("test-1.0.0.crate", 3, std::time::Duration::ZERO, || async {
+                Ok(b"crate-data".to_vec())
+            })
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), b"crate-data");
+    }
+
+    #[tokio::test]
+    async fn download_with_retry_returns_err_after_all_attempts_exhausted() {
+        let result =
+            download_with_retry("test-1.0.0.crate", 3, std::time::Duration::ZERO, || async {
+                Err(Error::Attestation("HTTP 503".to_string()))
+            })
+            .await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.contains("test-1.0.0.crate"),
+            "error should name the file: {msg}"
+        );
+        assert!(
+            msg.contains('3'),
+            "error should mention attempt count: {msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn download_with_retry_succeeds_on_second_attempt() {
+        let attempt = std::sync::atomic::AtomicU32::new(0);
+        let result =
+            download_with_retry("test-1.0.0.crate", 3, std::time::Duration::ZERO, || async {
+                let n = attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                if n == 0 {
+                    Err(Error::Attestation("first attempt failed".to_string()))
+                } else {
+                    Ok(b"crate-data".to_vec())
+                }
+            })
+            .await;
+        assert!(result.is_ok());
+    }
+
     /// Build a minimal fake JWT string.
     ///
     /// Uses URL_SAFE_NO_PAD base64 (standard JWT encoding).
@@ -1085,6 +1133,43 @@ mod release_package_tests {
             "no tag → nothing to create a release against"
         );
     }
+}
+
+/// Downloads a URL with retry, using a caller-supplied async attempt function.
+///
+/// `attempt_fn` is called up to `max_attempts` times. On success it returns
+/// `Ok(Vec<u8>)` containing the downloaded bytes. On failure the error is
+/// logged and (if attempts remain) the retry delay is observed before the next
+/// attempt. After all attempts are exhausted an `Error::Attestation` is
+/// returned naming the file and the attempt count.
+async fn download_with_retry<F, Fut>(
+    crate_filename: &str,
+    max_attempts: u64,
+    retry_delay: std::time::Duration,
+    mut attempt_fn: F,
+) -> Result<Vec<u8>, Error>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<Vec<u8>, Error>>,
+{
+    for attempt in 1..=max_attempts {
+        match attempt_fn().await {
+            Ok(bytes) => {
+                log::info!("Downloaded {crate_filename} (attempt {attempt})");
+                return Ok(bytes);
+            }
+            Err(e) => {
+                log::warn!("Download attempt {attempt} failed: {e}");
+                if attempt < max_attempts {
+                    log::info!("Retrying in {}s...", retry_delay.as_secs());
+                    tokio::time::sleep(retry_delay).await;
+                }
+            }
+        }
+    }
+    Err(Error::Attestation(format!(
+        "Failed to download {crate_filename} after {max_attempts} attempts"
+    )))
 }
 
 /// Maps a `kdeets_lib::version_exists` result to `Result<bool, Error>`.
