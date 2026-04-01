@@ -93,6 +93,9 @@ pub enum Error {
     /// SLSA attestation error
     #[error("Attestation error: {0}")]
     Attestation(String),
+    /// Webhook trigger error
+    #[error("Trigger error: {0}")]
+    Trigger(String),
 }
 
 #[derive(Debug)]
