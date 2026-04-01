@@ -35,6 +35,7 @@ git2.workspace = true
 git2_credentials.workspace = true
 gql_client.workspace = true
 kdeets.workspace = true
+reqwest.workspace = true
 keep-a-changelog.workspace = true
 link-bridge.workspace = true
 log.workspace = true
