@@ -6,6 +6,7 @@ mod linkedin;
 mod pull_request;
 mod push;
 mod release;
+mod trigger;
 mod verify_signatures;
 
 use std::{env, fmt::Display, fs};
@@ -21,6 +22,7 @@ use linkedin::Linkedin;
 use pull_request::Pr;
 use push::Push;
 use release::Release;
+use trigger::Trigger;
 use verify_signatures::VerifySignatures;
 
 use crate::{Client, Error, GitOps, Sign};
@@ -44,6 +46,7 @@ pub enum CIExit {
     NoBlogPostsForBluesky,
     VerificationPassed,
     SwitchedBranch(String),
+    WebhookTriggered(String),
 }
 
 #[derive(Parser, Debug)]
@@ -87,6 +90,8 @@ the lowest number submitted by the `renovate` or `app/renovate` user")]
     VerifySignatures(VerifySignatures),
     /// Fetch and switch to a branch, updating CI environment variables
     Checkout(Checkout),
+    /// POST to a webhook URL
+    Trigger(Trigger),
 }
 
 impl Display for Commands {
@@ -101,6 +106,7 @@ impl Display for Commands {
             Commands::Linkedin(_) => write!(f, "linkedin"),
             Commands::VerifySignatures(_) => write!(f, "verify-signatures"),
             Commands::Checkout(_) => write!(f, "checkout"),
+            Commands::Trigger(_) => write!(f, "trigger"),
         }
     }
 }
@@ -160,6 +166,7 @@ impl Commands {
                 settings.set_override("command", "verify-signatures")?
             }
             Commands::Checkout(_) => settings.set_override("command", "checkout")?,
+            Commands::Trigger(_) => settings.set_override("command", "trigger")?,
         };
 
         settings = if let Commands::Bsky(bsky) = self {
