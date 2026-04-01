@@ -292,9 +292,8 @@ impl Release {
 
     /// Check if a crate version is already published to crates.io.
     ///
-    /// Uses `kdeets` (pre-installed in ci-container) to query the sparse registry
-    /// cache, avoiding crates.io rate limiting. See jerus-org/kdeets#170 for a
-    /// future library API that would replace this subprocess call.
+    /// Uses the `kdeets_lib` library API to query the sparse registry cache,
+    /// avoiding crates.io rate limiting.
     ///
     /// Writes `SKIP_PUBLISH=true/false` to `$BASH_ENV`.
     async fn check_version_published(self) -> Result<CIExit, Error> {
@@ -315,17 +314,9 @@ impl Release {
             package = cmd.package
         );
 
-        let output = Command::new("kdeets")
-            .args(["--no-colour", "crate", &cmd.package, "-l"])
-            .output()
-            .map_err(|e| Error::GitError(format!("Failed to run kdeets: {e}")))?;
+        let exists = map_kdeets_result(kdeets_lib::version_exists(&cmd.package, &version))?;
 
-        let kdeets_output = String::from_utf8_lossy(&output.stdout);
-        let version_exists = kdeets_output
-            .lines()
-            .any(|line| line.split_whitespace().last() == Some(version.as_str()));
-
-        if version_exists {
+        if exists {
             log::info!("Version {version} already on crates.io — setting SKIP_PUBLISH=true");
             write_to_bash_env("SKIP_PUBLISH", "true")?;
         } else {
@@ -1096,6 +1087,19 @@ mod release_package_tests {
     }
 }
 
+/// Maps a `kdeets_lib::version_exists` result to `Result<bool, Error>`.
+///
+/// `CrateNotFoundOnIndex` is treated as "not published" (`Ok(false)`) so that
+/// a brand-new crate that has never appeared on the index does not block publishing.
+/// All other kdeets errors propagate as `Error::GitError`.
+fn map_kdeets_result(result: Result<bool, kdeets_lib::Error>) -> Result<bool, Error> {
+    match result {
+        Ok(exists) => Ok(exists),
+        Err(kdeets_lib::Error::CrateNotFoundOnIndex) => Ok(false),
+        Err(e) => Err(Error::GitError(format!("kdeets error: {e}"))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1213,5 +1217,26 @@ mod tests {
             "my-crate-1.2.3.crate.sigstore.json",
             "my-crate-1.2.3.provenance.json",
         ));
+    }
+
+    #[test]
+    fn map_kdeets_result_ok_true_returns_ok_true() {
+        let result = map_kdeets_result(Ok(true));
+        assert!(matches!(result, Ok(true)));
+    }
+
+    #[test]
+    fn map_kdeets_result_ok_false_returns_ok_false() {
+        let result = map_kdeets_result(Ok(false));
+        assert!(matches!(result, Ok(false)));
+    }
+
+    #[test]
+    fn map_kdeets_result_crate_not_found_returns_ok_false() {
+        let result = map_kdeets_result(Err(kdeets_lib::Error::CrateNotFoundOnIndex));
+        assert!(
+            matches!(result, Ok(false)),
+            "CrateNotFoundOnIndex should be treated as version not published"
+        );
     }
 }
