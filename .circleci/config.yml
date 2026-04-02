@@ -43,7 +43,10 @@ jobs:
           rust_version: << pipeline.parameters.min_rust_version >>
       - run:
           name: Write compiler version for cache key
-          command: rustc --version > rust-toolchain-version.txt
+          command: rustc --version > rust-toolchain-version.txt && cat rust-toolchain-version.txt
+      - run:
+          name: Report resolved RUST_VERSION
+          command: echo "Resolved RUST_VERSION=${RUST_VERSION}"
       - restore_cache:
           name: Restore dependency cache
           keys:
@@ -58,8 +61,10 @@ jobs:
           name: Build stable
           command: cargo build --all-features
       - run:
-          name: Build MSRV (${RUST_VERSION})
-          command: cargo +${RUST_VERSION} build --all-features
+          name: Build MSRV
+          command: |
+            echo "Building with RUST_VERSION=${RUST_VERSION}"
+            cargo +${RUST_VERSION} build --all-features
       - save_cache:
           name: Save dependency cache
           key: deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
@@ -495,31 +500,10 @@ workflows:
           filters:
             branches:
               only: /pull\/[0-9]+/
-      - toolkit/required_builds:
-          name: required-builds-all
-          min_rust_version: << pipeline.parameters.min_rust_version >>
-      - toolkit/required_builds:
-          name: build-<< matrix.cargo_package >>
-          matrix:
-            parameters:
-              cargo_package: [gen-bsky, gen-linkedin, pcu]
-          min_rust_version: << pipeline.parameters.min_rust_version >>
-          filters:
-            branches:
-              ignore: main
-      - toolkit/optional_builds:
-          filters:
-            branches:
-              ignore: main
-      - toolkit/test_doc_build:
-          name: docs
-          filters:
-            branches:
-              ignore: main
-
-      # ── Cache experiment jobs (parallel with toolkit counterparts for timing) ──
-      # See job definitions above for rationale.
-      # These jobs do NOT gate any downstream jobs — they run purely for comparison.
+      # ── Build / lint / doc jobs — exp variants while toolkit cache changes roll out ──
+      # toolkit/required_builds, toolkit/idiomatic_rust, toolkit/test_doc_build, and
+      # toolkit/optional_builds are temporarily replaced by the exp- equivalents below.
+      # Restore after digital-prstv/circleci-toolkit#437 and #438 ship.
       - exp-required-builds:
           filters:
             branches:
@@ -540,10 +524,6 @@ workflows:
           min_rust_version: << pipeline.parameters.min_rust_version >>
           test_runner: nextest
           nextest_profile: ci
-      - toolkit/idiomatic_rust:
-          filters:
-            branches:
-              ignore: main
       - test-setup:
           context:
             - release
@@ -566,11 +546,9 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - security with sonarcloud
-            - required-builds-all
-            # cci-ignore-next-line
-            - build-pcu
-            - docs
-            - toolkit/idiomatic_rust
+            - exp-required-builds
+            - exp-test-doc-build
+            - exp-idiomatic-rust
       - test-push:
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
@@ -585,11 +563,9 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - security with sonarcloud
-            - required-builds-all
-            # cci-ignore-next-line
-            - build-pcu
-            - docs
-            - toolkit/idiomatic_rust
+            - exp-required-builds
+            - exp-test-doc-build
+            - exp-idiomatic-rust
       - test-bsky-directory:
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
@@ -605,11 +581,9 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - security with sonarcloud
-            - required-builds-all
-            # cci-ignore-next-line
-            - build-gen-bsky
-            - docs
-            - toolkit/idiomatic_rust
+            - exp-required-builds
+            - exp-test-doc-build
+            - exp-idiomatic-rust
       - test-bsky-file:
           pcu_verbosity: "-vvvv"
           pcu_no_push: true
@@ -625,11 +599,9 @@ workflows:
             - test-setup
             - toolkit/common_tests
             - security with sonarcloud
-            - required-builds-all
-            # cci-ignore-next-line
-            - build-gen-bsky
-            - docs
-            - toolkit/idiomatic_rust
+            - exp-required-builds
+            - exp-test-doc-build
+            - exp-idiomatic-rust
 
       - toolkit/security:
           name: security audit only
