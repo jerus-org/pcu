@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - use kdeets_lib for crate version check(pr [#901])
 - add pcu trigger --webhook subcommand(pr [#904])
+- add --push flag to bsky draft(pr [#905])
 
 ### Changed
 
@@ -2193,6 +2194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#901]: https://github.com/jerus-org/pcu/pull/901
 [#903]: https://github.com/jerus-org/pcu/pull/903
 [#904]: https://github.com/jerus-org/pcu/pull/904
+[#905]: https://github.com/jerus-org/pcu/pull/905
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
