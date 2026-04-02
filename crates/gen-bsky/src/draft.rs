@@ -1404,13 +1404,17 @@ mod tests {
             assert_eq!(post.bluesky_count(), 1);
         }
 
-        // Second call
+        // Second call: files already exist — must skip writes (idempotent)
         let result2 = draft.write_bluesky_posts(None).await;
         assert!(result2.is_ok());
 
-        // Verify second call also processed posts
+        // Verify second call did not re-increment the count
         for post in &draft.blog_posts {
-            assert_eq!(post.bluesky_count(), 2);
+            assert_eq!(
+                post.bluesky_count(),
+                1,
+                "idempotent: count must not change on repeat"
+            );
         }
     }
 }
