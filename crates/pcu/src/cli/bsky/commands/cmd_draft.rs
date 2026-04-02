@@ -10,110 +10,6 @@ use site_config::SiteConfig;
 use crate::{CIExit, Client, Error, GitOps, SignConfig};
 use std::env;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::cli::bsky::Cmd;
-    use crate::Cli;
-    use clap::Parser;
-
-    /// RED: CmdDraft must have an `allow_empty` field (issue #813)
-    #[test]
-    fn test_cmd_draft_has_allow_empty_field() {
-        let cmd = CmdDraft {
-            filter: None,
-            paths: vec![],
-            date: None,
-            allow_draft: false,
-            allow_empty: false,
-            push: false,
-            www_src_root: PathBuf::from("."),
-        };
-        assert!(!cmd.allow_empty);
-    }
-
-    /// RED: CIExit must have a NoBlogPostsForBluesky variant (issue #813)
-    #[test]
-    fn test_no_blog_posts_for_bluesky_ci_exit() {
-        let exit = CIExit::NoBlogPostsForBluesky;
-        // Pattern match to prove the variant exists
-        assert!(matches!(exit, CIExit::NoBlogPostsForBluesky));
-    }
-
-    /// RED: CmdDraft must have a `push` field (issue #899)
-    #[test]
-    fn test_cmd_draft_has_push_field() {
-        let cmd = CmdDraft {
-            filter: None,
-            paths: vec![],
-            date: None,
-            allow_draft: false,
-            allow_empty: false,
-            push: false,
-            www_src_root: PathBuf::from("."),
-        };
-        assert!(!cmd.push);
-    }
-
-    /// RED: `pcu bsky draft --push` must parse the flag (issue #899)
-    #[test]
-    fn test_bsky_draft_parses_push_flag() {
-        let args = Cli::try_parse_from(["pcu", "bsky", "draft", "--push"]).unwrap();
-        match args.command {
-            crate::Commands::Bsky(bsky) => match bsky.cmd {
-                Cmd::Draft(draft) => assert!(draft.push),
-                _ => panic!("expected Draft subcommand"),
-            },
-            _ => panic!("expected Bsky command"),
-        }
-    }
-
-    /// RED: `pcu bsky draft` without `--push` defaults push to false (issue #899)
-    #[test]
-    fn test_bsky_draft_push_defaults_false() {
-        let args = Cli::try_parse_from(["pcu", "bsky", "draft"]).unwrap();
-        match args.command {
-            crate::Commands::Bsky(bsky) => match bsky.cmd {
-                Cmd::Draft(draft) => assert!(!draft.push),
-                _ => panic!("expected Draft subcommand"),
-            },
-            _ => panic!("expected Bsky command"),
-        }
-    }
-
-    // GREEN: behaviour tests for resolve_post_draft_exit
-
-    /// push=true, commits ahead → Pushed
-    #[test]
-    fn test_resolve_post_draft_exit_push_with_commits() {
-        let exit = resolve_post_draft_exit(true, 1);
-        assert!(
-            matches!(exit, CIExit::Pushed(_)),
-            "expected Pushed, got {exit:?}"
-        );
-    }
-
-    /// push=true, nothing ahead → DraftedForBluesky (commit already on remote or nothing committed)
-    #[test]
-    fn test_resolve_post_draft_exit_push_no_commits() {
-        let exit = resolve_post_draft_exit(true, 0);
-        assert!(
-            matches!(exit, CIExit::DraftedForBluesky),
-            "expected DraftedForBluesky, got {exit:?}"
-        );
-    }
-
-    /// push=false → DraftedForBluesky regardless of ahead count
-    #[test]
-    fn test_resolve_post_draft_exit_no_push() {
-        let exit = resolve_post_draft_exit(false, 5);
-        assert!(
-            matches!(exit, CIExit::DraftedForBluesky),
-            "expected DraftedForBluesky, got {exit:?}"
-        );
-    }
-}
-
 const DEFAULT_PATH: &str = "content/blog";
 
 #[derive(Debug, Parser, Clone)]
@@ -210,5 +106,100 @@ fn resolve_post_draft_exit(push_requested: bool, commits_ahead: usize) -> CIExit
         CIExit::Pushed("Bluesky drafts committed and pushed to remote repository.".to_string())
     } else {
         CIExit::DraftedForBluesky
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::bsky::Cmd;
+    use crate::Cli;
+    use clap::Parser;
+
+    #[test]
+    fn test_cmd_draft_has_allow_empty_field() {
+        let cmd = CmdDraft {
+            filter: None,
+            paths: vec![],
+            date: None,
+            allow_draft: false,
+            allow_empty: false,
+            push: false,
+            www_src_root: PathBuf::from("."),
+        };
+        assert!(!cmd.allow_empty);
+    }
+
+    #[test]
+    fn test_no_blog_posts_for_bluesky_ci_exit() {
+        assert!(matches!(
+            CIExit::NoBlogPostsForBluesky,
+            CIExit::NoBlogPostsForBluesky
+        ));
+    }
+
+    #[test]
+    fn test_cmd_draft_has_push_field() {
+        let cmd = CmdDraft {
+            filter: None,
+            paths: vec![],
+            date: None,
+            allow_draft: false,
+            allow_empty: false,
+            push: false,
+            www_src_root: PathBuf::from("."),
+        };
+        assert!(!cmd.push);
+    }
+
+    #[test]
+    fn test_bsky_draft_parses_push_flag() {
+        let args = Cli::try_parse_from(["pcu", "bsky", "draft", "--push"]).unwrap();
+        match args.command {
+            crate::Commands::Bsky(bsky) => match bsky.cmd {
+                Cmd::Draft(draft) => assert!(draft.push),
+                _ => panic!("expected Draft subcommand"),
+            },
+            _ => panic!("expected Bsky command"),
+        }
+    }
+
+    #[test]
+    fn test_bsky_draft_push_defaults_false() {
+        let args = Cli::try_parse_from(["pcu", "bsky", "draft"]).unwrap();
+        match args.command {
+            crate::Commands::Bsky(bsky) => match bsky.cmd {
+                Cmd::Draft(draft) => assert!(!draft.push),
+                _ => panic!("expected Draft subcommand"),
+            },
+            _ => panic!("expected Bsky command"),
+        }
+    }
+
+    #[test]
+    fn test_resolve_post_draft_exit_push_with_commits() {
+        let exit = resolve_post_draft_exit(true, 1);
+        assert!(
+            matches!(exit, CIExit::Pushed(_)),
+            "expected Pushed, got {exit:?}"
+        );
+    }
+
+    #[test]
+    fn test_resolve_post_draft_exit_push_no_commits() {
+        let exit = resolve_post_draft_exit(true, 0);
+        assert!(
+            matches!(exit, CIExit::DraftedForBluesky),
+            "expected DraftedForBluesky, got {exit:?}"
+        );
+    }
+
+    #[test]
+    fn test_resolve_post_draft_exit_no_push() {
+        let exit = resolve_post_draft_exit(false, 5);
+        assert!(
+            matches!(exit, CIExit::DraftedForBluesky),
+            "expected DraftedForBluesky, got {exit:?}"
+        );
     }
 }
