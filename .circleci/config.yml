@@ -504,6 +504,11 @@ workflows:
       # toolkit/required_builds, toolkit/idiomatic_rust, toolkit/test_doc_build, and
       # toolkit/optional_builds are temporarily replaced by the exp- equivalents below.
       # Restore after digital-prstv/circleci-toolkit#437 and #438 ship.
+      #
+      # exp-required-builds runs `cargo build --all-features` against the full workspace,
+      # covering all three crates (gen-bsky, gen-linkedin, pcu) in a single job.
+      # The separate per-package matrix jobs (build-gen-bsky, build-gen-linkedin, build-pcu)
+      # are not needed — the whole-workspace build provides equivalent coverage.
       - exp-required-builds:
           filters:
             branches:
