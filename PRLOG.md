@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - refactor-replace curl subprocess with reqwest in attest(pr [#903])
 
+### Fixed
+
+- gen-bsky: make bsky post write idempotent(pr [#908])
+
 ## [0.6.16] - 2026-03-28
 
 ### Changed
@@ -2197,6 +2201,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#904]: https://github.com/jerus-org/pcu/pull/904
 [#905]: https://github.com/jerus-org/pcu/pull/905
 [#907]: https://github.com/jerus-org/pcu/pull/907
+[#908]: https://github.com/jerus-org/pcu/pull/908
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
