@@ -511,6 +511,14 @@ impl BlogPost {
         log::debug!("Write filename: `{filename}` as `{postname}`");
         log::debug!("Write file: `{}`", post_file.display());
 
+        if !should_write_post_file(&post_file) {
+            log::debug!(
+                "Skipping write — post file already exists: `{}`",
+                post_file.display()
+            );
+            return Ok(());
+        }
+
         let file = File::create(post_file)?;
 
         serde_json::to_writer_pretty(&file, &bluesky_post)?;
@@ -538,6 +546,13 @@ impl BlogPost {
         );
         self.frontmatter.log_post_details();
     }
+}
+
+/// Returns `true` if a bluesky post file should be written (i.e. it does not yet exist).
+/// Returning `false` prevents overwriting an existing file and re-generating a new
+/// `createdAt` timestamp, which would mark the file as changed and cause an infinite CI push loop.
+fn should_write_post_file(path: &Path) -> bool {
+    !path.exists()
 }
 
 #[cfg(test)]
@@ -812,6 +827,8 @@ Long content here."#
 
     #[tokio::test]
     async fn test_write_bluesky_record_multiple_times() {
+        // Now that write_bluesky_record_to is idempotent, repeated calls for the same
+        // post must not overwrite the file or re-increment bluesky_count.
         let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
         let content = format!("{}\n\nContent here.", create_test_frontmatter_content());
         let blog_path = temp_dir.path().join("content").join("blog");
@@ -824,15 +841,15 @@ Long content here."#
         let mut post =
             BlogPost::new(&blog_file, min_date, false, &base_url, temp_dir.path()).unwrap();
 
-        // Write multiple times
         post.write_bluesky_record_to(&store_dir).await.unwrap();
-        assert_eq!(post.bluesky_count(), 1);
+        assert_eq!(post.bluesky_count(), 1, "first write should succeed");
+
+        // Second and third calls: file already exists — skip silently
+        post.write_bluesky_record_to(&store_dir).await.unwrap();
+        assert_eq!(post.bluesky_count(), 1, "count must not change on repeat");
 
         post.write_bluesky_record_to(&store_dir).await.unwrap();
-        assert_eq!(post.bluesky_count(), 2);
-
-        post.write_bluesky_record_to(&store_dir).await.unwrap();
-        assert_eq!(post.bluesky_count(), 3);
+        assert_eq!(post.bluesky_count(), 1, "count must not change on repeat");
     }
 
     // #[tokio::test]
@@ -933,5 +950,81 @@ Content with unicode characters."##
         assert!(post_text.contains("🚀"));
         assert!(post_text.contains("émojis"));
         assert!(post_text.contains("àccénts"));
+    }
+
+    // RED: should_write_post_file pure function (issue #906)
+
+    #[test]
+    fn test_should_write_post_file_when_absent() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let path = temp_dir.path().join("nonexistent.post");
+        assert!(
+            should_write_post_file(&path),
+            "should return true when file does not exist"
+        );
+    }
+
+    #[test]
+    fn test_should_not_write_post_file_when_exists() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let path = temp_dir.path().join("existing.post");
+        fs::write(&path, b"{}").unwrap();
+        assert!(
+            !should_write_post_file(&path),
+            "should return false when file already exists"
+        );
+    }
+
+    // GREEN: write_bluesky_record_to idempotency (issue #906)
+    // Second and third calls must skip the write — bluesky_count stays at 1.
+
+    #[tokio::test]
+    async fn test_write_bluesky_record_to_is_idempotent() {
+        let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
+        let content = format!("{}\n\nContent here.", create_test_frontmatter_content());
+        let blog_path = temp_dir.path().join("content").join("blog");
+        let blog_file = create_test_blog_file(&blog_path, "idempotent-test.md", &content);
+
+        let min_date = Datetime::from_str("2024-01-01T00:00:00Z").unwrap();
+        let store_dir = temp_dir.path().join("posts");
+        fs::create_dir_all(&store_dir).unwrap();
+
+        let mut post =
+            BlogPost::new(&blog_file, min_date, false, &base_url, temp_dir.path()).unwrap();
+
+        post.write_bluesky_record_to(&store_dir).await.unwrap();
+        assert_eq!(
+            post.bluesky_count(),
+            1,
+            "first write should increment count"
+        );
+
+        post.write_bluesky_record_to(&store_dir).await.unwrap();
+        assert_eq!(
+            post.bluesky_count(),
+            1,
+            "second write must skip — file already exists"
+        );
+
+        post.write_bluesky_record_to(&store_dir).await.unwrap();
+        assert_eq!(
+            post.bluesky_count(),
+            1,
+            "third write must skip — file already exists"
+        );
+
+        // Exactly one .post file on disk
+        let post_files: Vec<_> = fs::read_dir(&store_dir)
+            .unwrap()
+            .filter_map(|e| {
+                let p = e.ok()?.path();
+                if p.extension()? == "post" {
+                    Some(p)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert_eq!(post_files.len(), 1, "exactly one .post file should exist");
     }
 }
