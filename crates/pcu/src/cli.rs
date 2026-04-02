@@ -29,6 +29,7 @@ use crate::{Client, Error, GitOps, Sign};
 
 const GITHUB_PAT: &str = "GITHUB_TOKEN";
 
+#[derive(Debug)]
 pub enum CIExit {
     Updated,
     UnChanged,
