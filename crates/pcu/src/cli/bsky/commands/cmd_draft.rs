@@ -80,6 +80,38 @@ mod tests {
             _ => panic!("expected Bsky command"),
         }
     }
+
+    // GREEN: behaviour tests for resolve_post_draft_exit
+
+    /// push=true, commits ahead → Pushed
+    #[test]
+    fn test_resolve_post_draft_exit_push_with_commits() {
+        let exit = resolve_post_draft_exit(true, 1);
+        assert!(
+            matches!(exit, CIExit::Pushed(_)),
+            "expected Pushed, got {exit:?}"
+        );
+    }
+
+    /// push=true, nothing ahead → DraftedForBluesky (commit already on remote or nothing committed)
+    #[test]
+    fn test_resolve_post_draft_exit_push_no_commits() {
+        let exit = resolve_post_draft_exit(true, 0);
+        assert!(
+            matches!(exit, CIExit::DraftedForBluesky),
+            "expected DraftedForBluesky, got {exit:?}"
+        );
+    }
+
+    /// push=false → DraftedForBluesky regardless of ahead count
+    #[test]
+    fn test_resolve_post_draft_exit_no_push() {
+        let exit = resolve_post_draft_exit(false, 5);
+        assert!(
+            matches!(exit, CIExit::DraftedForBluesky),
+            "expected DraftedForBluesky, got {exit:?}"
+        );
+    }
 }
 
 const DEFAULT_PATH: &str = "content/blog";
@@ -163,17 +195,20 @@ impl CmdDraft {
             .commit_changed_files(sign_config, commit_message, "", None)
             .await?;
 
-        if self.push {
-            let branch_status = client.branch_status()?;
-            if branch_status.ahead > 0 {
-                let bot_user_name = env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
-                client.push_commit("v", None, false, &bot_user_name)?;
-                return Ok(CIExit::Pushed(
-                    "Bluesky drafts committed and pushed to remote repository.".to_string(),
-                ));
-            }
+        let ahead = client.branch_status()?.ahead;
+        if self.push && ahead > 0 {
+            let bot_user_name = env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
+            client.push_commit("v", None, false, &bot_user_name)?;
         }
 
-        Ok(CIExit::DraftedForBluesky)
+        Ok(resolve_post_draft_exit(self.push, ahead))
+    }
+}
+
+fn resolve_post_draft_exit(push_requested: bool, commits_ahead: usize) -> CIExit {
+    if push_requested && commits_ahead > 0 {
+        CIExit::Pushed("Bluesky drafts committed and pushed to remote repository.".to_string())
+    } else {
+        CIExit::DraftedForBluesky
     }
 }
