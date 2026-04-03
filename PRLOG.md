@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add pcu trigger --webhook subcommand(pr [#904])
 - add --push flag to bsky draft(pr [#905])
 - add --from-branch flag to bsky draft(pr [#907])
+- track created/published dates in frontmatter(pr [#911])
 
 ### Changed
 
@@ -2202,6 +2203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#905]: https://github.com/jerus-org/pcu/pull/905
 [#907]: https://github.com/jerus-org/pcu/pull/907
 [#908]: https://github.com/jerus-org/pcu/pull/908
+[#911]: https://github.com/jerus-org/pcu/pull/911
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
