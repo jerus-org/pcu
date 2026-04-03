@@ -153,39 +153,13 @@ impl Post {
             .iter_mut()
             .filter(|p| p.state == LinkedinPostState::Read)
         {
-            // Skip if source markdown already has [linkedin].published.
-            if let Some(src) = li_post.source_path() {
-                if crate::frontmatter_writeback::read_linkedin_date_field(src, "published")
-                    .is_some()
-                {
-                    log::debug!("Skipping — [linkedin].published already set in {src:?}");
-                    continue;
-                }
-            }
-
-            if self.testing {
-                log::info!("(test) would post: {}", li_post.text());
-                li_post.set_posted();
-            } else {
-                use crate::posts::TextPost;
-                let client = posts_client.as_ref().expect("client built above");
-                let mut text_post = TextPost::new(&self.author_urn, li_post.text());
-                if let Some(link) = li_post.link() {
-                    text_post = text_post.with_link(
-                        link.parse()
-                            .map_err(|e: url::ParseError| PostError::Api(e.to_string()))?,
-                    );
-                }
-                match client.create_text_post(&text_post).await {
-                    Ok(_) => {
-                        log::info!("Posted to LinkedIn: {}", li_post.text());
-                        li_post.set_posted();
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to post to LinkedIn: {e}");
-                    }
-                }
-            }
+            publish_one(
+                self.testing,
+                &self.author_urn,
+                li_post,
+                posts_client.as_ref(),
+            )
+            .await?;
         }
 
         Ok(self)
@@ -231,6 +205,47 @@ impl Post {
     pub fn count_deleted(&self) -> usize {
         self.deleted
     }
+}
+
+async fn publish_one(
+    testing: bool,
+    author_urn: &str,
+    li_post: &mut LinkedinPost,
+    posts_client: Option<&crate::posts::PostsClient<crate::auth::StaticTokenProvider>>,
+) -> Result<(), PostError> {
+    // Skip if source markdown already has [linkedin].published.
+    if let Some(src) = li_post.source_path() {
+        if crate::frontmatter_writeback::read_linkedin_date_field(src, "published").is_some() {
+            log::debug!("Skipping — [linkedin].published already set in {src:?}");
+            return Ok(());
+        }
+    }
+
+    if testing {
+        log::info!("(test) would post: {}", li_post.text());
+        li_post.set_posted();
+    } else {
+        use crate::posts::TextPost;
+        let client = posts_client.expect("client built above");
+        let mut text_post = TextPost::new(author_urn, li_post.text());
+        if let Some(link) = li_post.link() {
+            text_post = text_post.with_link(
+                link.parse()
+                    .map_err(|e: url::ParseError| PostError::Api(e.to_string()))?,
+            );
+        }
+        match client.create_text_post(&text_post).await {
+            Ok(_) => {
+                log::info!("Posted to LinkedIn: {}", li_post.text());
+                li_post.set_posted();
+            }
+            Err(e) => {
+                log::warn!("Failed to post to LinkedIn: {e}");
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
