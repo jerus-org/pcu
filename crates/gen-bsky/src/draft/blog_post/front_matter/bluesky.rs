@@ -438,12 +438,19 @@
 ///     pub(crate) fn character_count(&self) -> usize { /* ...
 /// ```
 use serde::{Deserialize, Serialize};
+use toml::value::Datetime;
 
 use super::tags;
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Bluesky {
     description: Option<String>,
     tags: Option<Vec<String>>,
+    /// Date the Bluesky draft was first generated. Set by `bsky draft`, never overwritten.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    created: Option<Datetime>,
+    /// Date the post was successfully published to Bluesky. Set by `bsky post`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    published: Option<Datetime>,
 }
 impl Bluesky {
     pub(crate) fn description(&self) -> &str {
@@ -455,6 +462,13 @@ impl Bluesky {
     }
     pub(crate) fn hashtags(&self) -> Vec<String> {
         tags::hashtags(self.tags.clone().unwrap_or_default())
+    }
+    pub(crate) fn created(&self) -> Option<Datetime> {
+        self.created
+    }
+    #[allow(dead_code)]
+    pub(crate) fn published(&self) -> Option<Datetime> {
+        self.published
     }
 }
 
@@ -478,6 +492,7 @@ mod tests {
         let bluesky = Bluesky {
             description: Some("Test description".to_string()),
             tags: None,
+            ..Default::default()
         };
         assert_eq!(bluesky.description(), "Test description");
     }
@@ -487,6 +502,7 @@ mod tests {
         let bluesky = Bluesky {
             description: None,
             tags: None,
+            ..Default::default()
         };
         assert_eq!(bluesky.description(), "");
     }
@@ -496,6 +512,7 @@ mod tests {
         let bluesky = Bluesky {
             description: Some("".to_string()),
             tags: None,
+            ..Default::default()
         };
         assert_eq!(bluesky.description(), "");
     }
@@ -506,6 +523,7 @@ mod tests {
         let bluesky = Bluesky {
             description: None,
             tags: Some(tags_vec.clone()),
+            ..Default::default()
         };
         assert_eq!(bluesky.tags(), tags_vec);
     }
@@ -515,6 +533,7 @@ mod tests {
         let bluesky = Bluesky {
             description: None,
             tags: None,
+            ..Default::default()
         };
         assert_eq!(bluesky.tags(), Vec::<String>::new());
     }
@@ -524,6 +543,7 @@ mod tests {
         let bluesky = Bluesky {
             description: None,
             tags: Some(vec![]),
+            ..Default::default()
         };
         assert_eq!(bluesky.tags(), Vec::<String>::new());
     }
@@ -536,6 +556,7 @@ mod tests {
         let bluesky = Bluesky {
             description: None,
             tags: Some(tags_vec),
+            ..Default::default()
         };
 
         // This will call tags::hashtags with the tags vector
@@ -551,6 +572,7 @@ mod tests {
         let bluesky = Bluesky {
             description: None,
             tags: None,
+            ..Default::default()
         };
 
         let hashtags = bluesky.hashtags();
@@ -564,6 +586,7 @@ mod tests {
         let original = Bluesky {
             description: Some("Original description".to_string()),
             tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
+            ..Default::default()
         };
 
         let cloned = original.clone();
@@ -580,6 +603,7 @@ mod tests {
         let bluesky = Bluesky {
             description: Some("Debug test".to_string()),
             tags: Some(vec!["debug".to_string()]),
+            ..Default::default()
         };
 
         let debug_string = format!("{bluesky:?}");
@@ -593,6 +617,7 @@ mod tests {
         let original = Bluesky {
             description: Some("Serialize test".to_string()),
             tags: Some(vec!["serde".to_string(), "json".to_string()]),
+            ..Default::default()
         };
 
         // Serialize to JSON
@@ -657,8 +682,58 @@ mod tests {
         Ok(())
     }
 
+    // RED: created / published date fields (issue #909)
+
     #[test]
-    fn test_with_unicode_content() {
+    fn test_bluesky_created_is_none_by_default() {
+        let bluesky = Bluesky::default();
+        assert!(bluesky.created().is_none());
+    }
+
+    #[test]
+    fn test_bluesky_published_is_none_by_default() {
+        let bluesky = Bluesky::default();
+        assert!(bluesky.published().is_none());
+    }
+
+    #[test]
+    fn test_bluesky_created_roundtrips_through_toml() {
+        let toml = r#"
+description = "My post"
+created = 2026-04-03
+"#;
+        let bluesky: Bluesky = toml::from_str(toml).unwrap();
+        let dt = bluesky.created().expect("created should be Some");
+        assert_eq!(dt.to_string(), "2026-04-03");
+    }
+
+    #[test]
+    fn test_bluesky_published_roundtrips_through_toml() {
+        let toml = r#"
+description = "My post"
+published = 2026-04-03
+"#;
+        let bluesky: Bluesky = toml::from_str(toml).unwrap();
+        let dt = bluesky.published().expect("published should be Some");
+        assert_eq!(dt.to_string(), "2026-04-03");
+    }
+
+    #[test]
+    fn test_bluesky_created_omitted_when_none_in_toml_serialization() {
+        let bluesky = Bluesky::default();
+        let toml_str = toml::to_string(&bluesky).unwrap();
+        assert!(
+            !toml_str.contains("created"),
+            "None created should not appear in serialized TOML: {toml_str}"
+        );
+        assert!(
+            !toml_str.contains("published"),
+            "None published should not appear in serialized TOML: {toml_str}"
+        );
+    }
+
+    #[test]
+    fn test_bluesky_with_unicode_content() {
         let bluesky = Bluesky {
             description: Some("描述内容 🚀 émojis and ünïcödé".to_string()),
             tags: Some(vec![
@@ -666,6 +741,7 @@ mod tests {
                 "тег".to_string(),
                 "标签".to_string(),
             ]),
+            ..Default::default()
         };
 
         assert_eq!(bluesky.description(), "描述内容 🚀 émojis and ünïcödé");
@@ -681,6 +757,7 @@ mod tests {
         let bluesky = Bluesky {
             description: None,
             tags: Some(original_tags.clone()),
+            ..Default::default()
         };
 
         let mut retrieved_tags = bluesky.tags();

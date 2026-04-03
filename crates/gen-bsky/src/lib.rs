@@ -14,6 +14,7 @@ pub const REFERRER_DIR: [&str; 2] = ["static", "s"];
 pub const BLOG_DIR: [&str; 2] = ["content", "blog"];
 
 mod draft;
+mod frontmatter_writeback;
 pub use draft::{Draft, DraftError};
 mod post;
 pub use post::{Post, PostError};

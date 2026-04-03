@@ -221,6 +221,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use chrono::{TimeZone, Utc};
+
 pub(crate) mod front_matter;
 
 use bsky_sdk::{
@@ -282,6 +284,10 @@ pub(super) enum BlogPostError {
     /// Error reported by the Url library.
     #[error("url error says: {0:?}")]
     UrlParse(#[from] url::ParseError),
+
+    /// Error writing back to frontmatter.
+    #[error("frontmatter write-back error: {0:?}")]
+    FmWrite(#[from] crate::frontmatter_writeback::FmWriteError),
 }
 
 /// Type representing the blog post.
@@ -358,7 +364,7 @@ impl BlogPost {
         let redirector = Redirector::new(post_link)?;
 
         Ok(BlogPost {
-            path: blog_path.clone(),
+            path: blog_file.clone(),
             frontmatter,
             post_link: link,
             redirector,
@@ -367,8 +373,16 @@ impl BlogPost {
         })
     }
 
-    /// Get bluesky record based on frontmatter data
-    pub async fn get_bluesky_record(&self) -> Result<RecordData, BlogPostError> {
+    /// Get bluesky record based on frontmatter data.
+    ///
+    /// If `created_at_override` is `Some`, the provided `BskyDatetime` is used as
+    /// `createdAt` instead of the current time.  This ensures the `.post` file's
+    /// timestamp is stable across re-runs once `[bluesky].created` is written to the
+    /// frontmatter.
+    pub async fn get_bluesky_record(
+        &self,
+        created_at_override: Option<BskyDatetime>,
+    ) -> Result<RecordData, BlogPostError> {
         log::info!("Blog post: {self:#?}");
         log::debug!("Building post text");
         let post_text = self.build_post_text()?;
@@ -380,7 +394,7 @@ impl BlogPost {
         log::trace!("Rich text: {rt:#?}");
 
         let record_data = RecordData {
-            created_at: BskyDatetime::now(),
+            created_at: created_at_override.unwrap_or_else(BskyDatetime::now),
             embed: None,
             entities: None,
             facets: rt.facets,
@@ -465,22 +479,43 @@ impl BlogPost {
     /// The write function generates a short name based on post link
     /// and filename to ensure that similarly named posts have unique
     /// bluesky post names.
+    ///
+    /// Idempotency: if `[bluesky].created` is already set in the post's frontmatter,
+    /// the write is skipped entirely (the draft was already generated on a previous run).
     pub async fn write_bluesky_record_to(&mut self, store_dir: &Path) -> Result<(), BlogPostError> {
-        // let Some(bluesky_post) = self.bluesky_post.as_ref() else {
-        //     return Err(BlogPostError::BlueSkyPostNotConstructed);
-        // };
         log::trace!("Store path to write to bluesky record: `{store_dir:#?}`");
         log::trace!(
             "Path for basename contains a filename: {:#?}",
             self.path.is_file()
         );
 
+        // Primary idempotency guard: skip if frontmatter already has [bluesky].created.
+        if self.frontmatter.bluesky_created().is_some() {
+            log::debug!(
+                "Skipping draft — [bluesky].created already set in `{}`",
+                self.path.display()
+            );
+            return Ok(());
+        }
+
         let Some(filename) = self.path.as_path().file_name() else {
             return Err(BlogPostError::PostBasenameNotSet);
         };
         let filename = filename.to_str().unwrap();
 
-        let bluesky_post = match self.get_bluesky_record().await {
+        // Write `created = <today>` into the blog post's TOML frontmatter.
+        let today = super::today();
+        crate::frontmatter_writeback::write_bluesky_date_field(&self.path, "created", today)?;
+        log::debug!(
+            "Wrote [bluesky].created = {} to `{}`",
+            today,
+            self.path.display()
+        );
+
+        // Build the BskyDatetime from today's date so createdAt is stable.
+        let created_at_bsky = toml_date_to_bsky_datetime(today);
+
+        let bluesky_post = match self.get_bluesky_record(Some(created_at_bsky)).await {
             Ok(p) => p,
             Err(e) => {
                 log::warn!(
@@ -511,6 +546,7 @@ impl BlogPost {
         log::debug!("Write filename: `{filename}` as `{postname}`");
         log::debug!("Write file: `{}`", post_file.display());
 
+        // Secondary guard: never overwrite an existing .post file.
         if !should_write_post_file(&post_file) {
             log::debug!(
                 "Skipping write — post file already exists: `{}`",
@@ -521,7 +557,12 @@ impl BlogPost {
 
         let file = File::create(post_file)?;
 
-        serde_json::to_writer_pretty(&file, &bluesky_post)?;
+        // Include source_path so bsky post can write back [bluesky].published.
+        let post_file_record = crate::post::bsky_post::PostFile {
+            record: bluesky_post,
+            source_path: Some(self.path.clone()),
+        };
+        serde_json::to_writer_pretty(&file, &post_file_record)?;
         file.sync_all()?;
         self.bluesky_count += 1;
 
@@ -546,6 +587,22 @@ impl BlogPost {
         );
         self.frontmatter.log_post_details();
     }
+}
+
+/// Convert a `toml::value::Datetime` (date-only, e.g. `2026-04-03`) to a `BskyDatetime`
+/// set to midnight UTC on that date.  Falls back to `BskyDatetime::now()` if the TOML
+/// datetime has no date component.
+fn toml_date_to_bsky_datetime(dt: toml::value::Datetime) -> BskyDatetime {
+    if let Some(d) = dt.date {
+        if let Some(naive_date) =
+            chrono::NaiveDate::from_ymd_opt(d.year as i32, d.month as u32, d.day as u32)
+        {
+            let naive_dt = naive_date.and_time(chrono::NaiveTime::MIN);
+            let utc_dt = Utc.from_utc_datetime(&naive_dt).fixed_offset();
+            return BskyDatetime::new(utc_dt);
+        }
+    }
+    BskyDatetime::now()
 }
 
 /// Returns `true` if a bluesky post file should be written (i.e. it does not yet exist).
@@ -684,7 +741,7 @@ tags = ["rust", "testing"]
 
         let post = BlogPost::new(&blog_file, min_date, false, &base_url, temp_dir.path()).unwrap();
 
-        let result = post.get_bluesky_record().await;
+        let result = post.get_bluesky_record(None).await;
         assert!(result.is_ok());
 
         let record = result.unwrap();
@@ -950,6 +1007,147 @@ Content with unicode characters."##
         assert!(post_text.contains("🚀"));
         assert!(post_text.contains("émojis"));
         assert!(post_text.contains("àccénts"));
+    }
+
+    // RED: frontmatter created/published tracking (issue #909)
+
+    fn create_test_frontmatter_with_bluesky_created() -> String {
+        r#"+++
+title = "Test Blog Post"
+date = 2024-01-15
+description = "A test blog post for unit testing"
+draft = false
+[taxonomies]
+tags = ["rust", "testing"]
+[bluesky]
+description = "My bsky description"
+created = 2026-04-03
++++"#
+            .to_string()
+    }
+
+    #[tokio::test]
+    async fn test_write_bluesky_record_skips_when_created_in_frontmatter() {
+        // If [bluesky].created is already set, write_bluesky_record_to must be a no-op.
+        let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
+        let content = format!(
+            "{}\n\nThis is the blog post content.",
+            create_test_frontmatter_with_bluesky_created()
+        );
+        let blog_path = temp_dir.path().join("content").join("blog");
+        let blog_file = create_test_blog_file(&blog_path, "drafted-post.md", &content);
+
+        let min_date = Datetime::from_str("2024-01-01T00:00:00Z").unwrap();
+        let store_dir = temp_dir.path().join("posts");
+        fs::create_dir_all(&store_dir).unwrap();
+
+        let mut post =
+            BlogPost::new(&blog_file, min_date, false, &base_url, temp_dir.path()).unwrap();
+
+        // The frontmatter already has created — draft should be skipped entirely
+        post.write_bluesky_record_to(&store_dir).await.unwrap();
+        assert_eq!(
+            post.bluesky_count(),
+            0,
+            "bluesky_count must stay 0 when frontmatter.bluesky.created is already set"
+        );
+
+        // No .post file should have been created
+        let post_files: Vec<_> = fs::read_dir(&store_dir)
+            .unwrap()
+            .filter_map(|e| {
+                let p = e.ok()?.path();
+                if p.extension()? == "post" {
+                    Some(p)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert_eq!(
+            post_files.len(),
+            0,
+            "no .post files should be created when already drafted"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_write_bluesky_record_sets_created_in_frontmatter() {
+        // After write_bluesky_record_to, the .md file must have [bluesky].created set.
+        let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
+        let content = format!(
+            "{}\n\nThis is the blog post content.",
+            create_test_frontmatter_content()
+        );
+        let blog_path = temp_dir.path().join("content").join("blog");
+        let blog_file = create_test_blog_file(&blog_path, "new-post.md", &content);
+
+        let min_date = Datetime::from_str("2024-01-01T00:00:00Z").unwrap();
+        let store_dir = temp_dir.path().join("posts");
+        fs::create_dir_all(&store_dir).unwrap();
+
+        let mut post =
+            BlogPost::new(&blog_file, min_date, false, &base_url, temp_dir.path()).unwrap();
+
+        post.write_bluesky_record_to(&store_dir).await.unwrap();
+        assert_eq!(post.bluesky_count(), 1);
+
+        // The .md file should now have [bluesky].created
+        let md_content = fs::read_to_string(&blog_file).unwrap();
+        assert!(
+            md_content.contains("created ="),
+            ".md file should have created date: {md_content}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_write_bluesky_record_created_at_matches_frontmatter_created() {
+        // The .post file's createdAt must be derived from frontmatter created date.
+        let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
+        let content = format!(
+            "{}\n\nThis is the blog post content.",
+            create_test_frontmatter_content()
+        );
+        let blog_path = temp_dir.path().join("content").join("blog");
+        let blog_file = create_test_blog_file(&blog_path, "ts-post.md", &content);
+
+        let min_date = Datetime::from_str("2024-01-01T00:00:00Z").unwrap();
+        let store_dir = temp_dir.path().join("posts");
+        fs::create_dir_all(&store_dir).unwrap();
+
+        let mut post =
+            BlogPost::new(&blog_file, min_date, false, &base_url, temp_dir.path()).unwrap();
+
+        post.write_bluesky_record_to(&store_dir).await.unwrap();
+
+        // Read the .post file and check createdAt starts with the today's date
+        let post_files: Vec<_> = fs::read_dir(&store_dir)
+            .unwrap()
+            .filter_map(|e| {
+                let p = e.ok()?.path();
+                if p.extension()? == "post" {
+                    Some(p)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert_eq!(post_files.len(), 1);
+        let json_content = fs::read_to_string(&post_files[0]).unwrap();
+        let record: serde_json::Value = serde_json::from_str(&json_content).unwrap();
+        let created_at = record.get("createdAt").unwrap().as_str().unwrap();
+        // The created date in frontmatter is today; createdAt should start with today's date
+        let md_content = fs::read_to_string(&blog_file).unwrap();
+        // Extract "created = YYYY-MM-DD" from the md
+        let created_line = md_content
+            .lines()
+            .find(|l| l.trim_start().starts_with("created ="))
+            .expect("created line should exist in .md file");
+        let date_str = created_line.split('=').nth(1).unwrap().trim();
+        assert!(
+            created_at.starts_with(date_str),
+            "createdAt `{created_at}` should start with frontmatter date `{date_str}`"
+        );
     }
 
     // RED: should_write_post_file pure function (issue #906)
