@@ -14,10 +14,17 @@
 pub mod auth;
 /// Base HTTP client wrapper shared by feature modules.
 pub mod client;
+/// LinkedIn draft generation from blog post frontmatter.
+pub mod draft;
 /// Error types returned by this crate.
 pub mod error;
+mod frontmatter_writeback;
+/// LinkedIn post publishing from staged draft files.
+pub mod post;
 /// LinkedIn Posts API (REST) support.
 #[cfg(feature = "posts")]
 pub mod posts;
 
+pub use crate::draft::{Draft, DraftError, LinkedinFile};
 pub use crate::error::Error;
+pub use crate::post::{Post, PostError};

@@ -54,6 +54,11 @@ async fn main() -> Result<()> {
                 CIExit::NoBlogPostsForBluesky => {
                     log::warn!("No blog posts to draft for Bluesky")
                 }
+                CIExit::DraftedForLinkedIn => log::info!("Drafted for LinkedIn"),
+                CIExit::PostedToLinkedIn => log::info!("Posted to LinkedIn"),
+                CIExit::NoBlogPostsForLinkedIn => {
+                    log::warn!("No blog posts to draft for LinkedIn")
+                }
                 CIExit::VerificationPassed => log::info!("✓ All signature checks passed!"),
                 CIExit::SwitchedBranch(s) => log::info!("Switched to branch: {s}"),
                 CIExit::WebhookTriggered(url) => log::info!("Webhook triggered: {url}"),

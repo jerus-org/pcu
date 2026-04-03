@@ -1703,11 +1703,15 @@ dependencies = [
 name = "gen-linkedin"
 version = "0.1.10"
 dependencies = [
+ "chrono",
+ "log",
  "reqwest 0.13.2",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "toml 1.1.0+spec-1.1.0",
  "url",
  "wiremock",
 ]
