@@ -1,6 +1,7 @@
 mod bsky;
 mod checkout;
 mod commit;
+mod create_issue;
 mod label;
 mod linkedin;
 mod pull_request;
@@ -17,6 +18,7 @@ use clap::{Parser, Subcommand};
 use color_eyre::Result;
 use commit::Commit;
 use config::Config;
+use create_issue::CreateIssue;
 use label::Label;
 use linkedin::Linkedin;
 use pull_request::Pr;
@@ -51,6 +53,7 @@ pub enum CIExit {
     VerificationPassed,
     SwitchedBranch(String),
     WebhookTriggered(String),
+    IssueCreated(String),
 }
 
 #[derive(Parser, Debug)]
@@ -96,6 +99,8 @@ the lowest number submitted by the `renovate` or `app/renovate` user")]
     Checkout(Checkout),
     /// POST to a webhook URL
     Trigger(Trigger),
+    /// Create a GitHub issue on the target repository
+    CreateIssue(CreateIssue),
 }
 
 impl Display for Commands {
@@ -111,6 +116,7 @@ impl Display for Commands {
             Commands::VerifySignatures(_) => write!(f, "verify-signatures"),
             Commands::Checkout(_) => write!(f, "checkout"),
             Commands::Trigger(_) => write!(f, "trigger"),
+            Commands::CreateIssue(_) => write!(f, "create-issue"),
         }
     }
 }
@@ -171,6 +177,7 @@ impl Commands {
             }
             Commands::Checkout(_) => settings.set_override("command", "checkout")?,
             Commands::Trigger(_) => settings.set_override("command", "trigger")?,
+            Commands::CreateIssue(_) => settings.set_override("command", "create-issue")?,
         };
 
         settings = if let Commands::Bsky(bsky) = self {

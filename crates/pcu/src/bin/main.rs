@@ -33,6 +33,7 @@ async fn main() -> Result<()> {
         Commands::VerifySignatures(verify_args) => verify_args.run_verify().await,
         Commands::Checkout(checkout_args) => checkout_args.run().await,
         Commands::Trigger(trigger_args) => trigger_args.run().await,
+        Commands::CreateIssue(create_issue_args) => create_issue_args.run().await,
     };
 
     match res {
@@ -62,6 +63,7 @@ async fn main() -> Result<()> {
                 CIExit::VerificationPassed => log::info!("✓ All signature checks passed!"),
                 CIExit::SwitchedBranch(s) => log::info!("Switched to branch: {s}"),
                 CIExit::WebhookTriggered(url) => log::info!("Webhook triggered: {url}"),
+                CIExit::IssueCreated(url) => log::info!("Issue created: {url}"),
             };
             Ok(())
         }
