@@ -263,7 +263,7 @@ jobs:
             cp $(which pcu) ~/project/bin/pcu
 
       - run:
-          name: Set test root for bluesky testing jobs
+          name: Set test root for bluesky and linkedin testing jobs
           command: |
             echo 'export BSKY_TEST_ROOT="crates/pcu/tests/bsky"' >> bash.env
             echo 'export LINKEDIN_TEST_ROOT="crates/pcu/tests/linkedin"' >> bash.env
