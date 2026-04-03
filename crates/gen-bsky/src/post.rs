@@ -554,12 +554,9 @@ impl Post {
         {
             // Skip posts whose source markdown already has [bluesky].published set.
             if let Some(src) = bsky_post.source_path() {
-                if crate::frontmatter_writeback::read_bluesky_date_field(src, "published")
-                    .is_some()
+                if crate::frontmatter_writeback::read_bluesky_date_field(src, "published").is_some()
                 {
-                    log::debug!(
-                        "Skipping post — [bluesky].published already set in {src:?}"
-                    );
+                    log::debug!("Skipping post — [bluesky].published already set in {src:?}");
                     continue;
                 }
             }

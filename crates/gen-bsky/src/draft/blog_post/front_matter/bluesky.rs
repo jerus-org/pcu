@@ -698,7 +698,6 @@ mod tests {
 
     #[test]
     fn test_bluesky_created_roundtrips_through_toml() {
-        use std::str::FromStr;
         let toml = r#"
 description = "My post"
 created = 2026-04-03
