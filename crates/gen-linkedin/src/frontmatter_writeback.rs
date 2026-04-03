@@ -17,7 +17,7 @@ pub enum FmWriteError {
 }
 
 /// Split a Zola/Hugo markdown file into `(before_first_marker, frontmatter_str, body_str)`.
-fn split_frontmatter(content: &str) -> Result<(&str, &str, &str), FmWriteError> {
+pub(crate) fn split_frontmatter(content: &str) -> Result<(&str, &str, &str), FmWriteError> {
     let first = content.find("+++").ok_or(FmWriteError::NoFrontmatter)?;
     let after_first = &content[first + 3..];
     let fm_start = after_first
@@ -44,16 +44,6 @@ fn read_section_date_field(path: &Path, section: &str, field: &str) -> Option<Da
     } else {
         None
     }
-}
-
-/// Read a string field from a named TOML section in Zola/Hugo frontmatter.
-/// Returns `None` if the file, section, or field is absent or cannot be parsed.
-fn read_section_string_field(path: &Path, section: &str, field: &str) -> Option<String> {
-    let content = fs::read_to_string(path).ok()?;
-    let (_, fm_str, _) = split_frontmatter(&content).ok()?;
-    let table: toml::Table = toml::from_str(fm_str).ok()?;
-    let sec = table.get(section)?.as_table()?;
-    sec.get(field)?.as_str().map(|s| s.to_string())
 }
 
 /// Write a date field into a named TOML section in Zola/Hugo frontmatter.
@@ -89,12 +79,6 @@ const SECTION: &str = "linkedin";
 /// Returns `None` if the section or field is absent, or the file cannot be read.
 pub(crate) fn read_linkedin_date_field(path: &Path, field: &str) -> Option<Datetime> {
     read_section_date_field(path, SECTION, field)
-}
-
-/// Read an optional string field from the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
-/// Returns `None` if the section or field is absent, or the file cannot be read.
-pub(crate) fn read_linkedin_string_field(path: &Path, field: &str) -> Option<String> {
-    read_section_string_field(path, SECTION, field)
 }
 
 /// Write a date field inside the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
@@ -190,23 +174,4 @@ mod tests {
         assert!(read_linkedin_date_field(&path, "created").is_none());
     }
 
-    #[test]
-    fn test_read_string_field() {
-        let dir = tempdir().unwrap();
-        let content =
-            "+++\ntitle = \"My Post\"\n\n[linkedin]\ndescription = \"Hello LinkedIn\"\n+++\n\nBody.";
-        let path = write_test_file(dir.path(), "post.md", content);
-
-        let desc = read_linkedin_string_field(&path, "description");
-        assert_eq!(desc.as_deref(), Some("Hello LinkedIn"));
-    }
-
-    #[test]
-    fn test_read_string_field_absent_returns_none() {
-        let dir = tempdir().unwrap();
-        let content = "+++\ntitle = \"My Post\"\n+++\n\nBody.";
-        let path = write_test_file(dir.path(), "post.md", content);
-
-        assert!(read_linkedin_string_field(&path, "description").is_none());
-    }
 }

@@ -4,11 +4,38 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../README.md")]
 
-//! gen-linkedin: Minimal LinkedIn API client for CI usage
+//! gen-linkedin: LinkedIn draft generation and post publishing for CI usage.
 //!
-//! This crate exposes a small surface area focused on creating text posts for
-//! release announcements. HTTP and auth details are encapsulated so callers only
-//! need to provide an access token and author URN.
+//! This crate provides two main capabilities:
+//!
+//! 1. **Draft generation** — scan Zola/Hugo blog posts for a `[linkedin]`
+//!    frontmatter section, build staged `.linkedin` JSON files, and stamp the
+//!    source frontmatter with a creation date (idempotent).
+//!
+//! 2. **Post publishing** — read staged `.linkedin` files, publish each as a
+//!    LinkedIn text post via the Posts API, write a `published` date back into
+//!    the source frontmatter, and delete the draft file.
+//!
+//! # Frontmatter convention
+//!
+//! A blog post opts in by adding a `[linkedin]` section to its TOML frontmatter:
+//!
+//! ```toml
+//! [linkedin]
+//! description_file = "linkedin.md"   # preferred for long posts
+//! # description = "Short inline text is also accepted."
+//! ```
+//!
+//! The post text must be **author-written** and is not derived from any other
+//! frontmatter field. LinkedIn posts are validated against
+//! [`LINKEDIN_POST_MAX_CHARS`] (including the appended post link).
+//!
+//! # Authentication
+//!
+//! Callers supply a LinkedIn access token and author URN directly. Token
+//! acquisition (OAuth 2.0) is outside the scope of this crate. See
+//! [`auth::StaticTokenProvider`] for the simple bearer-token provider used
+//! in CI contexts.
 
 /// Token providers for bearer tokens used to authenticate with LinkedIn.
 pub mod auth;
@@ -18,6 +45,8 @@ pub mod client;
 pub mod draft;
 /// Error types returned by this crate.
 pub mod error;
+/// Serde-based frontmatter types for the `[linkedin]` TOML section.
+pub mod frontmatter;
 mod frontmatter_writeback;
 /// LinkedIn post publishing from staged draft files.
 pub mod post;
@@ -25,6 +54,7 @@ pub mod post;
 #[cfg(feature = "posts")]
 pub mod posts;
 
-pub use crate::draft::{Draft, DraftError, LinkedinFile};
+pub use crate::draft::{Draft, DraftError, LinkedinFile, LINKEDIN_POST_MAX_CHARS};
 pub use crate::error::Error;
+pub use crate::frontmatter::{FrontMatter, LinkedIn};
 pub use crate::post::{Post, PostError};
