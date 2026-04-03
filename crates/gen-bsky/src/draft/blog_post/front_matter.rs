@@ -157,6 +157,15 @@ impl FrontMatter {
         Ok(front_matter)
     }
 
+    pub(super) fn bluesky_created(&self) -> Option<toml::value::Datetime> {
+        self.bluesky.as_ref().and_then(|b| b.created())
+    }
+
+    #[allow(dead_code)]
+    pub(super) fn bluesky_published(&self) -> Option<toml::value::Datetime> {
+        self.bluesky.as_ref().and_then(|b| b.published())
+    }
+
     pub(super) fn bluesky_description(&self) -> &str {
         if let Some(bs) = self.bluesky.as_ref() {
             return bs.description();

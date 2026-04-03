@@ -91,7 +91,7 @@
 use std::{fmt::Display, fs, io::BufReader, path::Path};
 
 const TESTING_FLAG: &str = "TESTING";
-mod bsky_post;
+pub(crate) mod bsky_post;
 
 use bsky_post::{BskyPost, BskyPostState};
 use bsky_sdk::{agent::config::Config as BskyConfig, BskyAgent};
@@ -234,6 +234,10 @@ pub enum PostError {
     /// - Service temporarily unavailable
     #[error("bsky_sdk error says: {0:?}")]
     BskySdk(#[from] bsky_sdk::Error),
+
+    /// Error writing back to frontmatter.
+    #[error("frontmatter write-back error: {0:?}")]
+    FmWrite(#[from] crate::frontmatter_writeback::FmWriteError),
 }
 
 /// # Post - Bluesky Post Management and Publishing
@@ -436,8 +440,12 @@ impl Post {
                 let file_path = file.path();
                 let post = fs::File::open(&file_path)?;
                 let reader = BufReader::new(post);
-                let post = serde_json::from_reader(reader)?;
-                let bsky_post = BskyPost::new(post, file_path);
+                let post_file: bsky_post::PostFile = serde_json::from_reader(reader)?;
+                let bsky_post = if let Some(src) = post_file.source_path {
+                    BskyPost::new_with_source(post_file.record, file_path, src)
+                } else {
+                    BskyPost::new(post_file.record, file_path)
+                };
                 bsky_posts.push(bsky_post);
             }
         }
@@ -544,6 +552,18 @@ impl Post {
             .iter_mut()
             .filter(|p| p.state() == &BskyPostState::Read)
         {
+            // Skip posts whose source markdown already has [bluesky].published set.
+            if let Some(src) = bsky_post.source_path() {
+                if crate::frontmatter_writeback::read_bluesky_date_field(src, "published")
+                    .is_some()
+                {
+                    log::debug!(
+                        "Skipping post — [bluesky].published already set in {src:?}"
+                    );
+                    continue;
+                }
+            }
+
             log::debug!("Post: {}", bsky_post.post().text.clone());
 
             if testing {
@@ -662,6 +682,26 @@ impl Post {
             .iter_mut()
             .filter(|p| p.state() == &BskyPostState::Posted)
         {
+            // Write `published = <today>` back to the source .md file when known.
+            if let Some(src) = bsky_post.source_path() {
+                let today = crate::draft::today();
+                match crate::frontmatter_writeback::write_bluesky_date_field(
+                    src,
+                    "published",
+                    today,
+                ) {
+                    Ok(()) => log::debug!(
+                        "Wrote [bluesky].published = {} to `{}`",
+                        today,
+                        src.display()
+                    ),
+                    Err(e) => log::warn!(
+                        "Failed to write [bluesky].published to `{}`: {e}",
+                        src.display()
+                    ),
+                }
+            }
+
             log::debug!("Deleting related file: {:?}", bsky_post.file_path());
             fs::remove_file(bsky_post.file_path())?;
 
@@ -1144,6 +1184,73 @@ mod tests {
         assert_eq!(post.bsky_posts.len(), 3);
 
         Ok(())
+    }
+
+    // RED: source_path loading and published write-back (issue #909)
+
+    fn create_post_file_with_source_path(
+        dir: &std::path::Path,
+        filename: &str,
+        source_path: &str,
+    ) -> std::path::PathBuf {
+        let content = format!(
+            r#"{{"text":"Test","createdAt":"2026-04-03T00:00:00.000000Z","langs":null,"reply":null,"embed":null,"facets":null,"tags":null,"entities":null,"labels":null,"source_path":"{source_path}"}}"#
+        );
+        let path = dir.join(filename);
+        fs::write(&path, content).unwrap();
+        path
+    }
+
+    fn create_md_with_bluesky_created(dir: &std::path::Path, filename: &str) -> std::path::PathBuf {
+        let content = "+++\ntitle = \"Test\"\ndescription = \"test\"\ndate = 2026-04-03\n\n[bluesky]\ndescription = \"bsky desc\"\ncreated = 2026-04-03\n+++\n\nBody.";
+        let path = dir.join(filename);
+        fs::write(&path, content).unwrap();
+        path
+    }
+
+    #[test]
+    fn test_load_reads_source_path_from_post_file() -> Result<(), Box<dyn std::error::Error>> {
+        let mut post = create_test_post()?;
+        let temp_dir = tempfile::tempdir()?;
+        let md_path = temp_dir.path().join("my-post.md");
+        create_post_file_with_source_path(temp_dir.path(), "abc.post", &md_path.to_string_lossy());
+
+        post.load(temp_dir.path().to_string_lossy().to_string())?;
+        assert_eq!(post.bsky_posts.len(), 1);
+        assert_eq!(
+            post.bsky_posts[0].source_path(),
+            Some(&md_path),
+            "source_path should be loaded from .post file"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_delete_posted_posts_writes_published_to_frontmatter() {
+        // delete_posted_posts is where the write-back happens; no network needed.
+        let mut post = create_test_post().unwrap();
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Create a .md file with [bluesky].created
+        let md_path = create_md_with_bluesky_created(temp_dir.path(), "my-post.md");
+
+        // Create a .post file that references this .md
+        create_post_file_with_source_path(temp_dir.path(), "abc.post", &md_path.to_string_lossy());
+
+        post.load(temp_dir.path().to_string_lossy().to_string())
+            .unwrap();
+        assert_eq!(post.bsky_posts.len(), 1);
+
+        // Simulate a successful post by setting state to Posted
+        post.bsky_posts[0].set_state(BskyPostState::Posted);
+
+        post.delete_posted_posts().unwrap();
+
+        let md_content = fs::read_to_string(&md_path).unwrap();
+        assert!(
+            md_content.contains("published ="),
+            ".md file should have published date after delete_posted_posts: {md_content}"
+        );
     }
 
     // Memory and performance tests

@@ -24,6 +24,21 @@
 use std::path::PathBuf;
 
 use bsky_sdk::api::app::bsky::feed::post::RecordData;
+use serde::{Deserialize, Serialize};
+
+/// Wrapper that adds optional metadata around `RecordData` for on-disk storage.
+///
+/// Using `#[serde(flatten)]` keeps the JSON representation flat (backward compatible
+/// with old `.post` files that contain bare `RecordData`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct PostFile {
+    #[serde(flatten)]
+    pub(crate) record: RecordData,
+    /// Path to the source `.md` blog post.  Written by `bsky draft` so that
+    /// `bsky post` can write back `[bluesky].published` after a successful API call.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) source_path: Option<PathBuf>,
+}
 
 /// # BskyPostState - Post Lifecycle State Management
 ///
@@ -141,6 +156,9 @@ pub(crate) struct BskyPost {
     /// Path to the source `.post` file for cleanup operations
     file_path: PathBuf,
 
+    /// Path to the source `.md` blog post file, used to write back `published` date.
+    source_path: Option<PathBuf>,
+
     /// Current lifecycle state of the post
     state: BskyPostState,
 }
@@ -189,6 +207,21 @@ impl BskyPost {
         BskyPost {
             post,
             file_path,
+            source_path: None,
+            state: BskyPostState::Read,
+        }
+    }
+
+    /// Creates a new `BskyPost` that also records the source `.md` file path.
+    pub(crate) fn new_with_source(
+        post: RecordData,
+        file_path: PathBuf,
+        source_path: PathBuf,
+    ) -> Self {
+        BskyPost {
+            post,
+            file_path,
+            source_path: Some(source_path),
             state: BskyPostState::Read,
         }
     }
@@ -409,6 +442,11 @@ impl BskyPost {
     /// ```
     pub(crate) fn set_state(&mut self, new_state: BskyPostState) {
         self.state = new_state
+    }
+
+    /// Returns the path to the source `.md` blog post, if known.
+    pub(crate) fn source_path(&self) -> Option<&PathBuf> {
+        self.source_path.as_ref()
     }
 }
 
@@ -749,6 +787,61 @@ mod tests {
         // 3. After file cleanup
         bsky_post.set_state(BskyPostState::Deleted);
         assert_eq!(bsky_post.state(), &BskyPostState::Deleted);
+    }
+
+    // RED: source_path tracking for published write-back (issue #909)
+
+    #[test]
+    fn test_bsky_post_source_path_is_none_by_default() {
+        let bsky_post = create_test_bsky_post();
+        assert!(bsky_post.source_path().is_none());
+    }
+
+    #[test]
+    fn test_bsky_post_new_with_source_path_stores_it() {
+        let record = create_test_record_data("Test content");
+        let file_path = PathBuf::from("/posts/abc.post");
+        let source_path = PathBuf::from("/content/blog/my-post.md");
+        let bsky_post = BskyPost::new_with_source(record, file_path, source_path.clone());
+        assert_eq!(bsky_post.source_path(), Some(&source_path));
+    }
+
+    #[test]
+    fn test_post_file_deserializes_without_source_path() {
+        // Old-format .post files without source_path field should deserialize OK.
+        let json = r#"{"text":"Hello","createdAt":"2026-04-03T00:00:00.000000Z","langs":null,"reply":null,"embed":null,"facets":null,"tags":null,"entities":null,"labels":null}"#;
+        let pf: PostFile = serde_json::from_str(json).unwrap();
+        assert_eq!(pf.record.text, "Hello");
+        assert!(pf.source_path.is_none());
+    }
+
+    #[test]
+    fn test_post_file_roundtrips_with_source_path() {
+        use bsky_sdk::api::types::string::Datetime;
+        use bsky_sdk::api::types::string::Language;
+        let record = RecordData {
+            text: "Test".to_string(),
+            created_at: Datetime::now(),
+            langs: Some(vec![Language::new("en".to_string()).unwrap()]),
+            reply: None,
+            embed: None,
+            facets: None,
+            tags: None,
+            entities: None,
+            labels: None,
+        };
+        let pf = PostFile {
+            record,
+            source_path: Some(PathBuf::from("/blog/my-post.md")),
+        };
+        let json = serde_json::to_string(&pf).unwrap();
+        assert!(
+            json.contains("source_path"),
+            "source_path should appear in JSON: {json}"
+        );
+        let pf2: PostFile = serde_json::from_str(&json).unwrap();
+        assert_eq!(pf2.source_path, Some(PathBuf::from("/blog/my-post.md")));
+        assert_eq!(pf2.record.text, "Test");
     }
 
     // Memory and performance tests
