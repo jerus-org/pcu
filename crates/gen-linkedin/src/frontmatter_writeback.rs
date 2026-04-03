@@ -32,28 +32,69 @@ fn split_frontmatter(content: &str) -> Result<(&str, &str, &str), FmWriteError> 
     Ok((before_marker, fm_str, body_str))
 }
 
-/// Read an optional date field from the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
-/// Returns `None` if the section or field is absent, or the file cannot be read.
-pub(crate) fn read_linkedin_date_field(path: &Path, field: &str) -> Option<Datetime> {
+/// Read a date field from a named TOML section in Zola/Hugo frontmatter.
+/// Returns `None` if the file, section, or field is absent or cannot be parsed.
+fn read_section_date_field(path: &Path, section: &str, field: &str) -> Option<Datetime> {
     let content = fs::read_to_string(path).ok()?;
     let (_, fm_str, _) = split_frontmatter(&content).ok()?;
     let table: toml::Table = toml::from_str(fm_str).ok()?;
-    let section = table.get("linkedin")?.as_table()?;
-    if let Some(toml::Value::Datetime(dt)) = section.get(field) {
+    let sec = table.get(section)?.as_table()?;
+    if let Some(toml::Value::Datetime(dt)) = sec.get(field) {
         Some(*dt)
     } else {
         None
     }
 }
 
-/// Read an optional string field from the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
-/// Returns `None` if the section or field is absent, or the file cannot be read.
-pub(crate) fn read_linkedin_string_field(path: &Path, field: &str) -> Option<String> {
+/// Read a string field from a named TOML section in Zola/Hugo frontmatter.
+/// Returns `None` if the file, section, or field is absent or cannot be parsed.
+fn read_section_string_field(path: &Path, section: &str, field: &str) -> Option<String> {
     let content = fs::read_to_string(path).ok()?;
     let (_, fm_str, _) = split_frontmatter(&content).ok()?;
     let table: toml::Table = toml::from_str(fm_str).ok()?;
-    let section = table.get("linkedin")?.as_table()?;
-    section.get(field)?.as_str().map(|s| s.to_string())
+    let sec = table.get(section)?.as_table()?;
+    sec.get(field)?.as_str().map(|s| s.to_string())
+}
+
+/// Write a date field into a named TOML section in Zola/Hugo frontmatter.
+/// Creates the section if absent. Overwrites existing values.
+fn write_section_date_field(
+    path: &Path,
+    section: &str,
+    field: &str,
+    date: Datetime,
+) -> Result<(), FmWriteError> {
+    let content = fs::read_to_string(path)?;
+    let (before, fm_str, body_str) = split_frontmatter(&content)?;
+
+    let mut table: toml::Table = toml::from_str(fm_str)?;
+
+    let sec = table
+        .entry(section)
+        .or_insert_with(|| toml::Value::Table(toml::Table::new()));
+
+    if let toml::Value::Table(ref mut t) = sec {
+        t.insert(field.to_string(), toml::Value::Datetime(date));
+    }
+
+    let new_fm_str = toml::to_string(&table)?;
+    let new_content = format!("{before}+++\n{new_fm_str}+++{body_str}");
+    fs::write(path, new_content)?;
+    Ok(())
+}
+
+const SECTION: &str = "linkedin";
+
+/// Read an optional date field from the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
+/// Returns `None` if the section or field is absent, or the file cannot be read.
+pub(crate) fn read_linkedin_date_field(path: &Path, field: &str) -> Option<Datetime> {
+    read_section_date_field(path, SECTION, field)
+}
+
+/// Read an optional string field from the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
+/// Returns `None` if the section or field is absent, or the file cannot be read.
+pub(crate) fn read_linkedin_string_field(path: &Path, field: &str) -> Option<String> {
+    read_section_string_field(path, SECTION, field)
 }
 
 /// Write a date field inside the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
@@ -63,23 +104,7 @@ pub(crate) fn write_linkedin_date_field(
     field: &str,
     date: Datetime,
 ) -> Result<(), FmWriteError> {
-    let content = fs::read_to_string(path)?;
-    let (before, fm_str, body_str) = split_frontmatter(&content)?;
-
-    let mut table: toml::Table = toml::from_str(fm_str)?;
-
-    let section = table
-        .entry("linkedin")
-        .or_insert_with(|| toml::Value::Table(toml::Table::new()));
-
-    if let toml::Value::Table(ref mut t) = section {
-        t.insert(field.to_string(), toml::Value::Datetime(date));
-    }
-
-    let new_fm_str = toml::to_string(&table)?;
-    let new_content = format!("{before}+++\n{new_fm_str}+++{body_str}");
-    fs::write(path, new_content)?;
-    Ok(())
+    write_section_date_field(path, SECTION, field, date)
 }
 
 #[cfg(test)]
