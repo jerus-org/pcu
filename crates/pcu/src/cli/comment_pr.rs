@@ -68,25 +68,8 @@ impl CommentPr {
     }
 
     pub async fn run(&self) -> Result<CIExit, Error> {
-        let owner = self
-            .owner
-            .clone()
-            .or_else(|| env::var("CIRCLE_PROJECT_USERNAME").ok())
-            .ok_or_else(|| {
-                Error::MissingConfig(
-                    "owner not provided and CIRCLE_PROJECT_USERNAME not set".to_string(),
-                )
-            })?;
-
-        let repo = self
-            .repo
-            .clone()
-            .or_else(|| env::var("CIRCLE_PROJECT_REPONAME").ok())
-            .ok_or_else(|| {
-                Error::MissingConfig(
-                    "repo not provided and CIRCLE_PROJECT_REPONAME not set".to_string(),
-                )
-            })?;
+        let owner = super::resolve_owner(self.owner.clone())?;
+        let repo = super::resolve_repo(self.repo.clone())?;
 
         let pr_number = Self::resolve_pr_number(
             self.pr_number,

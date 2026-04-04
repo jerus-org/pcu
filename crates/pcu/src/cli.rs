@@ -233,6 +233,28 @@ impl Commands {
     }
 }
 
+/// Resolve the repository owner from an explicit value or CIRCLE_PROJECT_USERNAME.
+pub(super) fn resolve_owner(explicit: Option<String>) -> Result<String, crate::Error> {
+    explicit
+        .or_else(|| env::var("CIRCLE_PROJECT_USERNAME").ok())
+        .ok_or_else(|| {
+            crate::Error::MissingConfig(
+                "owner not provided and CIRCLE_PROJECT_USERNAME not set".to_string(),
+            )
+        })
+}
+
+/// Resolve the repository name from an explicit value or CIRCLE_PROJECT_REPONAME.
+pub(super) fn resolve_repo(explicit: Option<String>) -> Result<String, crate::Error> {
+    explicit
+        .or_else(|| env::var("CIRCLE_PROJECT_REPONAME").ok())
+        .ok_or_else(|| {
+            crate::Error::MissingConfig(
+                "repo not provided and CIRCLE_PROJECT_REPONAME not set".to_string(),
+            )
+        })
+}
+
 fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     let mut output = String::new();
 
