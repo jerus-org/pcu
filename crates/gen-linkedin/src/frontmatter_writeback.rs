@@ -173,5 +173,4 @@ mod tests {
 
         assert!(read_linkedin_date_field(&path, "created").is_none());
     }
-
 }
