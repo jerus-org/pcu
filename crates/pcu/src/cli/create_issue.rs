@@ -33,6 +33,45 @@ pub struct CreateIssue {
     /// Log what would happen without making the API request
     #[clap(long)]
     pub dry_run: bool,
+
+    /// Label to apply to the created issue. Created automatically if absent.
+    #[clap(long, default_value = DEFAULT_LABEL, conflicts_with = "no_label")]
+    pub label: String,
+
+    /// Skip label creation and application entirely
+    #[clap(long)]
+    pub no_label: bool,
+}
+
+const DEFAULT_LABEL: &str = "ci-created";
+const DEFAULT_LABEL_COLOR: &str = "e4e669";
+
+/// Ensure a label exists on the repository, creating it if absent.
+async fn ensure_label_exists(
+    api: &octocrate::GitHubAPI,
+    owner: &str,
+    repo: &str,
+    label: &str,
+) -> Result<(), crate::Error> {
+    match api.issues.get_label(owner, repo, label).send().await {
+        Ok(_) => {
+            log::debug!("Label '{label}' already exists");
+        }
+        Err(_) => {
+            log::info!("Label '{label}' not found — creating it");
+            let req = octocrate::issues::create_label::Request {
+                name: label.to_string(),
+                color: Some(DEFAULT_LABEL_COLOR.to_string()),
+                description: None,
+            };
+            api.issues
+                .create_label(owner, repo)
+                .body(&req)
+                .send()
+                .await?;
+        }
+    }
+    Ok(())
 }
 
 impl CreateIssue {
@@ -45,6 +84,11 @@ impl CreateIssue {
                 "Dry run: would create issue on {owner}/{repo}: {}",
                 self.title
             );
+            if self.no_label {
+                log::info!("Dry run: label application skipped (--no-label)");
+            } else {
+                log::info!("Dry run: would apply label '{}'", self.label);
+            }
             return Ok(CIExit::IssueCreated(format!(
                 "https://github.com/{owner}/{repo}/issues/0"
             )));
@@ -84,7 +128,21 @@ impl CreateIssue {
             .await?;
 
         let url = issue.html_url;
+        let issue_number = issue.number;
         println!("Issue created: {url}");
+
+        if !self.no_label {
+            ensure_label_exists(&api, &owner, &repo, &self.label).await?;
+
+            let add_req = issues::add_labels::Request::StringArray(vec![self.label.clone()]);
+            api.issues
+                .add_labels(&owner, &repo, issue_number)
+                .body(&add_req)
+                .send()
+                .await?;
+            log::info!("Label '{}' applied to issue #{issue_number}", self.label);
+        }
+
         Ok(CIExit::IssueCreated(url))
     }
 }
@@ -163,6 +221,8 @@ mod tests {
             repo: Some("my-crate".to_string()),
             github_token: None,
             dry_run: true,
+            label: "ci-created".to_string(),
+            no_label: false,
         };
         let result = cmd.run().await.unwrap();
         match result {
@@ -183,6 +243,8 @@ mod tests {
             repo: Some("my-crate".to_string()),
             github_token: Some("ghp_fake".to_string()),
             dry_run: false,
+            label: "ci-created".to_string(),
+            no_label: false,
         };
         // Remove env var if set
         std::env::remove_var("CIRCLE_PROJECT_USERNAME");
@@ -199,9 +261,77 @@ mod tests {
             repo: None,
             github_token: Some("ghp_fake".to_string()),
             dry_run: false,
+            label: "ci-created".to_string(),
+            no_label: false,
         };
         std::env::remove_var("CIRCLE_PROJECT_REPONAME");
         let result = cmd.run().await;
         assert!(result.is_err(), "should fail when repo is not resolvable");
+    }
+
+    #[test]
+    fn test_create_issue_label_defaults_to_ci_created() {
+        let args = Cli::try_parse_from(["pcu", "create-issue", "--title", "t"]).unwrap();
+        match args.command {
+            crate::Commands::CreateIssue(ci) => {
+                assert_eq!(ci.label, "ci-created");
+                assert!(!ci.no_label);
+            }
+            _ => panic!("expected CreateIssue"),
+        }
+    }
+
+    #[test]
+    fn test_create_issue_parses_custom_label() {
+        let args =
+            Cli::try_parse_from(["pcu", "create-issue", "--title", "t", "--label", "my-label"])
+                .unwrap();
+        match args.command {
+            crate::Commands::CreateIssue(ci) => assert_eq!(ci.label, "my-label"),
+            _ => panic!("expected CreateIssue"),
+        }
+    }
+
+    #[test]
+    fn test_create_issue_parses_no_label() {
+        let args =
+            Cli::try_parse_from(["pcu", "create-issue", "--title", "t", "--no-label"]).unwrap();
+        match args.command {
+            crate::Commands::CreateIssue(ci) => assert!(ci.no_label),
+            _ => panic!("expected CreateIssue"),
+        }
+    }
+
+    #[test]
+    fn test_create_issue_label_and_no_label_conflict() {
+        let result = Cli::try_parse_from([
+            "pcu",
+            "create-issue",
+            "--title",
+            "t",
+            "--label",
+            "foo",
+            "--no-label",
+        ]);
+        assert!(result.is_err(), "--label and --no-label should conflict");
+    }
+
+    #[tokio::test]
+    async fn test_create_issue_dry_run_no_label_skips_label() {
+        let cmd = super::CreateIssue {
+            title: "test".to_string(),
+            body: String::new(),
+            owner: Some("jerus-org".to_string()),
+            repo: Some("my-crate".to_string()),
+            github_token: None,
+            dry_run: true,
+            label: "ci-created".to_string(),
+            no_label: true,
+        };
+        let result = cmd.run().await.unwrap();
+        assert!(
+            matches!(result, crate::CIExit::IssueCreated(_)),
+            "should still return IssueCreated"
+        );
     }
 }
