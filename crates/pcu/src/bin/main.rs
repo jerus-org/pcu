@@ -34,6 +34,7 @@ async fn main() -> Result<()> {
         Commands::Checkout(checkout_args) => checkout_args.run().await,
         Commands::Trigger(trigger_args) => trigger_args.run().await,
         Commands::CreateIssue(create_issue_args) => create_issue_args.run().await,
+        Commands::CommentPr(comment_pr_args) => comment_pr_args.run().await,
     };
 
     match res {
@@ -64,6 +65,7 @@ async fn main() -> Result<()> {
                 CIExit::SwitchedBranch(s) => log::info!("Switched to branch: {s}"),
                 CIExit::WebhookTriggered(url) => log::info!("Webhook triggered: {url}"),
                 CIExit::IssueCreated(url) => log::info!("Issue created: {url}"),
+                CIExit::PrCommentCreated(url) => log::info!("PR comment created: {url}"),
             };
             Ok(())
         }

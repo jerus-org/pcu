@@ -1,5 +1,6 @@
 mod bsky;
 mod checkout;
+mod comment_pr;
 mod commit;
 mod create_issue;
 mod label;
@@ -16,6 +17,7 @@ use bsky::Bsky;
 use checkout::Checkout;
 use clap::{Parser, Subcommand};
 use color_eyre::Result;
+use comment_pr::CommentPr;
 use commit::Commit;
 use config::Config;
 use create_issue::CreateIssue;
@@ -54,6 +56,7 @@ pub enum CIExit {
     SwitchedBranch(String),
     WebhookTriggered(String),
     IssueCreated(String),
+    PrCommentCreated(String),
 }
 
 #[derive(Parser, Debug)]
@@ -101,6 +104,8 @@ the lowest number submitted by the `renovate` or `app/renovate` user")]
     Trigger(Trigger),
     /// Create a GitHub issue on the target repository
     CreateIssue(CreateIssue),
+    /// Post a markdown comment on the current pull request
+    CommentPr(CommentPr),
 }
 
 impl Display for Commands {
@@ -117,6 +122,7 @@ impl Display for Commands {
             Commands::Checkout(_) => write!(f, "checkout"),
             Commands::Trigger(_) => write!(f, "trigger"),
             Commands::CreateIssue(_) => write!(f, "create-issue"),
+            Commands::CommentPr(_) => write!(f, "comment-pr"),
         }
     }
 }
@@ -178,6 +184,7 @@ impl Commands {
             Commands::Checkout(_) => settings.set_override("command", "checkout")?,
             Commands::Trigger(_) => settings.set_override("command", "trigger")?,
             Commands::CreateIssue(_) => settings.set_override("command", "create-issue")?,
+            Commands::CommentPr(_) => settings.set_override("command", "comment-pr")?,
         };
 
         settings = if let Commands::Bsky(bsky) = self {
