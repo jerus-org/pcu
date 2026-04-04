@@ -263,9 +263,10 @@ jobs:
             cp $(which pcu) ~/project/bin/pcu
 
       - run:
-          name: Set test root for bluesky testing jobs
+          name: Set test root for bluesky and linkedin testing jobs
           command: |
             echo 'export BSKY_TEST_ROOT="crates/pcu/tests/bsky"' >> bash.env
+            echo 'export LINKEDIN_TEST_ROOT="crates/pcu/tests/linkedin"' >> bash.env
 
       - persist_to_workspace:
           root: .
@@ -478,6 +479,101 @@ jobs:
             ls -la ${BSKY_TEST_ROOT}/bluesky
             git status
 
+  test-linkedin-directory:
+    executor:
+      name: toolkit/rust_env_rolling
+    parameters:
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+    steps:
+      - checkout
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - attach_workspace:
+          at: .
+      - run:
+          name: Load environment variables
+          command: |
+            cat bash.env >> $BASH_ENV
+      - run:
+          name: Draft linkedin directory
+          command: |
+            set -ex
+
+            # Reset fixture files to tracked state so idempotency guard doesn't fire
+            git checkout -- $LINKEDIN_TEST_ROOT/content/blog/
+            rm -rf $LINKEDIN_TEST_ROOT/linkedin
+            mkdir -p $LINKEDIN_TEST_ROOT/linkedin
+
+            bin/pcu << parameters.pcu_verbosity >> linkedin draft -d 2025-01-01 -w $LINKEDIN_TEST_ROOT content/blog
+            ls -la $LINKEDIN_TEST_ROOT/linkedin
+            cat $(ls -d $LINKEDIN_TEST_ROOT/linkedin/*)
+            git status
+
+      - run:
+          name: Post linkedin directory
+          command: |
+            set -ex
+
+            export PCU_LINKEDIN_STORE="$LINKEDIN_TEST_ROOT/linkedin"
+            export PCU_LINKEDIN_ACCESS_TOKEN="dummy-test-token"
+            export PCU_LINKEDIN_AUTHOR_URN="urn:li:organization:123456"
+            export TESTING=true
+
+            ls -la $LINKEDIN_TEST_ROOT/linkedin
+            bin/pcu << parameters.pcu_verbosity >> linkedin post
+            ls -la $LINKEDIN_TEST_ROOT/linkedin
+            git status
+
+  test-linkedin-file:
+    executor:
+      name: toolkit/rust_env_rolling
+    parameters:
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+    steps:
+      - checkout
+      - toolkit/gpg_key
+      - toolkit/git_config
+      - attach_workspace:
+          at: .
+      - run:
+          name: Load environment variables
+          command: |
+            cat bash.env >> $BASH_ENV
+      - run:
+          name: Draft linkedin file
+          command: |
+            set -ex
+
+            git checkout -- $LINKEDIN_TEST_ROOT/content/blog/linkedin-test-blog.md
+            rm -rf $LINKEDIN_TEST_ROOT/linkedin
+            mkdir -p $LINKEDIN_TEST_ROOT/linkedin
+
+            bin/pcu << parameters.pcu_verbosity >> linkedin draft -d 2025-01-01 -w $LINKEDIN_TEST_ROOT content/blog/linkedin-test-blog.md
+            ls -la $LINKEDIN_TEST_ROOT/linkedin
+            cat $LINKEDIN_TEST_ROOT/linkedin/linkedin-test-blog.linkedin
+            git status
+
+      - run:
+          name: Post linkedin file
+          command: |
+            set -ex
+
+            export PCU_LINKEDIN_STORE="$LINKEDIN_TEST_ROOT/linkedin"
+            export PCU_LINKEDIN_ACCESS_TOKEN="dummy-test-token"
+            export PCU_LINKEDIN_AUTHOR_URN="urn:li:organization:123456"
+            export TESTING=true
+
+            ls -la $LINKEDIN_TEST_ROOT/linkedin
+            bin/pcu << parameters.pcu_verbosity >> linkedin post
+            ls -la $LINKEDIN_TEST_ROOT/linkedin || true
+            git status
+
 workflows:
   validation:
     jobs:
@@ -597,6 +693,38 @@ workflows:
             - bot-check
             - pcu-app
             - bluesky
+          filters:
+            branches:
+              ignore: main
+          requires:
+            - test-setup
+            - toolkit/common_tests
+            - security with sonarcloud
+            - exp-required-builds
+            - exp-test-doc-build
+            - exp-idiomatic-rust
+      - test-linkedin-directory:
+          pcu_verbosity: "-vvvv"
+          context:
+            - release
+            - bot-check
+            - pcu-app
+          filters:
+            branches:
+              ignore: main
+          requires:
+            - test-setup
+            - toolkit/common_tests
+            - security with sonarcloud
+            - exp-required-builds
+            - exp-test-doc-build
+            - exp-idiomatic-rust
+      - test-linkedin-file:
+          pcu_verbosity: "-vvvv"
+          context:
+            - release
+            - bot-check
+            - pcu-app
           filters:
             branches:
               ignore: main

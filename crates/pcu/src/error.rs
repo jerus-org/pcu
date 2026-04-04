@@ -87,6 +87,12 @@ pub enum Error {
     /// Errors arising from the gen-linkedin client
     #[error("gen-linkedin says: {0:?}")]
     LinkedIn(#[from] gen_linkedin::Error),
+    #[error("gen-linkedin draft error: {0:?}")]
+    LinkedinDraftError(#[from] gen_linkedin::DraftError),
+    #[error("gen-linkedin post error: {0:?}")]
+    LinkedinPostError(#[from] gen_linkedin::PostError),
+    #[error("missing configuration: {0}")]
+    MissingConfig(String),
     /// Signature verification failed
     #[error("Signature verification failed: {0} failure(s) detected")]
     SignatureVerificationFailed(usize),
