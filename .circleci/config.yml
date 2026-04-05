@@ -99,7 +99,7 @@ jobs:
                   - build-exp-msrv-v1-{{ arch }}-
             - run:
                 name: Build MSRV
-                command: cargo "+${RUST_VERSION}" --target-dir /tmp/target-msrv build --all-features
+                command: cargo "+${RUST_VERSION}" build --target-dir /tmp/target-msrv --all-features
             - save_cache:
                 name: Save MSRV build cache
                 key: build-exp-msrv-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
@@ -186,7 +186,7 @@ jobs:
             - build-exp-msrv-v1-{{ arch }}-
       - run:
           name: Build MSRV
-          command: cargo "+${RUST_VERSION}" --target-dir /tmp/target-msrv build --all-features
+          command: cargo "+${RUST_VERSION}" build --target-dir /tmp/target-msrv --all-features
       - save_cache:
           name: Save dependency cache
           key: deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
