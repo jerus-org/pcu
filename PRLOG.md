@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - gen-bsky: make bsky post write idempotent(pr [#908])
 - deps: update rust crate reqwest to 0.13.2(pr [#922])
+- deps: update rust crate bsky-sdk to 0.1.24(pr [#918])
 
 ## [0.6.16] - 2026-03-28
 
@@ -2212,6 +2213,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#916]: https://github.com/jerus-org/pcu/pull/916
 [#917]: https://github.com/jerus-org/pcu/pull/917
 [#922]: https://github.com/jerus-org/pcu/pull/922
+[#918]: https://github.com/jerus-org/pcu/pull/918
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
