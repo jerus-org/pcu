@@ -335,7 +335,7 @@ jobs:
       - run:
           name: Install pcu from project under test
           command: |
-            cargo install --force --path ./crates/pcu
+            cargo install --force --locked --debug --path ./crates/pcu
       - run:
           name: Copy updated pcu to bin directory
           command: |
@@ -349,18 +349,6 @@ jobs:
           command: |
             echo 'export BSKY_TEST_ROOT="crates/pcu/tests/bsky"' >> bash.env
             echo 'export LINKEDIN_TEST_ROOT="crates/pcu/tests/linkedin"' >> bash.env
-
-      - save_cache:
-          name: Save dependency cache
-          key: deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
-          paths:
-            - ~/.cargo/registry
-            - ~/.cargo/git
-      - save_cache:
-          name: Save build cache
-          key: build-exp-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
-          paths:
-            - target
 
       - persist_to_workspace:
           root: .
