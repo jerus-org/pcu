@@ -33,7 +33,8 @@ jobs:
   # ── EXP #437: required_builds equivalent ────────────────────────────────────
   # Changes vs toolkit/required_builds:
   #   1. Writes rust-toolchain-version.txt so the cache key includes the compiler
-  #   2. Saves/restores under build-exp-v1- (shared with exp-idiomatic-rust)
+  #   2. Restores from build-exp-v1- seeded by exp-idiomatic-rust (which runs first)
+  #      → stable build reuses clippy artifacts; only the MSRV build compiles fresh
   exp-required-builds:
     executor:
       name: toolkit/rust_env_rolling
@@ -80,8 +81,11 @@ jobs:
   # ── EXP #437: idiomatic_rust equivalent ─────────────────────────────────────
   # Changes vs toolkit/idiomatic_rust:
   #   1. Writes rust-toolchain-version.txt (same stable version as exp-required-builds)
-  #   2. Restores from build-exp-v1- → shares the cache seeded by exp-required-builds
-  #      on subsequent runs of the same PR
+  #   2. Seeds build-exp-v1- cache — clippy compiles all crates and produces the
+  #      same .rlib incremental artifacts as cargo build, but finishes ~7× faster
+  #      than exp-required-builds (50s vs 360s in pipeline #8250).
+  #      exp-required-builds declares requires: [exp-idiomatic-rust] so it always
+  #      restores from this cache rather than rebuilding from scratch.
   exp-idiomatic-rust:
     executor:
       name: toolkit/rust_env_rolling
@@ -605,11 +609,13 @@ workflows:
       # covering all three crates (gen-bsky, gen-linkedin, pcu) in a single job.
       # The separate per-package matrix jobs (build-gen-bsky, build-gen-linkedin, build-pcu)
       # are not needed — the whole-workspace build provides equivalent coverage.
-      - exp-required-builds:
+      - exp-idiomatic-rust:
           filters:
             branches:
               ignore: main
-      - exp-idiomatic-rust:
+      - exp-required-builds:
+          requires:
+            - exp-idiomatic-rust
           filters:
             branches:
               ignore: main
