@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate reqwest to 0.13.2(pr [#922])
 - deps: update rust crate bsky-sdk to 0.1.24(pr [#918])
 - deps: update rust crate bytes to 1.11.1(pr [#919])
+- deps: update rust crate link-bridge to 0.2.5(pr [#920])
 
 ## [0.6.16] - 2026-03-28
 
@@ -2216,6 +2217,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#922]: https://github.com/jerus-org/pcu/pull/922
 [#918]: https://github.com/jerus-org/pcu/pull/918
 [#919]: https://github.com/jerus-org/pcu/pull/919
+[#920]: https://github.com/jerus-org/pcu/pull/920
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
