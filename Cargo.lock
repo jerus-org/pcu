@@ -2708,9 +2708,9 @@ dependencies = [
 
 [[package]]
 name = "link-bridge"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f7541fa44ca898e83abea72c7c3fdf0277dea9bb2cb4519c9194ee0f5fa386b"
+checksum = "5999f283fa333172a7cbe761872155ff7c4149d1f9d461cde04fb02871e22e80"
 dependencies = [
  "base62",
  "chrono",
