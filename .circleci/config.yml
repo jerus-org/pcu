@@ -320,6 +320,19 @@ jobs:
       - toolkit/gpg_key
       - toolkit/git_config
       - run:
+          name: Write compiler version for cache key
+          command: rustc --version > rust-toolchain-version.txt
+      - restore_cache:
+          name: Restore dependency cache
+          keys:
+            - deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
+            - deps-v1-{{ arch }}-
+      - restore_cache:
+          name: Restore build cache (seeded by exp-idiomatic-rust)
+          keys:
+            - build-exp-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+            - build-exp-v1-{{ arch }}-
+      - run:
           name: Install pcu from project under test
           command: |
             cargo install --force --path ./crates/pcu
@@ -336,6 +349,18 @@ jobs:
           command: |
             echo 'export BSKY_TEST_ROOT="crates/pcu/tests/bsky"' >> bash.env
             echo 'export LINKEDIN_TEST_ROOT="crates/pcu/tests/linkedin"' >> bash.env
+
+      - save_cache:
+          name: Save dependency cache
+          key: deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - ~/.cargo/registry
+            - ~/.cargo/git
+      - save_cache:
+          name: Save build cache
+          key: build-exp-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - target
 
       - persist_to_workspace:
           root: .
@@ -706,6 +731,8 @@ workflows:
             - release
             - bot-check
             - pcu-app
+          requires:
+            - exp-idiomatic-rust
           filters:
             branches:
               ignore: main
