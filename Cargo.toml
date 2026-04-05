@@ -28,7 +28,7 @@ git2_credentials = "0.15.0"
 gql_client = "1.1.0"
 bytes = "1"
 kdeets = "0.1.30"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+reqwest = { version = "0.13.2", default-features = false, features = ["rustls"] }
 keep-a-changelog = "0.1.4"
 link-bridge = "0.2.4"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
