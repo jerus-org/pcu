@@ -33,7 +33,8 @@ jobs:
   # ── EXP #437: required_builds equivalent ────────────────────────────────────
   # Changes vs toolkit/required_builds:
   #   1. Writes rust-toolchain-version.txt so the cache key includes the compiler
-  #   2. Saves/restores under build-exp-v1- (shared with exp-idiomatic-rust)
+  #   2. Restores from build-exp-v1- seeded by exp-idiomatic-rust (which runs first)
+  #      → stable build reuses clippy artifacts; only the MSRV build compiles fresh
   exp-required-builds:
     executor:
       name: toolkit/rust_env_rolling
@@ -80,8 +81,11 @@ jobs:
   # ── EXP #437: idiomatic_rust equivalent ─────────────────────────────────────
   # Changes vs toolkit/idiomatic_rust:
   #   1. Writes rust-toolchain-version.txt (same stable version as exp-required-builds)
-  #   2. Restores from build-exp-v1- → shares the cache seeded by exp-required-builds
-  #      on subsequent runs of the same PR
+  #   2. Seeds build-exp-v1- cache — clippy compiles all crates and produces the
+  #      same .rlib incremental artifacts as cargo build, but finishes ~7× faster
+  #      than exp-required-builds (50s vs 360s in pipeline #8250).
+  #      exp-required-builds declares requires: [exp-idiomatic-rust] so it always
+  #      restores from this cache rather than rebuilding from scratch.
   exp-idiomatic-rust:
     executor:
       name: toolkit/rust_env_rolling
@@ -122,11 +126,10 @@ jobs:
 
   # ── EXP #437: test_doc_build equivalent ─────────────────────────────────────
   # Changes vs toolkit/test_doc_build:
-  #   1. Writes nightly compiler version to rust-toolchain-version.txt
-  #      → cache invalidates when nightly updates (currently stale artifacts are
-  #        silently reused since the doc-v1- key has no compiler version)
-  #   2. Saves only target/, not ~/.rustup
-  #      (rustup is large; nightly toolchain download is covered by optional-rustup cache)
+  #   1. No build cache — nightly version changes daily so the exact cache key
+  #      misses on every new day; the prefix fallback risks restoring stale
+  #      nightly artifacts. Single consumer means no within-pipeline benefit.
+  #      Only the deps cache is kept (shared namespace, prefix fallback useful).
   exp-test-doc-build:
     executor:
       name: toolkit/rust_env_rolling
@@ -134,19 +137,11 @@ jobs:
       RUSTDOCFLAGS: --cfg docsrs -Dwarnings
     steps:
       - checkout
-      - run:
-          name: Write nightly compiler version for cache key
-          command: rustc +nightly --version > rust-toolchain-version.txt
       - restore_cache:
           name: Restore dependency cache
           keys:
             - deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
             - deps-v1-{{ arch }}-
-      - restore_cache:
-          name: Restore nightly doc build cache (exp #437)
-          keys:
-            - build-exp-doc-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
-            - build-exp-doc-v1-{{ arch }}-
       - run:
           name: Test doc build (nightly)
           command: |
@@ -161,16 +156,12 @@ jobs:
           paths:
             - ~/.cargo/registry
             - ~/.cargo/git
-      - save_cache:
-          name: Save nightly doc build cache (exp #437)
-          key: build-exp-doc-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
-          paths:
-            - target
 
   # ── EXP #438: optional_builds equivalent ────────────────────────────────────
   # Changes vs toolkit/optional_builds:
-  #   1. Cache split: ~/.rustup saved under arch-only key (no Cargo.lock component)
-  #      so nightly/beta toolchains are shared across Renovate PRs on the same day
+  #   1. No rustup cache — nightly, beta, and stable are all pre-installed in the
+  #      ci-rust container image; caching ~/.rustup adds nothing and risks overlaying
+  #      a stale toolchain onto the image's fresh installation.
   #   2. target/ NOT cached — nightly changes daily so incremental artifacts are
   #      immediately stale; cross-PR value is zero (each Renovate PR changes Cargo.lock)
   #   3. Non-blocking: build failures log a warning and exit 0 so validation
@@ -185,10 +176,6 @@ jobs:
           keys:
             - deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
             - deps-v1-{{ arch }}-
-      - restore_cache:
-          name: Restore rustup cache — arch only, no Cargo.lock (exp #438)
-          keys:
-            - optional-rustup-v1-{{ arch }}-
       - run:
           name: Build nightly (soft failure)
           command: |
@@ -223,12 +210,7 @@ jobs:
           paths:
             - ~/.cargo/registry
             - ~/.cargo/git
-      - save_cache:
-          name: Save rustup cache — arch only (exp #438)
-          key: optional-rustup-v1-{{ arch }}-
-          paths:
-            - ~/.rustup
-      # target/ intentionally NOT saved — see comment above
+      # target/ and ~/.rustup intentionally NOT saved — see comment above
 
   test-setup:
     executor:
@@ -605,11 +587,13 @@ workflows:
       # covering all three crates (gen-bsky, gen-linkedin, pcu) in a single job.
       # The separate per-package matrix jobs (build-gen-bsky, build-gen-linkedin, build-pcu)
       # are not needed — the whole-workspace build provides equivalent coverage.
-      - exp-required-builds:
+      - exp-idiomatic-rust:
           filters:
             branches:
               ignore: main
-      - exp-idiomatic-rust:
+      - exp-required-builds:
+          requires:
+            - exp-idiomatic-rust
           filters:
             branches:
               ignore: main
