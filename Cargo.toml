@@ -53,7 +53,7 @@ sha2 = "0.10.9"
 openidconnect = { version = "4.0.1", default-features = false }
 sigstore = { version = "0.13", default-features = false, features = ["sign", "sigstore-trust-root", "rustls-tls"] }
 sigstore_protobuf_specs = "0.5"
-tokio = { version = "1.50.0", features = ["fs", "macros", "rt-multi-thread", "time"] }
+tokio = { version = "1.51.0", features = ["fs", "macros", "rt-multi-thread", "time"] }
 toml = "1.1.0"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["std", "env-filter"] }
