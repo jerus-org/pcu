@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate unicode-segmentation to 1.13.2(pr [#925])
 - deps: update rust crate uuid to 1.23.0(pr [#926])
 - gen-linkedin: use workspace deps for reqwest and wiremock(pr [#931])
+- release: retry get_release_by_tag on 404(pr [#932])
 
 ## [0.6.16] - 2026-03-28
 
@@ -2238,6 +2239,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#925]: https://github.com/jerus-org/pcu/pull/925
 [#926]: https://github.com/jerus-org/pcu/pull/926
 [#931]: https://github.com/jerus-org/pcu/pull/931
+[#932]: https://github.com/jerus-org/pcu/pull/932
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
