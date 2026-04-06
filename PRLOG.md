@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - sha2 0.11 digest LowerHex removed(pr [#929])
 - deps: update rust crate sha2 to 0.11.0(pr [#923])
 - deps: update rust crate tokio to 1.51.0(pr [#924])
+- ci: remove duplicate label job from update_prlog(pr [#930])
 
 ## [0.6.16] - 2026-03-28
 
@@ -2230,6 +2231,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#929]: https://github.com/jerus-org/pcu/pull/929
 [#923]: https://github.com/jerus-org/pcu/pull/923
 [#924]: https://github.com/jerus-org/pcu/pull/924
+[#930]: https://github.com/jerus-org/pcu/pull/930
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
