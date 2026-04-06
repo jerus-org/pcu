@@ -35,19 +35,27 @@ jobs:
   #   1. Writes rust-toolchain-version.txt so the cache key includes the compiler
   #   2. Restores from build-exp-v1- seeded by exp-idiomatic-rust (which runs first)
   #      → stable build reuses clippy artifacts; only the MSRV build compiles fresh
+  #   3. skip_msrv parameter (default false — gate open) lets the experiment
+  #      delegate the MSRV build to exp-msrv-build running in parallel.
+  #   4. MSRV always uses --target-dir /tmp/target-msrv so stable and MSRV
+  #      artifacts never share target/; same path as exp-msrv-build so caches
+  #      are interchangeable between the two code paths.
   exp-required-builds:
     executor:
       name: toolkit/rust_env_rolling
+    parameters:
+      skip_msrv:
+        type: boolean
+        default: false
+        description: >
+          When true the MSRV build is skipped here and must be run by a
+          separate parallel job (exp-msrv-build). Default false keeps
+          the historical behaviour of building both stable and MSRV.
     steps:
       - checkout
-      - toolkit/select_rust_version:
-          rust_version: << pipeline.parameters.min_rust_version >>
       - run:
           name: Write compiler version for cache key
           command: rustc --version > rust-toolchain-version.txt && cat rust-toolchain-version.txt
-      - run:
-          name: Report resolved RUST_VERSION
-          command: echo "Resolved RUST_VERSION=${RUST_VERSION}"
       - restore_cache:
           name: Restore dependency cache
           keys:
@@ -61,11 +69,6 @@ jobs:
       - run:
           name: Build stable
           command: cargo build --all-features
-      - run:
-          name: Build MSRV
-          command: |
-            echo "Building with RUST_VERSION=${RUST_VERSION}"
-            cargo +${RUST_VERSION} build --all-features
       - save_cache:
           name: Save dependency cache
           key: deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
@@ -77,6 +80,31 @@ jobs:
           key: build-exp-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
           paths:
             - target
+      - when:
+          condition:
+            not: << parameters.skip_msrv >>
+          steps:
+            - toolkit/select_rust_version:
+                rust_version: << pipeline.parameters.min_rust_version >>
+            - run:
+                name: Write MSRV compiler version for cache key
+                command: |
+                  rustc "+${RUST_VERSION}" --version > rust-toolchain-version.txt
+                  echo "MSRV compiler: $(cat rust-toolchain-version.txt)"
+            - restore_cache:
+                name: Restore MSRV build cache
+                keys:
+                  - build-exp-msrv-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+                  - build-exp-msrv-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-
+                  - build-exp-msrv-v1-{{ arch }}-
+            - run:
+                name: Build MSRV
+                command: cargo "+${RUST_VERSION}" build --target-dir /tmp/target-msrv --all-features
+            - save_cache:
+                name: Save MSRV build cache
+                key: build-exp-msrv-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+                paths:
+                  - /tmp/target-msrv
 
   # ── EXP #437: idiomatic_rust equivalent ─────────────────────────────────────
   # Changes vs toolkit/idiomatic_rust:
@@ -124,12 +152,58 @@ jobs:
           paths:
             - target
 
+  # ── EXP: msrv_build (new, parallel) ─────────────────────────────────────────
+  # Runs the MSRV build in parallel with the idiomatic→required-builds chain
+  # when exp-required-builds is invoked with skip_msrv: true.
+  #
+  # Uses --target-dir /tmp/target-msrv (same as the when: block in
+  # exp-required-builds) so the two code paths share the same cache namespace.
+  # MSRV changes infrequently; the first prefix fallback (same compiler,
+  # different Cargo.lock) hits across consecutive Renovate PRs so only the
+  # changed crates need recompiling.
+  exp-msrv-build:
+    executor:
+      name: toolkit/rust_env_rolling
+    steps:
+      - checkout
+      - toolkit/select_rust_version:
+          rust_version: << pipeline.parameters.min_rust_version >>
+      - run:
+          name: Write MSRV compiler version for cache key
+          command: |
+            rustc "+${RUST_VERSION}" --version > rust-toolchain-version.txt
+            echo "MSRV compiler: $(cat rust-toolchain-version.txt)"
+      - restore_cache:
+          name: Restore dependency cache
+          keys:
+            - deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
+            - deps-v1-{{ arch }}-
+      - restore_cache:
+          name: Restore MSRV build cache
+          keys:
+            - build-exp-msrv-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+            - build-exp-msrv-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-
+            - build-exp-msrv-v1-{{ arch }}-
+      - run:
+          name: Build MSRV
+          command: cargo "+${RUST_VERSION}" build --target-dir /tmp/target-msrv --all-features
+      - save_cache:
+          name: Save dependency cache
+          key: deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - ~/.cargo/registry
+            - ~/.cargo/git
+      - save_cache:
+          name: Save MSRV build cache
+          key: build-exp-msrv-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - /tmp/target-msrv
+
   # ── EXP #437: test_doc_build equivalent ─────────────────────────────────────
   # Changes vs toolkit/test_doc_build:
-  #   1. No build cache — nightly version changes daily so the exact cache key
-  #      misses on every new day; the prefix fallback risks restoring stale
-  #      nightly artifacts. Single consumer means no within-pipeline benefit.
-  #      Only the deps cache is kept (shared namespace, prefix fallback useful).
+  #   1. Writes nightly compiler version to rust-toolchain-version.txt so the
+  #      build cache key invalidates when nightly ships a new compiler, preventing
+  #      silent reuse of stale doc artifacts.
   exp-test-doc-build:
     executor:
       name: toolkit/rust_env_rolling
@@ -137,11 +211,19 @@ jobs:
       RUSTDOCFLAGS: --cfg docsrs -Dwarnings
     steps:
       - checkout
+      - run:
+          name: Write nightly compiler version for cache key
+          command: rustc +nightly --version > rust-toolchain-version.txt
       - restore_cache:
           name: Restore dependency cache
           keys:
             - deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
             - deps-v1-{{ arch }}-
+      - restore_cache:
+          name: Restore nightly doc build cache
+          keys:
+            - build-exp-doc-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+            - build-exp-doc-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-
       - run:
           name: Test doc build (nightly)
           command: |
@@ -156,6 +238,11 @@ jobs:
           paths:
             - ~/.cargo/registry
             - ~/.cargo/git
+      - save_cache:
+          name: Save nightly doc build cache
+          key: build-exp-doc-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+          paths:
+            - target
 
   # ── EXP #438: optional_builds equivalent ────────────────────────────────────
   # Changes vs toolkit/optional_builds:
@@ -233,9 +320,22 @@ jobs:
       - toolkit/gpg_key
       - toolkit/git_config
       - run:
+          name: Write compiler version for cache key
+          command: rustc --version > rust-toolchain-version.txt
+      - restore_cache:
+          name: Restore dependency cache
+          keys:
+            - deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
+            - deps-v1-{{ arch }}-
+      - restore_cache:
+          name: Restore build cache (seeded by exp-idiomatic-rust)
+          keys:
+            - build-exp-v1-{{ arch }}-{{ checksum "rust-toolchain-version.txt" }}-{{ checksum "Cargo.lock" }}
+            - build-exp-v1-{{ arch }}-
+      - run:
           name: Install pcu from project under test
           command: |
-            cargo install --force --path ./crates/pcu
+            cargo install --force --locked --debug --path ./crates/pcu
       - run:
           name: Copy updated pcu to bin directory
           command: |
@@ -592,8 +692,13 @@ workflows:
             branches:
               ignore: main
       - exp-required-builds:
+          skip_msrv: true
           requires:
             - exp-idiomatic-rust
+          filters:
+            branches:
+              ignore: main
+      - exp-msrv-build:
           filters:
             branches:
               ignore: main
@@ -614,6 +719,8 @@ workflows:
             - release
             - bot-check
             - pcu-app
+          requires:
+            - exp-idiomatic-rust
           filters:
             branches:
               ignore: main
