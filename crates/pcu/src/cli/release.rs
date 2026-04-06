@@ -45,7 +45,7 @@ mod mode;
 
 use clap::Parser;
 use mode::Mode;
-use octocrate::{APIConfig, PersonalAccessToken};
+use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
 /// Returns `true` when a GitHub release should be created.
@@ -665,12 +665,29 @@ impl Release {
 
         log::info!("Looking up GitHub release for tag {}", cmd.tag);
 
-        let release = client
-            .github_rest
-            .repos
-            .get_release_by_tag(client.owner(), client.repo(), &cmd.tag)
-            .send()
-            .await?;
+        // Use a fresh API client per attempt so the closure owns all its data.
+        // GitHub's REST API has a brief eventual-consistency window after
+        // create_release: get_release_by_tag can return 404 for a few seconds.
+        let token = client.github_token.clone();
+        let owner = client.owner().to_string();
+        let repo = client.repo().to_string();
+        let tag = cmd.tag.clone();
+        let release = get_release_with_retry(&tag, 5, std::time::Duration::from_secs(2), || {
+            let tok = PersonalAccessToken::new(token.clone());
+            let cfg = APIConfig::with_token(tok).shared();
+            let api = GitHubAPI::new(&cfg);
+            let o = owner.clone();
+            let r = repo.clone();
+            let t = tag.clone();
+            async move {
+                api.repos
+                    .get_release_by_tag(&o, &r, &t)
+                    .send()
+                    .await
+                    .map_err(Error::from)
+            }
+        })
+        .await?;
 
         log::info!("Found release {} (id={})", release.tag_name, release.id);
 
@@ -1148,6 +1165,49 @@ mod release_package_tests {
     }
 }
 
+/// Looks up a GitHub release by tag, retrying on transient failures.
+///
+/// GitHub's REST API has a brief eventual-consistency window: `get_release_by_tag`
+/// can return 404 for several seconds after `create_release` completes. Retrying
+/// with a fixed delay handles this transparently without requiring a sleep in the
+/// calling code.
+///
+/// `attempt_fn` is called up to `max_attempts` times. On success it returns
+/// `Ok(T)`. On failure the error is logged and (if attempts remain) the retry
+/// delay is observed. After all attempts are exhausted an `Error::GitError` is
+/// returned naming the tag and the attempt count.
+async fn get_release_with_retry<F, Fut, T>(
+    tag: &str,
+    max_attempts: u32,
+    retry_delay: std::time::Duration,
+    mut attempt_fn: F,
+) -> Result<T, Error>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<T, Error>>,
+{
+    for attempt in 1..=max_attempts {
+        match attempt_fn().await {
+            Ok(r) => {
+                log::info!("Found GitHub release for tag {tag} (attempt {attempt})");
+                return Ok(r);
+            }
+            Err(e) => {
+                log::warn!(
+                    "get_release_by_tag attempt {attempt}/{max_attempts} for tag '{tag}' failed: {e}"
+                );
+                if attempt < max_attempts {
+                    log::info!("Retrying in {}s...", retry_delay.as_secs());
+                    tokio::time::sleep(retry_delay).await;
+                }
+            }
+        }
+    }
+    Err(Error::GitError(format!(
+        "GitHub release for tag '{tag}' not found after {max_attempts} attempts"
+    )))
+}
+
 /// Downloads a URL with retry, using a caller-supplied async attempt function.
 ///
 /// `attempt_fn` is called up to `max_attempts` times. On success it returns
@@ -1336,5 +1396,54 @@ mod tests {
             matches!(result, Ok(false)),
             "CrateNotFoundOnIndex should be treated as version not published"
         );
+    }
+}
+
+#[cfg(test)]
+mod upload_retry_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn get_release_with_retry_succeeds_on_first_attempt() {
+        let result = get_release_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
+            Ok::<_, Error>("release")
+        })
+        .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "release");
+    }
+
+    #[tokio::test]
+    async fn get_release_with_retry_returns_err_after_all_attempts_exhausted() {
+        let result = get_release_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
+            Err::<String, Error>(Error::GitError("Not Found".to_string()))
+        })
+        .await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.contains("pcu-v1.0.0"),
+            "error should name the tag: {msg}"
+        );
+        assert!(
+            msg.contains('3'),
+            "error should mention attempt count: {msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn get_release_with_retry_succeeds_on_second_attempt() {
+        let attempt = std::sync::atomic::AtomicU32::new(0);
+        let result = get_release_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
+            let n = attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if n == 0 {
+                Err::<String, Error>(Error::GitError("Not Found".to_string()))
+            } else {
+                Ok("release".to_string())
+            }
+        })
+        .await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "release");
     }
 }
