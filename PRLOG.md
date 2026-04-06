@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - refactor-replace curl subprocess with reqwest in attest(pr [#903])
 - chore-seed exp build cache from idiomatic-rust first(pr [#927])
+- chore-split MSRV into parallel exp-msrv-build, restore doc cache(pr [#928])
 
 ### Fixed
 
@@ -2222,6 +2223,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#920]: https://github.com/jerus-org/pcu/pull/920
 [#927]: https://github.com/jerus-org/pcu/pull/927
 [#921]: https://github.com/jerus-org/pcu/pull/921
+[#928]: https://github.com/jerus-org/pcu/pull/928
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
