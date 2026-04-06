@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate bytes to 1.11.1(pr [#919])
 - deps: update rust crate link-bridge to 0.2.5(pr [#920])
 - deps: update rust crate toml to 1.1.2(pr [#921])
+- sha2 0.11 digest LowerHex removed(pr [#929])
 
 ## [0.6.16] - 2026-03-28
 
@@ -2224,6 +2225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#927]: https://github.com/jerus-org/pcu/pull/927
 [#921]: https://github.com/jerus-org/pcu/pull/921
 [#928]: https://github.com/jerus-org/pcu/pull/928
+[#929]: https://github.com/jerus-org/pcu/pull/929
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.16...HEAD
 [0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
 [0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
