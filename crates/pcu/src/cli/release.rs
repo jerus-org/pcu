@@ -521,7 +521,14 @@ impl Release {
 
         // Step 3: Read bytes and compute SHA256
         use sha2::Digest as _;
-        let hash_hex = format!("{:x}", sha2::Sha256::digest(&crate_bytes));
+        let hash_hex = sha2::Sha256::digest(&crate_bytes).iter().fold(
+            String::with_capacity(64),
+            |mut s, b| {
+                use std::fmt::Write as _;
+                write!(s, "{b:02x}").unwrap();
+                s
+            },
+        );
         log::info!("SHA256({crate_filename}) = {hash_hex}");
 
         // Step 4: Generate SLSA v0.2 provenance JSON
@@ -827,7 +834,13 @@ async fn sign_artifact_fulcio_v1(artifact: &[u8], oidc_token_str: &str) -> Resul
 
     // Compute SHA256 of artifact
     let sha256_hash = sha2::Sha256::digest(artifact);
-    let sha256_hex = format!("{:x}", &sha256_hash);
+    let sha256_hex = sha256_hash
+        .iter()
+        .fold(String::with_capacity(64), |mut s, b| {
+            use std::fmt::Write as _;
+            write!(s, "{b:02x}").unwrap();
+            s
+        });
 
     // Sign artifact bytes
     let signature_bytes = signer
