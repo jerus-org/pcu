@@ -553,29 +553,27 @@ impl GitOps for Client {
         log::trace!("version: {version:?} and no_push: {no_push}");
         let mut remote = self.git_repo.find_remote("origin")?;
         let remote_url = remote.url().unwrap_or("<unknown>").to_string();
-        log::info!("Push target: {remote_url}");
 
-        // Use the stored GitHub token directly for HTTPS remotes (GitHub App
-        // installation token or PAT), falling back to CredentialHandler (SSH
-        // key agent) for SSH remotes.  This ensures pcu always authenticates
-        // as its intended identity regardless of how CircleCI triggered the
-        // pipeline (OAuth/SSH vs GitHub App/HTTPS).
+        // When we have a GitHub App token and the remote is SSH, re-write to
+        // HTTPS so that git2 offers USER_PASS_PLAINTEXT in the credential
+        // callback.  SSH remotes only offer SSH_KEY/SSH_MEMORY/SSH_CUSTOM and
+        // the token path is never reached.
         let token_connect = self.github_token.clone();
+        let https_url = ssh_to_https_url(&remote_url);
+        if !token_connect.is_empty() && https_url != remote_url {
+            log::info!("Re-writing SSH remote to HTTPS for App token auth: {https_url}");
+            self.git_repo.remote_set_url("origin", &https_url)?;
+            remote = self.git_repo.find_remote("origin")?;
+        }
+        let remote_url = remote.url().unwrap_or("<unknown>").to_string();
+        log::info!("Push target: {remote_url}");
         let mut callbacks = RemoteCallbacks::new();
         callbacks.credentials(move |url, username, allowed| {
             log::info!(
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT)
-                && !token_connect.is_empty()
-            {
-                log::info!("Authenticating with GitHub App/PAT token");
-                git2::Cred::userpass_plaintext("x-access-token", &token_connect)
-            } else {
-                let git_config = git2::Config::open_default().unwrap();
-                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
-            }
+            make_credential(&token_connect, url, username, allowed)
         });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
@@ -591,12 +589,10 @@ impl GitOps for Client {
 
         let branch_ref = local_branch.into_reference();
         let mut push_refs = Vec::new();
-        let commit_ref = if let Some(br) = branch_ref.name() {
-            let r = format!("{br}:{br}");
-            r
-        } else {
-            "".to_string()
-        };
+        let commit_ref = branch_ref
+            .name()
+            .map(|br| format!("{br}:{br}"))
+            .unwrap_or_default();
 
         if !commit_ref.is_empty() {
             push_refs.push(&commit_ref)
@@ -620,14 +616,7 @@ impl GitOps for Client {
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token_push.is_empty()
-            {
-                log::info!("Authenticating with GitHub App/PAT token");
-                git2::Cred::userpass_plaintext("x-access-token", &token_push)
-            } else {
-                let git_config = git2::Config::open_default().unwrap();
-                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
-            }
+            make_credential(&token_push, url, username, allowed)
         });
         call_backs.push_transfer_progress(progress_bar);
         let mut push_opts = PushOptions::new();
@@ -782,6 +771,21 @@ impl GitOps for Client {
         let (ahead, behind) = self.git_repo.graph_ahead_behind(local, remote)?;
 
         Ok(BranchReport { ahead, behind })
+    }
+}
+
+fn make_credential(
+    token: &str,
+    url: &str,
+    username: Option<&str>,
+    allowed: git2::CredentialType,
+) -> Result<git2::Cred, git2::Error> {
+    if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token.is_empty() {
+        log::info!("Authenticating with GitHub App/PAT token");
+        git2::Cred::userpass_plaintext("x-access-token", token)
+    } else {
+        let git_config = git2::Config::open_default().unwrap();
+        CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
     }
 }
 
@@ -994,11 +998,62 @@ pub(crate) fn requires_signed_tag(sign: &Sign) -> bool {
     matches!(sign, Sign::Gpg)
 }
 
+/// Convert a GitHub SSH remote URL to its HTTPS equivalent.
+///
+/// Handles both SCP-style (`git@github.com:org/repo.git`) and URL-style
+/// (`ssh://git@github.com/org/repo.git`) formats.  Non-GitHub URLs and
+/// already-HTTPS URLs are returned unchanged so callers can apply this
+/// unconditionally.
+pub(crate) fn ssh_to_https_url(url: &str) -> String {
+    // SCP-style: git@github.com:org/repo.git
+    if let Some(rest) = url.strip_prefix("git@github.com:") {
+        return format!("https://github.com/{rest}");
+    }
+    // URL-style: ssh://git@github.com/org/repo.git
+    if let Some(rest) = url
+        .strip_prefix("ssh://git@github.com/")
+        .or_else(|| url.strip_prefix("ssh://github.com/"))
+    {
+        return format!("https://github.com/{rest}");
+    }
+    url.to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use git2::Signature;
     use rstest::rstest;
+
+    #[test]
+    fn test_ssh_to_https_url_scp_format() {
+        let url = "git@github.com:digital-prstv/circleci-toolkit.git";
+        assert_eq!(
+            ssh_to_https_url(url),
+            "https://github.com/digital-prstv/circleci-toolkit.git"
+        );
+    }
+
+    #[test]
+    fn test_ssh_to_https_url_ssh_scheme() {
+        let url = "ssh://git@github.com/digital-prstv/circleci-toolkit.git";
+        assert_eq!(
+            ssh_to_https_url(url),
+            "https://github.com/digital-prstv/circleci-toolkit.git"
+        );
+    }
+
+    #[test]
+    fn test_ssh_to_https_url_already_https() {
+        let url = "https://github.com/digital-prstv/circleci-toolkit.git";
+        assert_eq!(ssh_to_https_url(url), url);
+    }
+
+    #[test]
+    fn test_ssh_to_https_url_non_github() {
+        let url = "git@gitlab.com:org/repo.git";
+        assert_eq!(ssh_to_https_url(url), url);
+    }
 
     #[test]
     fn test_default_rebase_logins_includes_app_renovate() {
