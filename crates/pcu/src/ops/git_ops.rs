@@ -559,13 +559,11 @@ impl GitOps for Client {
         // callback.  SSH remotes only offer SSH_KEY/SSH_MEMORY/SSH_CUSTOM and
         // the token path is never reached.
         let token_connect = self.github_token.clone();
-        if !token_connect.is_empty() {
-            let https_url = ssh_to_https_url(&remote_url);
-            if https_url != remote_url {
-                log::info!("Re-writing SSH remote to HTTPS for App token auth: {https_url}");
-                self.git_repo.remote_set_url("origin", &https_url)?;
-                remote = self.git_repo.find_remote("origin")?;
-            }
+        let https_url = ssh_to_https_url(&remote_url);
+        if !token_connect.is_empty() && https_url != remote_url {
+            log::info!("Re-writing SSH remote to HTTPS for App token auth: {https_url}");
+            self.git_repo.remote_set_url("origin", &https_url)?;
+            remote = self.git_repo.find_remote("origin")?;
         }
         let remote_url = remote.url().unwrap_or("<unknown>").to_string();
         log::info!("Push target: {remote_url}");
@@ -575,15 +573,7 @@ impl GitOps for Client {
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT)
-                && !token_connect.is_empty()
-            {
-                log::info!("Authenticating with GitHub App/PAT token");
-                git2::Cred::userpass_plaintext("x-access-token", &token_connect)
-            } else {
-                let git_config = git2::Config::open_default().unwrap();
-                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
-            }
+            make_credential(&token_connect, url, username, allowed)
         });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
@@ -599,12 +589,10 @@ impl GitOps for Client {
 
         let branch_ref = local_branch.into_reference();
         let mut push_refs = Vec::new();
-        let commit_ref = if let Some(br) = branch_ref.name() {
-            let r = format!("{br}:{br}");
-            r
-        } else {
-            "".to_string()
-        };
+        let commit_ref = branch_ref
+            .name()
+            .map(|br| format!("{br}:{br}"))
+            .unwrap_or_default();
 
         if !commit_ref.is_empty() {
             push_refs.push(&commit_ref)
@@ -628,14 +616,7 @@ impl GitOps for Client {
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token_push.is_empty()
-            {
-                log::info!("Authenticating with GitHub App/PAT token");
-                git2::Cred::userpass_plaintext("x-access-token", &token_push)
-            } else {
-                let git_config = git2::Config::open_default().unwrap();
-                CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
-            }
+            make_credential(&token_push, url, username, allowed)
         });
         call_backs.push_transfer_progress(progress_bar);
         let mut push_opts = PushOptions::new();
@@ -790,6 +771,21 @@ impl GitOps for Client {
         let (ahead, behind) = self.git_repo.graph_ahead_behind(local, remote)?;
 
         Ok(BranchReport { ahead, behind })
+    }
+}
+
+fn make_credential(
+    token: &str,
+    url: &str,
+    username: Option<&str>,
+    allowed: git2::CredentialType,
+) -> Result<git2::Cred, git2::Error> {
+    if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token.is_empty() {
+        log::info!("Authenticating with GitHub App/PAT token");
+        git2::Cred::userpass_plaintext("x-access-token", token)
+    } else {
+        let git_config = git2::Config::open_default().unwrap();
+        CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
     }
 }
 
