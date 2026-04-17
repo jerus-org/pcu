@@ -95,6 +95,7 @@ impl<TP: TokenProvider> PostsClient<TP> {
         // Headers
         let mut headers = self.inner.auth_headers()?;
         headers.insert("X-Restli-Protocol-Version", "2.0.0".parse().unwrap());
+        headers.insert("LinkedIn-Version", "202401".parse().unwrap());
         headers.insert("Content-Type", "application/json".parse().unwrap());
 
         // Execute

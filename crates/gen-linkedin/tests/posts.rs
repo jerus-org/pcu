@@ -34,3 +34,30 @@ async fn create_text_post_sends_expected_request() {
         .unwrap();
     assert_eq!(resp.id, "urn:li:activity:123");
 }
+
+#[tokio::test]
+async fn create_text_post_sends_linkedin_version_header() {
+    let server = MockServer::start().await;
+
+    // Require the LinkedIn-Version header — will 404 if absent
+    Mock::given(method("POST"))
+        .and(path("/rest/posts"))
+        .and(header("linkedin-version", "202401"))
+        .respond_with(
+            ResponseTemplate::new(201).insert_header("x-restli-id", "urn:li:activity:456"),
+        )
+        .mount(&server)
+        .await;
+
+    let token = StaticTokenProvider("TOKEN".to_string());
+    let client = Client::new(token)
+        .unwrap()
+        .with_base(Url::parse(&server.uri()).unwrap());
+    let posts = PostsClient::new(client);
+
+    let resp = posts
+        .create_text_post(&TextPost::new("urn:li:person:abc", "Hello LinkedIn"))
+        .await
+        .unwrap();
+    assert_eq!(resp.id, "urn:li:activity:456");
+}
