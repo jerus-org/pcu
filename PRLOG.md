@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - gen-linkedin: add LinkedIn-Version header to posts API requests(pr [#934])
+- deps: update rust crate clap to 4.6.1(pr [#935])
 
 ## [0.6.18] - 2026-04-09
 
@@ -2254,6 +2255,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#932]: https://github.com/jerus-org/pcu/pull/932
 [#933]: https://github.com/jerus-org/pcu/pull/933
 [#934]: https://github.com/jerus-org/pcu/pull/934
+[#935]: https://github.com/jerus-org/pcu/pull/935
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.18...HEAD
 [0.6.18]: https://github.com/jerus-org/pcu/compare/v0.6.17...v0.6.18
 [0.6.17]: https://github.com/jerus-org/pcu/compare/v0.6.16...v0.6.17
