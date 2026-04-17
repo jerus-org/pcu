@@ -25,14 +25,6 @@ ignore = [
     # Remove when sigstore updates its syntax-parsing dependencies.
     "RUSTSEC-2024-0370",
 
-    # RUSTSEC-2026-0002: lru 0.12.5 — unsound IterMut (Stacked Borrows).
-    # Fix attempted: bsky-sdk 0.1.24 is already latest; no patched version
-    # available. Transitive: bsky-sdk → atrium-api → atrium-common → lru.
-    # pcu never calls lru::LruCache::iter_mut() directly; the unsound path
-    # requires two concurrent mutable refs that atrium-common does not create.
-    # Remove when bsky-sdk updates atrium-common.
-    "RUSTSEC-2026-0002",
-
     # RUSTSEC-2026-0097: rand 0.8.5 / 0.9.2 — unsound when rand::rng() is
     # called while a custom global logger that itself calls rand is active.
     # Fix attempted: no patched rand 0.8.x or 0.9.x exists (advisory lists no
