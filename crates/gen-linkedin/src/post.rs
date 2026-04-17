@@ -83,6 +83,7 @@ impl LinkedinPost {
 pub struct Post {
     access_token: String,
     author_urn: String,
+    api_version: String,
     pub(crate) linkedin_posts: Vec<LinkedinPost>,
     deleted: usize,
     testing: bool,
@@ -95,10 +96,18 @@ impl Post {
         Self {
             access_token: access_token.to_string(),
             author_urn: author_urn.to_string(),
+            api_version: crate::posts::DEFAULT_API_VERSION.to_string(),
             linkedin_posts: Vec::new(),
             deleted: 0,
             testing,
         }
+    }
+
+    /// Override the LinkedIn API version sent in the `LinkedIn-Version` header.
+    #[must_use]
+    pub fn with_api_version(mut self, version: impl Into<String>) -> Self {
+        self.api_version = version.into();
+        self
     }
 
     /// Force testing mode (no actual API calls). Used in unit tests.
@@ -143,7 +152,7 @@ impl Post {
             use crate::{auth::StaticTokenProvider, client::Client, posts::PostsClient};
             let token = StaticTokenProvider(self.access_token.clone());
             let client = Client::new(token).map_err(|e| PostError::Api(e.to_string()))?;
-            Some(PostsClient::new(client))
+            Some(PostsClient::new(client).with_api_version(&self.api_version))
         } else {
             None
         };
