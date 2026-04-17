@@ -48,16 +48,32 @@ impl TextPost {
     }
 }
 
+pub(crate) const DEFAULT_API_VERSION: &str = "202401";
+
 /// Client for interacting with LinkedIn's Posts API.
 pub struct PostsClient<TP: TokenProvider> {
     inner: Client<TP>,
+    api_version: String,
 }
 
 impl<TP: TokenProvider> PostsClient<TP> {
     /// Construct a new Posts client from the base client.
     #[must_use]
     pub fn new(inner: Client<TP>) -> Self {
-        Self { inner }
+        Self {
+            inner,
+            api_version: DEFAULT_API_VERSION.to_string(),
+        }
+    }
+
+    /// Override the `LinkedIn-Version` header value (default: `"202401"`).
+    ///
+    /// Set via `LINKEDIN_API_VERSION` env var in CI to avoid requiring a
+    /// toolkit rebuild when LinkedIn retires the current version.
+    #[must_use]
+    pub fn with_api_version(mut self, version: impl Into<String>) -> Self {
+        self.api_version = version.into();
+        self
     }
 
     /// Create a text post using the LinkedIn Posts REST API.
@@ -95,7 +111,7 @@ impl<TP: TokenProvider> PostsClient<TP> {
         // Headers
         let mut headers = self.inner.auth_headers()?;
         headers.insert("X-Restli-Protocol-Version", "2.0.0".parse().unwrap());
-        headers.insert("LinkedIn-Version", "202401".parse().unwrap());
+        headers.insert("LinkedIn-Version", self.api_version.parse().unwrap());
         headers.insert("Content-Type", "application/json".parse().unwrap());
 
         // Execute

@@ -20,4 +20,14 @@ ignore = [
     # Transitive: bsky-sdk 0.1.23 → atrium-api → atrium-common → lru.
     # No fixed version of bsky-sdk available. pcu does not use lru directly.
     "RUSTSEC-2026-0002",
+
+    # RUSTSEC-2026-0097: rand 0.8.5 / 0.9.2 - unsound when using rand::rng() with
+    # a custom global logger. Transitive: sigstore 0.13.0 → openidconnect / oauth2.
+    # pcu does not call rand::rng() directly. Remove when sigstore updates rand.
+    "RUSTSEC-2026-0097",
 ]
+
+[yanked]
+# core2 0.4.0 yanked. Transitive: bsky-sdk 0.1.24 → atrium-api → ipld-core → cid.
+# No fix available upstream. Disable yanked check until bsky-sdk updates its deps.
+enabled = false

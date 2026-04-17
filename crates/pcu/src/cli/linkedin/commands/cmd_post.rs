@@ -28,8 +28,11 @@ impl CmdPost {
         let store = settings
             .get_string("linkedin_store")
             .unwrap_or_else(|_| "linkedin".to_string());
+        let api_version = settings
+            .get_string("linkedin_api_version")
+            .unwrap_or_else(|_| "202401".to_string());
 
-        let deleted = match post_and_delete(&access_token, &author_urn, &store).await {
+        let deleted = match post_and_delete(&access_token, &author_urn, &store, &api_version).await {
             Ok(d) => d,
             Err(e) => {
                 if self.fail_on_missing {
@@ -77,11 +80,12 @@ async fn post_and_delete<P>(
     access_token: &str,
     author_urn: &str,
     store: P,
+    api_version: &str,
 ) -> Result<usize, PostError>
 where
     P: AsRef<Path> + Display,
 {
-    let mut poster = Post::new(access_token, author_urn);
+    let mut poster = Post::new(access_token, author_urn).with_api_version(api_version);
     let deleted = poster
         .load(store)?
         .post_to_linkedin()
