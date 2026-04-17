@@ -32,7 +32,8 @@ impl CmdPost {
             .get_string("linkedin_api_version")
             .unwrap_or_else(|_| "202401".to_string());
 
-        let deleted = match post_and_delete(&access_token, &author_urn, &store, &api_version).await {
+        let deleted = match post_and_delete(&access_token, &author_urn, &store, &api_version).await
+        {
             Ok(d) => d,
             Err(e) => {
                 if self.fail_on_missing {
