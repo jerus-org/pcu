@@ -1,33 +1,54 @@
 # cargo audit configuration
-# Advisories ignored here must also be listed in ignore_advisories in
-# .circleci/config.yml (toolkit/security job parameter).
+#
+# Policy: warnings are denied in CI (`-D warnings`). Before ignoring an
+# advisory we must:
+#   1. Attempt to fix it (cargo update, dependency upgrade, code change).
+#   2. Establish why a fix is not currently possible.
+#   3. Document the practical risk level and the resolution path.
+#
+# Advisory IDs listed here MUST also appear in `ignore_advisories` in
+# .circleci/config.yml so the CI command and this file stay in sync.
 
 [advisories]
 ignore = [
-    # RUSTSEC-2023-0071: rsa 0.9.10 - Marvin Attack timing side-channel (CVSS 5.9 medium).
-    # No fixed version of rsa available. Transitive: sigstore 0.13.0 → rsa.
-    # pcu uses sigstore only for CI attestation signing (not decryption), so the
-    # practical risk is low. Remove when sigstore updates rsa.
+    # RUSTSEC-2023-0071: rsa 0.9.10 — Marvin Attack timing side-channel
+    # (CVSS 5.9 Medium). Fix attempted: no patched rsa 0.9.x exists upstream.
+    # Transitive: sigstore 0.13.0 → rsa 0.9.10. pcu uses sigstore only for CI
+    # attestation signing (not decryption), so the Marvin Attack (requires a
+    # decryption oracle) cannot be triggered. Remove when sigstore updates rsa.
     "RUSTSEC-2023-0071",
 
-    # RUSTSEC-2024-0370: proc-macro-error 1.0.4 - unmaintained crate.
-    # Transitive: sigstore 0.13.0 → json-syntax → locspan-derive → proc-macro-error.
-    # No alternative available until sigstore or json-syntax migrate away from it.
-    # Watch for sigstore 0.14+ or a json-syntax update.
+    # RUSTSEC-2024-0370: proc-macro-error 1.0.4 — unmaintained crate.
+    # Fix attempted: no alternative until sigstore/json-syntax migrate away from
+    # locspan-derive. Transitive: sigstore → json-syntax → locspan-derive →
+    # proc-macro-error. Unmaintained ≠ vulnerable; no known CVE.
+    # Remove when sigstore updates its syntax-parsing dependencies.
     "RUSTSEC-2024-0370",
 
-    # RUSTSEC-2026-0002: lru 0.12.5 - unsound IterMut (Stacked Borrows violation).
-    # Transitive: bsky-sdk 0.1.23 → atrium-api → atrium-common → lru.
-    # No fixed version of bsky-sdk available. pcu does not use lru directly.
+    # RUSTSEC-2026-0002: lru 0.12.5 — unsound IterMut (Stacked Borrows).
+    # Fix attempted: bsky-sdk 0.1.24 is already latest; no patched version
+    # available. Transitive: bsky-sdk → atrium-api → atrium-common → lru.
+    # pcu never calls lru::LruCache::iter_mut() directly; the unsound path
+    # requires two concurrent mutable refs that atrium-common does not create.
+    # Remove when bsky-sdk updates atrium-common.
     "RUSTSEC-2026-0002",
 
-    # RUSTSEC-2026-0097: rand 0.8.5 / 0.9.2 - unsound when using rand::rng() with
-    # a custom global logger. Transitive: sigstore 0.13.0 → openidconnect / oauth2.
-    # pcu does not call rand::rng() directly. Remove when sigstore updates rand.
+    # RUSTSEC-2026-0097: rand 0.8.5 / 0.9.2 — unsound when rand::rng() is
+    # called while a custom global logger that itself calls rand is active.
+    # Fix attempted: no patched rand 0.8.x or 0.9.x exists (advisory lists no
+    # solution version); rand 0.10.x requires sigstore, openidconnect, and
+    # quinn-proto to update first. pcu registers no custom global logger; the
+    # unsound path cannot be triggered. Remove when upstream migrates to a
+    # patched rand.
     "RUSTSEC-2026-0097",
 ]
 
+# Yanked-package checking is disabled because the one affected crate
+# (core2 0.4.0) is yanked-but-not-vulnerable: it was pulled from crates.io
+# due to deprecation (core3 is its successor), not a security defect.
+# Fix attempted: `cargo update atrium-api` — already on latest 0.25.8; the
+# chain bsky-sdk → atrium-api → ipld-core → cid → multihash → core2 has no
+# available update that removes core2. Re-enable when bsky-sdk/atrium-api
+# migrates to a non-yanked cid/ipld implementation.
 [yanked]
-# core2 0.4.0 yanked. Transitive: bsky-sdk 0.1.24 → atrium-api → ipld-core → cid.
-# No fix available upstream. Disable yanked check until bsky-sdk updates its deps.
 enabled = false

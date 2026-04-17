@@ -21,10 +21,10 @@ impl CmdPost {
     pub async fn run(&self, client: &Client, settings: &Config) -> Result<CIExit, Error> {
         let access_token = settings
             .get_string("linkedin_access_token")
-            .map_err(|_| Error::MissingConfig("LINKEDIN_ACCESS_TOKEN".to_string()))?;
+            .map_err(|_| Error::MissingConfig("PCU_LINKEDIN_ACCESS_TOKEN".to_string()))?;
         let author_urn = settings
             .get_string("linkedin_author_urn")
-            .map_err(|_| Error::MissingConfig("LINKEDIN_AUTHOR_URN".to_string()))?;
+            .map_err(|_| Error::MissingConfig("PCU_LINKEDIN_AUTHOR_URN".to_string()))?;
         let store = settings
             .get_string("linkedin_store")
             .unwrap_or_else(|_| "linkedin".to_string());
