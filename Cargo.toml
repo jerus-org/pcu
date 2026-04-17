@@ -52,7 +52,7 @@ thiserror = "2.0.18"
 sha2 = "0.11.0"
 openidconnect = { version = "4.0.1", default-features = false }
 sigstore = { version = "0.13", default-features = false, features = ["sign", "sigstore-trust-root", "rustls-tls"] }
-sigstore_protobuf_specs = "0.5"
+sigstore_protobuf_specs = "0.5.1"
 tokio = { version = "1.51.0", features = ["fs", "macros", "rt-multi-thread", "time"] }
 toml = "1.1.2"
 tracing = "0.1.44"
