@@ -22,7 +22,7 @@ color-eyre = "0.6.5"
 config = {version = "0.15.22", features = ["toml"], default-features = false}
 env_logger = "0.11.10"
 gen-bsky = { path = "crates/gen-bsky", version = "0.1.21" }
-gen-linkedin = { path = "crates/gen-linkedin", version = "0.1.13" }
+gen-linkedin = { path = "crates/gen-linkedin", version = "0.1.14" }
 git2 = "0.20.4"
 git2_credentials = "0.15.0"
 gql_client = "1.1.0"
