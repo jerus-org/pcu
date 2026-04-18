@@ -835,7 +835,7 @@ workflows:
               only:
                 - main
                 - /pull\/[0-9]+/
-          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370 RUSTSEC-2026-0097"
+          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370"
       - toolkit/security:
           name: security with sonarcloud
           context: SonarCloud
@@ -844,6 +844,6 @@ workflows:
               ignore:
                 - /pull\/[0-9]+/
                 - main
-          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370 RUSTSEC-2026-0097"
+          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370"
 
 
