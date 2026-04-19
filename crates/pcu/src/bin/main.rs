@@ -90,6 +90,7 @@ fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {
     builder.filter_module("pcu::utilities", *level);
     builder.filter_module("pcu", *level);
     builder.filter_module("gen_bsky", *level);
+    builder.filter_module("gen_linkedin", *level);
     builder.format_timestamp_secs();
 
     builder
