@@ -45,7 +45,7 @@ async fn create_text_post_sends_linkedin_version_header() {
     // Require the LinkedIn-Version header — 404 if absent or wrong version
     Mock::given(method("POST"))
         .and(path("/rest/posts"))
-        .and(header("linkedin-version", "202401"))
+        .and(header("linkedin-version", "202604"))
         .respond_with(
             ResponseTemplate::new(201).insert_header("x-restli-id", "urn:li:activity:456"),
         )
@@ -66,7 +66,7 @@ async fn create_text_post_uses_custom_api_version() {
 
     Mock::given(method("POST"))
         .and(path("/rest/posts"))
-        .and(header("linkedin-version", "202501"))
+        .and(header("linkedin-version", "202604"))
         .respond_with(
             ResponseTemplate::new(201).insert_header("x-restli-id", "urn:li:activity:789"),
         )
@@ -75,7 +75,7 @@ async fn create_text_post_uses_custom_api_version() {
 
     let resp = make_posts_client(&server)
         .await
-        .with_api_version("202501")
+        .with_api_version("202604")
         .create_text_post(&TextPost::new("urn:li:person:abc", "Hello LinkedIn"))
         .await
         .unwrap();

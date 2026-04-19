@@ -48,7 +48,7 @@ impl TextPost {
     }
 }
 
-pub(crate) const DEFAULT_API_VERSION: &str = "202401";
+pub(crate) const DEFAULT_API_VERSION: &str = "202604";
 
 /// Client for interacting with LinkedIn's Posts API.
 pub struct PostsClient<TP: TokenProvider> {
@@ -66,7 +66,7 @@ impl<TP: TokenProvider> PostsClient<TP> {
         }
     }
 
-    /// Override the `LinkedIn-Version` header value (default: `"202401"`).
+    /// Override the `LinkedIn-Version` header value (default: `"202604"`).
     ///
     /// Set via `LINKEDIN_API_VERSION` env var in CI to avoid requiring a
     /// toolkit rebuild when LinkedIn retires the current version.

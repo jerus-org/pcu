@@ -30,7 +30,7 @@ impl CmdPost {
             .unwrap_or_else(|_| "linkedin".to_string());
         let api_version = settings
             .get_string("linkedin_api_version")
-            .unwrap_or_else(|_| "202401".to_string());
+            .unwrap_or_else(|_| "202604".to_string());
 
         let deleted = match post_and_delete(&access_token, &author_urn, &store, &api_version).await
         {
