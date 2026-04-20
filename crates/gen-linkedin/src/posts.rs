@@ -48,7 +48,8 @@ impl TextPost {
     }
 }
 
-pub(crate) const DEFAULT_API_VERSION: &str = "202604";
+/// Default `LinkedIn-Version` header value used when `PCU_LINKEDIN_API_VERSION` is not set.
+pub const DEFAULT_API_VERSION: &str = "202604";
 
 /// Client for interacting with LinkedIn's Posts API.
 pub struct PostsClient<TP: TokenProvider> {

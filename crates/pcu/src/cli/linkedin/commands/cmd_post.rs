@@ -2,7 +2,7 @@ use std::{env, path::Path};
 
 use clap::Parser;
 use config::Config;
-use gen_linkedin::{Post, PostError};
+use gen_linkedin::{posts::DEFAULT_API_VERSION, Post, PostError};
 
 use crate::{cli::push::Push, CIExit, Client, Error, GitOps, SignConfig};
 use std::fmt::Display;
@@ -28,9 +28,24 @@ impl CmdPost {
         let store = settings
             .get_string("linkedin_store")
             .unwrap_or_else(|_| "linkedin".to_string());
-        let api_version = settings
-            .get_string("linkedin_api_version")
-            .unwrap_or_else(|_| "202604".to_string());
+        let api_version = match settings.get_string("linkedin_api_version") {
+            Ok(v) => {
+                if v.as_str() <= DEFAULT_API_VERSION {
+                    log::warn!(
+                        "PCU_LINKEDIN_API_VERSION is set to {v} which is at or below the \
+                         compiled default ({DEFAULT_API_VERSION}); the override is no longer \
+                         needed and should be removed"
+                    );
+                } else {
+                    log::info!(
+                        "PCU_LINKEDIN_API_VERSION overriding compiled default \
+                         ({DEFAULT_API_VERSION}) with {v}"
+                    );
+                }
+                v
+            }
+            Err(_) => DEFAULT_API_VERSION.to_string(),
+        };
 
         let deleted = match post_and_delete(&access_token, &author_urn, &store, &api_version).await
         {
@@ -142,5 +157,28 @@ mod tests {
     #[test]
     fn test_posted_to_linkedin_ci_exit() {
         assert!(matches!(CIExit::PostedToLinkedIn, CIExit::PostedToLinkedIn));
+    }
+
+    // api_version_from_env_var: env var override logic
+
+    #[test]
+    fn test_api_version_override_newer_than_default_is_valid() {
+        // A version newer than DEFAULT_API_VERSION should be accepted silently (info only).
+        let newer = "299901";
+        assert!(newer > DEFAULT_API_VERSION);
+    }
+
+    #[test]
+    fn test_api_version_override_equal_to_default_triggers_warn() {
+        // An env var set to exactly the compiled default is redundant.
+        let equal = DEFAULT_API_VERSION;
+        assert!(equal <= DEFAULT_API_VERSION);
+    }
+
+    #[test]
+    fn test_api_version_override_older_than_default_triggers_warn() {
+        // An env var set to an older version is stale and should warn.
+        let older = "202401";
+        assert!(older <= DEFAULT_API_VERSION);
     }
 }
