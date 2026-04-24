@@ -669,7 +669,7 @@ impl GitOps for Client {
 
         log::trace!("Found {prs:?} open PRs for {qualified_authors:?}");
 
-        prs.sort_by(|a, b| a.number.cmp(&b.number));
+        prs.sort_by_key(|a| a.number);
         let next_pr = &prs[0];
 
         log::trace!("Next PR: {}", next_pr.number);
