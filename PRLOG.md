@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Dependencies: bump openssl from 0.10.77 to 0.10.78 in the cargo group across 1 directory(pr [#945])
+- Dependencies: bump openssl from 0.10.78 to 0.10.79 in the cargo group across 1 directory(pr [#947])
 
 ## [0.6.19] - 2026-04-18
 
@@ -2278,6 +2279,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#944]: https://github.com/jerus-org/pcu/pull/944
 [#945]: https://github.com/jerus-org/pcu/pull/945
 [#946]: https://github.com/jerus-org/pcu/pull/946
+[#947]: https://github.com/jerus-org/pcu/pull/947
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.19...HEAD
 [0.6.19]: https://github.com/jerus-org/pcu/compare/v0.6.18...v0.6.19
 [0.6.18]: https://github.com/jerus-org/pcu/compare/v0.6.17...v0.6.18
