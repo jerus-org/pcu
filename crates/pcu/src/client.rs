@@ -337,4 +337,282 @@ impl Client {
     pub fn set_prlog(&mut self, value: &str) {
         self.prlog = value.into();
     }
+
+    /// Construct a `Client` that reads only the local git repository.
+    ///
+    /// Unlike [`new_with`], this constructor does not make any GitHub API calls
+    /// and does not require CI environment variables.  It derives `owner` and
+    /// `repo` from the `origin` remote URL of the repository at the current
+    /// working directory.
+    ///
+    /// Methods that require GitHub authentication (e.g. `push_commit` with App
+    /// bypass) will fail unless credentials are available through the usual
+    /// environment variables — but operations that are purely local (e.g.
+    /// `commit_staged`, `stage_paths`) work without any network access.
+    pub fn new_local() -> Result<Self, Error> {
+        Self::new_local_at(std::path::Path::new("."))
+    }
+
+    /// Like [`new_local`] but opens the repository at an explicit `path`.
+    ///
+    /// Intended for tests that operate on a temporary git repository.
+    pub fn new_local_at(path: &std::path::Path) -> Result<Self, Error> {
+        let git_repo = git2::Repository::open(path)?;
+
+        let (owner, repo) = extract_owner_repo_from_git(&git_repo)
+            .unwrap_or_else(|| ("local".to_string(), "local".to_string()));
+
+        let branch = git_repo
+            .head()
+            .ok()
+            .and_then(|h| h.shorthand().map(str::to_string));
+
+        // Create minimal API stubs — any method that actually uses these will
+        // fail with an auth error, which is expected for a local-only client.
+        let dummy_pat = PersonalAccessToken::new("");
+        let dummy_config = APIConfig::with_token(dummy_pat).shared();
+        let github_rest = GitHubAPI::new(&dummy_config);
+        let github_graphql = gql_client::Client::new_with_headers(
+            END_POINT,
+            HashMap::from([
+                ("X-Github-Next-Global-ID", "1"),
+                ("User-Agent", "pcu-local"),
+                ("Authorization", "Bearer local"),
+            ]),
+        );
+
+        let prlog = OsString::from("PRLOG.md");
+        let prlog_parse_options = ChangelogParseOptions {
+            url: None,
+            head: Some("HEAD".to_string()),
+            tag_prefix: Some("v".to_string()),
+        };
+
+        Ok(Self {
+            git_repo,
+            github_rest,
+            github_graphql,
+            github_token: String::new(),
+            owner,
+            repo,
+            default_branch: "main".to_string(),
+            branch,
+            pull_request: None,
+            prlog,
+            line_limit: 10,
+            prlog_parse_options,
+            prlog_update: None,
+            commit_message: String::new(),
+        })
+    }
+
+    /// Upload a binary asset to an existing GitHub release.
+    ///
+    /// Looks up the release by `tag`, then uploads `binary` as `asset_name` to
+    /// `uploads.github.com`.  Retries the release lookup up to 5 times with a
+    /// 2-second delay to handle GitHub's eventual-consistency window after
+    /// release creation.
+    pub async fn upload_release_asset(
+        &self,
+        tag: &str,
+        binary: &std::path::Path,
+        asset_name: &str,
+    ) -> Result<(), Error> {
+        use octocrate::PersonalAccessToken;
+
+        if !binary.exists() {
+            return Err(Error::GitError(format!(
+                "Asset file not found: {}",
+                binary.display()
+            )));
+        }
+
+        let token = self.github_token.clone();
+        let owner = self.owner.clone();
+        let repo = self.repo.clone();
+        let tag_str = tag.to_string();
+
+        let release = get_release_with_retry(tag, 5, std::time::Duration::from_secs(2), || {
+            let tok = PersonalAccessToken::new(token.clone());
+            let cfg = APIConfig::with_token(tok).shared();
+            let api = GitHubAPI::new(&cfg);
+            let o = owner.clone();
+            let r = repo.clone();
+            let t = tag_str.clone();
+            async move {
+                api.repos
+                    .get_release_by_tag(&o, &r, &t)
+                    .send()
+                    .await
+                    .map_err(Error::from)
+            }
+        })
+        .await?;
+
+        log::info!("Found release {} (id={})", release.tag_name, release.id);
+
+        // Binary uploads must go to uploads.github.com, not api.github.com.
+        let upload_token = PersonalAccessToken::new(self.github_token.clone());
+        let upload_config = APIConfig::new("https://uploads.github.com", upload_token);
+        let upload_api = GitHubAPI::new(&upload_config);
+
+        let file = tokio::fs::File::open(binary).await?;
+        let content_length = file.metadata().await?.len();
+
+        let content_type = if asset_name.ends_with(".sig") {
+            "text/plain"
+        } else {
+            "application/octet-stream"
+        };
+
+        let query = octocrate::repos::upload_release_asset::Query::builder()
+            .name(asset_name)
+            .build();
+
+        upload_api
+            .repos
+            .upload_release_asset(&self.owner, &self.repo, release.id)
+            .query(&query)
+            .header("Content-Type", content_type)
+            .header("Content-Length", content_length.to_string())
+            .file(file)
+            .send()
+            .await?;
+
+        log::info!("Successfully uploaded {asset_name}");
+        Ok(())
+    }
+}
+
+/// Parse `owner` and `repo` from the `origin` remote URL of `repo`.
+///
+/// Handles both SCP-style (`git@github.com:org/repo.git`) and HTTPS
+/// (`https://github.com/org/repo.git`) URLs.  Returns `None` if the remote
+/// is absent or the URL cannot be parsed.
+fn extract_owner_repo_from_git(repo: &Repository) -> Option<(String, String)> {
+    let remote = repo.find_remote("origin").ok()?;
+    let url = remote.url()?;
+    parse_owner_repo_from_url(url)
+}
+
+/// Extract `(owner, repo)` from a GitHub remote URL.
+fn parse_owner_repo_from_url(url: &str) -> Option<(String, String)> {
+    // Normalise SSH → HTTPS so one parser handles all formats
+    let https = if let Some(rest) = url.strip_prefix("git@github.com:") {
+        format!("https://github.com/{rest}")
+    } else if let Some(rest) = url
+        .strip_prefix("ssh://git@github.com/")
+        .or_else(|| url.strip_prefix("ssh://github.com/"))
+    {
+        format!("https://github.com/{rest}")
+    } else {
+        url.to_string()
+    };
+
+    let path = https.strip_prefix("https://github.com/")?;
+    let path = path.strip_suffix(".git").unwrap_or(path);
+    let mut parts = path.splitn(2, '/');
+    let owner = parts.next()?.to_string();
+    let repo = parts.next()?.to_string();
+    Some((owner, repo))
+}
+
+/// Retry `attempt_fn` up to `max_attempts` times, sleeping `retry_delay`
+/// between attempts.  Returns the first `Ok(T)` or an error after exhaustion.
+async fn get_release_with_retry<F, Fut, T>(
+    tag: &str,
+    max_attempts: u32,
+    retry_delay: std::time::Duration,
+    mut attempt_fn: F,
+) -> Result<T, Error>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<T, Error>>,
+{
+    for attempt in 1..=max_attempts {
+        match attempt_fn().await {
+            Ok(r) => {
+                log::info!("Found GitHub release for tag '{tag}' (attempt {attempt})");
+                return Ok(r);
+            }
+            Err(e) => {
+                log::warn!(
+                    "get_release_by_tag attempt {attempt}/{max_attempts} for tag '{tag}' failed: {e}"
+                );
+                if attempt < max_attempts {
+                    tokio::time::sleep(retry_delay).await;
+                }
+            }
+        }
+    }
+    Err(Error::GitError(format!(
+        "GitHub release for tag '{tag}' not found after {max_attempts} attempts"
+    )))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_https_url() {
+        let (owner, repo) =
+            parse_owner_repo_from_url("https://github.com/jerus-org/pcu.git").unwrap();
+        assert_eq!(owner, "jerus-org");
+        assert_eq!(repo, "pcu");
+    }
+
+    #[test]
+    fn parse_scp_url() {
+        let (owner, repo) = parse_owner_repo_from_url("git@github.com:jerus-org/pcu.git").unwrap();
+        assert_eq!(owner, "jerus-org");
+        assert_eq!(repo, "pcu");
+    }
+
+    #[test]
+    fn parse_https_url_no_dot_git() {
+        let (owner, repo) = parse_owner_repo_from_url("https://github.com/jerus-org/pcu").unwrap();
+        assert_eq!(owner, "jerus-org");
+        assert_eq!(repo, "pcu");
+    }
+
+    #[test]
+    fn new_local_at_derives_owner_repo_from_remote() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = git2::Repository::init(dir.path()).unwrap();
+        repo.remote("origin", "https://github.com/test-org/test-repo.git")
+            .unwrap();
+
+        let client = Client::new_local_at(dir.path()).unwrap();
+        assert_eq!(client.owner(), "test-org");
+        assert_eq!(client.repo(), "test-repo");
+    }
+
+    #[test]
+    fn new_local_at_falls_back_when_no_remote() {
+        let dir = tempfile::tempdir().unwrap();
+        git2::Repository::init(dir.path()).unwrap();
+
+        // No remote configured — should fall back to "local"/"local"
+        let client = Client::new_local_at(dir.path()).unwrap();
+        assert_eq!(client.owner(), "local");
+        assert_eq!(client.repo(), "local");
+    }
+
+    #[test]
+    fn upload_release_asset_returns_error_for_missing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        git2::Repository::init(dir.path()).unwrap();
+        let client = Client::new_local_at(dir.path()).unwrap();
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(client.upload_release_asset(
+            "v1.0.0",
+            std::path::Path::new("/nonexistent/binary"),
+            "binary",
+        ));
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("Asset file not found"), "unexpected: {msg}");
+    }
 }
