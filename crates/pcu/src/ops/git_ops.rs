@@ -854,6 +854,25 @@ fn list_tags() {
     log::trace!("Files: {files:#?}");
 }
 
+/// Format a single status entry line for `print_long`.
+/// Produces `"prev\n#\t{label}  {old} -> {new}"` when old ≠ new, or
+/// `"prev\n#\t{label}  {path}"` otherwise.
+fn format_status_entry(
+    prev: &str,
+    label: &str,
+    old_path: Option<&Path>,
+    new_path: Option<&Path>,
+) -> String {
+    match (old_path, new_path) {
+        (Some(old), Some(new)) if old != new => {
+            format!("{prev}\n#\t{label}  {} -> {}", old.display(), new.display())
+        }
+        (old, new) => {
+            format!("{prev}\n#\t{label}  {}", old.or(new).unwrap().display())
+        }
+    }
+}
+
 // This function print out an output similar to git's status command in long
 // form, including the command-line hints.
 fn print_long(statuses: &git2::Statuses) -> String {
@@ -892,25 +911,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
         let old_path = entry.head_to_index().unwrap().old_file().path();
         let new_path = entry.head_to_index().unwrap().new_file().path();
-        match (old_path, new_path) {
-            (Some(old), Some(new)) if old != new => {
-                output = format!(
-                    "{}\n#\t{}  {} -> {}",
-                    output,
-                    is_status,
-                    old.display(),
-                    new.display()
-                );
-            }
-            (old, new) => {
-                output = format!(
-                    "{}\n#\t{}  {}",
-                    output,
-                    is_status,
-                    old.or(new).unwrap().display()
-                );
-            }
-        }
+        output = format_status_entry(&output, is_status, old_path, new_path);
     }
 
     if header {
@@ -947,25 +948,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
         let old_path = entry.index_to_workdir().unwrap().old_file().path();
         let new_path = entry.index_to_workdir().unwrap().new_file().path();
-        match (old_path, new_path) {
-            (Some(old), Some(new)) if old != new => {
-                output = format!(
-                    "{}\n#\t{}  {} -> {}",
-                    output,
-                    is_status,
-                    old.display(),
-                    new.display()
-                );
-            }
-            (old, new) => {
-                output = format!(
-                    "{}\n#\t{}  {}",
-                    output,
-                    is_status,
-                    old.or(new).unwrap().display()
-                );
-            }
-        }
+        output = format_status_entry(&output, is_status, old_path, new_path);
     }
 
     if header {

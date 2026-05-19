@@ -1165,48 +1165,7 @@ mod release_package_tests {
     }
 }
 
-/// Looks up a GitHub release by tag, retrying on transient failures.
-///
-/// GitHub's REST API has a brief eventual-consistency window: `get_release_by_tag`
-/// can return 404 for several seconds after `create_release` completes. Retrying
-/// with a fixed delay handles this transparently without requiring a sleep in the
-/// calling code.
-///
-/// `attempt_fn` is called up to `max_attempts` times. On success it returns
-/// `Ok(T)`. On failure the error is logged and (if attempts remain) the retry
-/// delay is observed. After all attempts are exhausted an `Error::GitError` is
-/// returned naming the tag and the attempt count.
-async fn get_release_with_retry<F, Fut, T>(
-    tag: &str,
-    max_attempts: u32,
-    retry_delay: std::time::Duration,
-    mut attempt_fn: F,
-) -> Result<T, Error>
-where
-    F: FnMut() -> Fut,
-    Fut: std::future::Future<Output = Result<T, Error>>,
-{
-    for attempt in 1..=max_attempts {
-        match attempt_fn().await {
-            Ok(r) => {
-                log::info!("Found GitHub release for tag {tag} (attempt {attempt})");
-                return Ok(r);
-            }
-            Err(e) => {
-                log::warn!(
-                    "get_release_by_tag attempt {attempt}/{max_attempts} for tag '{tag}' failed: {e}"
-                );
-                if attempt < max_attempts {
-                    log::info!("Retrying in {}s...", retry_delay.as_secs());
-                    tokio::time::sleep(retry_delay).await;
-                }
-            }
-        }
-    }
-    Err(Error::GitError(format!(
-        "GitHub release for tag '{tag}' not found after {max_attempts} attempts"
-    )))
-}
+use crate::client::get_release_with_retry;
 
 /// Downloads a URL with retry, using a caller-supplied async attempt function.
 ///

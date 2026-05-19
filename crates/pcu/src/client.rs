@@ -519,7 +519,7 @@ fn parse_owner_repo_from_url(url: &str) -> Option<(String, String)> {
 
 /// Retry `attempt_fn` up to `max_attempts` times, sleeping `retry_delay`
 /// between attempts.  Returns the first `Ok(T)` or an error after exhaustion.
-async fn get_release_with_retry<F, Fut, T>(
+pub(crate) async fn get_release_with_retry<F, Fut, T>(
     tag: &str,
     max_attempts: u32,
     retry_delay: std::time::Duration,
