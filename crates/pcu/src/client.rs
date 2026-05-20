@@ -340,7 +340,7 @@ impl Client {
 
     /// Construct a `Client` that reads only the local git repository.
     ///
-    /// Unlike [`new_with`], this constructor does not make any GitHub API calls
+    /// Unlike [`Client::new_with`], this constructor does not make any GitHub API calls
     /// and does not require CI environment variables.  It derives `owner` and
     /// `repo` from the `origin` remote URL of the repository at the current
     /// working directory.
@@ -353,7 +353,7 @@ impl Client {
         Self::new_local_at(std::path::Path::new("."))
     }
 
-    /// Like [`new_local`] but opens the repository at an explicit `path`.
+    /// Like [`Client::new_local`] but opens the repository at an explicit `path`.
     ///
     /// Intended for tests that operate on a temporary git repository.
     pub fn new_local_at(path: &std::path::Path) -> Result<Self, Error> {
