@@ -5,5 +5,12 @@
   ],
   "extends": [
     "github>jerusdp/renovate-config:default.json"
+  ],
+  "packageRules": [
+    {
+      "description": "Group git2 and git2_credentials — git2_credentials re-exports git2 types so both must move together",
+      "matchPackageNames": ["/^git2/", "/^git2_credentials/"],
+      "groupName": "git2 packages"
+    }
   ]
 }
