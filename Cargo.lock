@@ -1740,7 +1740,7 @@ version = "0.1.14"
 dependencies = [
  "chrono",
  "log",
- "reqwest 0.13.2",
+ "reqwest 0.13.3",
  "serde",
  "serde_json",
  "tempfile",
@@ -2595,7 +2595,7 @@ dependencies = [
  "colorful",
  "env_logger",
  "log",
- "reqwest 0.13.2",
+ "reqwest 0.13.3",
  "rustls",
  "semver",
  "smol_str",
@@ -3376,9 +3376,9 @@ dependencies = [
 
 [[package]]
 name = "openssl"
-version = "0.10.79"
+version = "0.10.80"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf0b434746ee2832f4f0baf10137e1cabb18cbe6912c69e2e33263c45250f542"
+checksum = "a45fa2aa886c42762255da344f0a0d313e254066c46aad76f300c3d3da62d967"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -3413,9 +3413,9 @@ checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.115"
+version = "0.9.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "158fe5b292746440aa6e7a7e690e55aeb72d41505e2804c23c6973ad0e9c9781"
+checksum = "f28a22dc7140cda5f096e5e7724a6962ca81a7f8bfd2979f9b18c11af56318c4"
 dependencies = [
  "cc",
  "libc",
@@ -3552,7 +3552,7 @@ dependencies = [
  "openidconnect",
  "owo-colors",
  "regex",
- "reqwest 0.13.2",
+ "reqwest 0.13.3",
  "rstest",
  "sequoia-openpgp",
  "serde",
@@ -4261,9 +4261,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.13.2"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab3f43e3283ab1488b624b44b0e988d0acea0b3214e694730a055cb6b2efa801"
+checksum = "62e0021ea2c22aed41653bc7e1419abb2c97e038ff2c33d0e1309e49a97deec0"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -5257,7 +5257,7 @@ dependencies = [
  "libc",
  "memchr",
  "rayon",
- "reqwest 0.13.2",
+ "reqwest 0.13.3",
  "rustc-stable-hash",
  "semver",
  "serde",
@@ -5426,9 +5426,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.52.1"
+version = "1.52.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b67dee974fe86fd92cc45b7a95fdd2f99a36a6d7b0d431a231178d3d670bbcc6"
+checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "bytes",
  "libc",
