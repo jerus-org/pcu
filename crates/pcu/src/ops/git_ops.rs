@@ -137,6 +137,12 @@ pub trait GitOps {
     fn repo_files_not_staged(&self) -> Result<Vec<(String, Status)>, Error>;
     fn repo_files_staged(&self) -> Result<Vec<(String, Status)>, Error>;
     fn stage_files(&self, files: Vec<(String, Status)>) -> Result<(), Error>;
+    /// Stage a list of paths directly, without needing pre-computed [`Status`] values.
+    ///
+    /// Each path is staged with `index.add_path()` if it exists in the working
+    /// tree; non-existent paths are silently skipped.  The index is written
+    /// once after all paths are processed.
+    fn stage_paths(&self, paths: &[&Path]) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn commit_changed_files(
         &self,
@@ -366,6 +372,23 @@ impl GitOps for Client {
 
         index.write()?;
 
+        Ok(())
+    }
+
+    fn stage_paths(&self, paths: &[&Path]) -> Result<(), Error> {
+        let mut index = self.git_repo.index()?;
+        for path in paths {
+            if self
+                .git_repo
+                .workdir()
+                .is_some_and(|wd| wd.join(path).exists())
+            {
+                index.add_path(path)?;
+            } else {
+                log::debug!("stage_paths: skipping non-existent path {}", path.display());
+            }
+        }
+        index.write()?;
         Ok(())
     }
 
@@ -831,6 +854,25 @@ fn list_tags() {
     log::trace!("Files: {files:#?}");
 }
 
+/// Format a single status entry line for `print_long`.
+/// Produces `"prev\n#\t{label}  {old} -> {new}"` when old ≠ new, or
+/// `"prev\n#\t{label}  {path}"` otherwise.
+fn format_status_entry(
+    prev: &str,
+    label: &str,
+    old_path: Option<&Path>,
+    new_path: Option<&Path>,
+) -> String {
+    match (old_path, new_path) {
+        (Some(old), Some(new)) if old != new => {
+            format!("{prev}\n#\t{label}  {} -> {}", old.display(), new.display())
+        }
+        (old, new) => {
+            format!("{prev}\n#\t{label}  {}", old.or(new).unwrap().display())
+        }
+    }
+}
+
 // This function print out an output similar to git's status command in long
 // form, including the command-line hints.
 fn print_long(statuses: &git2::Statuses) -> String {
@@ -869,25 +911,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
         let old_path = entry.head_to_index().unwrap().old_file().path();
         let new_path = entry.head_to_index().unwrap().new_file().path();
-        match (old_path, new_path) {
-            (Some(old), Some(new)) if old != new => {
-                output = format!(
-                    "{}\n#\t{}  {} -> {}",
-                    output,
-                    is_status,
-                    old.display(),
-                    new.display()
-                );
-            }
-            (old, new) => {
-                output = format!(
-                    "{}\n#\t{}  {}",
-                    output,
-                    is_status,
-                    old.or(new).unwrap().display()
-                );
-            }
-        }
+        output = format_status_entry(&output, is_status, old_path, new_path);
     }
 
     if header {
@@ -924,25 +948,7 @@ fn print_long(statuses: &git2::Statuses) -> String {
 
         let old_path = entry.index_to_workdir().unwrap().old_file().path();
         let new_path = entry.index_to_workdir().unwrap().new_file().path();
-        match (old_path, new_path) {
-            (Some(old), Some(new)) if old != new => {
-                output = format!(
-                    "{}\n#\t{}  {} -> {}",
-                    output,
-                    is_status,
-                    old.display(),
-                    new.display()
-                );
-            }
-            (old, new) => {
-                output = format!(
-                    "{}\n#\t{}  {}",
-                    output,
-                    is_status,
-                    old.or(new).unwrap().display()
-                );
-            }
-        }
+        output = format_status_entry(&output, is_status, old_path, new_path);
     }
 
     if header {
@@ -1192,6 +1198,70 @@ mod tests {
         assert!(
             !requires_signed_tag(&Sign::None),
             "Sign::None must not sign the tag"
+        );
+    }
+
+    // Helper: create a bare-minimum git repo in a temp dir, initialise it, and
+    // return (tempdir, Client).  No remote is configured — sufficient for
+    // stage_paths tests.
+    fn make_test_client() -> (tempfile::TempDir, crate::Client) {
+        use git2::Signature;
+        let dir = tempfile::tempdir().unwrap();
+        let repo = git2::Repository::init(dir.path()).unwrap();
+
+        // git requires at least one commit before we can stage paths
+        let sig = Signature::now("Test", "test@test.com").unwrap();
+        let tree_oid = {
+            let mut index = repo.index().unwrap();
+            index.write_tree().unwrap()
+        };
+        let tree = repo.find_tree(tree_oid).unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "init", &tree, &[])
+            .unwrap();
+
+        let client = crate::Client::new_local_at(dir.path()).unwrap();
+        (dir, client)
+    }
+
+    #[test]
+    fn stage_paths_stages_new_file() {
+        let (dir, client) = make_test_client();
+        let file_path = dir.path().join("new_file.txt");
+        std::fs::write(&file_path, "hello").unwrap();
+
+        let result = client.stage_paths(&[Path::new("new_file.txt")]);
+        assert!(result.is_ok(), "stage_paths failed: {result:?}");
+
+        let staged: Vec<_> = client.repo_files_staged().unwrap();
+        assert!(
+            staged.iter().any(|(p, _)| p == "new_file.txt"),
+            "new_file.txt not found in staged files: {staged:?}"
+        );
+    }
+
+    #[test]
+    fn stage_paths_skips_nonexistent_path() {
+        let (_dir, client) = make_test_client();
+        let result = client.stage_paths(&[Path::new("does_not_exist.txt")]);
+        assert!(
+            result.is_ok(),
+            "stage_paths should silently skip missing paths, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn stage_paths_stages_file_in_subdirectory() {
+        let (dir, client) = make_test_client();
+        std::fs::create_dir(dir.path().join("sub")).unwrap();
+        std::fs::write(dir.path().join("sub").join("file.txt"), "data").unwrap();
+
+        let result = client.stage_paths(&[Path::new("sub/file.txt")]);
+        assert!(result.is_ok(), "stage_paths failed: {result:?}");
+
+        let staged = client.repo_files_staged().unwrap();
+        assert!(
+            staged.iter().any(|(p, _)| p == "sub/file.txt"),
+            "sub/file.txt not staged: {staged:?}"
         );
     }
 }
