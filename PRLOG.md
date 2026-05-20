@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update dependency toolkit to v6.2.0(pr [#946])
 - deps: update rust crate reqwest to 0.13.3(pr [#953])
 - deps: update rust crate tokio to 1.52.3(pr [#954])
+- deps: update rust crate sequoia-openpgp to 2.3.0(pr [#956])
 
 ### Security
 
@@ -2291,6 +2292,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#953]: https://github.com/jerus-org/pcu/pull/953
 [#954]: https://github.com/jerus-org/pcu/pull/954
 [#957]: https://github.com/jerus-org/pcu/pull/957
+[#956]: https://github.com/jerus-org/pcu/pull/956
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.19...HEAD
 [0.6.19]: https://github.com/jerus-org/pcu/compare/v0.6.18...v0.6.19
 [0.6.18]: https://github.com/jerus-org/pcu/compare/v0.6.17...v0.6.18
