@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - gen-linkedin: update default API version to 202501(pr [#944])
 - deps: update dependency toolkit to v6.2.0(pr [#946])
+- deps: update rust crate reqwest to 0.13.3(pr [#953])
 
 ### Security
 
@@ -2285,6 +2286,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#946]: https://github.com/jerus-org/pcu/pull/946
 [#947]: https://github.com/jerus-org/pcu/pull/947
 [#952]: https://github.com/jerus-org/pcu/pull/952
+[#953]: https://github.com/jerus-org/pcu/pull/953
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.19...HEAD
 [0.6.19]: https://github.com/jerus-org/pcu/compare/v0.6.18...v0.6.19
 [0.6.18]: https://github.com/jerus-org/pcu/compare/v0.6.17...v0.6.18
