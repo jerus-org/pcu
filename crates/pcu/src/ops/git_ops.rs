@@ -376,18 +376,39 @@ impl GitOps for Client {
     }
 
     fn stage_paths(&self, paths: &[&Path]) -> Result<(), Error> {
-        let mut index = self.git_repo.index()?;
-        for path in paths {
-            if self
+        let existing: Vec<&Path> = paths
+            .iter()
+            .copied()
+            .filter(|p| {
+                self.git_repo
+                    .workdir()
+                    .is_some_and(|wd| wd.join(p).exists())
+            })
+            .inspect(|p| {
+                log::debug!("stage_paths: staging {}", p.display());
+            })
+            .collect();
+
+        // Log any paths that don't exist so callers can diagnose staging gaps.
+        for p in paths {
+            if !self
                 .git_repo
                 .workdir()
-                .is_some_and(|wd| wd.join(path).exists())
+                .is_some_and(|wd| wd.join(p).exists())
             {
-                index.add_path(path)?;
-            } else {
-                log::debug!("stage_paths: skipping non-existent path {}", path.display());
+                log::debug!("stage_paths: skipping non-existent path {}", p.display());
             }
         }
+
+        if existing.is_empty() {
+            return Ok(());
+        }
+
+        let mut index = self.git_repo.index()?;
+        // add_all handles both file paths and directory paths (recursively
+        // staging all files within a directory), matching `git add` semantics.
+        // add_path only handles files and errors on directories.
+        index.add_all(existing.iter(), git2::IndexAddOption::DEFAULT, None)?;
         index.write()?;
         Ok(())
     }
@@ -1262,6 +1283,31 @@ mod tests {
         assert!(
             staged.iter().any(|(p, _)| p == "sub/file.txt"),
             "sub/file.txt not staged: {staged:?}"
+        );
+    }
+
+    #[test]
+    fn stage_paths_stages_directory_recursively() {
+        let (dir, client) = make_test_client();
+        let subdir = dir.path().join("prior-versions");
+        std::fs::create_dir(&subdir).unwrap();
+        std::fs::write(subdir.join("1.0.0.yml"), "version: 1").unwrap();
+        std::fs::write(subdir.join("2.0.0.yml"), "version: 2").unwrap();
+
+        let result = client.stage_paths(&[Path::new("prior-versions")]);
+        assert!(
+            result.is_ok(),
+            "stage_paths should handle directory paths: {result:?}"
+        );
+
+        let staged = client.repo_files_staged().unwrap();
+        assert!(
+            staged.iter().any(|(p, _)| p == "prior-versions/1.0.0.yml"),
+            "prior-versions/1.0.0.yml not staged: {staged:?}"
+        );
+        assert!(
+            staged.iter().any(|(p, _)| p == "prior-versions/2.0.0.yml"),
+            "prior-versions/2.0.0.yml not staged: {staged:?}"
         );
     }
 }
