@@ -51,7 +51,7 @@ tempfile = "3.27.0"
 thiserror = "2.0.18"
 sha2 = "0.11.0"
 openidconnect = { version = "4.0.1", default-features = false }
-sigstore = { version = "0.13", default-features = false, features = ["sign", "sigstore-trust-root", "rustls-tls"] }
+sigstore = { version = "0.14.0", default-features = false, features = ["sign", "sigstore-trust-root", "rustls-tls"] }
 sigstore_protobuf_specs = "0.5.1"
 tokio = { version = "1.52.3", features = ["fs", "macros", "rt-multi-thread", "time"] }
 toml = "1.1.2"
