@@ -25,6 +25,18 @@ ignore = [
     # Remove when sigstore updates its syntax-parsing dependencies.
     "RUSTSEC-2024-0370",
 
+    # RUSTSEC-2026-0173: proc-macro-error2 2.0.1 — unmaintained (2026-06-07).
+    # The proc-macro-error2 repo is ARCHIVED, so it will never be patched.
+    # Fix attempted: no fixed upstream exists. Two transitive paths:
+    #   sigstore → oci-client → oci-spec → getset → proc-macro-error2
+    #     (getset is the blocker: inactive since 2025-06; jbaublitz/getset#132)
+    #   gen-bsky → aquamarine → proc-macro-error2 (aquamarine is docs-only)
+    # Unmaintained != vulnerable; no known CVE. Upstream tracking:
+    # jbaublitz/getset#132, youki-dev/oci-spec-rs#340 (filed by us).
+    # TEMPORARY — reviewed weekly; remove when a fixed getset/oci-spec ships
+    # (and once gen-bsky drops aquamarine).
+    "RUSTSEC-2026-0173",
+
 ]
 
 # Yanked-package checking re-enabled: core2 0.4.0 was removed from the
