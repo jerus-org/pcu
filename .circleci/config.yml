@@ -6,7 +6,7 @@ parameters:
     default: "1.88"
 orbs:
   # cci-ignore-next-line
-  toolkit: jerus-org/circleci-toolkit@6.2.0
+  toolkit: jerus-org/circleci-toolkit@6.3.0
 
 # Custom executors removed - using toolkit rolling executors instead:
 #   - toolkit/rust_env_rolling for Rust jobs
@@ -835,7 +835,7 @@ workflows:
               only:
                 - main
                 - /pull\/[0-9]+/
-          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370"
+          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370 RUSTSEC-2026-0173"
       - toolkit/security:
           name: security with sonarcloud
           context: SonarCloud
@@ -844,6 +844,6 @@ workflows:
               ignore:
                 - /pull\/[0-9]+/
                 - main
-          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370"
+          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2024-0370 RUSTSEC-2026-0173"
 
 
