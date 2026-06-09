@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate chrono to 0.4.45(pr [#964])
 - deps: update rust crate log to 0.4.32(pr [#965])
 - deps: update rust crate reqwest to 0.13.4(pr [#966])
+- deps: update git2 packages(pr [#969])
 
 ## [0.6.21] - 2026-05-21
 
@@ -2320,6 +2321,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#964]: https://github.com/jerus-org/pcu/pull/964
 [#965]: https://github.com/jerus-org/pcu/pull/965
 [#966]: https://github.com/jerus-org/pcu/pull/966
+[#969]: https://github.com/jerus-org/pcu/pull/969
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.21...HEAD
 [0.6.21]: https://github.com/jerus-org/pcu/compare/v0.6.20...v0.6.21
 [0.6.20]: https://github.com/jerus-org/pcu/compare/v0.6.19...v0.6.20
