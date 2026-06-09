@@ -365,7 +365,7 @@ impl Client {
         let branch = git_repo
             .head()
             .ok()
-            .and_then(|h| h.shorthand().map(str::to_string));
+            .and_then(|h| h.shorthand().ok().map(str::to_string));
 
         // Create minimal API stubs — any method that actually uses these will
         // fail with an auth error, which is expected for a local-only client.
@@ -491,7 +491,7 @@ impl Client {
 /// is absent or the URL cannot be parsed.
 fn extract_owner_repo_from_git(repo: &Repository) -> Option<(String, String)> {
     let remote = repo.find_remote("origin").ok()?;
-    let url = remote.url()?;
+    let url = remote.url().ok()?;
     parse_owner_repo_from_url(url)
 }
 
