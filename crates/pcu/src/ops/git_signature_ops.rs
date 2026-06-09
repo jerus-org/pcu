@@ -117,7 +117,7 @@ fn extract_commit_info(commit: &Commit, repo: &Repository) -> Result<CommitInfo,
     let author_email = author.email().unwrap_or("").to_string();
     let author_name = author.name().unwrap_or("").to_string();
 
-    let subject = commit.summary().unwrap_or("").to_string();
+    let subject = commit.summary().ok().flatten().unwrap_or("").to_string();
 
     // Extract signature information
     let (signature_status, key_id, signer) = extract_signature_info(commit, repo)?;

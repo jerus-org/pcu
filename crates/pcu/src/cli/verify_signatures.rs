@@ -426,7 +426,7 @@ fn detect_repository(
     let remote = git_repo.find_remote("origin")?;
     let url = remote
         .url()
-        .ok_or_else(|| Error::GitError("No URL for origin remote".to_string()))?;
+        .map_err(|e| Error::GitError(format!("No valid URL for origin remote: {e}")))?;
 
     let (parsed_owner, parsed_repo) = parse_github_url(url)?;
 
