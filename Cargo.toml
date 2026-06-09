@@ -15,7 +15,7 @@ base64 = "0.22.1"
 base62 = "2.2.4"
 bsky-sdk = "0.1.24"
 cargo_toml = "0.22.3"
-chrono = "0.4.44"
+chrono = "0.4.45"
 clap = "4.6.1"
 clap-verbosity-flag = "3.0.4"
 color-eyre = "0.6.5"
@@ -32,7 +32,7 @@ reqwest = { version = "0.13.3", default-features = false, features = ["rustls"] 
 keep-a-changelog = "0.1.4"
 link-bridge = "0.2.5"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
-log = "0.4.29"
+log = "0.4.32"
 named-colour = { version = "0.3.26", features = ["extended"] }
 octocrate = { version = "2.2.0", features = [
     "apps",
