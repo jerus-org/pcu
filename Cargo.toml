@@ -32,7 +32,7 @@ reqwest = { version = "0.13.3", default-features = false, features = ["rustls"] 
 keep-a-changelog = "0.1.4"
 link-bridge = "0.2.5"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
-log = "0.4.29"
+log = "0.4.32"
 named-colour = { version = "0.3.26", features = ["extended"] }
 octocrate = { version = "2.2.0", features = [
     "apps",
