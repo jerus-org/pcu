@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate reqwest to 0.13.4(pr [#966])
 - deps: update git2 packages(pr [#969])
 - deps: update rust crate unicode-segmentation to 1.13.3(pr [#967])
+- deps: update rust crate uuid to 1.23.3(pr [#968])
 
 ## [0.6.21] - 2026-05-21
 
@@ -2324,6 +2325,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#966]: https://github.com/jerus-org/pcu/pull/966
 [#969]: https://github.com/jerus-org/pcu/pull/969
 [#967]: https://github.com/jerus-org/pcu/pull/967
+[#968]: https://github.com/jerus-org/pcu/pull/968
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.21...HEAD
 [0.6.21]: https://github.com/jerus-org/pcu/compare/v0.6.20...v0.6.21
 [0.6.20]: https://github.com/jerus-org/pcu/compare/v0.6.19...v0.6.20
