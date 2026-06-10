@@ -4,7 +4,6 @@ use std::fmt::Display;
 
 use crate::Capitalise;
 
-#[cfg_attr(doc, aquamarine::aquamarine)]
 /// # Hashtags Function Documentation
 ///
 /// ## Overview
@@ -42,13 +41,7 @@ use crate::Capitalise;
 ///
 /// ### Processing Pipeline
 ///
-/// ```mermaid
-/// graph LR
-///     A["Input: 'rust programming'"] --> B["Split: ['rust', 'programming']"]
-///     B --> C["Capitalize: ['Rust', 'Programming']"]
-///     C --> D["Join: 'RustProgramming'"]
-///     D --> E["Prefix: '#RustProgramming'"]
-/// ```
+#[doc = simple_mermaid::mermaid!("hashtags_pipeline.mmd")]
 ///
 /// ## Input Format Handling
 ///

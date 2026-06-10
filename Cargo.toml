@@ -10,8 +10,8 @@ rust-version = "1.88"
 repository = "https://github.com/jerus-org/pcu"
 
 [workspace.dependencies]
-aquamarine = "0.6.0"
 base64 = "0.22.1"
+simple-mermaid = "0.2.0"
 base62 = "2.2.4"
 bsky-sdk = "0.1.24"
 cargo_toml = "0.22.3"
