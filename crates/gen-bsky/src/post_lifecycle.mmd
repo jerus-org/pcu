@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Read: Load from file
+    Read --> Posted: Successful publish
+    Read --> Read: Publish error
+    Posted --> Deleted: File cleanup
+    Deleted --> [*]

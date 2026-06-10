@@ -1,0 +1,9 @@
+graph TD
+    A["Post Files (.post)"] --> B["Post::load()"]
+    B --> C["BskyPost Collection"]
+    C --> D["Post::post_to_bluesky()"]
+    D --> E["Bluesky Authentication"]
+    E --> F["Publish Posts"]
+    F --> G["Update Post States"]
+    G --> H["Post::delete_posted_posts()"]
+    H --> I["Cleanup Files"]

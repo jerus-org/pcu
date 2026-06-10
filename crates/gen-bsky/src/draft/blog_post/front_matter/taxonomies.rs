@@ -1,4 +1,3 @@
-#[cfg_attr(doc, aquamarine::aquamarine)]
 /// # Taxonomies Module Documentation
 ///
 /// ## Overview
@@ -19,15 +18,7 @@
 ///
 /// ## Module Architecture
 ///
-/// ```mermaid
-/// graph TD
-///     A["Markdown File"] --> B["TOML Front Matter"]
-///     B --> C["FrontMatter Struct"]
-///     C --> D["Taxonomies Struct"]
-///     D --> E["Raw Tags"]
-///     D --> F["Formatted Hashtags"]
-///     F --> G["Social Media Posts"]
-/// ```
+#[doc = simple_mermaid::mermaid!("taxonomies_architecture.mmd")]
 ///
 /// ## Integration With Other Modules
 ///

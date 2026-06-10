@@ -1,4 +1,3 @@
-#[cfg_attr(doc, aquamarine::aquamarine)]
 /// # Post Module Documentation
 ///
 /// ## Overview
@@ -9,17 +8,7 @@
 ///
 /// ## Module Architecture
 ///
-/// ```mermaid
-/// graph TD
-///     A["Post Files (.post)"] --> B["Post::load()"]
-///     B --> C["BskyPost Collection"]
-///     C --> D["Post::post_to_bluesky()"]
-///     D --> E["Bluesky Authentication"]
-///     E --> F["Publish Posts"]
-///     F --> G["Update Post States"]
-///     G --> H["Post::delete_posted_posts()"]
-///     H --> I["Cleanup Files"]
-/// ```
+#[doc = simple_mermaid::mermaid!("post_architecture.mmd")]
 ///
 /// ## Post Lifecycle
 ///
@@ -29,14 +18,7 @@
 /// 2. **Posted**: Posts have been successfully published to Bluesky
 /// 3. **Deleted**: Post files have been cleaned up after successful publishing
 ///
-/// ```mermaid
-/// stateDiagram-v2
-///     [*] --> Read: Load from file
-///     Read --> Posted: Successful publish
-///     Read --> Read: Publish error
-///     Posted --> Deleted: File cleanup
-///     Deleted --> [*]
-/// ```
+#[doc = simple_mermaid::mermaid!("post_lifecycle.mmd")]
 ///
 /// ## Key Components
 ///

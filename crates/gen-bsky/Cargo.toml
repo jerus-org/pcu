@@ -11,6 +11,8 @@ repository.workspace = true
 keywords = ["ci", "github", "bluesky"]
 include = [
     "**/*.rs",
+    "**/*.mmd",
+    "doc/mermaid-init.html",
     "Cargo.toml",
     "README.md",
     "LICENSE-MIT",
@@ -18,9 +20,15 @@ include = [
 ]
 categories = ["development-tools::build-utils"]
 
+[package.metadata.docs.rs]
+# simple-mermaid renders the .mmd diagrams via mermaid.js injected into the
+# rustdoc header (replaces the former aquamarine proc-macro, which pulled the
+# now-archived proc-macro-error2).
+rustdoc-args = ["--html-in-header", "doc/mermaid-init.html"]
+
 [dependencies]
-aquamarine.workspace = true
 base62.workspace = true
+simple-mermaid.workspace = true
 bsky-sdk.workspace = true
 chrono.workspace = true
 link-bridge.workspace = true
