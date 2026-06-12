@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - explicit commit identity on SignConfig (closes #972)(pr [#974])
 - idempotent upload_release_asset (closes #973)(pr [#975])
+- explicit GPG signing key on SignConfig (closes #976)(pr [#977])
 
 ### Changed
 
@@ -2337,6 +2338,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#971]: https://github.com/jerus-org/pcu/pull/971
 [#974]: https://github.com/jerus-org/pcu/pull/974
 [#975]: https://github.com/jerus-org/pcu/pull/975
+[#977]: https://github.com/jerus-org/pcu/pull/977
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.21...HEAD
 [0.6.21]: https://github.com/jerus-org/pcu/compare/v0.6.20...v0.6.21
 [0.6.20]: https://github.com/jerus-org/pcu/compare/v0.6.19...v0.6.20
