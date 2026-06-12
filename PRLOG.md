@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- explicit commit identity on SignConfig (closes #972)(pr [#974])
+
 ### Changed
 
 - chore-toolkit 6.3.0 + ignore RUSTSEC-2026-0173(pr [#963])
@@ -2330,6 +2334,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#968]: https://github.com/jerus-org/pcu/pull/968
 [#970]: https://github.com/jerus-org/pcu/pull/970
 [#971]: https://github.com/jerus-org/pcu/pull/971
+[#974]: https://github.com/jerus-org/pcu/pull/974
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.21...HEAD
 [0.6.21]: https://github.com/jerus-org/pcu/compare/v0.6.20...v0.6.21
 [0.6.20]: https://github.com/jerus-org/pcu/compare/v0.6.19...v0.6.20
