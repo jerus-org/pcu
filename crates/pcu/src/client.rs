@@ -412,6 +412,11 @@ impl Client {
     /// `uploads.github.com`.  Retries the release lookup up to 5 times with a
     /// 2-second delay to handle GitHub's eventual-consistency window after
     /// release creation.
+    /// Upload a binary as a GitHub release asset.
+    ///
+    /// Idempotent: if an asset with the same name already exists on the
+    /// release it is deleted first (delete-then-replace), so retries don't
+    /// fail with GitHub's 422 "Validation Failed".
     pub async fn upload_release_asset(
         &self,
         tag: &str,
@@ -450,6 +455,25 @@ impl Client {
         .await?;
 
         log::info!("Found release {} (id={})", release.tag_name, release.id);
+
+        // Delete-then-replace: if an asset of the same name already exists on
+        // the release (e.g. from a previous, partially-completed run), GitHub
+        // rejects a fresh upload with HTTP 422. Remove it first so the upload
+        // is idempotent across retries.
+        if let Some(asset_id) = find_existing_asset_id(
+            release.assets.iter().map(|a| (a.name.as_str(), a.id)),
+            asset_name,
+        ) {
+            log::info!("Replacing existing asset '{asset_name}' (id={asset_id})");
+            let del_token = PersonalAccessToken::new(self.github_token.clone());
+            let del_config = APIConfig::with_token(del_token).shared();
+            let del_api = GitHubAPI::new(&del_config);
+            del_api
+                .repos
+                .delete_release_asset(&self.owner, &self.repo, asset_id)
+                .send()
+                .await?;
+        }
 
         // Binary uploads must go to uploads.github.com, not api.github.com.
         let upload_token = PersonalAccessToken::new(self.github_token.clone());
@@ -515,6 +539,19 @@ fn parse_owner_repo_from_url(url: &str) -> Option<(String, String)> {
     let owner = parts.next()?.to_string();
     let repo = parts.next()?.to_string();
     Some((owner, repo))
+}
+
+/// Find the id of a release asset whose name matches `name`, if present.
+/// Pure helper so the match logic is unit-testable without constructing
+/// octocrate types.
+fn find_existing_asset_id<'a>(
+    assets: impl IntoIterator<Item = (&'a str, i64)>,
+    name: &str,
+) -> Option<i64> {
+    assets
+        .into_iter()
+        .find(|(n, _)| *n == name)
+        .map(|(_, id)| id)
 }
 
 /// Retry `attempt_fn` up to `max_attempts` times, sleeping `retry_delay`
@@ -614,5 +651,22 @@ mod tests {
         assert!(result.is_err());
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("Asset file not found"), "unexpected: {msg}");
+    }
+
+    #[test]
+    fn find_existing_asset_id_matches_by_name() {
+        let assets = [("tool_mcp-linux-x86_64", 11i64), ("tool.tar.gz.sig", 22i64)];
+        assert_eq!(
+            find_existing_asset_id(assets.iter().copied(), "tool.tar.gz.sig"),
+            Some(22)
+        );
+        assert_eq!(
+            find_existing_asset_id(assets.iter().copied(), "tool_mcp-linux-x86_64"),
+            Some(11)
+        );
+        assert_eq!(
+            find_existing_asset_id(assets.iter().copied(), "absent"),
+            None
+        );
     }
 }
