@@ -32,11 +32,26 @@ pub enum Sign {
     None,
 }
 
+/// An explicit commit author/committer identity supplied by the caller.
+///
+/// When set on a [`SignConfig`], the commit signature is built directly from
+/// this identity instead of reading it from the repository's git config. This
+/// removes the dependency on ambient config being readable from the repo
+/// handle (which can fail in CI, e.g. under `safe.directory`/dubious ownership).
+#[derive(Debug, Clone, PartialEq)]
+pub struct CommitIdentity {
+    pub name: String,
+    pub email: String,
+}
+
 /// Represents commit signing configuration with optional signoff
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SignConfig {
     pub sign: Sign,
     pub signoff: bool,
+    /// Explicit commit identity. When `None`, the signature is read from the
+    /// repository's merged git config (the previous behaviour).
+    pub identity: Option<CommitIdentity>,
 }
 
 impl Default for SignConfig {
@@ -44,6 +59,7 @@ impl Default for SignConfig {
         SignConfig {
             sign: Sign::Gpg,
             signoff: true,
+            identity: None,
         }
     }
 }
@@ -54,12 +70,37 @@ impl SignConfig {
         SignConfig {
             sign,
             signoff: true,
+            identity: None,
         }
     }
 
     /// Create a new SignConfig with signoff setting
     pub fn with_signoff(sign: Sign, signoff: bool) -> Self {
-        SignConfig { sign, signoff }
+        SignConfig {
+            sign,
+            signoff,
+            identity: None,
+        }
+    }
+
+    /// Supply an explicit commit identity, used to build the signature directly
+    /// instead of reading `user.name`/`user.email` from the git config.
+    pub fn with_identity(mut self, name: impl Into<String>, email: impl Into<String>) -> Self {
+        self.identity = Some(CommitIdentity {
+            name: name.into(),
+            email: email.into(),
+        });
+        self
+    }
+
+    /// Build a signature from the explicit identity, if one is configured.
+    /// Returns `None` when no identity is set, so callers fall back to the
+    /// repository's git config.
+    pub(crate) fn explicit_signature(&self) -> Result<Option<Signature<'static>>, Error> {
+        match &self.identity {
+            Some(id) => Ok(Some(Signature::now(&id.name, &id.email)?)),
+            None => Ok(None),
+        }
     }
 
     /// Check if signoff is enabled
@@ -485,7 +526,12 @@ impl GitOps for Client {
         let tree_id = index.write_tree()?;
         let head = self.git_repo.head()?;
         let parent = self.git_repo.find_commit(head.target().unwrap())?;
-        let sig = self.git_repo.signature()?;
+        // Prefer an explicit identity supplied by the caller; fall back to the
+        // repository's merged git config when none is given.
+        let sig = match sign_config.explicit_signature()? {
+            Some(sig) => sig,
+            None => self.git_repo.signature()?,
+        };
 
         // Append signoff to commit message if enabled
         let commit_message_with_signoff =
@@ -1139,6 +1185,31 @@ mod tests {
         let config_enabled = config_none.set_signoff(true);
         assert!(config_enabled.is_signoff_enabled());
         assert_eq!(config_enabled.sign, Sign::None);
+    }
+
+    #[test]
+    fn with_identity_sets_explicit_identity() {
+        let config = SignConfig::new(Sign::Gpg).with_identity("Bot Name", "bot@example.com");
+        let id = config.identity.as_ref().expect("identity should be set");
+        assert_eq!(id.name, "Bot Name");
+        assert_eq!(id.email, "bot@example.com");
+    }
+
+    #[test]
+    fn explicit_signature_uses_configured_identity() {
+        let config = SignConfig::new(Sign::None).with_identity("Bot Name", "bot@example.com");
+        let sig = config
+            .explicit_signature()
+            .unwrap()
+            .expect("explicit identity should yield a signature");
+        assert_eq!(sig.name().unwrap(), "Bot Name");
+        assert_eq!(sig.email().unwrap(), "bot@example.com");
+    }
+
+    #[test]
+    fn explicit_signature_is_none_without_identity() {
+        let config = SignConfig::new(Sign::None);
+        assert!(config.explicit_signature().unwrap().is_none());
     }
 
     #[test]
