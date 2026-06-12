@@ -52,6 +52,10 @@ pub struct SignConfig {
     /// Explicit commit identity. When `None`, the signature is read from the
     /// repository's merged git config (the previous behaviour).
     pub identity: Option<CommitIdentity>,
+    /// Explicit GPG signing key id. When `None`, the key is read from
+    /// `user.signingkey` in the repository's git config (the previous
+    /// behaviour). Only consulted for `Sign::Gpg`.
+    pub signing_key: Option<String>,
 }
 
 impl Default for SignConfig {
@@ -60,6 +64,7 @@ impl Default for SignConfig {
             sign: Sign::Gpg,
             signoff: true,
             identity: None,
+            signing_key: None,
         }
     }
 }
@@ -71,6 +76,7 @@ impl SignConfig {
             sign,
             signoff: true,
             identity: None,
+            signing_key: None,
         }
     }
 
@@ -80,6 +86,7 @@ impl SignConfig {
             sign,
             signoff,
             identity: None,
+            signing_key: None,
         }
     }
 
@@ -91,6 +98,19 @@ impl SignConfig {
             email: email.into(),
         });
         self
+    }
+
+    /// Supply an explicit GPG signing key id, used directly instead of reading
+    /// `user.signingkey` from the git config.
+    pub fn with_signing_key(mut self, key: impl Into<String>) -> Self {
+        self.signing_key = Some(key.into());
+        self
+    }
+
+    /// The explicit GPG signing key, if one is configured. When `None`, callers
+    /// fall back to `user.signingkey` from the repository's git config.
+    pub(crate) fn explicit_signing_key(&self) -> Option<&str> {
+        self.signing_key.as_deref()
     }
 
     /// Build a signature from the explicit identity, if one is configured.
@@ -557,9 +577,14 @@ impl GitOps for Client {
                 )?;
                 let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
 
-                let signature = self.git_repo.config()?.get_string(GIT_USER_SIGNATURE)?;
+                // Prefer an explicit signing key supplied by the caller; fall
+                // back to `user.signingkey` from the git config otherwise.
+                let signature = match sign_config.explicit_signing_key() {
+                    Some(key) => key.to_string(),
+                    None => self.git_repo.config()?.get_string(GIT_USER_SIGNATURE)?,
+                };
 
-                let short_sign = signature[12..].to_string();
+                let short_sign = signature.get(12..).unwrap_or(signature.as_str());
                 log::trace!("Signature short: {short_sign}");
 
                 let gpg_args = vec!["--status-fd", "2", "-bsau", signature.as_str()];
@@ -1210,6 +1235,17 @@ mod tests {
     fn explicit_signature_is_none_without_identity() {
         let config = SignConfig::new(Sign::None);
         assert!(config.explicit_signature().unwrap().is_none());
+    }
+
+    #[test]
+    fn with_signing_key_sets_explicit_key() {
+        let config = SignConfig::new(Sign::Gpg).with_signing_key("DEADBEEFCAFE");
+        assert_eq!(config.explicit_signing_key(), Some("DEADBEEFCAFE"));
+    }
+
+    #[test]
+    fn explicit_signing_key_is_none_by_default() {
+        assert_eq!(SignConfig::new(Sign::Gpg).explicit_signing_key(), None);
     }
 
     #[test]
