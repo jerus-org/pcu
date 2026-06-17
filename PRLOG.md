@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - add --skip-ci to pcu pr(pr [#978])
 
+### Changed
+
+- chore-add msrv verify recipe to justfile(pr [#980])
+
 ## [0.6.22] - 2026-06-12
 
 ### Added
@@ -2346,6 +2350,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#975]: https://github.com/jerus-org/pcu/pull/975
 [#977]: https://github.com/jerus-org/pcu/pull/977
 [#978]: https://github.com/jerus-org/pcu/pull/978
+[#980]: https://github.com/jerus-org/pcu/pull/980
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.22...HEAD
 [0.6.22]: https://github.com/jerus-org/pcu/compare/v0.6.21...v0.6.22
 [0.6.21]: https://github.com/jerus-org/pcu/compare/v0.6.20...v0.6.21
