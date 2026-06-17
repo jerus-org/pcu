@@ -34,6 +34,11 @@ pub struct Pr {
     /// request was found in CI environment.
     #[clap(long, default_value_t = true)]
     pub allow_no_pull_request: bool,
+    /// Append `[skip ci]` to the PRLOG commit message so the push to the default
+    /// branch does not trigger a redundant CI pipeline (e.g. the second
+    /// validation run after a "pr merged" PRLOG update).
+    #[clap(long, default_value_t = false)]
+    pub skip_ci: bool,
 }
 
 impl Pr {

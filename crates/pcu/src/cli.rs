@@ -155,10 +155,19 @@ impl Commands {
         log::trace!("Initial settings (default, pcu.toml and environment: {settings:#?}");
 
         settings = match self {
-            Commands::Pr(pr) => settings
-                .set_override("commit_message", "chore: update prlog for pr")?
-                .set_override("command", "pr")?
-                .set_override("from_merge", pr.from_merge)?,
+            Commands::Pr(pr) => {
+                // Append [skip ci] so the push of the PRLOG update to the
+                // default branch does not trigger a redundant CI pipeline.
+                let commit_message = if pr.skip_ci {
+                    "chore: update prlog for pr [skip ci]"
+                } else {
+                    "chore: update prlog for pr"
+                };
+                settings
+                    .set_override("commit_message", commit_message)?
+                    .set_override("command", "pr")?
+                    .set_override("from_merge", pr.from_merge)?
+            }
             Commands::Release(_) => settings
                 .set_override("commit_message", "chore: update prlog for release")?
                 .set_override("command", "release")?,
@@ -283,6 +292,42 @@ mod tests {
     use super::*;
     use crate::SignConfig;
     use clap::Parser;
+
+    #[test]
+    fn pr_skip_ci_appends_to_commit_message() {
+        let cmd = Commands::Pr(Pr {
+            early_exit: false,
+            from_merge: true,
+            prefix: "v".to_string(),
+            push: true,
+            allow_push_fail: true,
+            allow_no_pull_request: true,
+            skip_ci: true,
+        });
+        let settings = cmd.get_settings().unwrap();
+        assert_eq!(
+            settings.get::<String>("commit_message").unwrap(),
+            "chore: update prlog for pr [skip ci]"
+        );
+    }
+
+    #[test]
+    fn pr_without_skip_ci_has_plain_commit_message() {
+        let cmd = Commands::Pr(Pr {
+            early_exit: false,
+            from_merge: true,
+            prefix: "v".to_string(),
+            push: true,
+            allow_push_fail: true,
+            allow_no_pull_request: true,
+            skip_ci: false,
+        });
+        let settings = cmd.get_settings().unwrap();
+        assert_eq!(
+            settings.get::<String>("commit_message").unwrap(),
+            "chore: update prlog for pr"
+        );
+    }
 
     #[test]
     fn test_cli_default_signoff_enabled() {
