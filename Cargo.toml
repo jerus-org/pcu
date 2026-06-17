@@ -19,7 +19,7 @@ chrono = "0.4.45"
 clap = "4.6.1"
 clap-verbosity-flag = "3.0.4"
 color-eyre = "0.6.5"
-config = {version = "0.15.22", features = ["toml"], default-features = false}
+config = {version = "0.15.24", features = ["toml"], default-features = false}
 env_logger = "0.11.10"
 gen-bsky = { path = "crates/gen-bsky", version = "0.1.24" }
 gen-linkedin = { path = "crates/gen-linkedin", version = "0.1.17" }
