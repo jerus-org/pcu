@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - pr commit uses configured message (skip-ci)(pr [#983])
+- only skip-ci on default-branch prlog commit(pr [#984])
 
 ## [0.6.24] - 2026-06-18
 
@@ -2370,6 +2371,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#981]: https://github.com/jerus-org/pcu/pull/981
 [#982]: https://github.com/jerus-org/pcu/pull/982
 [#983]: https://github.com/jerus-org/pcu/pull/983
+[#984]: https://github.com/jerus-org/pcu/pull/984
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.24...HEAD
 [0.6.24]: https://github.com/jerus-org/pcu/compare/v0.6.23...v0.6.24
 [0.6.23]: https://github.com/jerus-org/pcu/compare/v0.6.22...v0.6.23
