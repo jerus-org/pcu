@@ -23,7 +23,11 @@ config = {version = "0.15.24", features = ["toml"], default-features = false}
 env_logger = "0.11.10"
 gen-bsky = { path = "crates/gen-bsky", version = "0.1.25" }
 gen-linkedin = { path = "crates/gen-linkedin", version = "0.1.18" }
-git2 = "0.21.0"
+# git2 0.21 changed its default features to `[]` (0.20 defaulted to
+# ["ssh", "https"]). Without `https`, libgit2 is built with no TLS backend and
+# every HTTPS git op fails at runtime ("there is no TLS stream available").
+# Enable them explicitly; `ssh` keeps SSH remotes working too.
+git2 = { version = "0.21.0", features = ["ssh", "https"] }
 git2_credentials = "0.16.0"
 gql_client = "1.1.0"
 bytes = "1.11.1"
