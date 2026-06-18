@@ -181,11 +181,17 @@ impl Pr {
         client: Client,
         sign_config: SignConfig,
     ) -> Result<CIExit, Error> {
-        // Use the configured commit message (resolved in `Commands::get_settings`,
-        // which appends `[skip ci]` when `--skip-ci` is set) rather than a
-        // hardcoded literal — otherwise the skip-ci flag never reaches the commit.
+        // Append `[skip ci]` only when committing the PRLOG update to the
+        // default branch (the post-merge update). On a PR branch we WANT
+        // validation to run, so never skip CI there.
+        let on_default_branch = client.branch_or_main() == client.default_branch.as_str();
+        let commit_message = if self.skip_ci && on_default_branch {
+            format!("{} [skip ci]", client.commit_message)
+        } else {
+            client.commit_message.clone()
+        };
         client
-            .commit_changed_files(sign_config, &client.commit_message, &self.prefix, None)
+            .commit_changed_files(sign_config, &commit_message, &self.prefix, None)
             .await?;
 
         if self.push {
@@ -293,9 +299,9 @@ mod commit_message_tests {
     use std::path::Path;
 
     /// Build a temp git repo with one commit, an `origin/<branch>` tracking ref
-    /// (so `branch_status` works without a real remote), and an unstaged change
-    /// ready to commit. Returns the repo dir.
-    fn repo_with_pending_change(dir: &Path) {
+    /// (so `branch_status` works without a real remote — it looks up
+    /// `origin/<client.branch>`), and an unstaged change ready to commit.
+    fn repo_with_pending_change(dir: &Path, branch: &str) {
         let repo = git2::Repository::init(dir).unwrap();
         {
             let mut cfg = repo.config().unwrap();
@@ -311,7 +317,6 @@ mod commit_message_tests {
         let oid = repo
             .commit(Some("HEAD"), &sig, &sig, "initial", &tree, &[])
             .unwrap();
-        let branch = repo.head().unwrap().shorthand().unwrap().to_string();
         repo.reference(&format!("refs/remotes/origin/{branch}"), oid, true, "track")
             .unwrap();
         // Pending working-tree change for commit_and_push to stage + commit.
@@ -325,46 +330,52 @@ mod commit_message_tests {
         message
     }
 
-    /// Regression guard for the skip-ci feature: `commit_and_push` must use the
-    /// configured `commit_message` (which `get_settings` builds with `[skip ci]`
-    /// when `--skip-ci`), NOT a hardcoded literal. A hardcoded message regressed
-    /// this once and the CI skip silently never happened.
-    #[tokio::test]
-    async fn commit_and_push_uses_configured_commit_message_with_skip_ci() {
+    /// Run commit_and_push for the given branch + skip_ci and return the
+    /// resulting HEAD commit message. `client.default_branch` is "main".
+    async fn commit_message_for(branch: &str, skip_ci: bool) -> String {
         let tmp = tempfile::tempdir().unwrap();
-        repo_with_pending_change(tmp.path());
-
-        let mut client = Client::new_local_at(tmp.path()).unwrap();
-        let expected = "chore: update prlog for pr [skip ci]".to_string();
-        client.commit_message = expected.clone();
-
-        Pr::for_test(true)
-            .commit_and_push(client, SignConfig::with_signoff(Sign::None, false))
-            .await
-            .expect("commit_and_push should succeed");
-
-        assert_eq!(
-            head_message(tmp.path()),
-            expected,
-            "commit must use client.commit_message (config-driven), not a hardcoded literal"
-        );
-    }
-
-    /// Without skip-ci the configured message has no marker — confirms the same
-    /// path simply commits whatever the configured message is.
-    #[tokio::test]
-    async fn commit_and_push_uses_plain_configured_message() {
-        let tmp = tempfile::tempdir().unwrap();
-        repo_with_pending_change(tmp.path());
+        repo_with_pending_change(tmp.path(), branch);
 
         let mut client = Client::new_local_at(tmp.path()).unwrap();
         client.commit_message = "chore: update prlog for pr".to_string();
+        client.branch = Some(branch.to_string());
 
-        Pr::for_test(false)
+        Pr::for_test(skip_ci)
             .commit_and_push(client, SignConfig::with_signoff(Sign::None, false))
             .await
             .expect("commit_and_push should succeed");
 
-        assert_eq!(head_message(tmp.path()), "chore: update prlog for pr");
+        head_message(tmp.path())
+    }
+
+    /// On the default branch with --skip-ci, the PRLOG commit gets `[skip ci]`
+    /// (suppresses the redundant post-merge validation).
+    #[tokio::test]
+    async fn skip_ci_appends_marker_on_default_branch() {
+        assert_eq!(
+            commit_message_for("main", true).await,
+            "chore: update prlog for pr [skip ci]"
+        );
+    }
+
+    /// Regression guard: on a PR (non-default) branch, --skip-ci must NOT add
+    /// `[skip ci]` — we want validation to run for the PR. `[skip ci]` was being
+    /// added to the wrong commit before this gate.
+    #[tokio::test]
+    async fn skip_ci_omits_marker_on_pr_branch() {
+        assert_eq!(
+            commit_message_for("feat/some-change", true).await,
+            "chore: update prlog for pr",
+            "[skip ci] must not be added on a non-default (PR) branch"
+        );
+    }
+
+    /// Without --skip-ci the message is plain on any branch.
+    #[tokio::test]
+    async fn no_skip_ci_plain_message_on_default_branch() {
+        assert_eq!(
+            commit_message_for("main", false).await,
+            "chore: update prlog for pr"
+        );
     }
 }

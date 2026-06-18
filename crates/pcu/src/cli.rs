@@ -155,19 +155,14 @@ impl Commands {
         log::trace!("Initial settings (default, pcu.toml and environment: {settings:#?}");
 
         settings = match self {
-            Commands::Pr(pr) => {
-                // Append [skip ci] so the push of the PRLOG update to the
-                // default branch does not trigger a redundant CI pipeline.
-                let commit_message = if pr.skip_ci {
-                    "chore: update prlog for pr [skip ci]"
-                } else {
-                    "chore: update prlog for pr"
-                };
-                settings
-                    .set_override("commit_message", commit_message)?
-                    .set_override("command", "pr")?
-                    .set_override("from_merge", pr.from_merge)?
-            }
+            // `[skip ci]` is NOT decided here: it depends on the branch being
+            // committed to (only the default-branch PRLOG commit should skip CI),
+            // which isn't known at config time. It is appended in
+            // `Pr::commit_and_push` instead.
+            Commands::Pr(pr) => settings
+                .set_override("commit_message", "chore: update prlog for pr")?
+                .set_override("command", "pr")?
+                .set_override("from_merge", pr.from_merge)?,
             Commands::Release(_) => settings
                 .set_override("commit_message", "chore: update prlog for release")?
                 .set_override("command", "release")?,
@@ -294,39 +289,28 @@ mod tests {
     use clap::Parser;
 
     #[test]
-    fn pr_skip_ci_appends_to_commit_message() {
-        let cmd = Commands::Pr(Pr {
-            early_exit: false,
-            from_merge: true,
-            prefix: "v".to_string(),
-            push: true,
-            allow_push_fail: true,
-            allow_no_pull_request: true,
-            skip_ci: true,
-        });
-        let settings = cmd.get_settings().unwrap();
-        assert_eq!(
-            settings.get::<String>("commit_message").unwrap(),
-            "chore: update prlog for pr [skip ci]"
-        );
-    }
-
-    #[test]
-    fn pr_without_skip_ci_has_plain_commit_message() {
-        let cmd = Commands::Pr(Pr {
-            early_exit: false,
-            from_merge: true,
-            prefix: "v".to_string(),
-            push: true,
-            allow_push_fail: true,
-            allow_no_pull_request: true,
-            skip_ci: false,
-        });
-        let settings = cmd.get_settings().unwrap();
-        assert_eq!(
-            settings.get::<String>("commit_message").unwrap(),
-            "chore: update prlog for pr"
-        );
+    fn pr_config_commit_message_is_plain_regardless_of_skip_ci() {
+        // The config layer never encodes `[skip ci]` — that is appended at
+        // commit time only when on the default branch (see
+        // Pr::commit_and_push). So the configured message is plain for both
+        // skip_ci values.
+        for skip_ci in [true, false] {
+            let cmd = Commands::Pr(Pr {
+                early_exit: false,
+                from_merge: true,
+                prefix: "v".to_string(),
+                push: true,
+                allow_push_fail: true,
+                allow_no_pull_request: true,
+                skip_ci,
+            });
+            let settings = cmd.get_settings().unwrap();
+            assert_eq!(
+                settings.get::<String>("commit_message").unwrap(),
+                "chore: update prlog for pr",
+                "config message must stay plain (skip_ci={skip_ci})"
+            );
+        }
     }
 
     #[test]
