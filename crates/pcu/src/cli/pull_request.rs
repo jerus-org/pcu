@@ -181,9 +181,11 @@ impl Pr {
         client: Client,
         sign_config: SignConfig,
     ) -> Result<CIExit, Error> {
-        let commit_message = "chore: update prlog for pr";
+        // Use the configured commit message (resolved in `Commands::get_settings`,
+        // which appends `[skip ci]` when `--skip-ci` is set) rather than a
+        // hardcoded literal — otherwise the skip-ci flag never reaches the commit.
         client
-            .commit_changed_files(sign_config, commit_message, &self.prefix, None)
+            .commit_changed_files(sign_config, &client.commit_message, &self.prefix, None)
             .await?;
 
         if self.push {
@@ -191,6 +193,19 @@ impl Pr {
         }
 
         Ok(CIExit::Updated)
+    }
+
+    #[cfg(test)]
+    fn for_test(skip_ci: bool) -> Self {
+        Pr {
+            early_exit: false,
+            from_merge: false,
+            prefix: "v".to_string(),
+            push: false,
+            allow_push_fail: true,
+            allow_no_pull_request: true,
+            skip_ci,
+        }
     }
 
     fn push_the_commit(&self, client: Client) -> Result<(), Error> {
@@ -268,5 +283,88 @@ impl Pr {
                  authentication, and review the GitHub audit log"
             )))
         }
+    }
+}
+
+#[cfg(test)]
+mod commit_message_tests {
+    use super::*;
+    use crate::{Client, Sign, SignConfig};
+    use std::path::Path;
+
+    /// Build a temp git repo with one commit, an `origin/<branch>` tracking ref
+    /// (so `branch_status` works without a real remote), and an unstaged change
+    /// ready to commit. Returns the repo dir.
+    fn repo_with_pending_change(dir: &Path) {
+        let repo = git2::Repository::init(dir).unwrap();
+        {
+            let mut cfg = repo.config().unwrap();
+            cfg.set_str("user.name", "Test User").unwrap();
+            cfg.set_str("user.email", "test@example.com").unwrap();
+        }
+        std::fs::write(dir.join("file.txt"), "initial\n").unwrap();
+        let mut index = repo.index().unwrap();
+        index.add_path(Path::new("file.txt")).unwrap();
+        index.write().unwrap();
+        let tree = repo.find_tree(index.write_tree().unwrap()).unwrap();
+        let sig = repo.signature().unwrap();
+        let oid = repo
+            .commit(Some("HEAD"), &sig, &sig, "initial", &tree, &[])
+            .unwrap();
+        let branch = repo.head().unwrap().shorthand().unwrap().to_string();
+        repo.reference(&format!("refs/remotes/origin/{branch}"), oid, true, "track")
+            .unwrap();
+        // Pending working-tree change for commit_and_push to stage + commit.
+        std::fs::write(dir.join("file.txt"), "changed\n").unwrap();
+    }
+
+    fn head_message(dir: &Path) -> String {
+        let repo = git2::Repository::open(dir).unwrap();
+        let commit = repo.head().unwrap().peel_to_commit().unwrap();
+        let message = commit.message().unwrap().trim().to_string();
+        message
+    }
+
+    /// Regression guard for the skip-ci feature: `commit_and_push` must use the
+    /// configured `commit_message` (which `get_settings` builds with `[skip ci]`
+    /// when `--skip-ci`), NOT a hardcoded literal. A hardcoded message regressed
+    /// this once and the CI skip silently never happened.
+    #[tokio::test]
+    async fn commit_and_push_uses_configured_commit_message_with_skip_ci() {
+        let tmp = tempfile::tempdir().unwrap();
+        repo_with_pending_change(tmp.path());
+
+        let mut client = Client::new_local_at(tmp.path()).unwrap();
+        let expected = "chore: update prlog for pr [skip ci]".to_string();
+        client.commit_message = expected.clone();
+
+        Pr::for_test(true)
+            .commit_and_push(client, SignConfig::with_signoff(Sign::None, false))
+            .await
+            .expect("commit_and_push should succeed");
+
+        assert_eq!(
+            head_message(tmp.path()),
+            expected,
+            "commit must use client.commit_message (config-driven), not a hardcoded literal"
+        );
+    }
+
+    /// Without skip-ci the configured message has no marker — confirms the same
+    /// path simply commits whatever the configured message is.
+    #[tokio::test]
+    async fn commit_and_push_uses_plain_configured_message() {
+        let tmp = tempfile::tempdir().unwrap();
+        repo_with_pending_change(tmp.path());
+
+        let mut client = Client::new_local_at(tmp.path()).unwrap();
+        client.commit_message = "chore: update prlog for pr".to_string();
+
+        Pr::for_test(false)
+            .commit_and_push(client, SignConfig::with_signoff(Sign::None, false))
+            .await
+            .expect("commit_and_push should succeed");
+
+        assert_eq!(head_message(tmp.path()), "chore: update prlog for pr");
     }
 }
