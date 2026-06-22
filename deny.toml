@@ -14,9 +14,6 @@ ignore = [
     # pcu uses sigstore only for signing CI attestations (not for decryption
     # operations), so the risk is low. Remove when sigstore updates rsa.
     { id = "RUSTSEC-2023-0071", reason = "transitive via sigstore 0.13.0; no fix available upstream" },
-    # proc-macro-error 1.0.4: unmaintained. Transitive via
-    # sigstore 0.13.0 → json-syntax → locspan-derive. No alternative upstream.
-    { id = "RUSTSEC-2024-0370", reason = "transitive via sigstore 0.13.0; no fix available upstream" },
 ]
 
 # This section is considered when running `cargo deny check licenses`

@@ -1367,6 +1367,41 @@ mod tests {
         );
     }
 
+    /// Contract: the **ambient** client (`new_local_at`, empty `github_token`,
+    /// dummy API stubs — no GitHub auth) can stage AND commit a change with no
+    /// network and no credentials. This is the contract the auto-record push
+    /// redesign relies on: the binary commits via pcu using only the ambient
+    /// environment, and a separate job performs the push. A regression here
+    /// (e.g. a future refactor coupling commit to the GitHub API) would silently
+    /// break auto-record, so it is locked explicitly.
+    #[test]
+    fn ambient_client_commits_staged_changes_without_auth() {
+        let (dir, client) = make_test_client();
+        std::fs::write(dir.path().join("regenerated.yml"), "orb: source\n").unwrap();
+        client.stage_paths(&[Path::new("regenerated.yml")]).unwrap();
+
+        // Identity is supplied explicitly so the commit does not depend on the
+        // temp repo's (absent) user.name/user.email git config.
+        let sign = SignConfig::new(Sign::None).with_identity("Bot", "bot@example.com");
+        client
+            .commit_staged(sign, "chore: regenerate orb", "", None)
+            .expect("ambient client must commit staged changes without GitHub auth");
+
+        let repo = git2::Repository::open(dir.path()).unwrap();
+        let head = repo.head().unwrap().peel_to_commit().unwrap();
+        // The subject is preserved; pcu may append a DCO sign-off trailer.
+        assert!(
+            head.message().unwrap().starts_with("chore: regenerate orb"),
+            "unexpected commit message: {:?}",
+            head.message()
+        );
+        assert_eq!(
+            head.parent_count(),
+            1,
+            "the commit must build on the init commit (HEAD advanced)"
+        );
+    }
+
     #[test]
     fn stage_paths_skips_nonexistent_path() {
         let (_dir, client) = make_test_client();

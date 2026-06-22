@@ -18,13 +18,6 @@ ignore = [
     # decryption oracle) cannot be triggered. Remove when sigstore updates rsa.
     "RUSTSEC-2023-0071",
 
-    # RUSTSEC-2024-0370: proc-macro-error 1.0.4 — unmaintained crate.
-    # Fix attempted: no alternative until sigstore/json-syntax migrate away from
-    # locspan-derive. Transitive: sigstore → json-syntax → locspan-derive →
-    # proc-macro-error. Unmaintained ≠ vulnerable; no known CVE.
-    # Remove when sigstore updates its syntax-parsing dependencies.
-    "RUSTSEC-2024-0370",
-
     # RUSTSEC-2026-0173: proc-macro-error2 2.0.1 — unmaintained (2026-06-07).
     # The proc-macro-error2 repo is ARCHIVED, so it will never be patched.
     # Fix attempted: no fixed upstream exists. Remaining transitive path:
