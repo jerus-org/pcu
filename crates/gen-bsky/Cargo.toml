@@ -13,6 +13,10 @@ include = [
     "**/*.rs",
     "**/*.mmd",
     "doc/mermaid-init.html",
+    # docsrs include_str! target (src/lib.rs `#![cfg_attr(docsrs, doc = include_str!("../docs/lib.md"))]`).
+    # The `include` allowlist omits it otherwise, so docs.rs (which builds with
+    # --cfg docsrs from the published tarball) fails with "couldn't read docs/lib.md".
+    "docs/lib.md",
     "Cargo.toml",
     "README.md",
     "LICENSE-MIT",
