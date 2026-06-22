@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update dependency toolkit to v6.4.2(pr [#989])
 - deps: update rust crate link-bridge to 0.2.6(pr [#987])
 - deps: update rust crate log to 0.4.33(pr [#988])
+- deps: update rust crate bytes to 1.12.0(pr [#990])
 
 ## [0.6.25] - 2026-06-18
 
@@ -2390,6 +2391,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#989]: https://github.com/jerus-org/pcu/pull/989
 [#987]: https://github.com/jerus-org/pcu/pull/987
 [#988]: https://github.com/jerus-org/pcu/pull/988
+[#990]: https://github.com/jerus-org/pcu/pull/990
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.25...HEAD
 [0.6.25]: https://github.com/jerus-org/pcu/compare/v0.6.24...v0.6.25
 [0.6.24]: https://github.com/jerus-org/pcu/compare/v0.6.23...v0.6.24
