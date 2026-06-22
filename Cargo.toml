@@ -34,7 +34,7 @@ bytes = "1.11.1"
 kdeets = "0.1.30"
 reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }
 keep-a-changelog = "0.1.4"
-link-bridge = "0.2.5"
+link-bridge = "0.2.6"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
 log = "0.4.32"
 named-colour = { version = "0.3.26", features = ["extended"] }
