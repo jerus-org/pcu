@@ -833,7 +833,6 @@ workflows:
           filters:
             branches:
               only:
-                - main
                 - /pull\/[0-9]+/
           ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2026-0173"
       - toolkit/security:
@@ -843,7 +842,6 @@ workflows:
             branches:
               ignore:
                 - /pull\/[0-9]+/
-                - main
           ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2026-0173"
 
 
