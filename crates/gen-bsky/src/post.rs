@@ -55,20 +55,22 @@
 ///
 /// ## Usage Example
 ///
-/// ```rust,ignore
-/// use crate::post::Post;
+/// ```rust,no_run
+/// # use gen_bsky::Post;
+/// #
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), gen_bsky::PostError> {
+/// let mut poster = Post::new("user@example.com", "password")?;
 ///
-/// async fn publish_posts() -> Result<(), Box<dyn std::error::Error>> {
-///     let mut poster = Post::new("user@example.com", "password")?;
-///     
-///     poster
-///         .load("./posts")?        // Load .post files
-///         .post_to_bluesky().await? // Publish to Bluesky
-///         .delete_posted_posts()?;  // Clean up successful posts
-///         
-///     println!("Cleaned up {} posts", poster.count_deleted());
-///     Ok(())
-/// }
+/// poster
+///     .load("./posts")?         // load every `.post` file in the directory
+///     .post_to_bluesky()
+///     .await?                   // authenticate and publish
+///     .delete_posted_posts()?;  // remove the files that were published
+///
+/// println!("Cleaned up {} posts", poster.count_deleted());
+/// # Ok(())
+/// # }
 /// ```
 use std::{fmt::Display, fs, io::BufReader, path::Path};
 
@@ -103,25 +105,11 @@ use thiserror::Error;
 ///
 /// ## Error Handling Strategy
 ///
-/// ```rust,ignore
-/// use crate::post::{Post, PostError};
-///
-/// async fn handle_posting() {
-///     match Post::new("user", "pass") {
-///         Ok(mut poster) => {
-///             if let Err(e) = poster.load("./posts") {
-///                 match e {
-///                     PostError::Io(io_err) => eprintln!("File error: {}", io_err),
-///                     PostError::SerdeJsonError(json_err) => eprintln!("JSON error: {}", json_err),
-///                     _ => eprintln!("Other error: {}", e),
-///                 }
-///             }
-///         },
-///         Err(PostError::NoBlueskyIdentifier) => eprintln!("Missing username"),
-///         Err(PostError::NoBlueskyPassword) => eprintln!("Missing password"),
-///         Err(e) => eprintln!("Setup error: {}", e),
-///     }
-/// }
+/// ```rust
+/// # use gen_bsky::{Post, PostError};
+/// // Credentials are validated up front.
+/// assert!(matches!(Post::new("", "pw"), Err(PostError::NoBlueskyIdentifier)));
+/// assert!(matches!(Post::new("id", ""), Err(PostError::NoBlueskyPassword)));
 /// ```
 ///
 /// ## Recovery Strategies
@@ -242,21 +230,22 @@ pub enum PostError {
 ///
 /// ## Usage Pattern
 ///
-/// ```rust,ignore
-/// use crate::post::Post;
+/// ```rust,no_run
+/// # use gen_bsky::Post;
+/// #
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), gen_bsky::PostError> {
+/// let mut poster = Post::new("user.bsky.social", "app-password")?;
 ///
-/// async fn publish_workflow() -> Result<(), Box<dyn std::error::Error>> {
-///     let mut poster = Post::new("user.bsky.social", "app-password")?;
-///     
-///     // Chain operations for fluent API usage
-///     poster
-///         .load("./post_directory")?        // Load all .post files
-///         .post_to_bluesky().await?         // Authenticate and publish
-///         .delete_posted_posts()?;          // Clean up successful posts
-///         
-///     println!("Published and cleaned up {} posts", poster.count_deleted());
-///     Ok(())
-/// }
+/// poster
+///     .load("./post_directory")?
+///     .post_to_bluesky()
+///     .await?
+///     .delete_posted_posts()?;
+///
+/// println!("Published and cleaned up {} posts", poster.count_deleted());
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// ## Thread Safety
@@ -314,21 +303,12 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// use crate::post::Post;
-    ///
-    /// // Using handle format
-    /// let poster = Post::new("user.bsky.social", "app-password")?;
-    ///
-    /// // Using email format  
-    /// let poster = Post::new("user@example.com", "password")?;
-    ///
-    /// // Error handling
-    /// match Post::new("", "password") {
-    ///     Err(PostError::NoBlueskyIdentifier) => println!("Missing username"),
-    ///     Ok(_) => println!("Success"),
-    ///     Err(e) => println!("Other error: {}", e),
-    /// }
+    /// ```rust
+    /// # use gen_bsky::Post;
+    /// // Handle or email both work as the identifier.
+    /// let _poster = Post::new("user.bsky.social", "app-password")?;
+    /// let _poster = Post::new("user@example.com", "password")?;
+    /// # Ok::<(), gen_bsky::PostError>(())
     /// ```
     pub fn new(id: &str, password: &str) -> Result<Self, PostError> {
         if id.is_empty() {
@@ -392,22 +372,14 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// use crate::post::Post;
-    ///
+    /// ```rust,no_run
+    /// # use gen_bsky::Post;
+    /// # fn main() -> Result<(), gen_bsky::PostError> {
     /// let mut poster = Post::new("user", "pass")?;
-    ///
-    /// // Load from single directory
-    /// poster.load("./posts")?;
-    ///
-    /// // Load from multiple directories (accumulative)
-    /// poster.load("./posts1")?
-    ///       .load("./posts2")?;
-    ///
-    /// // Using PathBuf
-    /// use std::path::PathBuf;
-    /// let post_dir = PathBuf::from("./posts");
-    /// poster.load(post_dir)?;
+    /// poster.load("./posts")?;        // load all `.post` files in a directory
+    /// poster.load("./more_posts")?;   // calls accumulate
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn load<P>(&mut self, directory: P) -> Result<&mut Self, PostError>
     where
@@ -487,28 +459,14 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// use crate::post::Post;
-    /// use std::env;
-    ///
-    /// async fn publish_example() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let mut poster = Post::new("user", "pass")?;
-    ///     poster.load("./posts")?;
-    ///
-    ///     // Enable testing mode
-    ///     env::set_var("TESTING", "1");
-    ///     
-    ///     // Publish posts
-    ///     poster.post_to_bluesky().await?;
-    ///
-    ///     // Check results
-    ///     let posted_count = poster.bsky_posts.iter()
-    ///         .filter(|p| p.state() == &BskyPostState::Posted)
-    ///         .count();
-    ///     println!("Posted {} posts", posted_count);
-    ///     
-    ///     Ok(())
-    /// }
+    /// ```rust,no_run
+    /// # use gen_bsky::Post;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), gen_bsky::PostError> {
+    /// let mut poster = Post::new("user", "pass")?;
+    /// poster.load("./posts")?.post_to_bluesky().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn post_to_bluesky(&mut self) -> Result<&mut Self, PostError> {
         let bsky_config = BskyConfig::default();
@@ -629,31 +587,18 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// use crate::post::{Post, PostError};
-    ///
-    /// async fn cleanup_workflow() -> Result<(), PostError> {
-    ///     let mut poster = Post::new("user", "pass")?;
-    ///     
-    ///     poster.load("./posts")?
-    ///           .post_to_bluesky().await?
-    ///           .delete_posted_posts()?;  // Clean up successful posts
-    ///           
-    ///     println!("Deleted {} post files", poster.count_deleted());
-    ///     Ok(())
-    /// }
-    ///
-    /// // Error handling example
-    /// async fn careful_cleanup(mut poster: Post) {
-    ///     match poster.delete_posted_posts() {
-    ///         Ok(_) => println!("Cleanup successful"),
-    ///         Err(PostError::Io(io_err)) => {
-    ///             eprintln!("File deletion failed: {}", io_err);
-    ///             // Posts remain in Posted state for manual review
-    ///         },
-    ///         Err(e) => eprintln!("Unexpected error: {}", e),
-    ///     }
-    /// }
+    /// ```rust,no_run
+    /// # use gen_bsky::Post;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), gen_bsky::PostError> {
+    /// let mut poster = Post::new("user", "pass")?;
+    /// poster
+    ///     .load("./posts")?
+    ///     .post_to_bluesky()
+    ///     .await?
+    ///     .delete_posted_posts()?; // delete the files that were published
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn delete_posted_posts(&mut self) -> Result<&mut Self, PostError> {
         for bsky_post in &mut self
@@ -727,28 +672,11 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// use crate::post::Post;
-    ///
-    /// async fn workflow_with_reporting() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let mut poster = Post::new("user", "pass")?;
-    ///     
-    ///     poster.load("./posts")?;
-    ///     let initial_count = poster.bsky_posts.len();
-    ///     println!("Loaded {} posts", initial_count);
-    ///     
-    ///     poster.post_to_bluesky().await?
-    ///           .delete_posted_posts()?;
-    ///           
-    ///     let deleted_count = poster.count_deleted();
-    ///     println!("Successfully processed {} of {} posts", deleted_count, initial_count);
-    ///     
-    ///     if deleted_count < initial_count {
-    ///         println!("Warning: {} posts may have failed", initial_count - deleted_count);
-    ///     }
-    ///     
-    ///     Ok(())
-    /// }
+    /// ```rust
+    /// # use gen_bsky::Post;
+    /// let poster = Post::new("user", "pass")?;
+    /// assert_eq!(poster.count_deleted(), 0); // nothing published yet
+    /// # Ok::<(), gen_bsky::PostError>(())
     /// ```
     pub fn count_deleted(&self) -> usize {
         self.bsky_posts

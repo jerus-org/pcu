@@ -20,18 +20,9 @@ use serde::{Deserialize, Serialize};
 ///
 /// ## Rust Usage
 ///
-/// ```rust,ignore
-/// use your_crate::Extra;
-///
-/// // Create an empty Extra struct
-/// let extra = Extra::default();
-/// assert!(extra.bluesky().is_none());
-///
-/// // Access Bluesky configuration if present
-/// if let Some(bluesky_config) = extra.bluesky() {
-///     // Use the Bluesky configuration for social media posting
-/// }
-/// ```
+/// For usage, see the unit tests in this module (e.g.
+/// `tests::test_default_extra`, `tests::test_bluesky_accessor`,
+/// `tests::test_toml_integration`).
 ///
 /// # Serialization
 ///
@@ -70,21 +61,7 @@ impl Extra {
     ///
     /// # Examples
     ///
-    /// ```rust,ignore
-    /// use your_crate::Extra;
-    ///
-    /// let extra = Extra::default();
-    ///
-    /// match extra.bluesky() {
-    ///     Some(config) => {
-    ///         // Process Bluesky configuration
-    ///         println!("Bluesky config found");
-    ///     }
-    ///     None => {
-    ///         println!("No Bluesky configuration");
-    ///     }
-    /// }
-    /// ```
+    /// See `tests::test_bluesky_accessor` for usage.
     pub(crate) fn bluesky(&self) -> Option<&super::Bluesky> {
         self.bluesky.as_ref()
     }
