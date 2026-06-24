@@ -59,6 +59,37 @@ fn should_create_github_release(tag_exists: bool, github_release_exists: bool) -
     tag_exists && !github_release_exists
 }
 
+/// Poll `probe` up to `max_attempts` times, sleeping `retry_delay` between
+/// attempts, returning `true` as soon as it yields `true`.
+///
+/// GitHub's REST API lags behind a freshly-pushed git tag: a poll taken
+/// immediately after the push can report the tag as absent for a few seconds.
+/// Returning `false` only after exhausting every attempt (rather than on the
+/// first poll) keeps release creation from being silently skipped during that
+/// eventual-consistency window — mirroring the retry already used when looking
+/// up the release for asset upload.
+async fn tag_visible_with_retry<F, Fut>(
+    tag: &str,
+    max_attempts: u32,
+    retry_delay: std::time::Duration,
+    mut probe: F,
+) -> bool
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = bool>,
+{
+    for attempt in 1..=max_attempts {
+        if probe().await {
+            return true;
+        }
+        log::warn!("tag '{tag}' not yet visible via API (attempt {attempt}/{max_attempts})");
+        if attempt < max_attempts {
+            tokio::time::sleep(retry_delay).await;
+        }
+    }
+    false
+}
+
 /// Create a GitHub release for `<prefix><version>` when needed.
 ///
 /// Idempotent: if the git tag is absent, logs an error and returns `Ok`.
@@ -66,7 +97,14 @@ fn should_create_github_release(tag_exists: bool, github_release_exists: bool) -
 /// Only calls `make_release` when the tag is present but no release exists yet.
 async fn ensure_github_release(client: &Client, prefix: &str, version: &str) -> Result<(), Error> {
     let tag = format!("{prefix}{version}");
-    let tag_exists = client.tag_exists(&tag).await;
+    // Retry the tag-existence check: the tag was pushed moments earlier and the
+    // GitHub REST API may not have caught up yet. Without this, a single failed
+    // poll silently skips release creation (see the asset-upload 404 that broke
+    // gen-circleci-orb 0.0.51).
+    let tag_exists = tag_visible_with_retry(&tag, 5, std::time::Duration::from_secs(2), || {
+        client.tag_exists(&tag)
+    })
+    .await;
     let release_exists = client
         .github_rest
         .repos
@@ -1161,6 +1199,77 @@ mod release_package_tests {
         assert!(
             !should_create_github_release(false, false),
             "no tag → nothing to create a release against"
+        );
+    }
+
+    #[tokio::test]
+    async fn tag_visible_with_retry_true_on_first_attempt() {
+        let attempt = std::sync::atomic::AtomicU32::new(0);
+        let visible = tag_visible_with_retry("crate-v1.0.0", 5, std::time::Duration::ZERO, || {
+            attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            async { true }
+        })
+        .await;
+        assert!(visible);
+        assert_eq!(
+            attempt.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "stop polling as soon as the tag is visible"
+        );
+    }
+
+    #[tokio::test]
+    async fn tag_visible_with_retry_true_when_visible_after_api_lag() {
+        // GitHub's REST API lags behind the git tag push: the first poll(s)
+        // return false, then the tag becomes visible.
+        let attempt = std::sync::atomic::AtomicU32::new(0);
+        let visible = tag_visible_with_retry("crate-v1.0.0", 5, std::time::Duration::ZERO, || {
+            let n = attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            async move { n >= 2 }
+        })
+        .await;
+        assert!(visible, "tag must be detected once the API catches up");
+        assert_eq!(attempt.load(std::sync::atomic::Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn tag_visible_with_retry_false_after_all_attempts() {
+        let attempt = std::sync::atomic::AtomicU32::new(0);
+        let visible = tag_visible_with_retry("crate-v1.0.0", 3, std::time::Duration::ZERO, || {
+            attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            async { false }
+        })
+        .await;
+        assert!(
+            !visible,
+            "a genuinely-absent tag returns false (not an error)"
+        );
+        assert_eq!(
+            attempt.load(std::sync::atomic::Ordering::SeqCst),
+            3,
+            "every attempt is exhausted before giving up"
+        );
+    }
+
+    /// Regression for the silent skip that broke gen-circleci-orb 0.0.51.
+    ///
+    /// `ensure_github_release` polled tag visibility exactly once. A freshly
+    /// pushed tag that was not yet visible via the REST API on that single poll
+    /// caused release creation to be skipped (logged "Tag does not exist" and
+    /// returned `Ok`), which then made the asset-upload step 404 forever. With a
+    /// retry, the lagging tag is detected and the release is still created.
+    #[tokio::test]
+    async fn release_created_when_tag_visible_only_after_api_lag() {
+        let attempt = std::sync::atomic::AtomicU32::new(0);
+        let tag_exists =
+            tag_visible_with_retry("crate-v1.0.0", 5, std::time::Duration::ZERO, || {
+                let n = attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                async move { n >= 1 }
+            })
+            .await;
+        assert!(
+            should_create_github_release(tag_exists, false),
+            "tag becoming visible after lag must still trigger release creation"
         );
     }
 }
