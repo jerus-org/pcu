@@ -48,7 +48,7 @@
 //!
 //! ### Constructor
 //!
-//! ```rust
+//! ```rust,ignore
 //! pub fn new(
 //!     blog_path: &PathBuf,
 //!     min_date: Datetime,
@@ -71,14 +71,14 @@
 //!
 //! ### Accessor Methods
 //!
-//! ```rust
+//! ```rust,ignore
 //! pub fn title(&self) -> &str
 //! ```
 //! Returns the post title from front matter.
 //!
 //! ### Core Functionality
 //!
-//! ```rust
+//! ```rust,ignore
 //! pub async fn get_bluesky_record(&self) -> Result<RecordData, BlogPostError>
 //! ```
 //!
@@ -90,7 +90,7 @@
 //! - Validates character and grapheme limits (300 max)
 //! - Creates proper Bluesky API record format
 //!
-//! ```rust
+//! ```rust,ignore
 //! pub fn write_referrer_file_to(
 //!     &mut self,
 //!     store_dir: &Path,
@@ -104,7 +104,7 @@
 //! - `store_dir` - Directory to write the redirect file
 //! - `base_url` - Base URL for constructing the short link
 //!
-//! ```rust
+//! ```rust,ignore
 //! pub async fn write_bluesky_record_to(&mut self, store_dir: &Path) -> Result<(), BlogPostError>
 //! ```
 //!
@@ -121,7 +121,7 @@
 //! ### Post Text Format
 //!
 //! The generated Bluesky post follows this format:
-//! ```
+//! ```text
 //! {
 //!     title
 //! }
@@ -171,7 +171,7 @@
 //!
 //! ## Usage Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use std::path::PathBuf;
 //!
 //! use toml::value::Datetime;

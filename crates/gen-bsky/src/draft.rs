@@ -76,7 +76,6 @@ pub enum DraftError {
 /// # use std::path::PathBuf;
 /// #
 /// # use url::Url;
-/// # use toml::value::Datetime;
 /// #
 /// # use gen_bsky::{Draft, DraftError};
 /// #
@@ -84,13 +83,7 @@ pub enum DraftError {
 /// # async fn main() -> Result<(), DraftError> {
 ///     let base_url = Url::parse("https://www.example.com/")?;
 ///     let paths = vec!["content/blog".to_string()];
-///     let date = Datetime {
-///                   date: Some(toml::value::Date{
-///                               year: 2025,
-///                               month: 8,
-///                               day: 4}),
-///                   time: None,
-///                   offset: None};
+///     let date = "2025-08-04";
 ///     let allow_draft = false;
 ///
 ///     let mut posts = get_post_drafts(
@@ -108,12 +101,9 @@ pub enum DraftError {
 ///  async fn get_post_drafts(
 ///             base_url: Url,
 ///             paths: Vec<String>,
-///             date: Datetime,
+///             date: &str,
 ///             allow_draft: bool) -> Result<Draft, DraftError>
 /// {
-///     let post_store = PathBuf::new().join("bluesky_post_store");
-///     let referrer_store = PathBuf::new().join("static").join("s");
-///
 ///     let mut builder = Draft::builder(base_url, None);
 ///    
 ///     // Add the paths specified at the command line.
@@ -123,8 +113,6 @@ pub enum DraftError {
 ///    
 ///     // Set the filters for blog posts
 ///     builder
-///     .with_post_store(post_store)?
-///     .with_referrer_store(referrer_store)?
 ///     .with_minimum_date(date)?
 ///     .with_allow_draft(allow_draft);
 ///    
