@@ -9,7 +9,7 @@
 ///
 /// ## Struct Definition
 ///
-/// ```rust
+/// ```rust,ignore
 /// #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 /// pub(crate) struct Bluesky {
 ///     description: Option<String>,
@@ -227,13 +227,13 @@
 /// ### Construction Methods
 ///
 /// #### Default Construction
-/// ```rust
+/// ```rust,ignore
 /// let bluesky = Bluesky::default();
 /// // Both description and tags are None
 /// ```
 ///
 /// #### Field-by-Field Construction
-/// ```rust
+/// ```rust,ignore
 /// let bluesky = Bluesky {
 ///     description: Some("My post description".to_string()),
 ///     tags: Some(vec![

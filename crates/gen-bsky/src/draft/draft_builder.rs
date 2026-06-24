@@ -101,6 +101,7 @@ impl DraftBuilder {
     /// #         Ok(self)
     /// #     }
     /// # }
+    /// # fn gdb() -> PathBuilder { PathBuilder::new() }
     /// let mut builder = gdb();
     ///
     /// // Add a file using a string literal
@@ -111,7 +112,6 @@ impl DraftBuilder {
     /// builder.add_path_or_file(dir)?;
     ///
     /// // Add using a PathBuf
-    /// use std::path::PathBuf;
     /// let path = PathBuf::from("../assets/images");
     /// builder.add_path_or_file(path)?;
     ///
@@ -144,8 +144,9 @@ impl DraftBuilder {
     /// #         self.path_or_file.push(path_or_file.into());
     /// #         Ok(self)
     /// #     }
-    /// #     pub fn build(self) -> Vec<PathBuf> { self.path_or_file }
+    /// #     pub fn build(&self) -> Vec<PathBuf> { self.path_or_file.clone() }
     /// # }
+    /// # fn gdb() -> PathBuilder { PathBuilder::new() }
     /// let paths = gdb()
     ///     .add_path_or_file("src/")?
     ///     .add_path_or_file("tests/")?

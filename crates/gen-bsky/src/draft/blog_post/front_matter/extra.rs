@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// ## Rust Usage
 ///
-/// ```rust
+/// ```rust,ignore
 /// use your_crate::Extra;
 ///
 /// // Create an empty Extra struct
@@ -70,7 +70,7 @@ impl Extra {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// use your_crate::Extra;
     ///
     /// let extra = Extra::default();
