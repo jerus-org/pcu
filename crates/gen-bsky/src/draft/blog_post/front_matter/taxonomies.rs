@@ -119,11 +119,7 @@ impl Taxonomies {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// let tags = vec!["rust".to_string(), "programming".to_string()];
-    /// let taxonomies = Taxonomies::new(tags);
-    /// assert_eq!(taxonomies.tags(), vec!["rust", "programming"]);
-    /// ```
+    /// See `tests::test_new_constructor`.
     pub(crate) fn new(tags: Vec<String>) -> Self {
         Taxonomies { tags }
     }
@@ -154,11 +150,7 @@ impl Taxonomies {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// let taxonomies = Taxonomies::new(vec!["rust".to_string(), "programming".to_string()]);
-    /// let tags = taxonomies.tags();
-    /// assert_eq!(tags, vec!["rust", "programming"]);
-    /// ```
+    /// See `tests::test_repeated_tag_access` and `tests::test_tags_empty`.
     ///
     /// ## Edge Cases
     ///
@@ -200,14 +192,8 @@ impl Taxonomies {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// let taxonomies = Taxonomies::new(vec![
-    ///     "rust".to_string(),
-    ///     "web development".to_string()
-    /// ]);
-    /// let hashtags = taxonomies.hashtags();
-    /// assert_eq!(hashtags, vec!["#Rust", "#WebDevelopment"]);
-    /// ```
+    /// See `tests::test_hashtags_empty` and the `test_taxonomies_hashtags!`
+    /// cases.
     ///
     /// ## Edge Cases
     ///

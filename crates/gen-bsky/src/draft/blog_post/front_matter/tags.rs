@@ -13,13 +13,8 @@ use crate::Capitalise;
 /// input formats and normalizes them into consistent hashtag format with title
 /// case capitalization and no spaces.
 ///
-/// ## Function Signature
-///
-/// ```ignore
-/// pub(crate) fn hashtags(tags: Vec<String>) -> Vec<String>
-/// ```
-///
-/// **Visibility**: `pub(crate)` - Available within the current crate only
+/// Crate-internal. Accepts any `Vec` of `Display` tags and returns the
+/// formatted hashtags.
 ///
 /// **Parameters**:
 /// - `tags: Vec<String>` - A vector of tag strings to be converted to hashtags
@@ -77,44 +72,10 @@ use crate::Capitalise;
 ///
 /// ## Usage Examples
 ///
-/// ### Basic Usage
-///
-/// ```rust ignore
-/// let tags = vec![
-///     "rust".to_string(),
-///     "programming".to_string(),
-///     "web development".to_string()
-/// ];
-///
-/// let result = hashtags(tags);
-/// // Result: ["#Rust", "#Programming", "#WebDevelopment"]
-/// ```
-///
-/// ### Handling Existing Hashtags
-///
-/// ```rust ignore
-/// let tags = vec![
-///     "#rust".to_string(),
-///     "machine learning".to_string(),
-///     "#AI".to_string()
-/// ];
-///
-/// let result = hashtags(tags);
-/// // Result: ["#Rust", "#MachineLearning", "#AI"]
-/// ```
-///
-/// ### Mixed Format Input
-///
-/// ```rust ignore
-/// let tags = vec![
-///     "  web development  ".to_string(),
-///     "#mobile  app".to_string(),
-///     "data science".to_string()
-/// ];
-///
-/// let result = hashtags(tags);
-/// // Result: ["#WebDevelopment", "#MobileApp", "#DataScience"]
-/// ```
+/// See the unit tests in this module (e.g.
+/// `tests::test_documentation_basic_example`,
+/// `tests::test_documentation_existing_hashtags_example`,
+/// `tests::test_documentation_mixed_format_example`).
 ///
 /// ## Performance Characteristics
 ///
@@ -160,18 +121,8 @@ use crate::Capitalise;
 ///
 /// ### Unicode Examples
 ///
-/// ```rust ignore
-/// use super::hashtags;
-/// let tags = vec![
-///     "café culture".to_string(),
-///     "москва travel".to_string(),
-///     "日本 food".to_string()
-/// ];
-///
-/// let result = hashtags(tags);
-/// // Result depends on capitalise() implementation:
-/// // ["#CaféCulture", "#МоскваTravel", "#日本Food"]
-/// ```
+/// See `tests::test_accented_characters`, `tests::test_cyrillic`,
+/// `tests::test_chinese_characters`.
 pub(crate) fn hashtags<S: Display>(tags: Vec<S>) -> Vec<String> {
     let mut hashtags = vec![];
     for tag in tags.into_iter() {

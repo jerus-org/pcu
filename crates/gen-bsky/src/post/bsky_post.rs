@@ -70,13 +70,7 @@ pub(crate) struct PostFile {
 ///
 /// The enum is commonly used with iterator filters to process posts by state:
 ///
-/// ```rust,ignore
-/// // Process only posts ready for publishing
-/// posts.iter().filter(|p| p.state() == &BskyPostState::Read)
-///
-/// // Clean up successfully posted content
-/// posts.iter().filter(|p| p.state() == &BskyPostState::Posted)
-/// ```
+/// See the unit tests in this module (`mod tests`) for worked usage.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum BskyPostState {
     /// Post has been loaded from a `.post` file and is ready for publishing.
@@ -133,21 +127,7 @@ pub(crate) enum BskyPostState {
 ///
 /// ## Integration with Post Workflow
 ///
-/// ```rust,ignore
-/// // Created during file loading
-/// let bsky_post = BskyPost::new(record_data, file_path);
-///
-/// // State managed during publishing
-/// if publish_successful {
-///     bsky_post.set_state(BskyPostState::Posted);
-/// }
-///
-/// // Cleanup based on state
-/// if bsky_post.state() == &BskyPostState::Posted {
-///     fs::remove_file(bsky_post.file_path())?;
-///     bsky_post.set_state(BskyPostState::Deleted);
-/// }
-/// ```
+/// See the unit tests in this module (`mod tests`) for worked usage.
 #[derive(Debug, Clone)]
 pub(crate) struct BskyPost {
     /// The Bluesky post data ready for API submission
@@ -192,17 +172,7 @@ impl BskyPost {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// use bsky_sdk::api::app::bsky::feed::post::RecordData;
-    /// use std::path::PathBuf;
-    ///
-    /// // Typically called during file loading
-    /// let post_data = serde_json::from_reader(file_reader)?;
-    /// let file_path = PathBuf::from("./posts/example.post");
-    /// let bsky_post = BskyPost::new(post_data, file_path);
-    ///
-    /// assert_eq!(bsky_post.state(), &BskyPostState::Read);
-    /// ```
+    /// See the unit tests in this module (`mod tests`) for worked usage.
     pub(crate) fn new(post: RecordData, file_path: PathBuf) -> Self {
         BskyPost {
             post,
@@ -259,18 +229,7 @@ impl BskyPost {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// // Access post content for logging
-    /// println!("Post content: {}", bsky_post.post().text);
-    ///
-    /// // Submit to Bluesky API
-    /// let result = agent.create_record(bsky_post.post().clone()).await;
-    ///
-    /// // Check post metadata
-    /// if let Some(langs) = &bsky_post.post().langs {
-    ///     println!("Post languages: {:?}", langs);
-    /// }
-    /// ```
+    /// See the unit tests in this module (`mod tests`) for worked usage.
     pub(crate) fn post(&self) -> &RecordData {
         &self.post
     }
@@ -308,18 +267,7 @@ impl BskyPost {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// // File cleanup after successful posting
-    /// if bsky_post.state() == &BskyPostState::Posted {
-    ///     fs::remove_file(bsky_post.file_path())?;
-    /// }
-    ///
-    /// // Logging for progress tracking
-    /// println!("Processing: {}", bsky_post.file_path().display());
-    ///
-    /// // Error reporting with file context
-    /// eprintln!("Failed to process: {}", bsky_post.file_path().to_string_lossy());
-    /// ```
+    /// See the unit tests in this module (`mod tests`) for worked usage.
     pub(crate) fn file_path(&self) -> &PathBuf {
         &self.file_path
     }
@@ -357,24 +305,7 @@ impl BskyPost {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// // Filter posts by state
-    /// let ready_posts: Vec<_> = posts.iter()
-    ///     .filter(|p| p.state() == &BskyPostState::Read)
-    ///     .collect();
-    ///
-    /// // Conditional processing
-    /// match bsky_post.state() {
-    ///     BskyPostState::Read => publish_post(&bsky_post),
-    ///     BskyPostState::Posted => cleanup_file(&bsky_post),
-    ///     BskyPostState::Deleted => println!("Already processed"),
-    /// }
-    ///
-    /// // Progress reporting
-    /// let posted_count = posts.iter()
-    ///     .filter(|p| p.state() == &BskyPostState::Posted)
-    ///     .count();
-    /// ```
+    /// See the unit tests in this module (`mod tests`) for worked usage.
     pub(crate) fn state(&self) -> &BskyPostState {
         &self.state
     }
@@ -422,24 +353,7 @@ impl BskyPost {
     ///
     /// ## Examples
     ///
-    /// ```rust,ignore
-    /// // Typical usage in publishing workflow
-    /// let result = agent.create_record(bsky_post.post().clone()).await;
-    /// if result.is_ok() {
-    ///     bsky_post.set_state(BskyPostState::Posted);
-    /// }
-    ///
-    /// // File cleanup workflow
-    /// if bsky_post.state() == &BskyPostState::Posted {
-    ///     fs::remove_file(bsky_post.file_path())?;
-    ///     bsky_post.set_state(BskyPostState::Deleted);
-    /// }
-    ///
-    /// // Error recovery (if needed)
-    /// if post_failed_to_publish {
-    ///     bsky_post.set_state(BskyPostState::Read); // Reset for retry
-    /// }
-    /// ```
+    /// See the unit tests in this module (`mod tests`) for worked usage.
     pub(crate) fn set_state(&mut self, new_state: BskyPostState) {
         self.state = new_state
     }
