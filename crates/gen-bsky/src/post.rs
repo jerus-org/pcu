@@ -55,7 +55,23 @@
 ///
 /// ## Usage Example
 ///
-/// See the unit tests in this module (`mod tests`) for worked usage.
+/// ```rust,no_run
+/// # use gen_bsky::Post;
+/// #
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), gen_bsky::PostError> {
+/// let mut poster = Post::new("user@example.com", "password")?;
+///
+/// poster
+///     .load("./posts")?         // load every `.post` file in the directory
+///     .post_to_bluesky()
+///     .await?                   // authenticate and publish
+///     .delete_posted_posts()?;  // remove the files that were published
+///
+/// println!("Cleaned up {} posts", poster.count_deleted());
+/// # Ok(())
+/// # }
+/// ```
 use std::{fmt::Display, fs, io::BufReader, path::Path};
 
 const TESTING_FLAG: &str = "TESTING";
@@ -89,7 +105,12 @@ use thiserror::Error;
 ///
 /// ## Error Handling Strategy
 ///
-/// See the unit tests in this module (`mod tests`) for worked usage.
+/// ```rust
+/// # use gen_bsky::{Post, PostError};
+/// // Credentials are validated up front.
+/// assert!(matches!(Post::new("", "pw"), Err(PostError::NoBlueskyIdentifier)));
+/// assert!(matches!(Post::new("id", ""), Err(PostError::NoBlueskyPassword)));
+/// ```
 ///
 /// ## Recovery Strategies
 ///
@@ -209,7 +230,23 @@ pub enum PostError {
 ///
 /// ## Usage Pattern
 ///
-/// See the unit tests in this module (`mod tests`) for worked usage.
+/// ```rust,no_run
+/// # use gen_bsky::Post;
+/// #
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), gen_bsky::PostError> {
+/// let mut poster = Post::new("user.bsky.social", "app-password")?;
+///
+/// poster
+///     .load("./post_directory")?
+///     .post_to_bluesky()
+///     .await?
+///     .delete_posted_posts()?;
+///
+/// println!("Published and cleaned up {} posts", poster.count_deleted());
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// ## Thread Safety
 ///
@@ -266,7 +303,13 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// See the unit tests in this module (`mod tests`) for worked usage.
+    /// ```rust
+    /// # use gen_bsky::Post;
+    /// // Handle or email both work as the identifier.
+    /// let _poster = Post::new("user.bsky.social", "app-password")?;
+    /// let _poster = Post::new("user@example.com", "password")?;
+    /// # Ok::<(), gen_bsky::PostError>(())
+    /// ```
     pub fn new(id: &str, password: &str) -> Result<Self, PostError> {
         if id.is_empty() {
             return Err(PostError::NoBlueskyIdentifier);
@@ -329,7 +372,15 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// See the unit tests in this module (`mod tests`) for worked usage.
+    /// ```rust,no_run
+    /// # use gen_bsky::Post;
+    /// # fn main() -> Result<(), gen_bsky::PostError> {
+    /// let mut poster = Post::new("user", "pass")?;
+    /// poster.load("./posts")?;        // load all `.post` files in a directory
+    /// poster.load("./more_posts")?;   // calls accumulate
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn load<P>(&mut self, directory: P) -> Result<&mut Self, PostError>
     where
         P: AsRef<Path> + Display,
@@ -408,7 +459,15 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// See the unit tests in this module (`mod tests`) for worked usage.
+    /// ```rust,no_run
+    /// # use gen_bsky::Post;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), gen_bsky::PostError> {
+    /// let mut poster = Post::new("user", "pass")?;
+    /// poster.load("./posts")?.post_to_bluesky().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn post_to_bluesky(&mut self) -> Result<&mut Self, PostError> {
         let bsky_config = BskyConfig::default();
 
@@ -528,7 +587,19 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// See the unit tests in this module (`mod tests`) for worked usage.
+    /// ```rust,no_run
+    /// # use gen_bsky::Post;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), gen_bsky::PostError> {
+    /// let mut poster = Post::new("user", "pass")?;
+    /// poster
+    ///     .load("./posts")?
+    ///     .post_to_bluesky()
+    ///     .await?
+    ///     .delete_posted_posts()?; // delete the files that were published
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn delete_posted_posts(&mut self) -> Result<&mut Self, PostError> {
         for bsky_post in &mut self
             .bsky_posts
@@ -601,7 +672,12 @@ impl Post {
     ///
     /// ## Examples
     ///
-    /// See the unit tests in this module (`mod tests`) for worked usage.
+    /// ```rust
+    /// # use gen_bsky::Post;
+    /// let poster = Post::new("user", "pass")?;
+    /// assert_eq!(poster.count_deleted(), 0); // nothing published yet
+    /// # Ok::<(), gen_bsky::PostError>(())
+    /// ```
     pub fn count_deleted(&self) -> usize {
         self.bsky_posts
             .iter()
