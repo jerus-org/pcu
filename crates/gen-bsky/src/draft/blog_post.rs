@@ -46,17 +46,7 @@
 //!
 //! ## Public API
 //!
-//! ### Constructor
-//!
-//! ```rust,ignore
-//! pub fn new(
-//!     blog_path: &PathBuf,
-//!     min_date: Datetime,
-//!     allow_draft: bool,
-//!     base_url: &Url,
-//!     www_src_root: &Path,
-//! ) -> Result<BlogPost, BlogPostError>
-//! ```
+//! ### Constructor — `BlogPost::new`
 //!
 //! Creates a new `BlogPost` instance from a blog file path.
 //!
@@ -71,18 +61,12 @@
 //!
 //! ### Accessor Methods
 //!
-//! ```rust,ignore
-//! pub fn title(&self) -> &str
-//! ```
-//! Returns the post title from front matter.
+//! `BlogPost::title` returns the post title from front matter.
 //!
 //! ### Core Functionality
 //!
-//! ```rust,ignore
-//! pub async fn get_bluesky_record(&self) -> Result<RecordData, BlogPostError>
-//! ```
-//!
-//! Generates a Bluesky `RecordData` structure from the blog post content.
+//! `BlogPost::get_bluesky_record` generates a Bluesky `RecordData` structure
+//! from the blog post content.
 //!
 //! **Features:**
 //! - Builds formatted post text with title, description, tags, and link
@@ -90,25 +74,15 @@
 //! - Validates character and grapheme limits (300 max)
 //! - Creates proper Bluesky API record format
 //!
-//! ```rust,ignore
-//! pub fn write_referrer_file_to(
-//!     &mut self,
-//!     store_dir: &Path,
-//!     base_url: &Url,
-//! ) -> Result<(), BlogPostError>
-//! ```
-//!
-//! Creates a redirect HTML file and generates a short URL for the post.
+//! `BlogPost::write_referrer_file_to` creates a redirect HTML file and
+//! generates a short URL for the post.
 //!
 //! **Parameters:**
 //! - `store_dir` - Directory to write the redirect file
 //! - `base_url` - Base URL for constructing the short link
 //!
-//! ```rust,ignore
-//! pub async fn write_bluesky_record_to(&mut self, store_dir: &Path) -> Result<(), BlogPostError>
-//! ```
-//!
-//! Writes the Bluesky post record as JSON to the specified directory.
+//! `BlogPost::write_bluesky_record_to` writes the Bluesky post record as JSON
+//! to the specified directory.
 //!
 //! **Features:**
 //! - Generates unique filename using base62 encoding of path components
@@ -171,34 +145,8 @@
 //!
 //! ## Usage Example
 //!
-//! ```rust,ignore
-//! use std::path::PathBuf;
-//!
-//! use toml::value::Datetime;
-//! use url::Url;
-//!
-//! // Create a new blog post
-//! let blog_path = PathBuf::from("content/posts/my-post.md");
-//! let min_date =
-//!     Datetime::from_str("2024-01-01T00:00:00Z").unwrap();
-//! let base_url = Url::parse("https://example.com").unwrap();
-//! let www_root = Path::new("./www");
-//!
-//! let mut post = BlogPost::new(
-//!     &blog_path, min_date, false, // don't allow drafts
-//!     &base_url, www_root,
-//! )
-//! .unwrap();
-//!
-//! // Generate short link
-//! post.write_referrer_file_to(Path::new("./static"), &base_url)
-//!     .unwrap();
-//!
-//! // Create and save Bluesky post
-//! post.write_bluesky_record_to(Path::new("./output"))
-//!     .await
-//!     .unwrap();
-//! ```
+//! See `tests::test_blog_post_new_success` and
+//! `tests::test_write_referrer_file_to` for end-to-end usage.
 //!
 //! ## Error Handling
 //!
