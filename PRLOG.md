@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ci-run sonarcloud security on main(pr [#992])
 
+### Fixed
+
+- retry tag visibility before skipping release(pr [#993])
+
 ## [0.6.27] - 2026-06-23
 
 ### Fixed
@@ -2406,6 +2410,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#990]: https://github.com/jerus-org/pcu/pull/990
 [#991]: https://github.com/jerus-org/pcu/pull/991
 [#992]: https://github.com/jerus-org/pcu/pull/992
+[#993]: https://github.com/jerus-org/pcu/pull/993
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.27...HEAD
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
 [0.6.26]: https://github.com/jerus-org/pcu/compare/v0.6.25...v0.6.26
