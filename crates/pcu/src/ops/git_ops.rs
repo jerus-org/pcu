@@ -666,6 +666,19 @@ impl GitOps for Client {
         _bot_user_name: &str,
     ) -> Result<(), Error> {
         log::trace!("version: {version:?} and no_push: {no_push}");
+
+        // Guarantee the push is a fast-forward before touching the remote: refresh
+        // the target branch and refuse clearly if it has advanced beyond our local
+        // history. pcu owns this assurance so a moved `main` produces an actionable
+        // error here, not git2's opaque NotFastForward at push time (or a silently
+        // swallowed push). The release_crate job refreshes its base before building
+        // the commit/tag, so in the normal case `behind` is 0 and this is a no-op.
+        if !no_push {
+            let branch = self.branch_or_main().to_string();
+            self.fetch_branch(&branch)?;
+            ensure_fast_forward(&branch, self.branch_status()?.behind)?;
+        }
+
         let mut remote = self.git_repo.find_remote("origin")?;
         let remote_url = remote.url().unwrap_or("<unknown>").to_string();
 
@@ -887,6 +900,21 @@ impl GitOps for Client {
 
         Ok(BranchReport { ahead, behind })
     }
+}
+
+/// Refuse to push `branch` when the local branch is `behind` its remote — the
+/// push would not be a fast-forward. Converts git2's opaque `NotFastForward`
+/// into a clear, actionable message naming the cause (the remote moved under
+/// us), rather than letting the raw error surface or a swallowed push hide it.
+fn ensure_fast_forward(branch: &str, behind: usize) -> Result<(), Error> {
+    if behind > 0 {
+        return Err(Error::GitError(format!(
+            "Refusing to push '{branch}': origin/{branch} has advanced {behind} commit(s) not in \
+             the local history, so the push would not be a fast-forward. Re-run the release \
+             pipeline so it rebuilds on the current HEAD."
+        )));
+    }
+    Ok(())
 }
 
 fn make_credential(
@@ -1122,6 +1150,26 @@ mod tests {
     use super::*;
     use git2::Signature;
     use rstest::rstest;
+
+    #[test]
+    fn ensure_fast_forward_refuses_when_behind() {
+        let r = ensure_fast_forward("main", 2);
+        assert!(r.is_err(), "must refuse a non-fast-forward push");
+        let msg = r.unwrap_err().to_string();
+        assert!(msg.contains("main"), "error must name the branch: {msg}");
+        assert!(
+            msg.to_lowercase().contains("fast-forward"),
+            "error must explain the cause: {msg}"
+        );
+    }
+
+    #[test]
+    fn ensure_fast_forward_ok_when_current() {
+        assert!(
+            ensure_fast_forward("main", 0).is_ok(),
+            "a fast-forwardable push is allowed"
+        );
+    }
 
     #[test]
     fn test_ssh_to_https_url_scp_format() {
