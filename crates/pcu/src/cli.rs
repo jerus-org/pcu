@@ -282,11 +282,44 @@ fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     output
 }
 
+/// Append the CI-skip marker to a commit message, but only on the default
+/// branch — on a feature/PR branch we want validation to run. Centralises the
+/// skip-ci decision shared by the PR-prlog and release-prlog commit paths, so
+/// "skip, or skip the skip" behaves identically wherever a release-flow commit
+/// is written to the default branch.
+pub(crate) fn with_skip_ci(message: &str, skip_ci: bool, on_default_branch: bool) -> String {
+    if skip_ci && on_default_branch {
+        format!("{message} [skip ci]")
+    } else {
+        message.to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::SignConfig;
     use clap::Parser;
+
+    #[test]
+    fn with_skip_ci_appends_marker_only_on_default_branch() {
+        let marker = format!("chore: x {}", "[skip ci]");
+        assert_eq!(
+            with_skip_ci("chore: x", true, true),
+            marker,
+            "default branch + skip requested → marker appended"
+        );
+        assert_eq!(
+            with_skip_ci("chore: x", true, false),
+            "chore: x",
+            "PR/feature branch must validate — never skip there"
+        );
+        assert_eq!(
+            with_skip_ci("chore: x", false, true),
+            "chore: x",
+            "no skip requested → message unchanged"
+        );
+    }
 
     #[test]
     fn pr_config_commit_message_is_plain_regardless_of_skip_ci() {

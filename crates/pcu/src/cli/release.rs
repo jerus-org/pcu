@@ -7,6 +7,7 @@ async fn share_release_to_linkedin(prefix: &str, version: &str) -> Result<(), Er
         update_prlog: false,
         prefix: prefix.to_string(),
         linkedin_share: true,
+        skip_ci: false,
         mode: Mode::Version(crate::cli::release::mode::Version {
             version: version.to_string(),
         }),
@@ -208,6 +209,12 @@ pub struct Release {
     /// Also share this release to LinkedIn using configured credentials
     #[arg(long, default_value_t = false)]
     pub linkedin_share: bool,
+    /// Append the CI-skip marker to the prlog update commit when on the default
+    /// branch. Use it to skip the (redundant) validation of a release-flow
+    /// commit: the post-release prlog update in a single-crate repo, or each
+    /// crate release in a multi-crate repo. Off by default — "skip the skip".
+    #[arg(long, default_value_t = false)]
+    pub skip_ci: bool,
     #[command(subcommand)]
     pub mode: Mode,
 }
@@ -345,7 +352,12 @@ impl Release {
                 print_prlog(client.prlog_as_str(), client.line_limit())
             );
 
-            let commit_message = release_prlog_commit_message(&version);
+            let on_default_branch = client.branch_or_main() == client.default_branch.as_str();
+            let commit_message = super::with_skip_ci(
+                &release_prlog_commit_message(&version),
+                self.skip_ci,
+                on_default_branch,
+            );
 
             client
                 .commit_changed_files(sign_config, &commit_message, &self.prefix, Some(&version))

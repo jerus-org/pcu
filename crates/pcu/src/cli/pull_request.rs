@@ -181,15 +181,12 @@ impl Pr {
         client: Client,
         sign_config: SignConfig,
     ) -> Result<CIExit, Error> {
-        // Append `[skip ci]` only when committing the PRLOG update to the
+        // Append the CI-skip marker only when committing the PRLOG update to the
         // default branch (the post-merge update). On a PR branch we WANT
         // validation to run, so never skip CI there.
         let on_default_branch = client.branch_or_main() == client.default_branch.as_str();
-        let commit_message = if self.skip_ci && on_default_branch {
-            format!("{} [skip ci]", client.commit_message)
-        } else {
-            client.commit_message.clone()
-        };
+        let commit_message =
+            super::with_skip_ci(&client.commit_message, self.skip_ci, on_default_branch);
         client
             .commit_changed_files(sign_config, &commit_message, &self.prefix, None)
             .await?;
