@@ -48,17 +48,6 @@ use mode::Mode;
 use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
-/// Returns `true` when a GitHub release should be created.
-///
-/// A release is needed when the git tag exists but no GitHub release has been
-/// created for it yet.  This can happen when a previous pipeline run pushed
-/// the tag but failed before the release-creation step, leaving the repo in a
-/// partial state.  Making this check explicit keeps `release_package`
-/// idempotent: re-triggered pipelines succeed without a 422 conflict error.
-fn should_create_github_release(tag_exists: bool, github_release_exists: bool) -> bool {
-    tag_exists && !github_release_exists
-}
-
 /// Poll `probe` up to `max_attempts` times, sleeping `retry_delay` between
 /// attempts, returning `true` as soon as it yields `true`.
 ///
@@ -90,6 +79,159 @@ where
     false
 }
 
+/// Outcome of [`ensure_release_for_tag`], made explicit so "did nothing" can
+/// never masquerade as success.
+#[derive(Debug, PartialEq, Eq)]
+enum EnsureOutcome {
+    /// A GitHub release was created for the tag.
+    Created,
+    /// A GitHub release already existed for the tag.
+    AlreadyPresent,
+    /// The git tag was not present, so there was nothing to release.
+    TagAbsent,
+}
+
+/// Ensure a GitHub release exists for `tag`, using injectable effects.
+///
+/// Never reports success without having ensured the release: an undetermined
+/// release-existence check (`Err`) and a failed creation both propagate as
+/// errors rather than a silent `Ok`. That silent `Ok` is the failure mode that
+/// stranded gen-circleci-orb 0.0.53 — the "create release" step went green
+/// having created nothing, then asset upload failed past the irreversible
+/// pubkey-tag push, leaving a release with no binstall binary.
+async fn ensure_release_for_tag<TV, TVF, RE, REF, MK, MKF>(
+    tag: &str,
+    mut tag_visible: TV,
+    mut release_exists: RE,
+    mut make_release: MK,
+) -> Result<EnsureOutcome, Error>
+where
+    TV: FnMut() -> TVF,
+    TVF: std::future::Future<Output = bool>,
+    RE: FnMut() -> REF,
+    REF: std::future::Future<Output = Result<bool, Error>>,
+    MK: FnMut() -> MKF,
+    MKF: std::future::Future<Output = Result<(), Error>>,
+{
+    if !tag_visible().await {
+        // No tag for this package (e.g. a workspace member not released this
+        // cycle) — there is genuinely nothing to release. This is the only
+        // success-without-a-release outcome, and it is explicit.
+        log::info!("No tag '{tag}' present — nothing to release");
+        return Ok(EnsureOutcome::TagAbsent);
+    }
+    // `?` here is the discipline: an undetermined existence check propagates as
+    // an error instead of being coerced (as a bare `.is_ok()` did) into a
+    // "release exists" that silently skips creation.
+    if release_exists().await? {
+        log::info!("GitHub release for '{tag}' already exists — skipping creation");
+        return Ok(EnsureOutcome::AlreadyPresent);
+    }
+    log::info!("Tag '{tag}' exists, no GitHub release yet — creating");
+    make_release().await?;
+    Ok(EnsureOutcome::Created)
+}
+
+#[cfg(test)]
+mod ensure_release_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    #[tokio::test]
+    async fn creates_release_when_tag_present_and_release_absent() {
+        let made = AtomicU32::new(0);
+        let outcome = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Ok(false) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert_eq!(outcome.unwrap(), EnsureOutcome::Created);
+        assert_eq!(
+            made.load(Ordering::SeqCst),
+            1,
+            "make_release must be called exactly once"
+        );
+    }
+
+    #[tokio::test]
+    async fn errors_when_make_release_fails() {
+        let r = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Ok(false) },
+            || async { Err(Error::GitError("boom".into())) },
+        )
+        .await;
+        assert!(r.is_err(), "a failed creation must surface as an error");
+    }
+
+    #[tokio::test]
+    async fn errors_when_release_existence_undetermined() {
+        // The core fix: a non-conclusive existence check must NOT become a
+        // silent Ok-skip (the 0.0.53 stranding). It must error and not create.
+        let made = AtomicU32::new(0);
+        let r = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Err(Error::GitError("api 500".into())) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert!(r.is_err(), "undetermined existence must error, not skip");
+        assert_eq!(
+            made.load(Ordering::SeqCst),
+            0,
+            "must not blindly create when existence is undetermined"
+        );
+    }
+
+    #[tokio::test]
+    async fn skips_when_release_already_present() {
+        let made = AtomicU32::new(0);
+        let outcome = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Ok(true) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert_eq!(outcome.unwrap(), EnsureOutcome::AlreadyPresent);
+        assert_eq!(
+            made.load(Ordering::SeqCst),
+            0,
+            "must not re-create an existing release"
+        );
+    }
+
+    #[tokio::test]
+    async fn reports_tag_absent_without_error() {
+        let made = AtomicU32::new(0);
+        let outcome = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { false },
+            || async { Ok(false) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert_eq!(outcome.unwrap(), EnsureOutcome::TagAbsent);
+        assert_eq!(made.load(Ordering::SeqCst), 0);
+    }
+}
+
 /// Create a GitHub release for `<prefix><version>` when needed.
 ///
 /// Idempotent: if the git tag is absent, logs an error and returns `Ok`.
@@ -97,29 +239,22 @@ where
 /// Only calls `make_release` when the tag is present but no release exists yet.
 async fn ensure_github_release(client: &Client, prefix: &str, version: &str) -> Result<(), Error> {
     let tag = format!("{prefix}{version}");
-    // Retry the tag-existence check: the tag was pushed moments earlier and the
-    // GitHub REST API may not have caught up yet. Without this, a single failed
-    // poll silently skips release creation (see the asset-upload 404 that broke
-    // gen-circleci-orb 0.0.51).
-    let tag_exists = tag_visible_with_retry(&tag, 5, std::time::Duration::from_secs(2), || {
-        client.tag_exists(&tag)
-    })
-    .await;
-    let release_exists = client
-        .github_rest
-        .repos
-        .get_release_by_tag(client.owner(), client.repo(), &tag)
-        .send()
-        .await
-        .is_ok();
-    if should_create_github_release(tag_exists, release_exists) {
-        log::info!("Tag {tag} exists, no GitHub release yet — creating");
-        client.make_release(prefix, version).await?;
-    } else if release_exists {
-        log::info!("GitHub release {tag} already exists — skipping creation");
-    } else {
-        log::error!("Tag does not exist: {tag}");
-    }
+    // Each effect is retried/loud in its own right (tag visibility, release
+    // existence, creation); the orchestration guarantees we never report success
+    // without an ensured release. See the 0.0.53 stranding in
+    // ensure_release_for_tag's docs.
+    let outcome = ensure_release_for_tag(
+        &tag,
+        || {
+            tag_visible_with_retry(&tag, 5, std::time::Duration::from_secs(2), || {
+                client.tag_exists(&tag)
+            })
+        },
+        || client.github_release_exists(&tag),
+        || client.make_release(prefix, version),
+    )
+    .await?;
+    log::debug!("ensure_github_release outcome for '{tag}': {outcome:?}");
     Ok(())
 }
 
@@ -1172,36 +1307,6 @@ mod attest_tests {
 mod release_package_tests {
     use super::*;
 
-    /// Documents the idempotency rule for GitHub release creation.
-    ///
-    /// A GitHub release must be created when the git tag is present but the
-    /// GitHub release is absent.  When the release already exists the step must
-    /// be a no-op so that re-triggered pipelines (where a previous run pushed
-    /// the tag but failed before creating the release) do not error with a 422.
-    #[test]
-    fn create_release_when_tag_exists_and_release_absent() {
-        assert!(
-            should_create_github_release(true, false),
-            "tag exists, no GitHub release → should create"
-        );
-    }
-
-    #[test]
-    fn skip_release_when_both_tag_and_release_exist() {
-        assert!(
-            !should_create_github_release(true, true),
-            "tag and release both exist → idempotent skip"
-        );
-    }
-
-    #[test]
-    fn skip_release_when_tag_absent() {
-        assert!(
-            !should_create_github_release(false, false),
-            "no tag → nothing to create a release against"
-        );
-    }
-
     #[tokio::test]
     async fn tag_visible_with_retry_true_on_first_attempt() {
         let attempt = std::sync::atomic::AtomicU32::new(0);
@@ -1248,28 +1353,6 @@ mod release_package_tests {
             attempt.load(std::sync::atomic::Ordering::SeqCst),
             3,
             "every attempt is exhausted before giving up"
-        );
-    }
-
-    /// Regression for the silent skip that broke gen-circleci-orb 0.0.51.
-    ///
-    /// `ensure_github_release` polled tag visibility exactly once. A freshly
-    /// pushed tag that was not yet visible via the REST API on that single poll
-    /// caused release creation to be skipped (logged "Tag does not exist" and
-    /// returned `Ok`), which then made the asset-upload step 404 forever. With a
-    /// retry, the lagging tag is detected and the release is still created.
-    #[tokio::test]
-    async fn release_created_when_tag_visible_only_after_api_lag() {
-        let attempt = std::sync::atomic::AtomicU32::new(0);
-        let tag_exists =
-            tag_visible_with_retry("crate-v1.0.0", 5, std::time::Duration::ZERO, || {
-                let n = attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                async move { n >= 1 }
-            })
-            .await;
-        assert!(
-            should_create_github_release(tag_exists, false),
-            "tag becoming visible after lag must still trigger release creation"
         );
     }
 }

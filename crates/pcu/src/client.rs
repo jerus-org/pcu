@@ -406,6 +406,50 @@ impl Client {
         })
     }
 
+    /// Returns whether a GitHub release exists for `tag`.
+    ///
+    /// Retries the lookup the same way the asset-upload path does, so the
+    /// release-creation and asset-upload sides agree on whether a release
+    /// exists. A bare `get_release_by_tag(...).is_ok()` (the previous check)
+    /// could coerce a 404 or a phantom response into "exists" and silently skip
+    /// release creation — the failure that stranded gen-circleci-orb 0.0.53.
+    /// Here a release counts only when its `tag_name` matches, and the result is
+    /// `Ok(false)` when the retried lookup finds none.
+    pub(crate) async fn github_release_exists(&self, tag: &str) -> Result<bool, Error> {
+        let token = self.github_token.clone();
+        let owner = self.owner.clone();
+        let repo = self.repo.clone();
+        let tag_str = tag.to_string();
+
+        let found = get_release_with_retry(tag, 5, std::time::Duration::from_secs(2), || {
+            let tok = PersonalAccessToken::new(token.clone());
+            let cfg = APIConfig::with_token(tok).shared();
+            let api = GitHubAPI::new(&cfg);
+            let o = owner.clone();
+            let r = repo.clone();
+            let t = tag_str.clone();
+            async move {
+                let release = api
+                    .repos
+                    .get_release_by_tag(&o, &r, &t)
+                    .send()
+                    .await
+                    .map_err(Error::from)?;
+                if release.tag_name == t {
+                    Ok(())
+                } else {
+                    Err(Error::GitError(format!(
+                        "release lookup for '{t}' returned mismatched tag '{}'",
+                        release.tag_name
+                    )))
+                }
+            }
+        })
+        .await;
+
+        Ok(found.is_ok())
+    }
+
     /// Upload a binary asset to an existing GitHub release.
     ///
     /// Looks up the release by `tag`, then uploads `binary` as `asset_name` to
