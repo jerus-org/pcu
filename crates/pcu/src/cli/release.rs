@@ -286,6 +286,34 @@ fn write_to_bash_env(key: &str, value: &str) -> Result<(), Error> {
     Ok(())
 }
 
+/// Commit subject for the prlog update that accompanies a release.
+///
+/// Distinct from the routine post-merge `chore: update prlog for pr`: this
+/// commit also carries the version tag, so it must be identifiable as a release
+/// on the default branch (and version-stamped for traceability) rather than
+/// masquerading as a generic prlog update.
+fn release_prlog_commit_message(version: &str) -> String {
+    format!("chore: update prlog for release {version}")
+}
+
+#[cfg(test)]
+mod release_message_tests {
+    use super::*;
+
+    #[test]
+    fn release_prlog_message_names_the_release_not_a_pr() {
+        let m = release_prlog_commit_message("1.2.3");
+        assert!(
+            m.contains("release") && m.contains("1.2.3"),
+            "release prlog commit must name the release + version: {m}"
+        );
+        assert!(
+            !m.contains("for pr"),
+            "must not masquerade as a routine post-merge pr prlog update: {m}"
+        );
+    }
+}
+
 #[derive(Debug, Parser, Clone)]
 pub struct Release {
     /// Update the prlog by renaming the unreleased section with the version
@@ -435,10 +463,10 @@ impl Release {
                 print_prlog(client.prlog_as_str(), client.line_limit())
             );
 
-            let commit_message = "chore: update prlog for pr";
+            let commit_message = release_prlog_commit_message(&version);
 
             client
-                .commit_changed_files(sign_config, commit_message, &self.prefix, Some(&version))
+                .commit_changed_files(sign_config, &commit_message, &self.prefix, Some(&version))
                 .await?;
 
             log::info!("Push the commit");
