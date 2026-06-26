@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ci-run sonarcloud security on main(pr [#992])
 - docs-replace ignored gen-bsky examples with test references(pr [#995])
+- chore-drop redundant validation on cargo-release commits(pr [#999])
 
 ### Fixed
 
@@ -2424,6 +2425,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#996]: https://github.com/jerus-org/pcu/pull/996
 [#997]: https://github.com/jerus-org/pcu/pull/997
 [#998]: https://github.com/jerus-org/pcu/pull/998
+[#999]: https://github.com/jerus-org/pcu/pull/999
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.27...HEAD
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
 [0.6.26]: https://github.com/jerus-org/pcu/compare/v0.6.25...v0.6.26
