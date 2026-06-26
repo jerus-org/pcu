@@ -282,11 +282,114 @@ fn print_prlog(prlog_path: &str, mut line_limit: usize) -> String {
     output
 }
 
+/// Append the CI-skip marker to a commit message, but only on the default
+/// branch — on a feature/PR branch we want validation to run. Centralises the
+/// skip-ci decision shared by the PR-prlog and release-prlog commit paths, so
+/// "skip, or skip the skip" behaves identically wherever a release-flow commit
+/// is written to the default branch.
+pub(crate) fn with_skip_ci(message: &str, skip_ci: bool, on_default_branch: bool) -> String {
+    if skip_ci && on_default_branch {
+        format!("{message} [skip ci]")
+    } else {
+        message.to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::SignConfig;
     use clap::Parser;
+
+    #[test]
+    fn with_skip_ci_appends_marker_only_on_default_branch() {
+        let marker = format!("chore: x {}", "[skip ci]");
+        assert_eq!(
+            with_skip_ci("chore: x", true, true),
+            marker,
+            "default branch + skip requested → marker appended"
+        );
+        assert_eq!(
+            with_skip_ci("chore: x", true, false),
+            "chore: x",
+            "PR/feature branch must validate — never skip there"
+        );
+        assert_eq!(
+            with_skip_ci("chore: x", false, true),
+            "chore: x",
+            "no skip requested → message unchanged"
+        );
+    }
+
+    #[test]
+    fn release_skip_ci_flag_is_negatable() {
+        let skip = |args: &[&str]| -> bool {
+            match Cli::try_parse_from(args).unwrap().command {
+                Commands::Release(r) => r.skip_ci,
+                other => panic!("expected Release, got {other:?}"),
+            }
+        };
+        assert!(
+            !skip(&["pcu", "release", "version", "1.0.0"]),
+            "default: validate (do not skip)"
+        );
+        assert!(
+            skip(&["pcu", "release", "--skip-ci", "version", "1.0.0"]),
+            "--skip-ci skips"
+        );
+        assert!(
+            !skip(&["pcu", "release", "--no-skip-ci", "version", "1.0.0"]),
+            "--no-skip-ci validates explicitly"
+        );
+        assert!(
+            !skip(&[
+                "pcu",
+                "release",
+                "--skip-ci",
+                "--no-skip-ci",
+                "version",
+                "1.0.0"
+            ]),
+            "last flag wins: no-skip"
+        );
+        assert!(
+            skip(&[
+                "pcu",
+                "release",
+                "--no-skip-ci",
+                "--skip-ci",
+                "version",
+                "1.0.0"
+            ]),
+            "last flag wins: skip"
+        );
+    }
+
+    #[test]
+    fn pr_skip_ci_flag_is_negatable() {
+        // Kept symmetric with `release` so the ci-skip control is identical
+        // wherever it appears.
+        let skip = |args: &[&str]| -> bool {
+            match Cli::try_parse_from(args).unwrap().command {
+                Commands::Pr(p) => p.skip_ci,
+                other => panic!("expected Pr, got {other:?}"),
+            }
+        };
+        assert!(!skip(&["pcu", "pr"]), "default: validate (do not skip)");
+        assert!(skip(&["pcu", "pr", "--skip-ci"]), "--skip-ci skips");
+        assert!(
+            !skip(&["pcu", "pr", "--no-skip-ci"]),
+            "--no-skip-ci validates explicitly"
+        );
+        assert!(
+            !skip(&["pcu", "pr", "--skip-ci", "--no-skip-ci"]),
+            "last flag wins: no-skip"
+        );
+        assert!(
+            skip(&["pcu", "pr", "--no-skip-ci", "--skip-ci"]),
+            "last flag wins: skip"
+        );
+    }
 
     #[test]
     fn pr_config_commit_message_is_plain_regardless_of_skip_ci() {
@@ -303,6 +406,7 @@ mod tests {
                 allow_push_fail: true,
                 allow_no_pull_request: true,
                 skip_ci,
+                no_skip_ci: false,
             });
             let settings = cmd.get_settings().unwrap();
             assert_eq!(

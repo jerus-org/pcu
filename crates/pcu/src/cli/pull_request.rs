@@ -34,11 +34,16 @@ pub struct Pr {
     /// request was found in CI environment.
     #[clap(long, default_value_t = true)]
     pub allow_no_pull_request: bool,
-    /// Append `[skip ci]` to the PRLOG commit message so the push to the default
-    /// branch does not trigger a redundant CI pipeline (e.g. the second
-    /// validation run after a "pr merged" PRLOG update).
-    #[clap(long, default_value_t = false)]
+    /// Skip CI on the PRLOG commit by appending the ci-avoidance marker so the
+    /// push to the default branch does not trigger a redundant CI pipeline (e.g.
+    /// the second validation run after a "pr merged" PRLOG update). Only takes
+    /// effect on the default branch.
+    #[clap(long, overrides_with = "no_skip_ci", default_value_t = false)]
     pub skip_ci: bool,
+    /// Explicitly do NOT skip CI on the PRLOG commit (the default). Provided so
+    /// "skip the skip" is stated explicitly. If both are given, the last wins.
+    #[clap(long = "no-skip-ci", action = clap::ArgAction::SetTrue, overrides_with = "skip_ci")]
+    pub no_skip_ci: bool,
 }
 
 impl Pr {
@@ -181,15 +186,12 @@ impl Pr {
         client: Client,
         sign_config: SignConfig,
     ) -> Result<CIExit, Error> {
-        // Append `[skip ci]` only when committing the PRLOG update to the
+        // Append the CI-skip marker only when committing the PRLOG update to the
         // default branch (the post-merge update). On a PR branch we WANT
         // validation to run, so never skip CI there.
         let on_default_branch = client.branch_or_main() == client.default_branch.as_str();
-        let commit_message = if self.skip_ci && on_default_branch {
-            format!("{} [skip ci]", client.commit_message)
-        } else {
-            client.commit_message.clone()
-        };
+        let commit_message =
+            super::with_skip_ci(&client.commit_message, self.skip_ci, on_default_branch);
         client
             .commit_changed_files(sign_config, &commit_message, &self.prefix, None)
             .await?;
@@ -211,6 +213,7 @@ impl Pr {
             allow_push_fail: true,
             allow_no_pull_request: true,
             skip_ci,
+            no_skip_ci: false,
         }
     }
 
