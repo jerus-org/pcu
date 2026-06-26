@@ -132,106 +132,6 @@ where
     Ok(EnsureOutcome::Created)
 }
 
-#[cfg(test)]
-mod ensure_release_tests {
-    use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    #[tokio::test]
-    async fn creates_release_when_tag_present_and_release_absent() {
-        let made = AtomicU32::new(0);
-        let outcome = ensure_release_for_tag(
-            "crate-v1.0.0",
-            || async { true },
-            || async { Ok(false) },
-            || async {
-                made.fetch_add(1, Ordering::SeqCst);
-                Ok(())
-            },
-        )
-        .await;
-        assert_eq!(outcome.unwrap(), EnsureOutcome::Created);
-        assert_eq!(
-            made.load(Ordering::SeqCst),
-            1,
-            "make_release must be called exactly once"
-        );
-    }
-
-    #[tokio::test]
-    async fn errors_when_make_release_fails() {
-        let r = ensure_release_for_tag(
-            "crate-v1.0.0",
-            || async { true },
-            || async { Ok(false) },
-            || async { Err(Error::GitError("boom".into())) },
-        )
-        .await;
-        assert!(r.is_err(), "a failed creation must surface as an error");
-    }
-
-    #[tokio::test]
-    async fn errors_when_release_existence_undetermined() {
-        // The core fix: a non-conclusive existence check must NOT become a
-        // silent Ok-skip (the 0.0.53 stranding). It must error and not create.
-        let made = AtomicU32::new(0);
-        let r = ensure_release_for_tag(
-            "crate-v1.0.0",
-            || async { true },
-            || async { Err(Error::GitError("api 500".into())) },
-            || async {
-                made.fetch_add(1, Ordering::SeqCst);
-                Ok(())
-            },
-        )
-        .await;
-        assert!(r.is_err(), "undetermined existence must error, not skip");
-        assert_eq!(
-            made.load(Ordering::SeqCst),
-            0,
-            "must not blindly create when existence is undetermined"
-        );
-    }
-
-    #[tokio::test]
-    async fn skips_when_release_already_present() {
-        let made = AtomicU32::new(0);
-        let outcome = ensure_release_for_tag(
-            "crate-v1.0.0",
-            || async { true },
-            || async { Ok(true) },
-            || async {
-                made.fetch_add(1, Ordering::SeqCst);
-                Ok(())
-            },
-        )
-        .await;
-        assert_eq!(outcome.unwrap(), EnsureOutcome::AlreadyPresent);
-        assert_eq!(
-            made.load(Ordering::SeqCst),
-            0,
-            "must not re-create an existing release"
-        );
-    }
-
-    #[tokio::test]
-    async fn reports_tag_absent_without_error() {
-        let made = AtomicU32::new(0);
-        let outcome = ensure_release_for_tag(
-            "crate-v1.0.0",
-            || async { false },
-            || async { Ok(false) },
-            || async {
-                made.fetch_add(1, Ordering::SeqCst);
-                Ok(())
-            },
-        )
-        .await;
-        assert_eq!(outcome.unwrap(), EnsureOutcome::TagAbsent);
-        assert_eq!(made.load(Ordering::SeqCst), 0);
-    }
-}
-
 /// Create a GitHub release for `<prefix><version>` when needed.
 ///
 /// Idempotent: if the git tag is absent, logs an error and returns `Ok`.
@@ -294,24 +194,6 @@ fn write_to_bash_env(key: &str, value: &str) -> Result<(), Error> {
 /// masquerading as a generic prlog update.
 fn release_prlog_commit_message(version: &str) -> String {
     format!("chore: update prlog for release {version}")
-}
-
-#[cfg(test)]
-mod release_message_tests {
-    use super::*;
-
-    #[test]
-    fn release_prlog_message_names_the_release_not_a_pr() {
-        let m = release_prlog_commit_message("1.2.3");
-        assert!(
-            m.contains("release") && m.contains("1.2.3"),
-            "release prlog commit must name the release + version: {m}"
-        );
-        assert!(
-            !m.contains("for pr"),
-            "must not masquerade as a routine post-merge pr prlog update: {m}"
-        );
-    }
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -1624,5 +1506,123 @@ mod upload_retry_tests {
         .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "release");
+    }
+}
+
+#[cfg(test)]
+mod ensure_release_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    #[tokio::test]
+    async fn creates_release_when_tag_present_and_release_absent() {
+        let made = AtomicU32::new(0);
+        let outcome = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Ok(false) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert_eq!(outcome.unwrap(), EnsureOutcome::Created);
+        assert_eq!(
+            made.load(Ordering::SeqCst),
+            1,
+            "make_release must be called exactly once"
+        );
+    }
+
+    #[tokio::test]
+    async fn errors_when_make_release_fails() {
+        let r = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Ok(false) },
+            || async { Err(Error::GitError("boom".into())) },
+        )
+        .await;
+        assert!(r.is_err(), "a failed creation must surface as an error");
+    }
+
+    #[tokio::test]
+    async fn errors_when_release_existence_undetermined() {
+        // The core fix: a non-conclusive existence check must NOT become a
+        // silent Ok-skip (the 0.0.53 stranding). It must error and not create.
+        let made = AtomicU32::new(0);
+        let r = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Err(Error::GitError("api 500".into())) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert!(r.is_err(), "undetermined existence must error, not skip");
+        assert_eq!(
+            made.load(Ordering::SeqCst),
+            0,
+            "must not blindly create when existence is undetermined"
+        );
+    }
+
+    #[tokio::test]
+    async fn skips_when_release_already_present() {
+        let made = AtomicU32::new(0);
+        let outcome = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Ok(true) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert_eq!(outcome.unwrap(), EnsureOutcome::AlreadyPresent);
+        assert_eq!(
+            made.load(Ordering::SeqCst),
+            0,
+            "must not re-create an existing release"
+        );
+    }
+
+    #[tokio::test]
+    async fn reports_tag_absent_without_error() {
+        let made = AtomicU32::new(0);
+        let outcome = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { false },
+            || async { Ok(false) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert_eq!(outcome.unwrap(), EnsureOutcome::TagAbsent);
+        assert_eq!(made.load(Ordering::SeqCst), 0);
+    }
+}
+
+#[cfg(test)]
+mod release_message_tests {
+    use super::*;
+
+    #[test]
+    fn release_prlog_message_names_the_release_not_a_pr() {
+        let m = release_prlog_commit_message("1.2.3");
+        assert!(
+            m.contains("release") && m.contains("1.2.3"),
+            "release prlog commit must name the release + version: {m}"
+        );
+        assert!(
+            !m.contains("for pr"),
+            "must not masquerade as a routine post-merge pr prlog update: {m}"
+        );
     }
 }
