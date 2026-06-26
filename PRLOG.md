@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate env_logger to 0.11.11(pr [#1000])
 - deps: update rust crate uuid to 1.23.4(pr [#1001])
 - deps: update rust crate cargo_toml to v1(pr [#1002])
+- disable consolidate-commits for per-crate release titles(pr [#1003])
 
 ## [0.6.27] - 2026-06-23
 
@@ -2432,6 +2433,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1000]: https://github.com/jerus-org/pcu/pull/1000
 [#1001]: https://github.com/jerus-org/pcu/pull/1001
 [#1002]: https://github.com/jerus-org/pcu/pull/1002
+[#1003]: https://github.com/jerus-org/pcu/pull/1003
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.27...HEAD
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
 [0.6.26]: https://github.com/jerus-org/pcu/compare/v0.6.25...v0.6.26
