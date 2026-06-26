@@ -34,11 +34,16 @@ pub struct Pr {
     /// request was found in CI environment.
     #[clap(long, default_value_t = true)]
     pub allow_no_pull_request: bool,
-    /// Append `[skip ci]` to the PRLOG commit message so the push to the default
-    /// branch does not trigger a redundant CI pipeline (e.g. the second
-    /// validation run after a "pr merged" PRLOG update).
-    #[clap(long, default_value_t = false)]
+    /// Skip CI on the PRLOG commit by appending the ci-avoidance marker so the
+    /// push to the default branch does not trigger a redundant CI pipeline (e.g.
+    /// the second validation run after a "pr merged" PRLOG update). Only takes
+    /// effect on the default branch.
+    #[clap(long, overrides_with = "no_skip_ci", default_value_t = false)]
     pub skip_ci: bool,
+    /// Explicitly do NOT skip CI on the PRLOG commit (the default). Provided so
+    /// "skip the skip" is stated explicitly. If both are given, the last wins.
+    #[clap(long = "no-skip-ci", action = clap::ArgAction::SetTrue, overrides_with = "skip_ci")]
+    pub no_skip_ci: bool,
 }
 
 impl Pr {
@@ -208,6 +213,7 @@ impl Pr {
             allow_push_fail: true,
             allow_no_pull_request: true,
             skip_ci,
+            no_skip_ci: false,
         }
     }
 

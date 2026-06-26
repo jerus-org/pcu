@@ -366,6 +366,32 @@ mod tests {
     }
 
     #[test]
+    fn pr_skip_ci_flag_is_negatable() {
+        // Kept symmetric with `release` so the ci-skip control is identical
+        // wherever it appears.
+        let skip = |args: &[&str]| -> bool {
+            match Cli::try_parse_from(args).unwrap().command {
+                Commands::Pr(p) => p.skip_ci,
+                other => panic!("expected Pr, got {other:?}"),
+            }
+        };
+        assert!(!skip(&["pcu", "pr"]), "default: validate (do not skip)");
+        assert!(skip(&["pcu", "pr", "--skip-ci"]), "--skip-ci skips");
+        assert!(
+            !skip(&["pcu", "pr", "--no-skip-ci"]),
+            "--no-skip-ci validates explicitly"
+        );
+        assert!(
+            !skip(&["pcu", "pr", "--skip-ci", "--no-skip-ci"]),
+            "last flag wins: no-skip"
+        );
+        assert!(
+            skip(&["pcu", "pr", "--no-skip-ci", "--skip-ci"]),
+            "last flag wins: skip"
+        );
+    }
+
+    #[test]
     fn pr_config_commit_message_is_plain_regardless_of_skip_ci() {
         // The config layer never encodes `[skip ci]` — that is appended at
         // commit time only when on the default branch (see
@@ -380,6 +406,7 @@ mod tests {
                 allow_push_fail: true,
                 allow_no_pull_request: true,
                 skip_ci,
+                no_skip_ci: false,
             });
             let settings = cmd.get_settings().unwrap();
             assert_eq!(
