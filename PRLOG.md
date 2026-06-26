@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - retry tag visibility before skipping release(pr [#993])
 - repair gen-bsky doctests (21 failing)(pr [#994])
 - ensure_github_release never reports false success(pr [#996])
+- pcu owns a safe, well-named release push(pr [#997])
 
 ## [0.6.27] - 2026-06-23
 
@@ -2417,6 +2418,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#994]: https://github.com/jerus-org/pcu/pull/994
 [#995]: https://github.com/jerus-org/pcu/pull/995
 [#996]: https://github.com/jerus-org/pcu/pull/996
+[#997]: https://github.com/jerus-org/pcu/pull/997
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.27...HEAD
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
 [0.6.26]: https://github.com/jerus-org/pcu/compare/v0.6.25...v0.6.26
