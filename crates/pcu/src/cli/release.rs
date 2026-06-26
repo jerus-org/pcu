@@ -8,6 +8,7 @@ async fn share_release_to_linkedin(prefix: &str, version: &str) -> Result<(), Er
         prefix: prefix.to_string(),
         linkedin_share: true,
         skip_ci: false,
+        no_skip_ci: false,
         mode: Mode::Version(crate::cli::release::mode::Version {
             version: version.to_string(),
         }),
@@ -209,12 +210,17 @@ pub struct Release {
     /// Also share this release to LinkedIn using configured credentials
     #[arg(long, default_value_t = false)]
     pub linkedin_share: bool,
-    /// Append the CI-skip marker to the prlog update commit when on the default
-    /// branch. Use it to skip the (redundant) validation of a release-flow
-    /// commit: the post-release prlog update in a single-crate repo, or each
-    /// crate release in a multi-crate repo. Off by default — "skip the skip".
-    #[arg(long, default_value_t = false)]
+    /// Skip CI on the prlog update commit by appending the ci-avoidance marker
+    /// (only takes effect on the default branch). Use it to drop the redundant
+    /// validation of a release-flow commit — the post-release prlog update in a
+    /// single-crate repo, or each crate release in a multi-crate repo.
+    #[arg(long, overrides_with = "no_skip_ci", default_value_t = false)]
     pub skip_ci: bool,
+    /// Explicitly do NOT skip CI on the prlog update commit (the default).
+    /// Provided so "skip the skip" is stated explicitly — e.g. the validating
+    /// final prlog of a multi-crate release. If both are given, the last wins.
+    #[arg(long = "no-skip-ci", action = clap::ArgAction::SetTrue, overrides_with = "skip_ci")]
+    pub no_skip_ci: bool,
     #[command(subcommand)]
     pub mode: Mode,
 }

@@ -322,6 +322,50 @@ mod tests {
     }
 
     #[test]
+    fn release_skip_ci_flag_is_negatable() {
+        let skip = |args: &[&str]| -> bool {
+            match Cli::try_parse_from(args).unwrap().command {
+                Commands::Release(r) => r.skip_ci,
+                other => panic!("expected Release, got {other:?}"),
+            }
+        };
+        assert!(
+            !skip(&["pcu", "release", "version", "1.0.0"]),
+            "default: validate (do not skip)"
+        );
+        assert!(
+            skip(&["pcu", "release", "--skip-ci", "version", "1.0.0"]),
+            "--skip-ci skips"
+        );
+        assert!(
+            !skip(&["pcu", "release", "--no-skip-ci", "version", "1.0.0"]),
+            "--no-skip-ci validates explicitly"
+        );
+        assert!(
+            !skip(&[
+                "pcu",
+                "release",
+                "--skip-ci",
+                "--no-skip-ci",
+                "version",
+                "1.0.0"
+            ]),
+            "last flag wins: no-skip"
+        );
+        assert!(
+            skip(&[
+                "pcu",
+                "release",
+                "--no-skip-ci",
+                "--skip-ci",
+                "version",
+                "1.0.0"
+            ]),
+            "last flag wins: skip"
+        );
+    }
+
+    #[test]
     fn pr_config_commit_message_is_plain_regardless_of_skip_ci() {
         // The config layer never encodes `[skip ci]` — that is appended at
         // commit time only when on the default branch (see
