@@ -14,13 +14,10 @@ version: 2.1
 #   release-pcu       - release pcu crate
 #   toolkit/release_prlog - create workspace v* release and update PRLOG.md
 #
-# NOTE: release_crate is inlined locally (rather than toolkit/release_crate) so
-# it can run `toolkit/install_latest_pcu` before the release steps when
-# update_pcu is true. This is a temporary measure to break the container<->pcu
-# release cycle: it lets a release pick up an unreleased pcu fix (with a verbose
-# push for logs) ahead of the container image. Revert to toolkit/release_crate
-# once toolkit#489 (release_crate update_pcu + pcu_verbosity) has shipped and the
-# pin has moved.
+# update_pcu (pipeline parameter, default false): when true, each release_crate
+# installs the latest pcu from main before releasing, to pick up an unreleased
+# pcu fix ahead of the container image. Provided by toolkit/release_crate's
+# update_pcu (toolkit#489) and toolkit/release_prlog's update_pcu.
 
 parameters:
   gen_bsky_version:
@@ -43,11 +40,10 @@ parameters:
     type: boolean
     default: false
     description: >
-      Install the latest pcu from main before each crate release. Turn on to
-      work around a known bug in the pinned/container pcu (e.g. the
-      ensure_github_release silent-skip fixed in pcu#996) without waiting for the
-      container -> toolkit chain.
-
+      Install the latest pcu from main before each crate release (toolkit#489).
+      Turn on to work around a bug in the pinned/container pcu without waiting
+      for the container -> toolkit chain.
+      
 orbs:
   toolkit: jerus-org/circleci-toolkit@6.5.0
 
@@ -63,148 +59,6 @@ jobs:
             pcu --version
             cargo release --version
             rsign --version
-
-  # Local copy of toolkit/release_crate with two additions: an optional
-  # `toolkit/install_latest_pcu` (gated on update_pcu) before the release steps,
-  # and a verbose (-vv) pcu push for diagnosable logs. All other steps call the
-  # toolkit commands from the imported orb unchanged. Temporary — see header.
-  release_crate:
-    executor: toolkit/rust_env_rolling
-    parameters:
-      package:
-        type: string
-      crate_tag_prefix:
-        type: string
-      build_binary:
-        type: boolean
-        default: false
-      binary_name:
-        type: string
-        default: ""
-      target:
-        type: string
-        default: x86_64-unknown-linux-gnu
-      publish:
-        type: boolean
-        default: true
-      attest:
-        type: boolean
-        default: true
-      crates_io_delay:
-        type: integer
-        default: 30
-      max_attempts:
-        type: integer
-        default: 5
-      update_pcu:
-        type: boolean
-        default: false
-    steps:
-      - checkout
-      - when:
-          condition: << parameters.update_pcu >>
-          steps:
-            - toolkit/install_latest_pcu
-      - run:
-          name: Switch to latest main
-          command: |
-            # CircleCI checkout lands at CIRCLE_SHA1 (the pipeline trigger commit),
-            # not the branch tip. In sequential multi-crate release pipelines each
-            # subsequent job must start from the state the previous crate job left
-            # on the remote — otherwise the push is rejected as non-fast-forward.
-            # pcu checkout fetches, switches branch, and overrides CIRCLE_BRANCH
-            # in $BASH_ENV so subsequent pcu push targets the correct branch.
-            pcu checkout --branch main
-      # Load the version approved before the gate — never recalculate after approval
-      - attach_workspace:
-          at: /tmp/release-versions
-      - run:
-          name: Load approved version for << parameters.package >>
-          command: |
-            set -eo pipefail
-            # shellcheck source=/dev/null
-            source /tmp/release-versions/versions.env
-
-            # Look up CRATE_VERSION_<PACKAGE_UPPERCASED>
-            var_name="CRATE_VERSION_$(echo "<< parameters.package >>" | tr '[:lower:]-' '[:upper:]_')"
-            VERSION="${!var_name}"
-
-            if [ -z "$VERSION" ]; then
-              echo "ERROR: ${var_name} not found in versions.env" >&2
-              cat /tmp/release-versions/versions.env >&2
-              exit 1
-            fi
-
-            echo "Approved version for << parameters.package >>: $VERSION"
-            echo "export NEXT_VERSION=$VERSION" >> "$BASH_ENV"
-            echo "export SEMVER=$VERSION" >> "$BASH_ENV"
-      - toolkit/gpg_key
-      - toolkit/git_config
-      - toolkit/check_crates_io_version:
-          package: << parameters.package >>
-      - toolkit/check_tag_exists:
-          package: << parameters.package >>
-      - toolkit/make_cargo_release:
-          package: << parameters.package >>
-          verbosity: "-vv"
-          publish: false
-          no_push: true
-      - when:
-          condition: << parameters.build_binary >>
-          steps:
-            - toolkit/build_release_binary
-            - toolkit/package_binary:
-                binary_name: << parameters.binary_name >>
-                target: << parameters.target >>
-            - toolkit/generate_signing_key
-            - toolkit/sign_binary:
-                asset_path: << parameters.binary_name >>-<< parameters.target >>.tar.gz
-            - toolkit/inject_pubkey_and_amend:
-                package: << parameters.package >>
-      - run:
-          name: Push release commit and tag
-          command: |
-            set -eo pipefail
-            VERSION="${SEMVER:-${NEXT_VERSION:-none}}"
-            if [ "$VERSION" = "none" ] || [ "$SKIP_RELEASE" = "true" ]; then
-              echo "Skipping push (no version or tag already on remote)"
-              exit 0
-            fi
-            echo "Pushing main and << parameters.crate_tag_prefix >>${VERSION} via pcu..."
-            pcu -vv push --semver "${VERSION}" --prefix "<< parameters.crate_tag_prefix >>"
-      - toolkit/make_github_release:
-          pcu_package: << parameters.package >>
-          pcu_verbosity: "-vv"
-      - when:
-          condition: << parameters.build_binary >>
-          steps:
-            - toolkit/upload_release_asset:
-                asset_path: << parameters.binary_name >>-<< parameters.target >>.tar.gz
-                release_tag: << parameters.crate_tag_prefix >>${SEMVER}
-            - toolkit/upload_release_asset:
-                asset_path: << parameters.binary_name >>-<< parameters.target >>.tar.gz.sig
-                release_tag: << parameters.crate_tag_prefix >>${SEMVER}
-      - when:
-          condition: << parameters.publish >>
-          steps:
-            - run:
-                name: Publish to crates.io
-                command: |
-                  set -eo pipefail
-                  VERSION="${SEMVER:-${NEXT_VERSION:-none}}"
-                  if [ "$VERSION" = "none" ] || [ "$SKIP_PUBLISH" = "true" ]; then
-                    echo "Skipping publish (no version or already published)"
-                    exit 0
-                  fi
-                  cargo publish --package << parameters.package >>
-            - when:
-                condition: << parameters.attest >>
-                steps:
-                  - toolkit/attest_crate:
-                      package: << parameters.package >>
-                      crate_tag_prefix: << parameters.crate_tag_prefix >>
-                      crates_io_delay: << parameters.crates_io_delay >>
-                      max_attempts: << parameters.max_attempts >>
 
 workflows:
   release:
@@ -234,7 +88,7 @@ workflows:
       # Sequential release chain to avoid Cargo.lock conflicts.
       # Each job pushes via GitHub App before the next starts,
       # so the next checkout gets the latest committed state.
-      - release_crate:
+      - toolkit/release_crate:
           name: release-gen-bsky
           requires: [approve-release]
           package: gen-bsky
@@ -245,7 +99,7 @@ workflows:
             - bot-check
             - pcu-app
 
-      - release_crate:
+      - toolkit/release_crate:
           name: release-gen-linkedin
           requires: [release-gen-bsky]
           package: gen-linkedin
@@ -256,7 +110,7 @@ workflows:
             - bot-check
             - pcu-app
 
-      - release_crate:
+      - toolkit/release_crate:
           name: release-pcu
           requires: [release-gen-linkedin]
           package: pcu
@@ -271,6 +125,7 @@ workflows:
 
       - toolkit/release_prlog:
           requires: [release-pcu]
+          update_pcu: << pipeline.parameters.update_pcu >>
           context:
             - release
             - bot-check
