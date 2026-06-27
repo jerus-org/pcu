@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- default `pcu release` prlog commit to ci-skip(pr [#1006])
+
+### Fixed
+
+- deps: update dependency toolkit to v6.5.0(pr [#1007])
+
+## [0.6.28] - 2026-06-26
+
+### Added
+
 - controllable ci-skip on the release prlog commit(pr [#998])
 
 ### Changed
@@ -2436,7 +2446,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1002]: https://github.com/jerus-org/pcu/pull/1002
 [#1003]: https://github.com/jerus-org/pcu/pull/1003
 [#1004]: https://github.com/jerus-org/pcu/pull/1004
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.27...HEAD
+[#1006]: https://github.com/jerus-org/pcu/pull/1006
+[#1007]: https://github.com/jerus-org/pcu/pull/1007
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.28...HEAD
+[0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
 [0.6.26]: https://github.com/jerus-org/pcu/compare/v0.6.25...v0.6.26
 [0.6.25]: https://github.com/jerus-org/pcu/compare/v0.6.24...v0.6.25

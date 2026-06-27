@@ -211,14 +211,17 @@ pub struct Release {
     #[arg(long, default_value_t = false)]
     pub linkedin_share: bool,
     /// Skip CI on the prlog update commit by appending the ci-avoidance marker
-    /// (only takes effect on the default branch). Use it to drop the redundant
-    /// validation of a release-flow commit — the post-release prlog update in a
-    /// single-crate repo, or each crate release in a multi-crate repo.
+    /// (only takes effect on the default branch). This is the DEFAULT for
+    /// `release`: the release work itself was validated, so the one-line
+    /// post-release prlog commit need not be revalidated. `--skip-ci` states it
+    /// explicitly; pass `--no-skip-ci` to opt back into validation. The effective
+    /// decision is computed by [`Release::should_skip_ci`].
     #[arg(long, overrides_with = "no_skip_ci", default_value_t = false)]
     pub skip_ci: bool,
-    /// Explicitly do NOT skip CI on the prlog update commit (the default).
-    /// Provided so "skip the skip" is stated explicitly — e.g. the validating
-    /// final prlog of a multi-crate release. If both are given, the last wins.
+    /// Opt back into CI validation on the prlog update commit (release skips by
+    /// default). Needed by orb repos whose `v*` tag triggers the publish (the
+    /// marker must not reach the tagged commit) and by the validating final
+    /// prlog of a multi-crate release. If both flags are given, the last wins.
     #[arg(long = "no-skip-ci", action = clap::ArgAction::SetTrue, overrides_with = "skip_ci")]
     pub no_skip_ci: bool,
     #[command(subcommand)]
@@ -226,6 +229,17 @@ pub struct Release {
 }
 
 impl Release {
+    /// Effective ci-skip decision for the prlog update commit.
+    ///
+    /// `release` skips by default; `--no-skip-ci` opts back into validation.
+    /// The `overrides_with` relationship between the two flags makes the last
+    /// one on the command line win, so this need only consult `no_skip_ci`:
+    /// when `--skip-ci` is given last it resets `no_skip_ci` to false (skip),
+    /// and when `--no-skip-ci` is given last it sets it true (validate).
+    pub fn should_skip_ci(&self) -> bool {
+        !self.no_skip_ci
+    }
+
     pub async fn run_release(self, sign_config: SignConfig) -> Result<CIExit, Error> {
         let client = Commands::Release(self.clone()).get_client().await?;
 
@@ -361,7 +375,7 @@ impl Release {
             let on_default_branch = client.branch_or_main() == client.default_branch.as_str();
             let commit_message = super::with_skip_ci(
                 &release_prlog_commit_message(&version),
-                self.skip_ci,
+                self.should_skip_ci(),
                 on_default_branch,
             );
 

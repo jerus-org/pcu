@@ -43,12 +43,9 @@ parameters:
       Install the latest pcu from main before each crate release (toolkit#489).
       Turn on to work around a bug in the pinned/container pcu without waiting
       for the container -> toolkit chain.
-
+      
 orbs:
-  # NOTE (before merge): bump to the toolkit version that contains #489
-  # (release_crate update_pcu + pcu_verbosity). 6.4.2 does NOT have it, so this
-  # revert cannot merge until the pin moves. Left at 6.4.2 only as a marker.
-  toolkit: jerus-org/circleci-toolkit@6.4.2
+  toolkit: jerus-org/circleci-toolkit@6.5.0
 
 jobs:
   tools:
