@@ -322,16 +322,22 @@ mod tests {
     }
 
     #[test]
-    fn release_skip_ci_flag_is_negatable() {
+    fn release_skip_ci_defaults_to_skip_and_is_negatable() {
+        // Unlike `pcu pr` (which defaults to validate and is skipped only when
+        // the toolkit forces --skip-ci), the `release` command OWNS the default:
+        // the release work itself already validated, so the one-line
+        // post-release prlog commit skips by default. This lets the skip take
+        // effect even when the orb passes no flag (e.g. the toolkit's own
+        // release pulling unreleased pcu from main via update_pcu).
         let skip = |args: &[&str]| -> bool {
             match Cli::try_parse_from(args).unwrap().command {
-                Commands::Release(r) => r.skip_ci,
+                Commands::Release(r) => r.should_skip_ci(),
                 other => panic!("expected Release, got {other:?}"),
             }
         };
         assert!(
-            !skip(&["pcu", "release", "version", "1.0.0"]),
-            "default: validate (do not skip)"
+            skip(&["pcu", "release", "version", "1.0.0"]),
+            "default: skip (release work already validated)"
         );
         assert!(
             skip(&["pcu", "release", "--skip-ci", "version", "1.0.0"]),
@@ -339,7 +345,7 @@ mod tests {
         );
         assert!(
             !skip(&["pcu", "release", "--no-skip-ci", "version", "1.0.0"]),
-            "--no-skip-ci validates explicitly"
+            "--no-skip-ci opts back into validation"
         );
         assert!(
             !skip(&[
