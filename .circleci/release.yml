@@ -49,7 +49,7 @@ parameters:
       container -> toolkit chain.
 
 orbs:
-  toolkit: jerus-org/circleci-toolkit@6.4.2
+  toolkit: jerus-org/circleci-toolkit@6.5.0
 
 jobs:
   tools:
