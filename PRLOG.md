@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update dependency toolkit to v6.5.0(pr [#1007])
+- lift RUSTSEC-2026-0173 (getset 0.1.7)(pr [#1008])
 
 ## [0.6.28] - 2026-06-26
 
@@ -2453,6 +2454,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1006]: https://github.com/jerus-org/pcu/pull/1006
 [#1007]: https://github.com/jerus-org/pcu/pull/1007
 [#1005]: https://github.com/jerus-org/pcu/pull/1005
+[#1008]: https://github.com/jerus-org/pcu/pull/1008
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.28...HEAD
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
