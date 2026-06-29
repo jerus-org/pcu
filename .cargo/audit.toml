@@ -18,18 +18,6 @@ ignore = [
     # decryption oracle) cannot be triggered. Remove when sigstore updates rsa.
     "RUSTSEC-2023-0071",
 
-    # RUSTSEC-2026-0173: proc-macro-error2 2.0.1 — unmaintained (2026-06-07).
-    # The proc-macro-error2 repo is ARCHIVED, so it will never be patched.
-    # Fix attempted: no fixed upstream exists. Remaining transitive path:
-    #   sigstore → oci-client → oci-spec → getset → proc-macro-error2
-    #     (getset is the blocker: inactive since 2025-06; jbaublitz/getset#132)
-    # (The gen-bsky → aquamarine path was removed: aquamarine replaced with the
-    #  zero-dependency simple-mermaid for rustdoc diagrams.)
-    # Unmaintained != vulnerable; no known CVE. Upstream tracking:
-    # jbaublitz/getset#132, youki-dev/oci-spec-rs#340 (filed by us).
-    # TEMPORARY — reviewed weekly; remove when a fixed getset/oci-spec ships.
-    "RUSTSEC-2026-0173",
-
 ]
 
 # Yanked-package checking re-enabled: core2 0.4.0 was removed from the
