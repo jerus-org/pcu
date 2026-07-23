@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate clap to 4.6.4(pr [#1017])
 - deps: update rust crate kdeets to 0.1.31(pr [#1018])
 - deps: update rust crate regex to 1.13.1(pr [#1019])
+- deps: update rust crate sequoia-openpgp to 2.4.1(pr [#1020])
 
 ### Security
 
@@ -2478,6 +2479,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1017]: https://github.com/jerus-org/pcu/pull/1017
 [#1018]: https://github.com/jerus-org/pcu/pull/1018
 [#1019]: https://github.com/jerus-org/pcu/pull/1019
+[#1020]: https://github.com/jerus-org/pcu/pull/1020
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.28...HEAD
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
