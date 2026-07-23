@@ -55,6 +55,12 @@ pub struct InjectPubkey {
     /// Minisign public key (reads $BINSTALL_SIGNING_PUBKEY if not provided)
     #[arg(long)]
     pub pubkey: Option<String>,
+    /// The binary is not published as a signed GitHub release. A missing signing
+    /// scaffold (`pubkey = "..."` under `[package.metadata.binstall.signing]`) is
+    /// then treated as a clean skip rather than an error. Reads
+    /// $PCU_NO_GITHUB_RELEASE if not set.
+    #[arg(long, default_value_t = false)]
+    pub no_github_release: bool,
 }
 
 /// Attest a published crate with SLSA v0.2 provenance, signed via Sigstore
