@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: bump crossbeam-epoch to 0.9.20 (RUSTSEC-2026-0204)(pr [#1010])
 - deps: update dependency toolkit to v6.6.2(pr [#1014])
 
+### Security
+
+- Dependencies: bump serde_with from 3.18.0 to 3.21.0 in the cargo group across 1 directory(pr [#1015])
+
 ## [0.6.28] - 2026-06-26
 
 ### Added
@@ -2461,6 +2465,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1009]: https://github.com/jerus-org/pcu/pull/1009
 [#1010]: https://github.com/jerus-org/pcu/pull/1010
 [#1014]: https://github.com/jerus-org/pcu/pull/1014
+[#1015]: https://github.com/jerus-org/pcu/pull/1015
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.28...HEAD
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
