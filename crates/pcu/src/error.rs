@@ -66,6 +66,8 @@ pub enum Error {
     Git2(#[from] git2::Error),
     #[error("Git error: {0}")]
     GitError(String),
+    #[error("{0}")]
+    MissingSigningScaffold(String),
     #[error("io error says: {0:?}")]
     IO(#[from] std::io::Error),
     #[error("utf8 error says: {0:?}")]

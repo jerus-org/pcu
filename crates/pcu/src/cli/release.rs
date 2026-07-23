@@ -171,6 +171,67 @@ fn resolve_version(version_opt: &Option<String>) -> String {
         .unwrap_or_else(|_| "none".to_string())
 }
 
+/// Outcome of injecting a signing pubkey into a crate's `Cargo.toml`.
+#[derive(Debug, PartialEq, Eq)]
+enum PubkeyOutcome {
+    /// The `pubkey = "..."` placeholder was found and replaced; carries the new
+    /// file content to write.
+    Injected(String),
+    /// No placeholder present, and the scaffold was not required (binary not
+    /// published as a signed release): nothing to write.
+    SkippedNoScaffold,
+}
+
+/// Whether the crate at this manifest produces a binary target.
+///
+/// A crate is a binary if its manifest declares a `[[bin]]` target, or cargo
+/// would auto-discover one from `src/main.rs` or a `src/bin/` directory. A
+/// library-only crate produces no signable binary, so it needs no signing
+/// pubkey. Decided independently of the signing scaffold so that a *binary*
+/// crate missing its scaffold is caught (jerus-org/pcu#1012) rather than
+/// silently mistaken for a library.
+fn crate_is_binary(
+    cargo_toml: &str,
+    main_rs_exists: bool,
+    bin_dir_exists: bool,
+) -> Result<bool, Error> {
+    let manifest: toml::Value = toml::from_str(cargo_toml)?;
+    let declares_bin = manifest
+        .get("bin")
+        .and_then(|b| b.as_array())
+        .is_some_and(|targets| !targets.is_empty());
+    Ok(declares_bin || main_rs_exists || bin_dir_exists)
+}
+
+/// Replace the `pubkey = "..."` placeholder in a crate `Cargo.toml` with the
+/// confirmed signing `pubkey`.
+///
+/// Called only for binary crates. When no placeholder is present:
+/// - `require_scaffold` true → `Err(MissingSigningScaffold)` (a published,
+///   signed binary must carry a verifiable key);
+/// - `require_scaffold` false → `SkippedNoScaffold` (binary not published as a
+///   signed release, via `--no-github-release`).
+fn inject_pubkey_value(
+    content: &str,
+    pubkey: &str,
+    require_scaffold: bool,
+) -> Result<PubkeyOutcome, Error> {
+    let replacement = format!(r#"pubkey = "{pubkey}""#);
+    // `Regex::replace` returns `Cow::Borrowed` (the input, unchanged) only when
+    // there is no match — the reliable signal that the scaffold is absent.
+    match regex::Regex::new(r#"pubkey = ".*""#)?.replace(content, replacement.as_str()) {
+        std::borrow::Cow::Owned(new_content) => Ok(PubkeyOutcome::Injected(new_content)),
+        std::borrow::Cow::Borrowed(_) if require_scaffold => Err(Error::MissingSigningScaffold(
+            "binary crate has no `pubkey = \"...\"` line under \
+                 `[package.metadata.binstall.signing]` to inject the signing key into; \
+                 add the signing scaffold, or pass --no-github-release if this binary \
+                 is not published as a signed release"
+                .to_string(),
+        )),
+        std::borrow::Cow::Borrowed(_) => Ok(PubkeyOutcome::SkippedNoScaffold),
+    }
+}
+
 /// Append `export KEY=VALUE\n` to the file named by $BASH_ENV.
 /// Logs a warning if $BASH_ENV is unset (e.g. running locally).
 fn write_to_bash_env(key: &str, value: &str) -> Result<(), Error> {
@@ -480,7 +541,11 @@ impl Release {
     /// the amended commit.
     ///
     /// Reads pubkey from `--pubkey` flag or `$BINSTALL_SIGNING_PUBKEY`.
-    /// Silently skips when version is "none" or pubkey is unavailable.
+    /// Skips when version is "none", the crate is a library (no binary to
+    /// sign), or no pubkey is available. A *binary* crate that is missing its
+    /// signing scaffold errors instead of silently no-opping (pcu#1012), unless
+    /// `--no-github-release`/`$PCU_NO_GITHUB_RELEASE` marks the binary as not
+    /// published as a signed release.
     async fn inject_pubkey(self) -> Result<CIExit, Error> {
         let Mode::InjectPubkey(ref cmd) = self.mode else {
             return Err(Error::NoPackageSpecified);
@@ -490,6 +555,23 @@ impl Release {
 
         if version == "none" {
             log::info!("No version set — skipping pubkey injection");
+            return Ok(CIExit::Released);
+        }
+
+        let tag = format!("{}-v{}", cmd.package, version);
+        let crate_dir = format!("crates/{}", cmd.package);
+        let cargo_toml_path = format!("{crate_dir}/Cargo.toml");
+        let content = fs::read_to_string(&cargo_toml_path)?;
+
+        // Establish binary-vs-library independently of the signing scaffold:
+        // a library has no binary to sign, so there is nothing to inject.
+        let main_rs_exists = Path::new(&crate_dir).join("src/main.rs").exists();
+        let bin_dir_exists = Path::new(&crate_dir).join("src/bin").is_dir();
+        if !crate_is_binary(&content, main_rs_exists, bin_dir_exists)? {
+            log::info!(
+                "{} is a library crate — no binary to sign; skipping pubkey injection",
+                cmd.package
+            );
             return Ok(CIExit::Released);
         }
 
@@ -504,15 +586,22 @@ impl Release {
             return Ok(CIExit::Released);
         };
 
-        let tag = format!("{}-v{}", cmd.package, version);
-        let cargo_toml_path = format!("crates/{}/Cargo.toml", cmd.package);
+        let no_github_release = cmd.no_github_release
+            || std::env::var("PCU_NO_GITHUB_RELEASE")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(false);
 
-        // Replace the pubkey value in Cargo.toml (uses | as delimiter to avoid
-        // conflicts with the pubkey's base62 characters)
-        let content = fs::read_to_string(&cargo_toml_path)?;
-        let updated = regex::Regex::new(r#"pubkey = ".*""#)?
-            .replace(&content, format!(r#"pubkey = "{pubkey}""#).as_str())
-            .into_owned();
+        let updated = match inject_pubkey_value(&content, &pubkey, !no_github_release)? {
+            PubkeyOutcome::Injected(new_content) => new_content,
+            PubkeyOutcome::SkippedNoScaffold => {
+                log::info!(
+                    "{} has no binstall signing scaffold and --no-github-release is set — \
+                     binary not published as a signed release; skipping pubkey injection",
+                    cmd.package
+                );
+                return Ok(CIExit::Released);
+            }
+        };
         fs::write(&cargo_toml_path, &updated)?;
         log::info!("Updated {cargo_toml_path} with confirmed signing pubkey");
 
@@ -1656,5 +1745,128 @@ mod release_message_tests {
             !m.contains("for pr"),
             "must not masquerade as a routine post-merge pr prlog update: {m}"
         );
+    }
+}
+
+#[cfg(test)]
+mod inject_pubkey_tests {
+    use super::*;
+
+    const BIN_MANIFEST: &str = r#"
+[package]
+name = "demo"
+version = "0.1.0"
+
+[[bin]]
+name = "demo"
+path = "src/main.rs"
+
+[package.metadata.binstall.signing]
+algorithm = "minisign"
+pubkey = "RWPLACEHOLDER0000000000000000000000000000000"
+"#;
+
+    const BIN_MANIFEST_NO_SCAFFOLD: &str = r#"
+[package]
+name = "demo"
+version = "0.1.0"
+
+[[bin]]
+name = "demo"
+path = "src/main.rs"
+"#;
+
+    const LIB_MANIFEST: &str = r#"
+[package]
+name = "demo"
+version = "0.1.0"
+
+[lib]
+name = "demo"
+path = "src/lib.rs"
+"#;
+
+    // ---- crate_is_binary ----
+
+    #[test]
+    fn manifest_with_bin_target_is_binary() {
+        assert!(crate_is_binary(BIN_MANIFEST, false, false).unwrap());
+    }
+
+    #[test]
+    fn library_manifest_without_bin_or_files_is_not_binary() {
+        assert!(!crate_is_binary(LIB_MANIFEST, false, false).unwrap());
+    }
+
+    #[test]
+    fn auto_detected_main_rs_makes_it_binary() {
+        // No [[bin]] in the manifest, but src/main.rs on disk → cargo builds a binary.
+        assert!(crate_is_binary(LIB_MANIFEST, true, false).unwrap());
+    }
+
+    #[test]
+    fn auto_detected_bin_dir_makes_it_binary() {
+        assert!(crate_is_binary(LIB_MANIFEST, false, true).unwrap());
+    }
+
+    // ---- inject_pubkey_value ----
+
+    #[test]
+    fn injects_key_when_placeholder_present() {
+        let outcome = inject_pubkey_value(BIN_MANIFEST, "RWNEWKEY111", true).unwrap();
+        match outcome {
+            PubkeyOutcome::Injected(new) => {
+                assert!(
+                    new.contains(r#"pubkey = "RWNEWKEY111""#),
+                    "new key must be written: {new}"
+                );
+                assert!(
+                    !new.contains("RWPLACEHOLDER"),
+                    "placeholder must be replaced: {new}"
+                );
+            }
+            other => panic!("expected Injected, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn binary_missing_scaffold_is_an_error_when_required() {
+        // The jerus-org/pcu#1012 bug: a binary crate whose Cargo.toml has no
+        // pubkey line must NOT silently no-op.
+        let err = inject_pubkey_value(BIN_MANIFEST_NO_SCAFFOLD, "RWNEWKEY111", true).unwrap_err();
+        assert!(
+            matches!(err, Error::MissingSigningScaffold(_)),
+            "expected MissingSigningScaffold, got {err:?}"
+        );
+    }
+
+    #[test]
+    fn binary_missing_scaffold_is_skipped_when_not_required() {
+        // --no-github-release: an unpublished binary may legitimately lack scaffold.
+        let outcome = inject_pubkey_value(BIN_MANIFEST_NO_SCAFFOLD, "RWNEWKEY111", false).unwrap();
+        assert_eq!(outcome, PubkeyOutcome::SkippedNoScaffold);
+    }
+
+    #[test]
+    fn existing_real_key_is_replaced_idempotently() {
+        let first = inject_pubkey_value(BIN_MANIFEST, "RWNEWKEY111", true).unwrap();
+        let content = match first {
+            PubkeyOutcome::Injected(c) => c,
+            other => panic!("expected Injected, got {other:?}"),
+        };
+        // Re-running with a different key replaces again (no stacking).
+        let second = inject_pubkey_value(&content, "RWNEWKEY222", true).unwrap();
+        match second {
+            PubkeyOutcome::Injected(new) => {
+                assert!(new.contains(r#"pubkey = "RWNEWKEY222""#));
+                assert!(!new.contains("RWNEWKEY111"));
+                assert_eq!(
+                    new.matches("pubkey = ").count(),
+                    1,
+                    "exactly one pubkey line"
+                );
+            }
+            other => panic!("expected Injected, got {other:?}"),
+        }
     }
 }
