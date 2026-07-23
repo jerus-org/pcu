@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update dependency toolkit to v6.6.2(pr [#1014])
 - release: fail on missing binary signing scaffold(pr [#1013])
 - deps: lock file maintenance(pr [#1011])
+- deps: update rust crate bytes to 1.12.1(pr [#1016])
 
 ### Security
 
@@ -2470,6 +2471,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1015]: https://github.com/jerus-org/pcu/pull/1015
 [#1013]: https://github.com/jerus-org/pcu/pull/1013
 [#1011]: https://github.com/jerus-org/pcu/pull/1011
+[#1016]: https://github.com/jerus-org/pcu/pull/1016
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.28...HEAD
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
