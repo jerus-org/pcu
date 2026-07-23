@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: lock file maintenance(pr [#1011])
 - deps: update rust crate bytes to 1.12.1(pr [#1016])
 - deps: update rust crate clap to 4.6.4(pr [#1017])
+- deps: update rust crate kdeets to 0.1.31(pr [#1018])
 
 ### Security
 
@@ -2474,6 +2475,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1011]: https://github.com/jerus-org/pcu/pull/1011
 [#1016]: https://github.com/jerus-org/pcu/pull/1016
 [#1017]: https://github.com/jerus-org/pcu/pull/1017
+[#1018]: https://github.com/jerus-org/pcu/pull/1018
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.28...HEAD
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
 [0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
