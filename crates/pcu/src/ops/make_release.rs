@@ -8,7 +8,7 @@ use crate::{
 
 pub trait MakeRelease {
     #[allow(async_fn_in_trait)]
-    async fn make_release(&self, prefix: &str, version: &str) -> Result<(), Error>;
+    async fn make_release(&self, prefix: &str, version: &str, draft: bool) -> Result<(), Error>;
     fn release_unreleased(&mut self, version: &str) -> Result<(), Error>;
 }
 
@@ -30,8 +30,8 @@ impl MakeRelease for Client {
         Ok(())
     }
 
-    async fn make_release(&self, prefix: &str, version: &str) -> Result<(), Error> {
-        log::debug!("Making release {version}");
+    async fn make_release(&self, prefix: &str, version: &str, draft: bool) -> Result<(), Error> {
+        log::debug!("Making release {version} (draft={draft})");
 
         let opts = ChangelogParseOptions::default();
         let prlog = match Changelog::parse_from_file(self.prlog_as_str(), Some(opts)) {
@@ -49,25 +49,20 @@ impl MakeRelease for Client {
         let commit = Self::get_commitish_for_tag(self, &tag).await?;
         log::trace!("Commit: {commit:#?}");
 
-        // let release_request = octocrate::repos::create_release::Request {
-        //     body: Some(release_notes.body.to_string()),
-        //     discussion_category_name: None,
-        //     draft: Some(false),
-        //     generate_release_notes: Some(false),
-        //     make_latest: Some(RequestMakeLatest::True),
-        //     name: Some(release_notes.name.to_string()),
-        //     prerelease: Some(false),
-        //     tag_name: tag,
-        //     target_commitish: Some(commit),
-        // };
-
-        let release_request = octocrate::repos::create_release::Request::builder()
+        // `make_latest` is only set when publishing directly: GitHub documents
+        // that "Drafts and prereleases cannot be set as latest", so for a draft
+        // it moves to the publish call that flips `draft` to false.
+        let builder = octocrate::repos::create_release::Request::builder()
             .body(release_notes.body.to_string())
-            .make_latest(RequestMakeLatest::True)
             .name(release_notes.name.to_string())
             .tag_name(tag)
-            .target_commitish(commit)
-            .build();
+            .target_commitish(commit);
+
+        let release_request = if draft {
+            builder.draft(true).build()
+        } else {
+            builder.make_latest(RequestMakeLatest::True).build()
+        };
 
         let release = match self
             .github_rest

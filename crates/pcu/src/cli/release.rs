@@ -9,6 +9,7 @@ async fn share_release_to_linkedin(prefix: &str, version: &str) -> Result<(), Er
         linkedin_share: true,
         skip_ci: false,
         no_skip_ci: false,
+        draft: false,
         mode: Mode::Version(crate::cli::release::mode::Version {
             version: version.to_string(),
         }),
@@ -47,7 +48,7 @@ mod mode;
 
 use clap::Parser;
 use mode::Mode;
-use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
+use octocrate::{APIConfig, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
 /// Poll `probe` up to `max_attempts` times, sleeping `retry_delay` between
@@ -87,8 +88,17 @@ where
 enum EnsureOutcome {
     /// A GitHub release was created for the tag.
     Created,
-    /// A GitHub release already existed for the tag.
+    /// A published GitHub release already existed for the tag.
     AlreadyPresent,
+    /// An unpublished draft already existed for the tag and was left in place
+    /// for the rest of the pipeline to populate and publish.
+    ///
+    /// Distinct from [`Self::AlreadyPresent`] because the two say different
+    /// things about what happens next: a published release is finished, whereas
+    /// a draft means an earlier run was interrupted part-way. GitHub permits
+    /// several drafts to share a `tag_name`, so treating this as "absent" would
+    /// add another draft on every retry, silently.
+    DraftPresent,
     /// The git tag was not present, so there was nothing to release.
     TagAbsent,
 }
@@ -111,7 +121,7 @@ where
     TV: FnMut() -> TVF,
     TVF: std::future::Future<Output = bool>,
     RE: FnMut() -> REF,
-    REF: std::future::Future<Output = Result<bool, Error>>,
+    REF: std::future::Future<Output = Result<Option<bool>, Error>>,
     MK: FnMut() -> MKF,
     MKF: std::future::Future<Output = Result<(), Error>>,
 {
@@ -125,9 +135,16 @@ where
     // `?` here is the discipline: an undetermined existence check propagates as
     // an error instead of being coerced (as a bare `.is_ok()` did) into a
     // "release exists" that silently skips creation.
-    if release_exists().await? {
-        log::info!("GitHub release for '{tag}' already exists — skipping creation");
-        return Ok(EnsureOutcome::AlreadyPresent);
+    match release_exists().await? {
+        Some(true) => {
+            log::info!("Draft release for '{tag}' already exists — reusing it");
+            return Ok(EnsureOutcome::DraftPresent);
+        }
+        Some(false) => {
+            log::info!("GitHub release for '{tag}' already exists — skipping creation");
+            return Ok(EnsureOutcome::AlreadyPresent);
+        }
+        None => {}
     }
     log::info!("Tag '{tag}' exists, no GitHub release yet — creating");
     make_release().await?;
@@ -139,7 +156,12 @@ where
 /// Idempotent: if the git tag is absent, logs an error and returns `Ok`.
 /// If the GitHub release already exists, skips creation silently.
 /// Only calls `make_release` when the tag is present but no release exists yet.
-async fn ensure_github_release(client: &Client, prefix: &str, version: &str) -> Result<(), Error> {
+async fn ensure_github_release(
+    client: &Client,
+    prefix: &str,
+    version: &str,
+    draft: bool,
+) -> Result<(), Error> {
     let tag = format!("{prefix}{version}");
     // Each effect is retried/loud in its own right (tag visibility, release
     // existence, creation); the orchestration guarantees we never report success
@@ -152,12 +174,45 @@ async fn ensure_github_release(client: &Client, prefix: &str, version: &str) -> 
                 client.tag_exists(&tag)
             })
         },
-        || client.github_release_exists(&tag),
-        || client.make_release(prefix, version),
+        || async {
+            Ok(client
+                .find_release_for_tag(&tag)
+                .await?
+                .map(|release| release.draft))
+        },
+        || client.make_release(prefix, version, draft),
     )
     .await?;
     log::debug!("ensure_github_release outcome for '{tag}': {outcome:?}");
     Ok(())
+}
+
+/// What `pcu release publish` should do about the release it found.
+#[derive(Debug, PartialEq, Eq)]
+enum PublishAction {
+    /// A draft exists: publish it.
+    Publish(i64),
+    /// Already published — nothing to do.
+    AlreadyPublished(i64),
+    /// No release at all for the tag.
+    NotFound,
+}
+
+/// Decide what publishing a release for a tag means, given what was found.
+///
+/// The publish step runs as the last step of *every* release job, with no
+/// condition attached, so that the ordering rule stays a single reviewable line
+/// in the pipeline instead of a per-shape conditional. That only works if the
+/// step is harmless wherever it does not apply: a release that was never a draft
+/// is left alone. A missing release is the exception — reaching the final step
+/// with nothing to publish means an earlier step failed quietly, which is the
+/// failure mode that stranded gen-circleci-orb 0.0.53.
+fn publish_decision(found: Option<(i64, bool)>) -> PublishAction {
+    match found {
+        Some((id, true)) => PublishAction::Publish(id),
+        Some((id, false)) => PublishAction::AlreadyPublished(id),
+        None => PublishAction::NotFound,
+    }
 }
 
 /// Resolve a version from an optional CLI argument, falling back to $SEMVER or $NEXT_VERSION.
@@ -285,6 +340,20 @@ pub struct Release {
     /// prlog of a multi-crate release. If both flags are given, the last wins.
     #[arg(long = "no-skip-ci", action = clap::ArgAction::SetTrue, overrides_with = "skip_ci")]
     pub no_skip_ci: bool,
+    /// Create the GitHub release as a draft, leaving it unpublished until
+    /// `pcu release publish` runs.
+    ///
+    /// Required on repositories with **immutable releases** enabled (the default
+    /// for repositories created recently): GitHub freezes a release's assets at
+    /// publication, so a release that is published on creation can never receive
+    /// its binary, signature or attestation assets. Draft-first defers
+    /// publication until every asset is attached.
+    ///
+    /// Opt-in rather than the default: a pipeline that creates drafts without a
+    /// publish step would leave every release unpublished while still reporting
+    /// success.
+    #[arg(long, default_value_t = false)]
+    pub draft: bool,
     #[command(subcommand)]
     pub mode: Mode,
 }
@@ -313,6 +382,7 @@ impl Release {
             Mode::CheckTag(_) => self.check_tag(client).await,
             Mode::InjectPubkey(_) => self.inject_pubkey().await,
             Mode::UploadAsset(_) => self.upload_asset(client).await,
+            Mode::Publish(_) => self.publish(client).await,
             Mode::Attest(_) => self.attest(client).await,
         }
     }
@@ -328,7 +398,7 @@ impl Release {
             for package in packages {
                 let prefix = format!("{}-{}", package.name, self.prefix);
                 let version = package.version;
-                ensure_github_release(&client, &prefix, &version).await?;
+                ensure_github_release(&client, &prefix, &version, self.draft).await?;
             }
         }
         Ok(CIExit::Released)
@@ -357,7 +427,7 @@ impl Release {
                 }
                 let prefix = format!("{}-{}", package.name, self.prefix);
                 let version = package.version;
-                ensure_github_release(&client, &prefix, &version).await?;
+                ensure_github_release(&client, &prefix, &version, self.draft).await?;
                 break;
             }
         }
@@ -397,7 +467,7 @@ impl Release {
                 }
                 let prefix = format!("{}-{}", package.name, self.prefix);
                 let version = package.version;
-                ensure_github_release(&client, &prefix, &version).await?;
+                ensure_github_release(&client, &prefix, &version, self.draft).await?;
                 break;
             }
         }
@@ -457,7 +527,9 @@ impl Release {
             log::debug!("Branch status: {}", client.branch_status()?);
         }
 
-        client.make_release(&self.prefix, &version).await?;
+        client
+            .make_release(&self.prefix, &version, self.draft)
+            .await?;
 
         if self.linkedin_share {
             share_release_to_linkedin(&self.prefix, &version).await?;
@@ -666,10 +738,22 @@ impl Release {
         // Step 1: Check whether attestation assets already exist on the GitHub release.
         // If both assets are present the previous run completed successfully — skip all work.
         let release_tag = format!("{}{}", cmd.crate_tag_prefix, version);
+        // Draft-aware: attestation assets are uploaded BEFORE publication on a
+        // draft-first pipeline (assets freeze at publication), so the release
+        // being attested is normally still a draft — invisible to
+        // get_release_by_tag.
+        let release_ref = client
+            .find_release_for_tag(&release_tag)
+            .await?
+            .ok_or_else(|| {
+                Error::Attestation(format!(
+                    "no GitHub release found for tag '{release_tag}' to attach attestation assets to"
+                ))
+            })?;
         let release = client
             .github_rest
             .repos
-            .get_release_by_tag(client.owner(), client.repo(), &release_tag)
+            .get_release(client.owner(), client.repo(), release_ref.id)
             .send()
             .await?;
         let existing_assets: std::collections::HashSet<String> =
@@ -839,6 +923,40 @@ impl Release {
         Ok(CIExit::Released)
     }
 
+    /// Publish the draft GitHub release for a tag.
+    ///
+    /// The last step of a draft-first release: assets are frozen at publication
+    /// on repositories with immutable releases, so everything — binary,
+    /// signature, attestation bundle — must already be attached by the time this
+    /// runs. Safe to call unconditionally; see [`publish_decision`].
+    async fn publish(self, client: Client) -> Result<CIExit, Error> {
+        let Mode::Publish(ref cmd) = self.mode else {
+            return Err(Error::NoPackageSpecified);
+        };
+
+        let found = client.find_release_for_tag(&cmd.tag).await?;
+
+        match publish_decision(found.map(|r| (r.id, r.draft))) {
+            PublishAction::Publish(id) => {
+                log::info!("Publishing draft release {} (id={id})", cmd.tag);
+                client.publish_release(id).await?;
+                log::info!("Published release {}", cmd.tag);
+                Ok(CIExit::Released)
+            }
+            PublishAction::AlreadyPublished(id) => {
+                log::info!(
+                    "Release {} (id={id}) is already published — nothing to do",
+                    cmd.tag
+                );
+                Ok(CIExit::Released)
+            }
+            PublishAction::NotFound => Err(Error::GitError(format!(
+                "no GitHub release found for tag '{}' to publish",
+                cmd.tag
+            ))),
+        }
+    }
+
     /// Upload a binary asset to an existing GitHub release.
     ///
     /// Looks up the release ID via `get_release_by_tag`, then uploads to
@@ -869,31 +987,24 @@ impl Release {
 
         log::info!("Looking up GitHub release for tag {}", cmd.tag);
 
-        // Use a fresh API client per attempt so the closure owns all its data.
-        // GitHub's REST API has a brief eventual-consistency window after
-        // create_release: get_release_by_tag can return 404 for a few seconds.
-        let token = client.github_token.clone();
-        let owner = client.owner().to_string();
-        let repo = client.repo().to_string();
-        let tag = cmd.tag.clone();
-        let release = get_release_with_retry(&tag, 5, std::time::Duration::from_secs(2), || {
-            let tok = PersonalAccessToken::new(token.clone());
-            let cfg = APIConfig::with_token(tok).shared();
-            let api = GitHubAPI::new(&cfg);
-            let o = owner.clone();
-            let r = repo.clone();
-            let t = tag.clone();
-            async move {
-                api.repos
-                    .get_release_by_tag(&o, &r, &t)
-                    .send()
-                    .await
-                    .map_err(Error::from)
-            }
-        })
-        .await?;
+        // Draft-aware: on a draft-first pipeline the release is still unpublished
+        // at this point, and a draft is invisible to get_release_by_tag.
+        let release_ref = client
+            .find_release_for_tag(&cmd.tag)
+            .await?
+            .ok_or_else(|| {
+                Error::GitError(format!(
+                    "no GitHub release found for tag '{}' to upload to",
+                    cmd.tag
+                ))
+            })?;
 
-        log::info!("Found release {} (id={})", release.tag_name, release.id);
+        if release_ref.immutable {
+            return Err(Error::ImmutableRelease(
+                cmd.tag.clone(),
+                "the release is published with immutable assets".to_string(),
+            ));
+        }
 
         // GitHub binary uploads must go to uploads.github.com, not api.github.com.
         // A dedicated APIConfig with the upload base URL is required.
@@ -917,13 +1028,14 @@ impl Release {
 
         upload_api
             .repos
-            .upload_release_asset(client.owner(), client.repo(), release.id)
+            .upload_release_asset(client.owner(), client.repo(), release_ref.id)
             .query(&query)
             .header("Content-Type", content_type)
             .header("Content-Length", content_length.to_string())
             .file(file)
             .send()
-            .await?;
+            .await
+            .map_err(|e| crate::client::map_asset_upload_error(&cmd.tag, &e.to_string()))?;
 
         log::info!("Successfully uploaded {asset_name}");
         Ok(CIExit::Released)
@@ -1386,9 +1498,32 @@ mod release_package_tests {
             "every attempt is exhausted before giving up"
         );
     }
-}
 
-use crate::client::get_release_with_retry;
+    #[test]
+    fn publish_decision_publishes_a_draft() {
+        assert_eq!(
+            publish_decision(Some((42, true))),
+            PublishAction::Publish(42)
+        );
+    }
+
+    #[test]
+    fn publish_decision_is_a_no_op_for_a_published_release() {
+        // The publish step runs unconditionally as the last step of every release
+        // job, so every path that never created a draft must land here harmlessly.
+        assert_eq!(
+            publish_decision(Some((42, false))),
+            PublishAction::AlreadyPublished(42)
+        );
+    }
+
+    #[test]
+    fn publish_decision_reports_a_missing_release() {
+        // Not a no-op: reaching the final step with no release at all means an
+        // earlier step failed silently, which is exactly what must not pass.
+        assert_eq!(publish_decision(None), PublishAction::NotFound);
+    }
+}
 
 /// Downloads a URL with retry, using a caller-supplied async attempt function.
 ///
@@ -1582,55 +1717,6 @@ mod tests {
 }
 
 #[cfg(test)]
-mod upload_retry_tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn get_release_with_retry_succeeds_on_first_attempt() {
-        let result = get_release_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
-            Ok::<_, Error>("release")
-        })
-        .await;
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "release");
-    }
-
-    #[tokio::test]
-    async fn get_release_with_retry_returns_err_after_all_attempts_exhausted() {
-        let result = get_release_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
-            Err::<String, Error>(Error::GitError("Not Found".to_string()))
-        })
-        .await;
-        assert!(result.is_err());
-        let msg = result.unwrap_err().to_string();
-        assert!(
-            msg.contains("pcu-v1.0.0"),
-            "error should name the tag: {msg}"
-        );
-        assert!(
-            msg.contains('3'),
-            "error should mention attempt count: {msg}"
-        );
-    }
-
-    #[tokio::test]
-    async fn get_release_with_retry_succeeds_on_second_attempt() {
-        let attempt = std::sync::atomic::AtomicU32::new(0);
-        let result = get_release_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
-            let n = attempt.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            if n == 0 {
-                Err::<String, Error>(Error::GitError("Not Found".to_string()))
-            } else {
-                Ok("release".to_string())
-            }
-        })
-        .await;
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "release");
-    }
-}
-
-#[cfg(test)]
 mod ensure_release_tests {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
@@ -1641,7 +1727,7 @@ mod ensure_release_tests {
         let outcome = ensure_release_for_tag(
             "crate-v1.0.0",
             || async { true },
-            || async { Ok(false) },
+            || async { Ok(None) },
             || async {
                 made.fetch_add(1, Ordering::SeqCst);
                 Ok(())
@@ -1661,7 +1747,7 @@ mod ensure_release_tests {
         let r = ensure_release_for_tag(
             "crate-v1.0.0",
             || async { true },
-            || async { Ok(false) },
+            || async { Ok(None) },
             || async { Err(Error::GitError("boom".into())) },
         )
         .await;
@@ -1697,7 +1783,7 @@ mod ensure_release_tests {
         let outcome = ensure_release_for_tag(
             "crate-v1.0.0",
             || async { true },
-            || async { Ok(true) },
+            || async { Ok(Some(false)) },
             || async {
                 made.fetch_add(1, Ordering::SeqCst);
                 Ok(())
@@ -1713,12 +1799,37 @@ mod ensure_release_tests {
     }
 
     #[tokio::test]
+    async fn reuses_an_existing_draft_rather_than_creating_a_second() {
+        // GitHub allows several drafts to share a tag_name, so an interrupted
+        // draft-first run must be reported distinctly from a published release:
+        // silently creating another draft on every retry is the failure this
+        // outcome exists to make visible.
+        let made = AtomicU32::new(0);
+        let outcome = ensure_release_for_tag(
+            "crate-v1.0.0",
+            || async { true },
+            || async { Ok(Some(true)) },
+            || async {
+                made.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+        assert_eq!(outcome.unwrap(), EnsureOutcome::DraftPresent);
+        assert_eq!(
+            made.load(Ordering::SeqCst),
+            0,
+            "must not create a second draft for the same tag"
+        );
+    }
+
+    #[tokio::test]
     async fn reports_tag_absent_without_error() {
         let made = AtomicU32::new(0);
         let outcome = ensure_release_for_tag(
             "crate-v1.0.0",
             || async { false },
-            || async { Ok(false) },
+            || async { Ok(None) },
             || async {
                 made.fetch_add(1, Ordering::SeqCst);
                 Ok(())

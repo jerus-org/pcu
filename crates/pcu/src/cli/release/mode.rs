@@ -86,6 +86,19 @@ pub struct Attest {
     pub max_attempts: u32,
 }
 
+/// Publish a draft GitHub release, making it visible and marking it latest.
+///
+/// Designed to run as the final step of every release pipeline, unconditionally:
+/// it is a no-op when the release is already published, so a pipeline that never
+/// created a draft is unaffected. A missing release is an error — reaching the
+/// final step with nothing to publish means an earlier step failed quietly.
+#[derive(Debug, Parser, Clone)]
+pub struct Publish {
+    /// Git tag of the release to publish
+    #[arg(long)]
+    pub tag: String,
+}
+
 /// Upload a binary asset to an existing GitHub release.
 #[derive(Debug, Parser, Clone)]
 pub struct UploadAsset {
@@ -114,6 +127,8 @@ pub enum Mode {
     InjectPubkey(InjectPubkey),
     /// Upload a binary asset to a GitHub release
     UploadAsset(UploadAsset),
+    /// Publish a draft GitHub release (no-op if already published)
+    Publish(Publish),
     /// Attest a published crate with SLSA provenance via Sigstore keyless signing
     Attest(Attest),
 }
