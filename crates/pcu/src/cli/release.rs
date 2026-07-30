@@ -178,7 +178,7 @@ async fn ensure_github_release(
             Ok(client
                 .find_release_for_tag(&tag)
                 .await?
-                .map(|(_, is_draft)| is_draft))
+                .map(|release| release.draft))
         },
         || client.make_release(prefix, version, draft),
     )
@@ -742,7 +742,7 @@ impl Release {
         // draft-first pipeline (assets freeze at publication), so the release
         // being attested is normally still a draft — invisible to
         // get_release_by_tag.
-        let (release_id, _) = client
+        let release_ref = client
             .find_release_for_tag(&release_tag)
             .await?
             .ok_or_else(|| {
@@ -753,7 +753,7 @@ impl Release {
         let release = client
             .github_rest
             .repos
-            .get_release(client.owner(), client.repo(), release_id)
+            .get_release(client.owner(), client.repo(), release_ref.id)
             .send()
             .await?;
         let existing_assets: std::collections::HashSet<String> =
@@ -936,7 +936,7 @@ impl Release {
 
         let found = client.find_release_for_tag(&cmd.tag).await?;
 
-        match publish_decision(found) {
+        match publish_decision(found.map(|r| (r.id, r.draft))) {
             PublishAction::Publish(id) => {
                 log::info!("Publishing draft release {} (id={id})", cmd.tag);
                 client.publish_release(id).await?;
@@ -989,21 +989,22 @@ impl Release {
 
         // Draft-aware: on a draft-first pipeline the release is still unpublished
         // at this point, and a draft is invisible to get_release_by_tag.
-        let (release_id, is_draft) =
-            client
-                .find_release_for_tag(&cmd.tag)
-                .await?
-                .ok_or_else(|| {
-                    Error::GitError(format!(
-                        "no GitHub release found for tag '{}' to upload to",
-                        cmd.tag
-                    ))
-                })?;
+        let release_ref = client
+            .find_release_for_tag(&cmd.tag)
+            .await?
+            .ok_or_else(|| {
+                Error::GitError(format!(
+                    "no GitHub release found for tag '{}' to upload to",
+                    cmd.tag
+                ))
+            })?;
 
-        log::info!(
-            "Found release {} (id={release_id}, draft={is_draft})",
-            cmd.tag
-        );
+        if release_ref.immutable {
+            return Err(Error::ImmutableRelease(
+                cmd.tag.clone(),
+                "the release is published with immutable assets".to_string(),
+            ));
+        }
 
         // GitHub binary uploads must go to uploads.github.com, not api.github.com.
         // A dedicated APIConfig with the upload base URL is required.
@@ -1027,7 +1028,7 @@ impl Release {
 
         upload_api
             .repos
-            .upload_release_asset(client.owner(), client.repo(), release_id)
+            .upload_release_asset(client.owner(), client.repo(), release_ref.id)
             .query(&query)
             .header("Content-Type", content_type)
             .header("Content-Length", content_length.to_string())

@@ -9,6 +9,7 @@ use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
 use octocrate::{APIConfig, AppAuthorization, GitHubAPI, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
+use self::graphql::GraphQLGetReleases;
 use self::pull_request::PullRequest;
 use crate::{Error, PrTitle};
 
@@ -406,7 +407,7 @@ impl Client {
         })
     }
 
-    /// Locate the release for `tag`, including drafts, as `(id, draft)`.
+    /// Locate the release for `tag`, including drafts.
     ///
     /// Supersedes the former `github_release_exists`, which answered only
     /// "yes/no" and could see published releases only. Both callers need more
@@ -416,22 +417,9 @@ impl Client {
     /// could coerce a 404 or a phantom response into "exists" and silently skip
     /// release creation, the failure that stranded gen-circleci-orb 0.0.53.
     ///
-    /// Two lookups, because neither alone is sufficient:
-    ///
-    /// 1. `get_release_by_tag`, retried for GitHub's eventual-consistency window
-    ///    after a release is created. O(1), but it serves **published releases
-    ///    only** — a draft 404s there. It goes first because a published release
-    ///    is the preferred answer anyway (see [`find_release_id_by_tag`]), so
-    ///    when one exists no scanning is needed.
-    /// 2. A bounded `list_releases` scan, which does return drafts to a caller
-    ///    with push access. Runs only when the fast path found nothing, so the
-    ///    cost for a published release is unchanged and the draft path costs one
-    ///    extra call.
-    ///
-    /// GraphQL is not an alternative here: `repository.release(tagName:)` has the
-    /// same published-only semantics as the REST endpoint — asked for a tag that
-    /// carries both, it returns the published release and never the draft — so it
-    /// would still need the same listing scan.
+    /// One GraphQL round trip gathers every candidate; see
+    /// [`GraphQLGetReleases`] for why both a by-tag lookup and a listing are
+    /// required, and why the listing is affordable in GraphQL but not in REST.
     ///
     /// `Ok(None)` means no release exists for the tag — a legitimate answer when
     /// deciding whether to create one, and an error only at the call sites that
@@ -439,7 +427,7 @@ impl Client {
     pub(crate) async fn find_release_for_tag(
         &self,
         tag: &str,
-    ) -> Result<Option<(i64, bool)>, Error> {
+    ) -> Result<Option<ReleaseRef>, Error> {
         lookup_with_retry(
             tag,
             RELEASE_LOOKUP_ATTEMPTS,
@@ -449,71 +437,46 @@ impl Client {
         .await
     }
 
-    /// One pass of both lookups: `get_release_by_tag`, then the listing scan.
+    /// One pass of the lookup: fetch the candidates and pick between them.
     ///
-    /// Both run within a single attempt, rather than exhausting the retries of
-    /// one before trying the other. Retrying the fast path to exhaustion first
-    /// would cost the full retry window on every draft lookup — four times over
-    /// in a release that uploads a binary, a signature and an attestation — and
-    /// fill the log with "attempt N failed" warnings during what is, for a
-    /// draft-first pipeline, the entirely normal path.
-    async fn probe_release_for_tag(&self, tag: &str) -> Result<Option<(i64, bool)>, Error> {
-        match self
-            .github_rest
-            .repos
-            .get_release_by_tag(&self.owner, &self.repo, tag)
-            .send()
-            .await
-        {
-            Ok(release) if release.tag_name == tag => {
-                return Ok(Some((release.id, release.draft)));
-            }
-            Ok(release) => log::warn!(
-                "release lookup for '{tag}' returned mismatched tag '{}'",
-                release.tag_name
-            ),
-            Err(e) => log::debug!("no published release for '{tag}' ({e}) — checking for a draft"),
-        }
+    /// Retried by [`Self::find_release_for_tag`] because GitHub's API lags
+    /// briefly behind release creation. The retry wraps the whole query rather
+    /// than any half of it, so a draft costs no more attempts than a published
+    /// release — the draft path is the normal one under draft-first, and must
+    /// not spend the retry window, or fill the log with warnings, to reach it.
+    async fn probe_release_for_tag(&self, tag: &str) -> Result<Option<ReleaseRef>, Error> {
+        let candidates = self.get_release_candidates(tag).await?;
 
-        self.find_draft_release_in_listing(tag).await
-    }
+        let Some(id) = find_release_id_by_tag(
+            candidates.iter().filter_map(|r| {
+                r.database_id
+                    .map(|id| (r.tag_name.as_str(), id, r.is_draft))
+            }),
+            tag,
+        ) else {
+            return Ok(None);
+        };
 
-    /// Scan `list_releases` for `tag`, bounded to [`MAX_RELEASE_LIST_PAGES`].
-    ///
-    /// This is the only way to see a draft. The scan is bounded so a repository
-    /// with a long release history cannot turn a missing release into an
-    /// unbounded walk of every page.
-    async fn find_draft_release_in_listing(&self, tag: &str) -> Result<Option<(i64, bool)>, Error> {
-        for page in 1..=MAX_RELEASE_LIST_PAGES {
-            let query = octocrate::repos::list_releases::Query::builder()
-                .per_page(RELEASE_LIST_PAGE_SIZE)
-                .page(page)
-                .build();
+        let chosen = candidates
+            .iter()
+            .find(|r| r.database_id == Some(id))
+            .ok_or_else(|| {
+                Error::GitError(format!(
+                    "release {id} for '{tag}' vanished from the candidates"
+                ))
+            })?;
 
-            let releases = self
-                .github_rest
-                .repos
-                .list_releases(&self.owner, &self.repo)
-                .query(&query)
-                .send()
-                .await?;
+        log::info!(
+            "Found release {id} for tag '{tag}' (draft={}, immutable={})",
+            chosen.is_draft,
+            chosen.immutable
+        );
 
-            if let Some(id) = find_release_id_by_tag(
-                releases
-                    .iter()
-                    .map(|r| (r.tag_name.as_str(), r.id, r.draft)),
-                tag,
-            ) {
-                let draft = releases.iter().any(|r| r.id == id && r.draft);
-                log::info!("Found release {id} for tag '{tag}' in listing (draft={draft})");
-                return Ok(Some((id, draft)));
-            }
-
-            if releases.len() < RELEASE_LIST_PAGE_SIZE as usize {
-                break;
-            }
-        }
-        Ok(None)
+        Ok(Some(ReleaseRef {
+            id,
+            draft: chosen.is_draft,
+            immutable: chosen.immutable,
+        }))
     }
 
     /// Upload a binary asset to an existing GitHub release.
@@ -542,17 +505,26 @@ impl Client {
             )));
         }
 
-        let (release_id, is_draft) = self
+        let release_ref = self
             .find_release_for_tag(tag)
             .await?
             .ok_or_else(|| Error::GitError(format!("GitHub release for tag '{tag}' not found")))?;
 
-        log::info!("Found release {tag} (id={release_id}, draft={is_draft})");
+        // Assets are frozen at publication, so neither the upload nor the
+        // delete-then-replace below can succeed. Refusing here names the cause
+        // before anything is attempted, rather than translating the API's
+        // rejection after the fact.
+        if release_ref.immutable {
+            return Err(Error::ImmutableRelease(
+                tag.to_string(),
+                "the release is published with immutable assets".to_string(),
+            ));
+        }
 
         let release = self
             .github_rest
             .repos
-            .get_release(&self.owner, &self.repo, release_id)
+            .get_release(&self.owner, &self.repo, release_ref.id)
             .send()
             .await?;
 
@@ -598,7 +570,7 @@ impl Client {
 
         upload_api
             .repos
-            .upload_release_asset(&self.owner, &self.repo, release_id)
+            .upload_release_asset(&self.owner, &self.repo, release_ref.id)
             .query(&query)
             .header("Content-Type", content_type)
             .header("Content-Length", content_length.to_string())
@@ -613,7 +585,8 @@ impl Client {
 
     /// Publish the release for `tag` when it is still a draft.
     ///
-    /// Unconditional by design — see [`crate::cli::release`] — so it must be a
+    /// Unconditional by design — the release pipeline runs this as its last
+    /// step with no condition attached — so it must be a
     /// no-op wherever there is nothing to publish. `make_latest` is set here
     /// rather than at creation because GitHub does not accept it on a draft.
     pub(crate) async fn publish_release(&self, release_id: i64) -> Result<(), Error> {
@@ -690,10 +663,17 @@ const RELEASE_LOOKUP_ATTEMPTS: u32 = 5;
 /// Delay between release-lookup attempts, covering GitHub's
 /// eventual-consistency window after a release is created.
 const RELEASE_LOOKUP_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
-/// Pages of `list_releases` scanned before concluding a release is absent.
-const MAX_RELEASE_LIST_PAGES: i64 = 5;
-/// Releases requested per `list_releases` page (GitHub's maximum).
-const RELEASE_LIST_PAGE_SIZE: i64 = 100;
+
+/// A release located for a tag, reduced to what the callers act on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ReleaseRef {
+    /// REST id — asset upload is REST-only, so this is what it needs.
+    pub(crate) id: i64,
+    pub(crate) draft: bool,
+    /// GitHub has frozen this release's assets. Only ever true for a published
+    /// release; a draft is by definition still open.
+    pub(crate) immutable: bool,
+}
 
 /// Select the release id for `tag` from a listing, preferring a published
 /// release over a draft.
