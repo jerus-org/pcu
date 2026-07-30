@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: update rust crate base64 to 0.23.0(pr [#1026])
+- support immutable releases via draft-first flow(pr [#1029])
 
 ## [0.6.29] - 2026-07-23
 
@@ -2497,6 +2498,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1024]: https://github.com/jerus-org/pcu/pull/1024
 [#1025]: https://github.com/jerus-org/pcu/pull/1025
 [#1026]: https://github.com/jerus-org/pcu/pull/1026
+[#1029]: https://github.com/jerus-org/pcu/pull/1029
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.29...HEAD
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
