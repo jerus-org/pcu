@@ -420,10 +420,18 @@ impl Client {
     ///
     /// 1. `get_release_by_tag`, retried for GitHub's eventual-consistency window
     ///    after a release is created. O(1), but it serves **published releases
-    ///    only** — a draft 404s there.
+    ///    only** — a draft 404s there. It goes first because a published release
+    ///    is the preferred answer anyway (see [`find_release_id_by_tag`]), so
+    ///    when one exists no scanning is needed.
     /// 2. A bounded `list_releases` scan, which does return drafts to a caller
     ///    with push access. Runs only when the fast path found nothing, so the
-    ///    cost for a published release is unchanged.
+    ///    cost for a published release is unchanged and the draft path costs one
+    ///    extra call.
+    ///
+    /// GraphQL is not an alternative here: `repository.release(tagName:)` has the
+    /// same published-only semantics as the REST endpoint — asked for a tag that
+    /// carries both, it returns the published release and never the draft — so it
+    /// would still need the same listing scan.
     ///
     /// `Ok(None)` means no release exists for the tag — a legitimate answer when
     /// deciding whether to create one, and an error only at the call sites that
@@ -687,30 +695,38 @@ const MAX_RELEASE_LIST_PAGES: i64 = 5;
 /// Releases requested per `list_releases` page (GitHub's maximum).
 const RELEASE_LIST_PAGE_SIZE: i64 = 100;
 
-/// Select the release id for `tag` from a listing, preferring a draft.
+/// Select the release id for `tag` from a listing, preferring a published
+/// release over a draft.
 ///
-/// `get_release_by_tag` returns published releases only — a draft 404s there —
-/// so a draft can only be found by scanning `list_releases`. GitHub also permits
-/// several drafts to share a `tag_name` (it rejects only duplicate *published*
-/// releases), and a draft is the only kind that can still accept assets, so a
-/// draft wins whenever both are present for the same tag.
+/// A tag can carry both. GitHub rejects a second *published* release for a tag
+/// but happily accepts multiple drafts, so a failed run leaves a draft behind
+/// that a later successful run does not replace — jerus-org/gen-circleci-orb
+/// carries an abandoned empty draft for `v0.0.41` alongside the published
+/// release created 37 minutes later.
+///
+/// The published release wins because it is the finished article: in a
+/// draft-first pipeline its existence means the run already completed, so the
+/// right response is to do nothing. Reusing the stale draft instead would upload
+/// assets into a release nobody can see, then attempt to publish a second
+/// release for a tag that already has one. With no published release, the first
+/// draft is reused — the retry case draft-first depends on.
 ///
 /// Matching is exact: `v0.1.6` must not match inside `gen-changelog-v0.1.6`.
 fn find_release_id_by_tag<'a>(
     releases: impl IntoIterator<Item = (&'a str, i64, bool)>,
     tag: &str,
 ) -> Option<i64> {
-    let mut published = None;
+    let mut draft_id = None;
     for (tag_name, id, draft) in releases {
         if tag_name != tag {
             continue;
         }
-        if draft {
+        if !draft {
             return Some(id);
         }
-        published.get_or_insert(id);
+        draft_id.get_or_insert(id);
     }
-    published
+    draft_id
 }
 
 /// Translate an asset-upload failure into an actionable error.
@@ -948,14 +964,29 @@ mod tests {
     }
 
     #[test]
-    fn find_release_id_by_tag_prefers_draft_over_published() {
-        // GitHub permits several drafts sharing a tag_name. Only a draft can still
-        // accept assets, so it wins when both are present for the same tag.
+    fn find_release_id_by_tag_prefers_published_over_draft() {
+        // A tag really can carry both: jerus-org/gen-circleci-orb v0.0.41 has an
+        // abandoned empty draft (13:06) alongside the published release that
+        // followed it (13:43). The published one is the finished article, and in
+        // a draft-first pipeline its existence means the run already completed —
+        // so it wins. Preferring the draft would upload assets into an invisible
+        // release and then try to publish a second release for the same tag.
         let releases = [
-            ("pcu-v0.6.29", 10i64, false),
-            ("pcu-v0.6.29", 11, true),
-            ("pcu-v0.6.29", 12, false),
+            ("pcu-v0.6.29", 10i64, true),
+            ("pcu-v0.6.29", 11, false),
+            ("pcu-v0.6.29", 12, true),
         ];
+        assert_eq!(
+            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
+            Some(11)
+        );
+    }
+
+    #[test]
+    fn find_release_id_by_tag_falls_back_to_the_first_draft() {
+        // With no published release the draft is the one to reuse — the retry
+        // case a draft-first pipeline depends on.
+        let releases = [("pcu-v0.6.29", 11i64, true), ("pcu-v0.6.29", 12, true)];
         assert_eq!(
             find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
             Some(11)
