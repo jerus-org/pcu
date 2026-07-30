@@ -406,48 +406,106 @@ impl Client {
         })
     }
 
-    /// Returns whether a GitHub release exists for `tag`.
+    /// Locate the release for `tag`, including drafts, as `(id, draft)`.
     ///
-    /// Retries the lookup the same way the asset-upload path does, so the
-    /// release-creation and asset-upload sides agree on whether a release
-    /// exists. A bare `get_release_by_tag(...).is_ok()` (the previous check)
+    /// Supersedes the former `github_release_exists`, which answered only
+    /// "yes/no" and could see published releases only. Both callers need more
+    /// than that: creation must distinguish a reusable draft from a finished
+    /// release, and the asset paths need the id. A release counts only when its
+    /// `tag_name` matches exactly — a bare `get_release_by_tag(...).is_ok()`
     /// could coerce a 404 or a phantom response into "exists" and silently skip
-    /// release creation — the failure that stranded gen-circleci-orb 0.0.53.
-    /// Here a release counts only when its `tag_name` matches, and the result is
-    /// `Ok(false)` when the retried lookup finds none.
-    pub(crate) async fn github_release_exists(&self, tag: &str) -> Result<bool, Error> {
-        let token = self.github_token.clone();
-        let owner = self.owner.clone();
-        let repo = self.repo.clone();
-        let tag_str = tag.to_string();
+    /// release creation, the failure that stranded gen-circleci-orb 0.0.53.
+    ///
+    /// Two lookups, because neither alone is sufficient:
+    ///
+    /// 1. `get_release_by_tag`, retried for GitHub's eventual-consistency window
+    ///    after a release is created. O(1), but it serves **published releases
+    ///    only** — a draft 404s there.
+    /// 2. A bounded `list_releases` scan, which does return drafts to a caller
+    ///    with push access. Runs only when the fast path found nothing, so the
+    ///    cost for a published release is unchanged.
+    ///
+    /// `Ok(None)` means no release exists for the tag — a legitimate answer when
+    /// deciding whether to create one, and an error only at the call sites that
+    /// require a release to already be there.
+    pub(crate) async fn find_release_for_tag(
+        &self,
+        tag: &str,
+    ) -> Result<Option<(i64, bool)>, Error> {
+        lookup_with_retry(
+            tag,
+            RELEASE_LOOKUP_ATTEMPTS,
+            RELEASE_LOOKUP_DELAY,
+            || async { self.probe_release_for_tag(tag).await },
+        )
+        .await
+    }
 
-        let found = get_release_with_retry(tag, 5, std::time::Duration::from_secs(2), || {
-            let tok = PersonalAccessToken::new(token.clone());
-            let cfg = APIConfig::with_token(tok).shared();
-            let api = GitHubAPI::new(&cfg);
-            let o = owner.clone();
-            let r = repo.clone();
-            let t = tag_str.clone();
-            async move {
-                let release = api
-                    .repos
-                    .get_release_by_tag(&o, &r, &t)
-                    .send()
-                    .await
-                    .map_err(Error::from)?;
-                if release.tag_name == t {
-                    Ok(())
-                } else {
-                    Err(Error::GitError(format!(
-                        "release lookup for '{t}' returned mismatched tag '{}'",
-                        release.tag_name
-                    )))
-                }
+    /// One pass of both lookups: `get_release_by_tag`, then the listing scan.
+    ///
+    /// Both run within a single attempt, rather than exhausting the retries of
+    /// one before trying the other. Retrying the fast path to exhaustion first
+    /// would cost the full retry window on every draft lookup — four times over
+    /// in a release that uploads a binary, a signature and an attestation — and
+    /// fill the log with "attempt N failed" warnings during what is, for a
+    /// draft-first pipeline, the entirely normal path.
+    async fn probe_release_for_tag(&self, tag: &str) -> Result<Option<(i64, bool)>, Error> {
+        match self
+            .github_rest
+            .repos
+            .get_release_by_tag(&self.owner, &self.repo, tag)
+            .send()
+            .await
+        {
+            Ok(release) if release.tag_name == tag => {
+                return Ok(Some((release.id, release.draft)));
             }
-        })
-        .await;
+            Ok(release) => log::warn!(
+                "release lookup for '{tag}' returned mismatched tag '{}'",
+                release.tag_name
+            ),
+            Err(e) => log::debug!("no published release for '{tag}' ({e}) — checking for a draft"),
+        }
 
-        Ok(found.is_ok())
+        self.find_draft_release_in_listing(tag).await
+    }
+
+    /// Scan `list_releases` for `tag`, bounded to [`MAX_RELEASE_LIST_PAGES`].
+    ///
+    /// This is the only way to see a draft. The scan is bounded so a repository
+    /// with a long release history cannot turn a missing release into an
+    /// unbounded walk of every page.
+    async fn find_draft_release_in_listing(&self, tag: &str) -> Result<Option<(i64, bool)>, Error> {
+        for page in 1..=MAX_RELEASE_LIST_PAGES {
+            let query = octocrate::repos::list_releases::Query::builder()
+                .per_page(RELEASE_LIST_PAGE_SIZE)
+                .page(page)
+                .build();
+
+            let releases = self
+                .github_rest
+                .repos
+                .list_releases(&self.owner, &self.repo)
+                .query(&query)
+                .send()
+                .await?;
+
+            if let Some(id) = find_release_id_by_tag(
+                releases
+                    .iter()
+                    .map(|r| (r.tag_name.as_str(), r.id, r.draft)),
+                tag,
+            ) {
+                let draft = releases.iter().any(|r| r.id == id && r.draft);
+                log::info!("Found release {id} for tag '{tag}' in listing (draft={draft})");
+                return Ok(Some((id, draft)));
+            }
+
+            if releases.len() < RELEASE_LIST_PAGE_SIZE as usize {
+                break;
+            }
+        }
+        Ok(None)
     }
 
     /// Upload a binary asset to an existing GitHub release.
@@ -476,34 +534,26 @@ impl Client {
             )));
         }
 
-        let token = self.github_token.clone();
-        let owner = self.owner.clone();
-        let repo = self.repo.clone();
-        let tag_str = tag.to_string();
+        let (release_id, is_draft) = self
+            .find_release_for_tag(tag)
+            .await?
+            .ok_or_else(|| Error::GitError(format!("GitHub release for tag '{tag}' not found")))?;
 
-        let release = get_release_with_retry(tag, 5, std::time::Duration::from_secs(2), || {
-            let tok = PersonalAccessToken::new(token.clone());
-            let cfg = APIConfig::with_token(tok).shared();
-            let api = GitHubAPI::new(&cfg);
-            let o = owner.clone();
-            let r = repo.clone();
-            let t = tag_str.clone();
-            async move {
-                api.repos
-                    .get_release_by_tag(&o, &r, &t)
-                    .send()
-                    .await
-                    .map_err(Error::from)
-            }
-        })
-        .await?;
+        log::info!("Found release {tag} (id={release_id}, draft={is_draft})");
 
-        log::info!("Found release {} (id={})", release.tag_name, release.id);
+        let release = self
+            .github_rest
+            .repos
+            .get_release(&self.owner, &self.repo, release_id)
+            .send()
+            .await?;
 
         // Delete-then-replace: if an asset of the same name already exists on
         // the release (e.g. from a previous, partially-completed run), GitHub
         // rejects a fresh upload with HTTP 422. Remove it first so the upload
-        // is idempotent across retries.
+        // is idempotent across retries. On a published immutable release the
+        // deletion is refused too, which is why the error is translated rather
+        // than surfaced raw.
         if let Some(asset_id) = find_existing_asset_id(
             release.assets.iter().map(|a| (a.name.as_str(), a.id)),
             asset_name,
@@ -516,7 +566,8 @@ impl Client {
                 .repos
                 .delete_release_asset(&self.owner, &self.repo, asset_id)
                 .send()
-                .await?;
+                .await
+                .map_err(|e| map_asset_upload_error(tag, &e.to_string()))?;
         }
 
         // Binary uploads must go to uploads.github.com, not api.github.com.
@@ -539,15 +590,43 @@ impl Client {
 
         upload_api
             .repos
-            .upload_release_asset(&self.owner, &self.repo, release.id)
+            .upload_release_asset(&self.owner, &self.repo, release_id)
             .query(&query)
             .header("Content-Type", content_type)
             .header("Content-Length", content_length.to_string())
             .file(file)
             .send()
-            .await?;
+            .await
+            .map_err(|e| map_asset_upload_error(tag, &e.to_string()))?;
 
         log::info!("Successfully uploaded {asset_name}");
+        Ok(())
+    }
+
+    /// Publish the release for `tag` when it is still a draft.
+    ///
+    /// Unconditional by design — see [`crate::cli::release`] — so it must be a
+    /// no-op wherever there is nothing to publish. `make_latest` is set here
+    /// rather than at creation because GitHub does not accept it on a draft.
+    pub(crate) async fn publish_release(&self, release_id: i64) -> Result<(), Error> {
+        let request = octocrate::repos::update_release::Request {
+            body: None,
+            discussion_category_name: None,
+            draft: Some(false),
+            make_latest: Some(octocrate::repos::update_release::RequestMakeLatest::True),
+            name: None,
+            prerelease: None,
+            tag_name: None,
+            target_commitish: None,
+        };
+
+        self.github_rest
+            .repos
+            .update_release(&self.owner, &self.repo, release_id)
+            .body(&request)
+            .send()
+            .await?;
+
         Ok(())
     }
 }
@@ -598,37 +677,97 @@ fn find_existing_asset_id<'a>(
         .map(|(_, id)| id)
 }
 
-/// Retry `attempt_fn` up to `max_attempts` times, sleeping `retry_delay`
-/// between attempts.  Returns the first `Ok(T)` or an error after exhaustion.
-pub(crate) async fn get_release_with_retry<F, Fut, T>(
+/// Attempts made before concluding no release exists for a tag.
+const RELEASE_LOOKUP_ATTEMPTS: u32 = 5;
+/// Delay between release-lookup attempts, covering GitHub's
+/// eventual-consistency window after a release is created.
+const RELEASE_LOOKUP_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
+/// Pages of `list_releases` scanned before concluding a release is absent.
+const MAX_RELEASE_LIST_PAGES: i64 = 5;
+/// Releases requested per `list_releases` page (GitHub's maximum).
+const RELEASE_LIST_PAGE_SIZE: i64 = 100;
+
+/// Select the release id for `tag` from a listing, preferring a draft.
+///
+/// `get_release_by_tag` returns published releases only — a draft 404s there —
+/// so a draft can only be found by scanning `list_releases`. GitHub also permits
+/// several drafts to share a `tag_name` (it rejects only duplicate *published*
+/// releases), and a draft is the only kind that can still accept assets, so a
+/// draft wins whenever both are present for the same tag.
+///
+/// Matching is exact: `v0.1.6` must not match inside `gen-changelog-v0.1.6`.
+fn find_release_id_by_tag<'a>(
+    releases: impl IntoIterator<Item = (&'a str, i64, bool)>,
+    tag: &str,
+) -> Option<i64> {
+    let mut published = None;
+    for (tag_name, id, draft) in releases {
+        if tag_name != tag {
+            continue;
+        }
+        if draft {
+            return Some(id);
+        }
+        published.get_or_insert(id);
+    }
+    published
+}
+
+/// Translate an asset-upload failure into an actionable error.
+///
+/// The immutable-release rejection is otherwise opaque: the raw API message
+/// says what was refused but not why the pipeline is wrong or what to do about
+/// it. Every other failure passes through unchanged.
+pub(crate) fn map_asset_upload_error(tag: &str, api_message: &str) -> Error {
+    if api_message.to_lowercase().contains("immutable release") {
+        return Error::ImmutableRelease(tag.to_string(), api_message.to_string());
+    }
+    Error::GitError(api_message.to_string())
+}
+
+/// Retry `probe` until it finds something, distinguishing "not there" from
+/// "could not tell".
+///
+/// `Ok(None)` is a legitimate answer — it is how the creation path decides to
+/// create a release — so exhausting the attempts on `Ok(None)` returns
+/// `Ok(None)` rather than an error. An `Err`, by contrast, means the lookup was
+/// undetermined: it is retried, and if every attempt fails the last error is
+/// propagated. Coercing that case into "absent" is what let a release-creation
+/// step go green having created nothing, stranding gen-circleci-orb 0.0.53.
+async fn lookup_with_retry<F, Fut, T>(
     tag: &str,
     max_attempts: u32,
     retry_delay: std::time::Duration,
-    mut attempt_fn: F,
-) -> Result<T, Error>
+    mut probe: F,
+) -> Result<Option<T>, Error>
 where
     F: FnMut() -> Fut,
-    Fut: std::future::Future<Output = Result<T, Error>>,
+    Fut: std::future::Future<Output = Result<Option<T>, Error>>,
 {
+    let mut last_error = None;
+
     for attempt in 1..=max_attempts {
-        match attempt_fn().await {
-            Ok(r) => {
-                log::info!("Found GitHub release for tag '{tag}' (attempt {attempt})");
-                return Ok(r);
+        match probe().await {
+            Ok(Some(found)) => return Ok(Some(found)),
+            Ok(None) => {
+                log::debug!("no release for '{tag}' yet (attempt {attempt}/{max_attempts})");
             }
             Err(e) => {
                 log::warn!(
-                    "get_release_by_tag attempt {attempt}/{max_attempts} for tag '{tag}' failed: {e}"
+                    "release lookup for '{tag}' failed (attempt {attempt}/{max_attempts}): {e}"
                 );
-                if attempt < max_attempts {
-                    tokio::time::sleep(retry_delay).await;
-                }
+                last_error = Some(e);
             }
         }
+        if attempt < max_attempts {
+            tokio::time::sleep(retry_delay).await;
+        }
     }
-    Err(Error::GitError(format!(
-        "GitHub release for tag '{tag}' not found after {max_attempts} attempts"
-    )))
+
+    match last_error {
+        Some(e) => Err(e),
+        None => Ok(None),
+    }
 }
 
 #[cfg(test)]
@@ -712,5 +851,169 @@ mod tests {
             find_existing_asset_id(assets.iter().copied(), "absent"),
             None
         );
+    }
+
+    #[tokio::test]
+    async fn lookup_with_retry_returns_on_first_success() {
+        let attempts = std::sync::atomic::AtomicU32::new(0);
+        let found = lookup_with_retry("pcu-v1.0.0", 5, std::time::Duration::ZERO, || {
+            attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            async { Ok(Some(7i64)) }
+        })
+        .await
+        .unwrap();
+        assert_eq!(found, Some(7));
+        assert_eq!(attempts.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn lookup_with_retry_tolerates_api_lag() {
+        // A release is not visible immediately after creation.
+        let attempts = std::sync::atomic::AtomicU32::new(0);
+        let found = lookup_with_retry("pcu-v1.0.0", 5, std::time::Duration::ZERO, || {
+            let n = attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            async move {
+                if n >= 2 {
+                    Ok(Some(7i64))
+                } else {
+                    Ok(None)
+                }
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(found, Some(7));
+        assert_eq!(attempts.load(std::sync::atomic::Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn lookup_with_retry_reports_absence_without_error() {
+        // "No release exists" is a legitimate answer — it is how the creation
+        // path decides to create one — so it must not surface as an error.
+        let found = lookup_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
+            Ok(None::<i64>)
+        })
+        .await
+        .unwrap();
+        assert_eq!(found, None);
+    }
+
+    #[tokio::test]
+    async fn lookup_with_retry_propagates_a_persistent_api_error() {
+        // An undetermined lookup must NOT be coerced into "absent": that is the
+        // silent skip that stranded gen-circleci-orb 0.0.53.
+        let result = lookup_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
+            Err::<Option<i64>, Error>(Error::GitError("api 500".into()))
+        })
+        .await;
+        assert!(result.is_err(), "a persistent API error must surface");
+    }
+
+    #[tokio::test]
+    async fn lookup_with_retry_recovers_from_a_transient_api_error() {
+        let attempts = std::sync::atomic::AtomicU32::new(0);
+        let found = lookup_with_retry("pcu-v1.0.0", 5, std::time::Duration::ZERO, || {
+            let n = attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            async move {
+                if n == 0 {
+                    Err(Error::GitError("api 500".into()))
+                } else {
+                    Ok(Some(7i64))
+                }
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(found, Some(7));
+    }
+
+    #[test]
+    fn find_release_id_by_tag_matches_published_release() {
+        let releases = [("pcu-v0.6.28", 10i64, false), ("pcu-v0.6.29", 11, false)];
+        assert_eq!(
+            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
+            Some(11)
+        );
+    }
+
+    #[test]
+    fn find_release_id_by_tag_matches_draft_release() {
+        // The case get_release_by_tag cannot serve: drafts 404 on that endpoint,
+        // so the listing scan is the only way to find one.
+        let releases = [("pcu-v0.6.29", 11i64, true)];
+        assert_eq!(
+            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
+            Some(11)
+        );
+    }
+
+    #[test]
+    fn find_release_id_by_tag_prefers_draft_over_published() {
+        // GitHub permits several drafts sharing a tag_name. Only a draft can still
+        // accept assets, so it wins when both are present for the same tag.
+        let releases = [
+            ("pcu-v0.6.29", 10i64, false),
+            ("pcu-v0.6.29", 11, true),
+            ("pcu-v0.6.29", 12, false),
+        ];
+        assert_eq!(
+            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
+            Some(11)
+        );
+    }
+
+    #[test]
+    fn find_release_id_by_tag_returns_none_when_absent() {
+        let releases = [("pcu-v0.6.28", 10i64, false)];
+        assert_eq!(
+            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
+            None
+        );
+    }
+
+    #[test]
+    fn find_release_id_by_tag_requires_an_exact_match() {
+        // The nextsv prefix-regex class of bug: 'v0.1.6' must not match inside
+        // 'gen-changelog-v0.1.6'.
+        let releases = [("gen-changelog-v0.1.6", 10i64, false)];
+        assert_eq!(
+            find_release_id_by_tag(releases.iter().copied(), "v0.1.6"),
+            None
+        );
+    }
+
+    #[test]
+    fn map_asset_upload_error_translates_immutable_release() {
+        let err = map_asset_upload_error(
+            "pcu-v0.6.29",
+            "Cannot upload assets to an immutable release.",
+        );
+        let msg = err.to_string();
+        assert!(msg.contains("pcu-v0.6.29"), "tag missing: {msg}");
+        assert!(msg.contains("immutable"), "cause missing: {msg}");
+        assert!(
+            msg.contains("draft"),
+            "should name the draft-first remedy: {msg}"
+        );
+        assert!(
+            msg.contains("next patch version"),
+            "should say the release cannot be repaired in place: {msg}"
+        );
+    }
+
+    #[test]
+    fn map_asset_upload_error_is_case_insensitive() {
+        let err = map_asset_upload_error(
+            "pcu-v0.6.29",
+            "cannot upload assets to an IMMUTABLE release",
+        );
+        assert!(matches!(err, Error::ImmutableRelease(_, _)));
+    }
+
+    #[test]
+    fn map_asset_upload_error_passes_other_failures_through() {
+        let err = map_asset_upload_error("pcu-v0.6.29", "Validation Failed");
+        assert!(!matches!(err, Error::ImmutableRelease(_, _)));
+        assert!(err.to_string().contains("Validation Failed"));
     }
 }
