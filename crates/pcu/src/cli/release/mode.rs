@@ -67,7 +67,11 @@ pub struct InjectPubkey {
 /// keyless (CircleCI OIDC → Fulcio → Rekor), and upload the bundle to the
 /// GitHub release.
 ///
+/// Gated on the `attest` feature: compiled out, the subcommand does not exist,
+/// and neither do `openidconnect`, `sigstore` or `rsa`.
+///
 /// Requires CIRCLE_OIDC_TOKEN_V2 with audience "sigstore" in the environment.
+#[cfg(feature = "attest")]
 #[derive(Debug, Parser, Clone)]
 pub struct Attest {
     /// Package name on crates.io (e.g. gen-changelog)
@@ -130,6 +134,7 @@ pub enum Mode {
     /// Publish a draft GitHub release (no-op if already published)
     Publish(Publish),
     /// Attest a published crate with SLSA provenance via Sigstore keyless signing
+    #[cfg(feature = "attest")]
     Attest(Attest),
 }
 

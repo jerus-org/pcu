@@ -46,9 +46,9 @@ regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
-openidconnect.workspace = true
-sigstore.workspace = true
-sigstore_protobuf_specs.workspace = true
+openidconnect = { workspace = true, optional = true }
+sigstore = { workspace = true, optional = true }
+sigstore_protobuf_specs = { workspace = true, optional = true }
 sequoia-openpgp.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
@@ -58,6 +58,16 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 unicode-segmentation.workspace = true
 url = { features = ["serde"], workspace = true }
+
+[features]
+default = ["attest"]
+# SLSA v0.2 provenance attestation, signed via Sigstore keyless (OIDC -> Fulcio
+# -> Rekor). Carries `openidconnect` and `sigstore`, and through them `rsa`,
+# which has an unfixable advisory (RUSTSEC-2023-0071). Consumers that use pcu
+# only for git and GitHub operations can take `default-features = false` and
+# keep all three out of their dependency graph; the pcu binary keeps attestation
+# on by default, so nothing changes for it or for `cargo install pcu`.
+attest = ["dep:openidconnect", "dep:sigstore", "dep:sigstore_protobuf_specs"]
 
 [dev-dependencies]
 rstest.workspace = true
