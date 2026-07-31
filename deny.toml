@@ -10,9 +10,14 @@
 [advisories]
 ignore = [
     # rsa 0.9.10: Marvin Attack timing side-channel (CVSS 5.9 medium).
-    # No fixed version of rsa is available. Transitive via sigstore 0.13.0.
-    # pcu uses sigstore only for signing CI attestations (not for decryption
-    # operations), so the risk is low. Remove when sigstore updates rsa.
+    # No fixed version of rsa is available. Reaches pcu through openidconnect
+    # 4.0.1 — which is a DIRECT dependency as well as a transitive one via
+    # sigstore 0.14.0 — and only under the `attest` feature, which is on by
+    # default for the binary. pcu uses these to SIGN CI attestations; the
+    # advisory concerns private-key decryption observable over a network, so
+    # a CLI in CI is not exposed. Library consumers that do not attest can take
+    # `default-features = false` and drop rsa entirely (see crates/pcu/README.md).
+    # Remove when openidconnect updates rsa.
     { id = "RUSTSEC-2023-0071", reason = "transitive via sigstore 0.13.0; no fix available upstream" },
 ]
 

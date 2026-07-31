@@ -34,6 +34,37 @@ A CI utility to update the Unreleased section of the changelog with the title of
 - [x] Use GitHub as source control system
 - [x] Use of CircleCI as CI
 
+## Cargo features
+
+| Feature | Default | Provides |
+|---------|---------|----------|
+| `attest` | yes | SLSA v0.2 provenance attestation via Sigstore keyless signing (`pcu release attest`) |
+
+Using pcu **as a library** for git and GitHub operations only — staging, signed
+commits, pushes, releases — you can drop the attestation surface:
+
+```toml
+pcu = { version = "0.6", default-features = false }
+```
+
+That removes `openidconnect`, `sigstore` and, with them, `rsa`. `rsa` carries
+[RUSTSEC-2023-0071][marvin] (Marvin Attack) which has **no fixed version**, so a
+consumer that never signs anything would otherwise have to suppress an advisory
+it cannot act on. Verify with:
+
+```console
+$ cargo tree --no-default-features --invert rsa
+```
+
+The `pcu` binary keeps `attest` on by default, so `cargo install pcu` and every
+CI pipeline are unaffected.
+
+One caveat: Cargo unifies features across a dependency graph. If anything else
+in your graph depends on pcu with default features, `attest` is re-enabled for
+everyone and `rsa` returns.
+
+[marvin]: https://rustsec.org/advisories/RUSTSEC-2023-0071
+
 ## CLI Usage
 
 ### LinkedIn announcements

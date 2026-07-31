@@ -253,6 +253,40 @@ jobs:
   #      immediately stale; cross-PR value is zero (each Renovate PR changes Cargo.lock)
   #   3. Non-blocking: build failures log a warning and exit 0 so validation
   #      continues; the PR is not blocked by a nightly/beta regression
+  exp-git-only-build:
+    description: >
+      Assert the git-only surface (default-features = false) still builds and
+      still carries no `rsa`.
+
+      A feature gate rots silently: a `use sigstore::...` added outside the gate
+      compiles perfectly under default features and breaks only for consumers
+      who opted out. Those consumers opt out precisely to keep `rsa` — and
+      RUSTSEC-2023-0071, which has no fixed version — out of their graph, so the
+      absence of `rsa` is the property asserted here, not merely that the build
+      succeeds.
+    executor:
+      name: toolkit/rust_env_rolling
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore dependency cache
+          keys:
+            - deps-v1-{{ arch }}-{{ checksum "Cargo.lock" }}
+            - deps-v1-{{ arch }}-
+      - run:
+          name: Build without default features
+          command: cargo check --no-default-features --package pcu
+      - run:
+          name: Assert rsa is absent without the attest feature
+          command: |
+            set -eo pipefail
+            if cargo tree --no-default-features --package pcu --invert rsa 2>/dev/null | grep -q '^rsa'; then
+              echo "FAIL: rsa is in the default-features=false dependency graph"
+              cargo tree --no-default-features --package pcu --invert rsa
+              exit 1
+            fi
+            echo "OK: no rsa without the attest feature"
+
   exp-optional-builds:
     executor:
       name: toolkit/rust_env_rolling
@@ -710,6 +744,10 @@ workflows:
           filters:
             branches:
               ignore: main
+      - exp-git-only-build:
+          filters:
+            branches:
+              ignore: main
       - toolkit/common_tests:
           min_rust_version: << pipeline.parameters.min_rust_version >>
           test_runner: nextest
@@ -739,6 +777,7 @@ workflows:
             - toolkit/common_tests
             - security with sonarcloud
             - exp-required-builds
+            - exp-git-only-build
             - exp-test-doc-build
             - exp-idiomatic-rust
       - test-push:
@@ -756,6 +795,7 @@ workflows:
             - toolkit/common_tests
             - security with sonarcloud
             - exp-required-builds
+            - exp-git-only-build
             - exp-test-doc-build
             - exp-idiomatic-rust
       - test-bsky-directory:
@@ -774,6 +814,7 @@ workflows:
             - toolkit/common_tests
             - security with sonarcloud
             - exp-required-builds
+            - exp-git-only-build
             - exp-test-doc-build
             - exp-idiomatic-rust
       - test-bsky-file:
@@ -792,6 +833,7 @@ workflows:
             - toolkit/common_tests
             - security with sonarcloud
             - exp-required-builds
+            - exp-git-only-build
             - exp-test-doc-build
             - exp-idiomatic-rust
       - test-linkedin-directory:
@@ -808,6 +850,7 @@ workflows:
             - toolkit/common_tests
             - security with sonarcloud
             - exp-required-builds
+            - exp-git-only-build
             - exp-test-doc-build
             - exp-idiomatic-rust
       - test-linkedin-file:
@@ -824,6 +867,7 @@ workflows:
             - toolkit/common_tests
             - security with sonarcloud
             - exp-required-builds
+            - exp-git-only-build
             - exp-test-doc-build
             - exp-idiomatic-rust
 
