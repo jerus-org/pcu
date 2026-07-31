@@ -39,7 +39,6 @@ reqwest.workspace = true
 keep-a-changelog.workspace = true
 link-bridge.workspace = true
 log.workspace = true
-named-colour.workspace = true
 octocrate.workspace = true
 owo-colors.workspace = true
 regex.workspace = true
@@ -49,7 +48,6 @@ sha2.workspace = true
 openidconnect = { workspace = true, optional = true }
 sigstore = { workspace = true, optional = true }
 sigstore_protobuf_specs = { workspace = true, optional = true }
-sequoia-openpgp.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
