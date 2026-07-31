@@ -1,7 +1,7 @@
 use std::{
     fmt::Display,
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
@@ -188,6 +188,27 @@ impl Display for BranchReport {
     }
 }
 
+/// Canonicalise when possible, falling back to the path as given.
+///
+/// Canonicalisation resolves symlinks, which matters because a repository
+/// reached through a symlinked parent (`/tmp` on some platforms) otherwise fails
+/// a prefix comparison against its own working directory.
+fn canonical_or_owned(path: &Path) -> PathBuf {
+    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+}
+
+/// Express `absolute` relative to `workdir_root`, or `None` if it lies outside.
+///
+/// git treats index entries as paths relative to the working directory, so an
+/// absolute path has to be converted before it can be staged; one that is not
+/// under the working directory cannot be staged at all.
+fn relative_to_workdir(workdir_root: &Path, absolute: &Path) -> Option<PathBuf> {
+    canonical_or_owned(absolute)
+        .strip_prefix(workdir_root)
+        .ok()
+        .map(Path::to_path_buf)
+}
+
 pub trait GitOps {
     fn fetch_origin(&self) -> Result<(), Error>;
     fn fetch_branch(&self, branch: &str) -> Result<(), Error>;
@@ -200,9 +221,20 @@ pub trait GitOps {
     fn stage_files(&self, files: Vec<(String, Status)>) -> Result<(), Error>;
     /// Stage a list of paths directly, without needing pre-computed [`Status`] values.
     ///
-    /// Each path is staged with `index.add_path()` if it exists in the working
-    /// tree; non-existent paths are silently skipped.  The index is written
-    /// once after all paths are processed.
+    /// Paths may be relative to the working directory or absolute; an absolute
+    /// path under the working directory is converted before staging, since git
+    /// index entries are always relative. An absolute path *outside* the working
+    /// directory cannot be staged and is an error.
+    ///
+    /// Staging uses `index.add_all()` — not `add_path()`, which errors on
+    /// directories — so a directory argument stages its contents recursively,
+    /// matching `git add` semantics. Because `add_all` takes pathspecs, and a
+    /// pathspec matching nothing is not an error, a requested file that ends up
+    /// unstaged (an ignored file, say) is reported as an error rather than
+    /// passing silently.
+    ///
+    /// Non-existent paths are silently skipped. The index is written once, after
+    /// all paths are processed.
     fn stage_paths(&self, paths: &[&Path]) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn commit_changed_files(
@@ -437,31 +469,35 @@ impl GitOps for Client {
     }
 
     fn stage_paths(&self, paths: &[&Path]) -> Result<(), Error> {
-        let existing: Vec<&Path> = paths
-            .iter()
-            .copied()
-            .filter(|p| {
-                self.git_repo
-                    .workdir()
-                    .is_some_and(|wd| wd.join(p).exists())
-            })
-            .inspect(|p| {
-                log::debug!("stage_paths: staging {}", p.display());
-            })
-            .collect();
+        let workdir = self
+            .git_repo
+            .workdir()
+            .ok_or_else(|| Error::GitError("repository has no working directory".to_string()))?;
+        let workdir_root = canonical_or_owned(workdir);
 
-        // Log any paths that don't exist so callers can diagnose staging gaps.
+        let mut to_stage: Vec<PathBuf> = Vec::with_capacity(paths.len());
         for p in paths {
-            if !self
-                .git_repo
-                .workdir()
-                .is_some_and(|wd| wd.join(p).exists())
-            {
+            // `Path::join` returns its argument unchanged when that argument is
+            // absolute, so this resolves relative and absolute paths alike.
+            let absolute = workdir.join(p);
+            if !absolute.exists() {
                 log::debug!("stage_paths: skipping non-existent path {}", p.display());
+                continue;
             }
+
+            let relative = relative_to_workdir(&workdir_root, &absolute).ok_or_else(|| {
+                Error::GitError(format!(
+                    "cannot stage '{}': it is outside the repository working directory '{}'",
+                    p.display(),
+                    workdir.display()
+                ))
+            })?;
+
+            log::debug!("stage_paths: staging {}", relative.display());
+            to_stage.push(relative);
         }
 
-        if existing.is_empty() {
+        if to_stage.is_empty() {
             return Ok(());
         }
 
@@ -469,7 +505,27 @@ impl GitOps for Client {
         // add_all handles both file paths and directory paths (recursively
         // staging all files within a directory), matching `git add` semantics.
         // add_path only handles files and errors on directories.
-        index.add_all(existing.iter(), git2::IndexAddOption::DEFAULT, None)?;
+        index.add_all(to_stage.iter(), git2::IndexAddOption::DEFAULT, None)?;
+
+        // `add_all` takes pathspecs, and a pathspec that matches nothing is not
+        // an error — the silence that let an empty commit be pushed as though it
+        // carried a file (#1030). Absolute paths were the reported cause and are
+        // handled above; an ignored file reaches the same dead end by another
+        // route. Every requested *file* must therefore be in the index. A
+        // directory is left unchecked: `git add` on a directory whose contents
+        // are all ignored legitimately stages nothing.
+        for relative in &to_stage {
+            if workdir.join(relative).is_dir() {
+                continue;
+            }
+            if index.get_path(relative, 0).is_none() {
+                return Err(Error::GitError(format!(
+                    "'{}' exists but was not staged — it may be ignored by .gitignore",
+                    relative.display()
+                )));
+            }
+        }
+
         index.write()?;
         Ok(())
     }
@@ -1447,6 +1503,76 @@ mod tests {
             head.parent_count(),
             1,
             "the commit must build on the init commit (HEAD advanced)"
+        );
+    }
+
+    #[test]
+    fn stage_paths_stages_an_absolute_path_under_the_workdir() {
+        // The reported failure (#1030): `Path::join` returns its argument
+        // unchanged when that argument is absolute, so an absolute path passed
+        // the existence filter; `add_all` then treated it as a pathspec relative
+        // to the working directory, matched nothing, and returned Ok. The caller
+        // committed an empty commit believing the file was in it.
+        let (dir, client) = make_test_client();
+        let file_path = dir.path().join("release-0.0.3.json");
+        std::fs::write(&file_path, "{}").unwrap();
+
+        let result = client.stage_paths(&[file_path.as_path()]);
+        assert!(result.is_ok(), "stage_paths failed: {result:?}");
+
+        let staged = client.repo_files_staged().unwrap();
+        assert!(
+            staged.iter().any(|(p, _)| p == "release-0.0.3.json"),
+            "absolute path under the workdir was not staged: {staged:?}"
+        );
+    }
+
+    #[test]
+    fn stage_paths_stages_an_absolute_path_in_a_subdirectory() {
+        let (dir, client) = make_test_client();
+        std::fs::create_dir(dir.path().join(".security")).unwrap();
+        let file_path = dir.path().join(".security").join("release-0.0.3.json");
+        std::fs::write(&file_path, "{}").unwrap();
+
+        client.stage_paths(&[file_path.as_path()]).unwrap();
+
+        let staged = client.repo_files_staged().unwrap();
+        assert!(
+            staged
+                .iter()
+                .any(|(p, _)| p == ".security/release-0.0.3.json"),
+            "absolute subdirectory path was not staged: {staged:?}"
+        );
+    }
+
+    #[test]
+    fn stage_paths_rejects_an_absolute_path_outside_the_workdir() {
+        // Unstageable by definition, so silently skipping it can only mislead.
+        let (_dir, client) = make_test_client();
+        let outside = tempfile::tempdir().unwrap();
+        let stray = outside.path().join("stray.txt");
+        std::fs::write(&stray, "data").unwrap();
+
+        let result = client.stage_paths(&[stray.as_path()]);
+        assert!(
+            result.is_err(),
+            "an absolute path outside the working directory must be an error, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn stage_paths_errors_when_an_existing_file_stages_nothing() {
+        // A file that exists but is ignored matches no pathspec, so `add_all`
+        // returns Ok having staged nothing — the same silence as #1030 by a
+        // different route. `git add` on an ignored file errors; so does this.
+        let (dir, client) = make_test_client();
+        std::fs::write(dir.path().join(".gitignore"), "ignored.txt\n").unwrap();
+        std::fs::write(dir.path().join("ignored.txt"), "data").unwrap();
+
+        let result = client.stage_paths(&[Path::new("ignored.txt")]);
+        assert!(
+            result.is_err(),
+            "a requested file that ends up unstaged must be an error, got: {result:?}"
         );
     }
 
