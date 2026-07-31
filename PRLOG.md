@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - gate the attestation surface behind a feature(pr [#1031])
 
+### Changed
+
+- chore-remove unused dependencies(pr [#1032])
+
 ### Fixed
 
 - deps: update rust crate base64 to 0.23.0(pr [#1026])
@@ -2504,6 +2508,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1026]: https://github.com/jerus-org/pcu/pull/1026
 [#1029]: https://github.com/jerus-org/pcu/pull/1029
 [#1031]: https://github.com/jerus-org/pcu/pull/1031
+[#1032]: https://github.com/jerus-org/pcu/pull/1032
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.29...HEAD
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
