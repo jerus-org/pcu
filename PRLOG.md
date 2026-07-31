@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate base64 to 0.23.0(pr [#1026])
 - support immutable releases via draft-first flow(pr [#1029])
 - deps: update event-listener to 5.4.2 for RUSTSEC-2026-0221(pr [#1034])
+- stage absolute paths instead of silently ignoring them(pr [#1033])
 
 ## [0.6.29] - 2026-07-23
 
@@ -2511,6 +2512,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1031]: https://github.com/jerus-org/pcu/pull/1031
 [#1032]: https://github.com/jerus-org/pcu/pull/1032
 [#1034]: https://github.com/jerus-org/pcu/pull/1034
+[#1033]: https://github.com/jerus-org/pcu/pull/1033
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.29...HEAD
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
