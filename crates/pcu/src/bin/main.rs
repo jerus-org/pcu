@@ -28,7 +28,9 @@ async fn main() -> Result<()> {
         Commands::Push(push_args) => push_args.run_push().await,
         Commands::Label(label_args) => label_args.run_label().await,
         Commands::Release(rel_args) => rel_args.run_release(sign_config).await,
+        #[cfg(feature = "bsky")]
         Commands::Bsky(bsky_args) => bsky_args.run().await,
+        #[cfg(feature = "linkedin")]
         Commands::Linkedin(li_args) => li_args.run().await,
         Commands::VerifySignatures(verify_args) => verify_args.run_verify().await,
         Commands::Checkout(checkout_args) => checkout_args.run().await,
@@ -47,17 +49,25 @@ async fn main() -> Result<()> {
                 CIExit::Released => log::info!("Created GitHub Release"),
                 CIExit::Label(pr) => log::info!("Rebased PR request #{pr}"),
                 CIExit::NoLabel => log::info!("No label required"),
+                #[cfg(feature = "bsky")]
                 CIExit::DraftedForBluesky => log::info!("Drafted for Bluesky"),
+                #[cfg(feature = "bsky")]
                 CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
                 CIExit::NoFilesToProcess => log::info!("No files to process"),
                 CIExit::NothingToPush => log::info!("No commits to push"),
+                #[cfg(feature = "linkedin")]
                 CIExit::SharedToLinkedIn => log::info!("Shared to LinkedIn"),
+                #[cfg(feature = "linkedin")]
                 CIExit::NoContentForLinkedIn => log::info!("No LinkedIn content to share"),
+                #[cfg(feature = "bsky")]
                 CIExit::NoBlogPostsForBluesky => {
                     log::warn!("No blog posts to draft for Bluesky")
                 }
+                #[cfg(feature = "linkedin")]
                 CIExit::DraftedForLinkedIn => log::info!("Drafted for LinkedIn"),
+                #[cfg(feature = "linkedin")]
                 CIExit::PostedToLinkedIn => log::info!("Posted to LinkedIn"),
+                #[cfg(feature = "linkedin")]
                 CIExit::NoBlogPostsForLinkedIn => {
                     log::warn!("No blog posts to draft for LinkedIn")
                 }
@@ -89,7 +99,9 @@ fn get_logging(level: &log::LevelFilter) -> env_logger::Builder {
     builder.filter_module("pcu::ops", *level);
     builder.filter_module("pcu::utilities", *level);
     builder.filter_module("pcu", *level);
+    #[cfg(feature = "bsky")]
     builder.filter_module("gen_bsky", *level);
+    #[cfg(feature = "linkedin")]
     builder.filter_module("gen_linkedin", *level);
     builder.format_timestamp_secs();
 

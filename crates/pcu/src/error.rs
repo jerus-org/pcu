@@ -82,15 +82,20 @@ pub enum Error {
     Toml(#[from] toml::de::Error),
     #[error("serde_json error says: {0:?}")]
     SerdeJson(#[from] serde_json::Error),
+    #[cfg(feature = "bsky")]
     #[error("gen-bsky draft error says: {0:?}")]
     DraftError(#[from] gen_bsky::DraftError),
+    #[cfg(feature = "bsky")]
     #[error("gen-bsky post error says: {0:?}")]
     PostError(#[from] gen_bsky::PostError),
     /// Errors arising from the gen-linkedin client
+    #[cfg(feature = "linkedin")]
     #[error("gen-linkedin says: {0:?}")]
     LinkedIn(#[from] gen_linkedin::Error),
+    #[cfg(feature = "linkedin")]
     #[error("gen-linkedin draft error: {0:?}")]
     LinkedinDraftError(#[from] gen_linkedin::DraftError),
+    #[cfg(feature = "linkedin")]
     #[error("gen-linkedin post error: {0:?}")]
     LinkedinPostError(#[from] gen_linkedin::PostError),
     #[error("missing configuration: {0}")]

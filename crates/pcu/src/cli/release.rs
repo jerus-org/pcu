@@ -1,8 +1,9 @@
-use crate::utilities::linkedin_post::{build_release_text, compute_release_url};
-use gen_linkedin::posts::{PostsClient, TextPost};
-use gen_linkedin::{auth::StaticTokenProvider, client::Client as LiClient};
-
+#[cfg(feature = "linkedin")]
 async fn share_release_to_linkedin(prefix: &str, version: &str) -> Result<(), Error> {
+    use crate::utilities::linkedin_post::{build_release_text, compute_release_url};
+    use gen_linkedin::posts::{PostsClient, TextPost};
+    use gen_linkedin::{auth::StaticTokenProvider, client::Client as LiClient};
+
     let settings = super::Commands::Release(Release {
         update_prlog: false,
         prefix: prefix.to_string(),
@@ -326,6 +327,7 @@ pub struct Release {
     #[clap(short, long, default_value_t = String::from("v"))]
     pub prefix: String,
     /// Also share this release to LinkedIn using configured credentials
+    #[cfg(feature = "linkedin")]
     #[arg(long, default_value_t = false)]
     pub linkedin_share: bool,
     /// Skip CI on the prlog update commit by appending the ci-avoidance marker
@@ -534,6 +536,7 @@ impl Release {
             .make_release(&self.prefix, &version, self.draft)
             .await?;
 
+        #[cfg(feature = "linkedin")]
         if self.linkedin_share {
             share_release_to_linkedin(&self.prefix, &version).await?;
         }

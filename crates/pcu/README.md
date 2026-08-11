@@ -39,31 +39,47 @@ A CI utility to update the Unreleased section of the changelog with the title of
 | Feature | Default | Provides |
 |---------|---------|----------|
 | `attest` | yes | SLSA v0.2 provenance attestation via Sigstore keyless signing (`pcu release attest`) |
+| `bsky` | yes | Bluesky posting (`pcu bsky ...`) |
+| `linkedin` | yes | LinkedIn posting/sharing (`pcu linkedin ...`, `pcu release --linkedin-share`) |
 
 Using pcu **as a library** for git and GitHub operations only — staging, signed
-commits, pushes, releases — you can drop the attestation surface:
+commits, pushes, releases — you can drop all three:
 
 ```toml
 pcu = { version = "0.6", default-features = false }
 ```
 
-That removes `openidconnect`, `sigstore` and, with them, `rsa`. `rsa` carries
-[RUSTSEC-2023-0071][marvin] (Marvin Attack) which has **no fixed version**, so a
-consumer that never signs anything would otherwise have to suppress an advisory
-it cannot act on. Verify with:
+That removes `openidconnect`, `sigstore` and, with them, `rsa`; `gen-bsky`,
+`bsky-sdk`, `atrium-api` and, with them, `lru`; and `gen-linkedin`. `rsa`
+carries [RUSTSEC-2023-0071][marvin] (Marvin Attack), and `lru` carries
+[RUSTSEC-2026-0253][lru-advisory] (unsound `LruCache::pop()`) — both with **no
+fixed version**, so a consumer that never attests or posts would otherwise have
+to suppress advisories it cannot act on. You can also drop just one surface,
+e.g. keep `linkedin` but not `bsky`:
+
+```toml
+pcu = { version = "0.6", default-features = false, features = ["linkedin"] }
+```
+
+Verify with:
 
 ```console
 $ cargo tree --no-default-features --invert rsa
+$ cargo tree --target all --no-default-features --invert lru
 ```
 
-The `pcu` binary keeps `attest` on by default, so `cargo install pcu` and every
-CI pipeline are unaffected.
+(`--target all` is needed for `lru`: it's only pulled in for a non-host/wasm
+target via `atrium-common`, so it's invisible in the default host-only tree.)
+
+The `pcu` binary keeps `attest`, `bsky` and `linkedin` on by default, so
+`cargo install pcu` and every CI pipeline are unaffected.
 
 One caveat: Cargo unifies features across a dependency graph. If anything else
-in your graph depends on pcu with default features, `attest` is re-enabled for
-everyone and `rsa` returns.
+in your graph depends on pcu with default features, these features are
+re-enabled for everyone and `rsa`/`lru` return.
 
 [marvin]: https://rustsec.org/advisories/RUSTSEC-2023-0071
+[lru-advisory]: https://rustsec.org/advisories/RUSTSEC-2026-0253
 
 ## CLI Usage
 

@@ -256,14 +256,21 @@ jobs:
   exp-git-only-build:
     description: >
       Assert the git-only surface (default-features = false) still builds and
-      still carries no `rsa`.
+      still carries no `rsa`, `lru`, `bsky-sdk` or `gen-linkedin`; also assert
+      the `bsky` and `linkedin` features can each be taken independently.
 
-      A feature gate rots silently: a `use sigstore::...` added outside the gate
-      compiles perfectly under default features and breaks only for consumers
-      who opted out. Those consumers opt out precisely to keep `rsa` — and
-      RUSTSEC-2023-0071, which has no fixed version — out of their graph, so the
-      absence of `rsa` is the property asserted here, not merely that the build
+      A feature gate rots silently: a `use sigstore::...` (or `gen_bsky::...`,
+      `gen_linkedin::...`) added outside the gate compiles perfectly under
+      default features and breaks only for consumers who opted out. Those
+      consumers opt out precisely to keep `rsa` (RUSTSEC-2023-0071) and `lru`
+      (RUSTSEC-2026-0253, via bsky-sdk -> atrium-api -> atrium-common) — both
+      with no fixed version — out of their graph, so the absence of these
+      crates is the property asserted here, not merely that the build
       succeeds.
+
+      The check itself lives in scripts/assert-crate-absent.sh (shared with
+      `just git-only`) so there's one place, not per-step copies, to keep it
+      correct.
     executor:
       name: toolkit/rust_env_rolling
     steps:
@@ -277,15 +284,25 @@ jobs:
           name: Build without default features
           command: cargo check --no-default-features --package pcu
       - run:
-          name: Assert rsa is absent without the attest feature
+          name: Assert rsa, lru, bsky-sdk and gen-linkedin are absent without their features
           command: |
             set -eo pipefail
-            if cargo tree --no-default-features --package pcu --invert rsa 2>/dev/null | grep -q '^rsa'; then
-              echo "FAIL: rsa is in the default-features=false dependency graph"
-              cargo tree --no-default-features --package pcu --invert rsa
-              exit 1
-            fi
-            echo "OK: no rsa without the attest feature"
+            cargo tree --target all --no-default-features --package pcu > /tmp/pcu-tree-ndf.txt
+            scripts/assert-crate-absent.sh /tmp/pcu-tree-ndf.txt "--target all --no-default-features" rsa lru bsky-sdk gen-linkedin
+      - run:
+          name: Build with only the bsky feature (no linkedin)
+          command: |
+            set -eo pipefail
+            cargo check --no-default-features --features bsky --package pcu
+            cargo tree --target all --no-default-features --features bsky --package pcu > /tmp/pcu-tree-bsky.txt
+            scripts/assert-crate-absent.sh /tmp/pcu-tree-bsky.txt "--target all --no-default-features --features bsky" gen-linkedin
+      - run:
+          name: Build with only the linkedin feature (no bsky)
+          command: |
+            set -eo pipefail
+            cargo check --no-default-features --features linkedin --package pcu
+            cargo tree --target all --no-default-features --features linkedin --package pcu > /tmp/pcu-tree-linkedin.txt
+            scripts/assert-crate-absent.sh /tmp/pcu-tree-linkedin.txt "--target all --no-default-features --features linkedin" lru bsky-sdk
 
   exp-optional-builds:
     executor:
@@ -878,7 +895,7 @@ workflows:
             branches:
               only:
                 - /pull\/[0-9]+/
-          ignore_advisories: "RUSTSEC-2023-0071"
+          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2026-0253"
       - toolkit/security:
           name: security with sonarcloud
           context: SonarCloud
@@ -886,6 +903,6 @@ workflows:
             branches:
               ignore:
                 - /pull\/[0-9]+/
-          ignore_advisories: "RUSTSEC-2023-0071"
+          ignore_advisories: "RUSTSEC-2023-0071 RUSTSEC-2026-0253"
 
 
