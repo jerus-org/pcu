@@ -40,18 +40,20 @@ git-only:
         echo "OK: no $crate ($*)"
     }
 
-    cargo check --no-default-features --package pcu
-    assert_absent rsa --no-default-features
-    assert_absent lru --no-default-features
-    assert_absent bsky-sdk --no-default-features
-    assert_absent gen-linkedin --no-default-features
+    ndf="--no-default-features"
 
-    cargo check --no-default-features --features bsky --package pcu
-    assert_absent gen-linkedin --no-default-features --features bsky
+    cargo check $ndf --package pcu
+    assert_absent rsa $ndf
+    assert_absent lru $ndf
+    assert_absent bsky-sdk $ndf
+    assert_absent gen-linkedin $ndf
 
-    cargo check --no-default-features --features linkedin --package pcu
-    assert_absent lru --no-default-features --features linkedin
-    assert_absent bsky-sdk --no-default-features --features linkedin
+    cargo check $ndf --features bsky --package pcu
+    assert_absent gen-linkedin $ndf --features bsky
+
+    cargo check $ndf --features linkedin --package pcu
+    assert_absent lru $ndf --features linkedin
+    assert_absent bsky-sdk $ndf --features linkedin
 
 clear-target:
     cargo clean

@@ -210,36 +210,16 @@ impl Commands {
         };
 
         #[cfg(feature = "bsky")]
-        {
-            settings = if let Commands::Bsky(bsky) = self {
-                if let Some(_owner) = &bsky.owner {
-                    settings.set_override("username", "OWNER")?
-                } else {
-                    settings
-                }
-            } else {
-                settings
-            };
-
-            settings = if let Commands::Bsky(bsky) = self {
-                if let Some(_repo) = &bsky.repo {
-                    settings.set_override("reponame", "REPO")?
-                } else {
-                    settings
-                }
-            } else {
-                settings
-            };
-
-            settings = if let Commands::Bsky(bsky) = self {
-                if let Some(_branch) = &bsky.branch {
-                    settings.set_override("branch", "BRANCH")?
-                } else {
-                    settings
-                }
-            } else {
-                settings
-            };
+        if let Commands::Bsky(bsky) = self {
+            if bsky.owner.is_some() {
+                settings = settings.set_override("username", "OWNER")?;
+            }
+            if bsky.repo.is_some() {
+                settings = settings.set_override("reponame", "REPO")?;
+            }
+            if bsky.branch.is_some() {
+                settings = settings.set_override("branch", "BRANCH")?;
+            }
         }
 
         settings = if let Ok(pat) = env::var(GITHUB_PAT) {

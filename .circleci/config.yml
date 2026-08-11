@@ -303,17 +303,20 @@ jobs:
           name: Build with only the bsky feature (no linkedin)
           command: |
             set -eo pipefail
+            assert_absent() {
+              local crate="$1"
+              if cargo tree --target all --no-default-features --features bsky --package pcu --invert "$crate" 2>/dev/null | grep -q "^$crate"; then
+                echo "FAIL: $crate is present with only the bsky feature enabled"
+                exit 1
+              fi
+            }
             cargo check --no-default-features --features bsky --package pcu
-            if cargo tree --target all --no-default-features --features bsky --package pcu --invert gen-linkedin 2>/dev/null | grep -q '^gen-linkedin'; then
-              echo "FAIL: gen-linkedin is present with only the bsky feature enabled"
-              exit 1
-            fi
+            assert_absent gen-linkedin
             echo "OK: bsky feature is independent of linkedin"
       - run:
           name: Build with only the linkedin feature (no bsky)
           command: |
             set -eo pipefail
-            cargo check --no-default-features --features linkedin --package pcu
             assert_absent() {
               local crate="$1"
               if cargo tree --target all --no-default-features --features linkedin --package pcu --invert "$crate" 2>/dev/null | grep -q "^$crate"; then
@@ -321,6 +324,7 @@ jobs:
                 exit 1
               fi
             }
+            cargo check --no-default-features --features linkedin --package pcu
             assert_absent lru
             assert_absent bsky-sdk
             echo "OK: linkedin feature is independent of bsky"
