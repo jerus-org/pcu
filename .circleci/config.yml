@@ -267,6 +267,10 @@ jobs:
       with no fixed version — out of their graph, so the absence of these
       crates is the property asserted here, not merely that the build
       succeeds.
+
+      The check itself lives in scripts/assert-crate-absent.sh (shared with
+      `just git-only`) so there's one place, not per-step copies, to keep it
+      correct.
     executor:
       name: toolkit/rust_env_rolling
     steps:
@@ -283,51 +287,22 @@ jobs:
           name: Assert rsa, lru, bsky-sdk and gen-linkedin are absent without their features
           command: |
             set -eo pipefail
-            assert_absent() {
-              local crate="$1"
-              # --target all: lru is only pulled in for a non-host (wasm) target
-              # via atrium-common, so the default host-only tree never shows it,
-              # gated or not.
-              if cargo tree --target all --no-default-features --package pcu --invert "$crate" 2>/dev/null | grep -q "^$crate"; then
-                echo "FAIL: $crate is in the default-features=false dependency graph"
-                cargo tree --target all --no-default-features --package pcu --invert "$crate"
-                exit 1
-              fi
-              echo "OK: no $crate without its feature"
-            }
-            assert_absent rsa
-            assert_absent lru
-            assert_absent bsky-sdk
-            assert_absent gen-linkedin
+            cargo tree --target all --no-default-features --package pcu > /tmp/pcu-tree-ndf.txt
+            scripts/assert-crate-absent.sh /tmp/pcu-tree-ndf.txt "--target all --no-default-features" rsa lru bsky-sdk gen-linkedin
       - run:
           name: Build with only the bsky feature (no linkedin)
           command: |
             set -eo pipefail
-            assert_absent() {
-              local crate="$1"
-              if cargo tree --target all --no-default-features --features bsky --package pcu --invert "$crate" 2>/dev/null | grep -q "^$crate"; then
-                echo "FAIL: $crate is present with only the bsky feature enabled"
-                exit 1
-              fi
-            }
             cargo check --no-default-features --features bsky --package pcu
-            assert_absent gen-linkedin
-            echo "OK: bsky feature is independent of linkedin"
+            cargo tree --target all --no-default-features --features bsky --package pcu > /tmp/pcu-tree-bsky.txt
+            scripts/assert-crate-absent.sh /tmp/pcu-tree-bsky.txt "--target all --no-default-features --features bsky" gen-linkedin
       - run:
           name: Build with only the linkedin feature (no bsky)
           command: |
             set -eo pipefail
-            assert_absent() {
-              local crate="$1"
-              if cargo tree --target all --no-default-features --features linkedin --package pcu --invert "$crate" 2>/dev/null | grep -q "^$crate"; then
-                echo "FAIL: $crate is present with only the linkedin feature enabled"
-                exit 1
-              fi
-            }
             cargo check --no-default-features --features linkedin --package pcu
-            assert_absent lru
-            assert_absent bsky-sdk
-            echo "OK: linkedin feature is independent of bsky"
+            cargo tree --target all --no-default-features --features linkedin --package pcu > /tmp/pcu-tree-linkedin.txt
+            scripts/assert-crate-absent.sh /tmp/pcu-tree-linkedin.txt "--target all --no-default-features --features linkedin" lru bsky-sdk
 
   exp-optional-builds:
     executor:

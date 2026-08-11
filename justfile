@@ -23,37 +23,28 @@ test: clippy check doc unit-tests git-only
 # of their graph, so the absence of these crates is the property worth
 # asserting, not merely that the build succeeds. The bsky/linkedin-only checks
 # confirm each feature can be taken independently of the other.
+#
+# The check itself lives in scripts/assert-crate-absent.sh (shared with the
+# exp-git-only-build CI job) so there's one place, not two, to keep it correct.
 git-only:
     #!/usr/bin/env bash
     set -euo pipefail
-    assert_absent() {
-        local crate="$1"
-        shift
-        # --target all: lru is only pulled in for a non-host (wasm) target via
-        # atrium-common, so the default host-only tree never shows it, gated
-        # or not — this flag is what makes the assertion actually load-bearing.
-        if cargo tree --target all "$@" --package pcu --invert "$crate" 2>/dev/null | grep -q "^$crate"; then
-            echo "FAIL: $crate is present ($*)" >&2
-            cargo tree --target all "$@" --package pcu --invert "$crate" >&2
-            exit 1
-        fi
-        echo "OK: no $crate ($*)"
-    }
-
     ndf="--no-default-features"
+    tf="--target all $ndf"
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
 
     cargo check $ndf --package pcu
-    assert_absent rsa $ndf
-    assert_absent lru $ndf
-    assert_absent bsky-sdk $ndf
-    assert_absent gen-linkedin $ndf
+    cargo tree $tf --package pcu > "$tmp/ndf.txt"
+    scripts/assert-crate-absent.sh "$tmp/ndf.txt" "$tf" rsa lru bsky-sdk gen-linkedin
 
     cargo check $ndf --features bsky --package pcu
-    assert_absent gen-linkedin $ndf --features bsky
+    cargo tree $tf --features bsky --package pcu > "$tmp/bsky.txt"
+    scripts/assert-crate-absent.sh "$tmp/bsky.txt" "$tf --features bsky" gen-linkedin
 
     cargo check $ndf --features linkedin --package pcu
-    assert_absent lru $ndf --features linkedin
-    assert_absent bsky-sdk $ndf --features linkedin
+    cargo tree $tf --features linkedin --package pcu > "$tmp/linkedin.txt"
+    scripts/assert-crate-absent.sh "$tmp/linkedin.txt" "$tf --features linkedin" lru bsky-sdk
 
 clear-target:
     cargo clean

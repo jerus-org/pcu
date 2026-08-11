@@ -19,7 +19,7 @@ ignore = [
     # the Marvin Attack — which needs a decryption oracle observable over a
     # network — cannot be triggered. Library consumers that do not attest can
     # take `default-features = false` and drop rsa from their graph entirely.
-    # Remove when openidconnect updates rsa.
+    # Remove when openidconnect updates rsa. Tracked: jerus-org/pcu#940.
     "RUSTSEC-2023-0071",
 
     # RUSTSEC-2026-0253: lru 0.16.4 — unsound use-after-free in
@@ -31,7 +31,8 @@ ignore = [
     # `bsky` feature (default-on for the binary). Library consumers that do
     # not use Bluesky posting can take `default-features = false`, or keep
     # `linkedin`/`attest` and just drop `bsky`, to remove lru entirely.
-    # Remove when atrium-common updates lru or ships a fix.
+    # Remove when atrium-common updates lru or ships a fix. Tracked:
+    # jerus-org/pcu#1037.
     "RUSTSEC-2026-0253",
 
 ]

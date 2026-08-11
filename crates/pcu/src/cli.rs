@@ -497,4 +497,41 @@ mod tests {
             "signoff should be disabled"
         );
     }
+
+    #[cfg(feature = "bsky")]
+    #[test]
+    fn bsky_without_owner_repo_branch_keeps_defaults() {
+        let cmd = Cli::try_parse_from(["pcu", "bsky", "draft"]).unwrap().command;
+        let settings = cmd.get_settings().unwrap();
+        assert_eq!(
+            settings.get::<String>("username").unwrap(),
+            "CIRCLE_PROJECT_USERNAME",
+            "no --owner given: username should stay the default env-var name"
+        );
+        assert_eq!(
+            settings.get::<String>("reponame").unwrap(),
+            "CIRCLE_PROJECT_REPONAME",
+            "no --repo given: reponame should stay the default env-var name"
+        );
+        assert_eq!(
+            settings.get::<String>("branch").unwrap(),
+            "CIRCLE_BRANCH",
+            "no --branch given: branch should stay the default env-var name"
+        );
+    }
+
+    #[cfg(feature = "bsky")]
+    #[test]
+    fn bsky_with_owner_repo_branch_overrides_settings() {
+        let cmd = Cli::try_parse_from([
+            "pcu", "bsky", "--owner", "acme", "--repo", "widgets", "--branch", "feature-x",
+            "draft",
+        ])
+        .unwrap()
+        .command;
+        let settings = cmd.get_settings().unwrap();
+        assert_eq!(settings.get::<String>("username").unwrap(), "OWNER");
+        assert_eq!(settings.get::<String>("reponame").unwrap(), "REPO");
+        assert_eq!(settings.get::<String>("branch").unwrap(), "BRANCH");
+    }
 }
