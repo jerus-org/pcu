@@ -11,24 +11,47 @@ alias c := check
 # run all tests, clippy, including journey tests, try building docs
 test: clippy check doc unit-tests git-only
 
-# verify the git-only surface really is free of the attestation dependencies.
+# verify the git-only surface really is free of the attestation, bluesky and
+# linkedin dependencies.
 #
-# A feature gate rots silently: a `use sigstore::…` added outside the gate
-# compiles perfectly under default features and only breaks for the consumers
-# who opted out. Consumers depend on pcu with `default-features = false`
-# precisely to keep `rsa` — and RUSTSEC-2023-0071, which has no fixed version —
-# out of their graph, so the absence of `rsa` is the property worth asserting,
-# not merely that the build succeeds.
+# A feature gate rots silently: a `use sigstore::…` (or `gen_bsky::…`,
+# `gen_linkedin::…`) added outside the gate compiles perfectly under default
+# features and only breaks for the consumers who opted out. Consumers depend
+# on pcu with `default-features = false` precisely to keep `rsa`
+# (RUSTSEC-2023-0071) and `lru` (RUSTSEC-2026-0253, via
+# bsky-sdk -> atrium-api -> atrium-common) — both with no fixed version — out
+# of their graph, so the absence of these crates is the property worth
+# asserting, not merely that the build succeeds. The bsky/linkedin-only checks
+# confirm each feature can be taken independently of the other.
 git-only:
     #!/usr/bin/env bash
     set -euo pipefail
+    assert_absent() {
+        local crate="$1"
+        shift
+        # --target all: lru is only pulled in for a non-host (wasm) target via
+        # atrium-common, so the default host-only tree never shows it, gated
+        # or not — this flag is what makes the assertion actually load-bearing.
+        if cargo tree --target all "$@" --package pcu --invert "$crate" 2>/dev/null | grep -q "^$crate"; then
+            echo "FAIL: $crate is present ($*)" >&2
+            cargo tree --target all "$@" --package pcu --invert "$crate" >&2
+            exit 1
+        fi
+        echo "OK: no $crate ($*)"
+    }
+
     cargo check --no-default-features --package pcu
-    if cargo tree --no-default-features --package pcu --invert rsa 2>/dev/null | grep -q '^rsa'; then
-        echo "FAIL: rsa is in the default-features=false graph" >&2
-        cargo tree --no-default-features --package pcu --invert rsa >&2
-        exit 1
-    fi
-    echo "OK: no rsa without the attest feature"
+    assert_absent rsa --no-default-features
+    assert_absent lru --no-default-features
+    assert_absent bsky-sdk --no-default-features
+    assert_absent gen-linkedin --no-default-features
+
+    cargo check --no-default-features --features bsky --package pcu
+    assert_absent gen-linkedin --no-default-features --features bsky
+
+    cargo check --no-default-features --features linkedin --package pcu
+    assert_absent lru --no-default-features --features linkedin
+    assert_absent bsky-sdk --no-default-features --features linkedin
 
 clear-target:
     cargo clean

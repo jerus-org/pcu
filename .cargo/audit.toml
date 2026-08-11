@@ -22,6 +22,18 @@ ignore = [
     # Remove when openidconnect updates rsa.
     "RUSTSEC-2023-0071",
 
+    # RUSTSEC-2026-0253: lru 0.16.4 — unsound use-after-free in
+    # `LruCache::pop()` (no panic safety). Fix attempted: `cargo update -p lru
+    # --dry-run` finds no newer compatible version; the advisory lists no
+    # patched release. Path: bsky-sdk 0.1.24 → atrium-api 0.25.8 →
+    # atrium-common 0.1.4 → lru 0.16.4 (a non-host/wasm-target dependency —
+    # only visible with `cargo tree --target all`). Present only under the
+    # `bsky` feature (default-on for the binary). Library consumers that do
+    # not use Bluesky posting can take `default-features = false`, or keep
+    # `linkedin`/`attest` and just drop `bsky`, to remove lru entirely.
+    # Remove when atrium-common updates lru or ships a fix.
+    "RUSTSEC-2026-0253",
+
 ]
 
 # Yanked-package checking re-enabled: core2 0.4.0 was removed from the
