@@ -501,7 +501,9 @@ mod tests {
     #[cfg(feature = "bsky")]
     #[test]
     fn bsky_without_owner_repo_branch_keeps_defaults() {
-        let cmd = Cli::try_parse_from(["pcu", "bsky", "draft"]).unwrap().command;
+        let cmd = Cli::try_parse_from(["pcu", "bsky", "draft"])
+            .unwrap()
+            .command;
         let settings = cmd.get_settings().unwrap();
         assert_eq!(
             settings.get::<String>("username").unwrap(),
@@ -524,7 +526,14 @@ mod tests {
     #[test]
     fn bsky_with_owner_repo_branch_overrides_settings() {
         let cmd = Cli::try_parse_from([
-            "pcu", "bsky", "--owner", "acme", "--repo", "widgets", "--branch", "feature-x",
+            "pcu",
+            "bsky",
+            "--owner",
+            "acme",
+            "--repo",
+            "widgets",
+            "--branch",
+            "feature-x",
             "draft",
         ])
         .unwrap()
