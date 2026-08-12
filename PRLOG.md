@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate clap to 4.6.6(pr [#1039])
 - deps: update rust crate kdeets to 0.1.32(pr [#1040])
 - deps: update rust crate thiserror to 2.0.20(pr [#1041])
+- deps: update rust crate toml to 1.1.4(pr [#1042])
 
 ## [0.6.30] - 2026-07-31
 
@@ -2538,6 +2539,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1039]: https://github.com/jerus-org/pcu/pull/1039
 [#1040]: https://github.com/jerus-org/pcu/pull/1040
 [#1041]: https://github.com/jerus-org/pcu/pull/1041
+[#1042]: https://github.com/jerus-org/pcu/pull/1042
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.30...HEAD
 [0.6.30]: https://github.com/jerus-org/pcu/compare/v0.6.29...v0.6.30
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
