@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - deps: update dependency toolkit to v7(pr [#1043])
 - deps: update rust crate base64 to 0.23.1(pr [#1038])
+- deps: update rust crate clap to 4.6.6(pr [#1039])
 
 ## [0.6.30] - 2026-07-31
 
@@ -2532,6 +2533,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1043]: https://github.com/jerus-org/pcu/pull/1043
 [#1038]: https://github.com/jerus-org/pcu/pull/1038
 [#1045]: https://github.com/jerus-org/pcu/pull/1045
+[#1039]: https://github.com/jerus-org/pcu/pull/1039
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.30...HEAD
 [0.6.30]: https://github.com/jerus-org/pcu/compare/v0.6.29...v0.6.30
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
