@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - gate bsky and linkedin behind features(pr [#1035])
 
+### Changed
+
+- chore(ci)-retire cache experiment, wire clippy_report(pr [#1045])
+
 ### Fixed
 
 - deps: update dependency toolkit to v7(pr [#1043])
@@ -2527,6 +2531,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1035]: https://github.com/jerus-org/pcu/pull/1035
 [#1043]: https://github.com/jerus-org/pcu/pull/1043
 [#1038]: https://github.com/jerus-org/pcu/pull/1038
+[#1045]: https://github.com/jerus-org/pcu/pull/1045
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.30...HEAD
 [0.6.30]: https://github.com/jerus-org/pcu/compare/v0.6.29...v0.6.30
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
