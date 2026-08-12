@@ -1,192 +1,756 @@
+<!-- LTex: Enabled=false -->
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.5.0 (2025-08-12)
+## [0.6.31] - 2026-08-12
 
-### Chore
+Summary: Added[1], Changed[1], Fixed[8]
 
- - <csr-id-cb6618a87fb77f52884e2d5fe10cfc927711cc8f/> reorganize file structure for bsky content
-   - rename and relocate config.toml for better organization
-   - move blog files to content/blog directory for improved clarity
- - <csr-id-44aa903e21100727580ebea49b2e0d7e2998801f/> add logging for draft command execution
-   - log initial posts state after build
-   - log state after writing referrers and bluesky posts
- - <csr-id-6256500cf86cf51db1e7b7ce6022cfb51cac32c9/> update license configuration
-   - change license to "MIT OR Apache-2.0" for dual licensing
-   - remove LICENSE file and update include paths for new license files
- - <csr-id-b3ffd75bf2507b84d86fd9d70486410b5819b697/> remove draft and site_config modules
-   - delete draft.rs and site_config.rs to clean up unused code
-   - remove Draft struct and related functionality
-   - eliminate SiteConfig and configuration handling
- - <csr-id-5e846eee41a77c82822933b6bcdecc3e1530b2f8/> remove unused front matter files
-   - delete front_matter.rs and its related modules (bluesky.rs, extra.rs, taxonomies.rs)
-   - cleanup codebase by removing unused front matter handling code
- - <csr-id-eb973366638c3b79a358e656d7f85b0001bf3507/> add gen-bsky to workspace dependencies
-   - include gen-bsky in the workspace for consistent dependency management across crates
- - <csr-id-291f80bad9dc7a5343e176ad3535eee299b46c5e/> restructure project directory layout
-   - move source files from 'src' and 'tests' to 'crates/pcu' directory
-   - update project structure for improved modularity and organization
- - <csr-id-4ae1a9f0d60d5fd4f012e76d2d9f903bbf9b9183/> reorganize README file location
-   - move README.md to crates/pcu directory for better project structure
- - <csr-id-2a9d677898cb19e80efcdabb9aeffa9f7594115f/> relocate LICENSE file
-   - move LICENSE file to crates/pcu directory for better organization
+### Added
 
-### Documentation
+ - feat: gate bsky and linkedin behind features
 
- - <csr-id-f3a0dae411adab71559195561d84fa6a3ff29501/> add description to update and release series
-   - add a description field to enhance blog post metadata and improve SEO
- - <csr-id-3ffee146a1f09878d40987907331a525802d6794/> remove "Stuck in the middle" article
-   - delete blog post "Stuck in the middle" from the repository
-   - the article discussed geopolitical themes and historical parallels
-   - content no longer relevant or needed in the current context
- - <csr-id-65a42fc30bb5746633291bd67674af7bcdfc8134/> add Apache and MIT licenses
-   - include Apache License 2.0 text for licensing terms
-   - add MIT License text for dual licensing options
- - <csr-id-836e01512055a06ffdd4c0549e12439808f71983/> update project title casing
-   - change project title from lowercase to capitalized format
- - <csr-id-c6e97e0e81c17f88184bb6129ef87e36d6d6bacd/> update Rust version badge
-   - change Rust version badge from 1.81+ to 1.87+ to reflect updated requirements
+### Fixed
 
-### New Features
+ - fix(release): add missing binstall signing scaffold to pcu
+ - fix(deps): update rust crate config to 0.15.25
+ - fix(deps): update rust crate toml to 1.1.4
+ - fix(deps): update rust crate thiserror to 2.0.20
+ - fix(deps): update rust crate kdeets to 0.1.32
+ - fix(deps): update rust crate clap to 4.6.6
+ - fix(deps): update rust crate base64 to 0.23.1
+ - fix: dedupe crate-absence checks, add tracking issues
 
- - <csr-id-e5573393486c48c7c7ff3182ae8ed787d2515b79/> enhance site config path handling
-   - add path::Path import for improved path management
-   - update SiteConfig::new to accept www_src_root and optional filename
-   - log errors with dynamic file path for better debugging
- - <csr-id-64a4bed7557956d7e42021fddfb3e48379aaddac/> add www_src_root parameter to CmdDraft
-   - introduce www_src_root parameter for specifying website source root folder
-   - update log trace to include www_src_root
-   - modify Draft builder to accept www_src_root as an argument
- - <csr-id-79ec58e49a3571a1a1362e1faea1d39cf1b7d9d4/> support multiple paths for CmdDraft
-   - change path from Option<String> to Vec<PathBuf> to handle multiple paths
-   - update run method to process each path in paths vector
-   - ensure DEFAULT_PATH is included when no paths are provided
- - <csr-id-7078da88bba282a8b93d2fe355ed00f54baed1be/> enable serde feature for url crate
-   - add serde feature to url crate in Cargo.toml for enhanced serialization support
- - <csr-id-d5cf7697c798b0f5e028f8ea98d147c550487208/> add logging filter for gen_bsky module
-   - include gen_bsky module in logging filters
-   - ensure consistent logging level configuration across modules
- - <csr-id-86440622331b6ac10debee48dc084fa2791d1a18/> add trace logging for key parameters in cmd_draft
-   - introduce trace logging to output key parameters such as base_url, store, and path for improved debugging and transparency
- - <csr-id-7c38aed8bdc4f671256b50fa7ae1095974f94113/> add site_config management in bsky draft command
-   - create site_config.rs for site configuration management
-   - implement SiteConfig struct with base_url field
-   - add new() method to read and parse config.toml file
-   - provide base_url() method to access base_url value
- - <csr-id-c9311bc9da88c39c1a0ad9db3c3b1651b161c15a/> add new error variant for front matter
-   - introduce FrontMatterError to handle errors from gen-bsky
-   - improve error handling by expanding error enum
- - <csr-id-32b0267d9e40aac9a3a1e8007ca0ef99a53d9a5c/> add Cargo.toml for pcu crate
-   - create Cargo.toml file for pcu crate
-   - define package metadata and dependencies
-   - set up bin and lib paths for the crate
+### Changed
 
-### Bug Fixes
+ - refactor: simplify feature-gate guard and settings
 
- - <csr-id-a861ea3780009a52f713e2a38f53d77f83e0e775/> handle file read errors gracefully
-   - add error handling for reading config.toml
-   - log error message when file reading fails
- - <csr-id-c762ea65d4e27088096d6dce928c11b41404aa4e/> add await for async bluesky post writing
-   - ensure asynchronous execution by adding await to write_bluesky_posts
-   - fix potential runtime issue by properly handling async function
- - <csr-id-730b37bc2b4137a6632779687bce0693936a2215/> correct path handling in cmd_draft
-   - fix condition to correctly handle empty paths scenario
-   - ensure default path is added when no paths are provided
- - <csr-id-453d1fd385e862e3fdef1d4ed6e5d9d81de67fd6/> fix borrow issues in command execution
-   - make draft_args mutable to resolve borrow checker issues with the run method
+## [0.6.30] - 2026-07-31
 
-### Other
+Summary: Added[1], Changed[1], Chore[2], Fixed[4]
 
- - <csr-id-83f923d58dcf91cf5fa32f85d95832abd11e9994/> update gen-bsky dependency configuration
-   - specify version "0.0.0" for gen-bsky dependency
-   - ensure consistent dependency management within workspace
+### Added
 
-### Refactor
+ - feat: gate the attestation surface behind a feature
 
- - <csr-id-0a474b2a952b142107015d43aa19b863306c6bdb/> enhance draft command flexibility
-   - modify Draft::builder to accept an optional root path
-   - make minimum date filter conditional based on provided date
- - <csr-id-8ebbab8bc12ece4eee314ab24cf36f3da1106587/> update site configuration initialization
-   - modify `SiteConfig::new` to accept `www_src_root` and optional parameters for flexibility
- - <csr-id-9c8b7b709545bfd2d9e775aee94ec9255e75ce98/> simplify error handling in post creation
-   - use `if let` syntax for concise error checking and logging
- - <csr-id-d9854c789811a3d36393a31415e0a1edd00d0639/> use Url type for base_url
-   - change base_url field type from String to Url for better URL handling
-   - update base_url method return type to Url for consistency
- - <csr-id-9cdbffdb488d78959be12e578180a831d1227f1d/> remove unused FrontMatterError variant
-   - eliminate FrontMatterError from Error enum
-   - improve code maintainability by cleaning up unused variants
- - <csr-id-9cfea848606607e78e3b18b770dd07bb792055f3/> update method for path handling in draft command
-   - rename method from add_blog_posts to add_path_or_file for clarity and flexibility
- - <csr-id-90523fec790e734855ec64d1421ac6e00b06ba81/> enhance draft processing and configuration
-   - replace module `draft` with `site_config` for improved configuration handling
-   - remove unused imports and streamline code
-   - integrate `gen_bsky::Draft` for better post management
-   - optimize blog post processing with new `Draft` builder pattern
-   
-   ✅ test(cli): remove redundant tests and update for new logic
-   
-   - remove tests related to old `draft` module
-   - update tests to align with new `Draft` processing logic
- - <csr-id-0abe468f237b0eb7d341b566f9e6c1779419e166/> update error enum definitions
-   - remove unused FutureCapacityTooLarge error variant
-   - update FrontMatterError message for clarity
-   - add new DraftError variant for better error handling
- - <csr-id-f0b167d2d2ff6a8ea43ab502d072b63b113718ae/> simplify bluesky record writing process
-   - remove manual file creation and serialization code
-   - use write_bluesky_record method to handle file operations
-   - improve error handling and logging for clearer diagnostics
- - <csr-id-5d450a3ecbd4b7184fcc9d8aa012b4b6fa6e7d36/> improve post processing logic
-   - remove inline record data creation for cleaner code
-   - utilize get_bluesky_record method for post processing
-   
-   🐛 fix(logging): correct log messages for file operations
-   
-   - update logging from "Post filename" to "Write filename"
-   - change "Post file" to "Write file" for clarity
- - <csr-id-c1d0106fa0ecba35d6ba4efd579f5d5c9c2a601b/> update front matter module import
-   - remove direct import of front_matter module
-   - use gen_bsky for importing FrontMatter
+### Fixed
 
-### Style
+ - fix: stage absolute paths instead of silently ignoring them
+ - fix: prefer a published release over a stale draft
+ - fix: support immutable releases via draft-first flow
+ - fix(deps): update rust crate base64 to 0.23.0
 
- - <csr-id-aee56b3d229f3fc2f716415dee4531c75b4a3b4c/> update metadata field name
-   - change 'bluesky' to 'bluesky.description' for clarity and consistency
- - <csr-id-52d7fa3b5a9166a21685e065cbd702c0811f966f/> correct logging format in cmd_draft
-   - adjust parameter labels to maintain consistent case and clarity
-   - replace duplicate "Base" with "root" for accurate description
- - <csr-id-1854e3a7225138ee79c21dcb539c083d41a8b2d4/> remove obsolete comments
-   - delete outdated TODO comments related to blog processing and Bluesky posting
- - <csr-id-1f691e1a0eba1266c2aba5e2fff73f21bde090c5/> add hidden false positives for ltex
-   - update ltex.hiddenFalsePositives.en-GB.txt with new rules for better false positive management
-   
-   💄 style(blog): fix typos and improve clarity in blog posts
-   
-   - correct spelling and punctuation in influences-jan-2025.md and influences-original.md
-   - improve sentence clarity in introduction.md
- - <csr-id-8a1007e21a8d12c408dcd7cf8af930a5e2b77551/> fix typo in blog content
-   - correct "by" to "be" for grammatical accuracy
-   - add apostrophe in "it's" for proper contraction usage
- - <csr-id-96114728db66eca78afc49d3e797bee26d981df5/> update file path in log messages
-   - add './' prefix to config.toml path to clarify file location in log messages
- - <csr-id-95466ab2763b626b08edea91f858302842a6bec2/> simplify log message format
-   - remove redundant 'url' from log message for base_url parameter
+### Changed
 
-### Chore (BREAKING)
+ - refactor: fetch release candidates in one GraphQL query
 
- - <csr-id-15bc8782413641a435cc6af8102cc874b0d75fcf/> simplify test configuration file
-   - remove unnecessary configuration settings for streamlined testing
-   - retain only essential base_url setting in config.toml
+## [0.6.29] - 2026-07-23
 
-### Commit Statistics
+Summary: Added[1], Chore[1], Fixed[8]
 
-<csr-read-only-do-not-edit/>
+### Added
 
- - 62 commits contributed to the release over the course of 12 calendar days.
- - 47 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
+ - feat: default `pcu release` prlog commit to ci-skip
+
+### Fixed
+
+ - fix(deps): update rust crate uuid to 1.24.0
+ - fix(deps): update rust crate toml to 1.1.3
+ - fix(deps): update rust crate tokio to 1.53.1
+ - fix(deps): update rust crate thiserror to 2.0.19
+ - fix(deps): update rust crate regex to 1.13.1
+ - fix(deps): update rust crate kdeets to 0.1.31
+ - fix(deps): update rust crate clap to 4.6.4
+ - fix(release): fail on missing binary signing scaffold
+
+## [0.6.28] - 2026-06-26
+
+Summary: Added[3], Changed[1], Chore[2], Fixed[6]
+
+### Added
+
+ - feat: make pr ci-skip flag negatable too
+ - feat: make release ci-skip flag negatable
+ - feat: controllable ci-skip on the release prlog commit
+
+### Fixed
+
+ - fix(deps): update rust crate cargo_toml to v1
+ - fix(deps): update rust crate uuid to 1.23.4
+ - fix(deps): update rust crate env_logger to 0.11.11
+ - fix: pcu owns a safe, well-named release push
+ - fix: ensure_github_release never reports false success
+ - fix: retry tag visibility before skipping release
+
+### Changed
+
+ - refactor: move test modules to end of release.rs
+
+## [0.6.27] - 2026-06-23
+
+Summary: Chore[1]
+
+## [0.6.26] - 2026-06-22
+
+Summary: Chore[1], Fixed[2], Testing[1]
+
+### Fixed
+
+ - fix(deps): update rust crate log to 0.4.33
+ - fix(deps): update rust crate link-bridge to 0.2.6
+
+## [0.6.25] - 2026-06-18
+
+Summary: Chore[1], Fixed[2]
+
+### Fixed
+
+ - fix: only add ci-skip marker on default-branch prlog
+ - fix: pr commit uses configured message (skip-ci)
+
+## [0.6.24] - 2026-06-18
+
+Summary: Chore[1], Fixed[1]
+
+### Fixed
+
+ - fix: enable git2 https+ssh features (TLS)
+
+## [0.6.23] - 2026-06-17
+
+Summary: Added[1], Chore[2]
+
+### Added
+
+ - feat: add --skip-ci to pcu pr
+
+## [0.6.22] - 2026-06-12
+
+Summary: Added[3], Chore[1], Fixed[9]
+
+### Added
+
+ - feat: explicit GPG signing key on SignConfig
+ - feat: idempotent upload_release_asset (delete-then-replace)
+ - feat: explicit commit identity on SignConfig
+
+### Fixed
+
+ - fix(deps): update rust crate regex to 1.12.4
+ - fix(deps): update rust crate uuid to 1.23.3
+ - fix(deps): update rust crate unicode-segmentation to 1.13.3
+ - fix(deps): update rust crate reqwest to 0.13.4
+ - fix: adapt to git2 0.21 breaking string-method changes
+ - fix(deps): update rust crate log to 0.4.32
+ - fix(deps): update rust crate chrono to 0.4.45
+ - fix(deps): update rust crate sigstore to 0.14.0
+ - fix(deps): update rust crate serde_json to 1.0.150
+
+## [0.6.21] - 2026-05-21
+
+Summary: Chore[1], Fixed[1]
+
+### Fixed
+
+ - fix(git_ops): stage_paths handles directory paths
+
+## [0.6.20] - 2026-05-20
+
+Summary: Added[2], Changed[1], Chore[1], Fixed[6]
+
+### Added
+
+ - feat: expose library APIs for GPG import, staged paths, local client, and release asset upload
+ - feat(gen-linkedin): warn when PCU_LINKEDIN_API_VERSION override is stale
+
+### Fixed
+
+ - fix(deps): update rust crate tokio to 1.52.3
+ - fix(deps): update rust crate reqwest to 0.13.3
+ - fix(docs): resolve intra-doc links in new_local methods
+ - fix(clippy): replace sort_by with sort_by_key
+ - fix(gen-linkedin): update default API version to 202604
+ - fix(logging): add gen_linkedin to log filter
+
+### Changed
+
+ - refactor: eliminate code duplication flagged by SonarQube
+
+## [0.6.19] - 2026-04-18
+
+Summary: Chore[1], Fixed[6]
+
+### Fixed
+
+ - fix(deps): update rust crate tokio to 1.52.1
+ - fix(deps): update rust crate uuid to 1.23.1
+ - fix(deps): update rust crate sigstore_protobuf_specs to 0.5.1
+ - fix(deps): update rust crate clap to 4.6.1
+ - fix: use PCU_ prefix in error messages; document audit ignore policy
+ - fix(gen-linkedin): make LinkedIn-Version header configurable; fix rustls-webpki CVEs
+
+## [0.6.18] - 2026-04-09
+
+Summary: Changed[1], Chore[1], Fixed[1]
+
+### Fixed
+
+ - fix(push): rewrite SSH remote to HTTPS when App token is present
+
+### Changed
+
+ - refactor(push): extract make_credential to reduce cognitive complexity
+
+## [0.6.17] - 2026-04-07
+
+Summary: Chore[1], Fixed[1]
+
+### Fixed
+
+ - fix(release): retry get_release_by_tag on 404
+
+## [0.6.16] - 2026-04-06
+
+Summary: Added[8], Changed[3], Chore[1], Fixed[9], Testing[2]
+
+### Added
+
+ - feat(create-issue): add label support with ci-created default
+ - feat: add comment-pr subcommand to post a PR comment
+ - feat(cli): add create-issue subcommand
+ - feat(linkedin): add draft and post subcommands
+ - feat: add --from-branch flag to bsky draft
+ - feat: add --push flag to bsky draft
+ - feat: add pcu trigger --webhook subcommand
+ - feat: use kdeets_lib for crate version check
+
+### Fixed
+
+ - fix(deps): update rust crate uuid to 1.23.0
+ - fix(deps): update rust crate unicode-segmentation to 1.13.2
+ - fix(deps): update rust crate tokio to 1.51.0
+ - fix(deps): update rust crate sha2 to 0.11.0
+ - fix: sha2 0.11 digest LowerHex removed
+ - fix(deps): update rust crate toml to 1.1.2
+ - fix(deps): update rust crate link-bridge to 0.2.5
+ - fix(deps): update rust crate reqwest to 0.13.2
+ - fix(linkedin): use lowercase config keys for access token and author URN
+
+### Changed
+
+ - refactor: extract resolve_owner/resolve_repo to remove duplication
+ - refactor: move test module to bottom of cmd_draft
+ - refactor: replace curl subprocess with reqwest in attest
+
+## [0.6.15] - 2026-03-28
+
+Summary: Chore[1], Fixed[3]
+
+### Fixed
+
+ - fix: make TagTarget pub to match public trait interface
+ - fix(deps): update rust crate env_logger to 0.11.10
+ - fix(deps): update rust crate toml to 1.1.0
+
+## [0.6.14] - 2026-03-19
+
+Summary: Chore[1], Fixed[5]
+
+### Fixed
+
+ - fix(deps): update rust crate clap to 4.6.0
+ - fix(deps): update rust crate tracing-subscriber to 0.3.23
+ - fix(deps): update rust crate toml to 1.0.7
+ - fix(deps): update rust crate base62 to 2.2.4
+ - fix: GPG-sign workspace version tags
+
+## [0.6.13] - 2026-03-12
+
+Summary: Chore[1], Fixed[2]
+
+### Fixed
+
+ - fix(deps): update rust crate link-bridge to 0.2.4
+ - fix(attest): skip upload when assets already exist on GitHub release
+
+## [0.6.12] - 2026-03-11
+
+Summary: Chore[1], Fixed[4]
+
+### Fixed
+
+ - fix(deps): update rust crate tempfile to 3.27.0
+ - fix(deps): update rust crate toml to 1.0.6
+ - fix(deps): update rust crate openidconnect to 4.0.1
+ - fix: make release_package idempotent when GitHub release exists
+
+## [0.6.11] - 2026-03-10
+
+Summary: Chore[1], Fixed[1]
+
+### Fixed
+
+ - fix: pem_to_der extracts only the leaf cert from a chain
+
+## [0.6.10] - 2026-03-09
+
+Summary: Chore[1], Fixed[1]
+
+### Fixed
+
+ - fix: use Fulcio v1 API for SLSA attestation
+
+## [0.6.9] - 2026-03-06
+
+Summary: Added[1], Changed[1], Chore[1], Fixed[8], Testing[4]
+
+### Added
+
+ - feat: add pcu release attest command
+
+### Fixed
+
+ - fix(deps): update rust crate uuid to 1.22.0
+ - fix(deps): update rust crate toml to 1.0.4
+ - fix(deps): update rust crate sha2 to 0.10.9
+ - fix(deps): update rust crate base64 to 0.22.1
+ - fix: retry get_pull_request_by_commit when empty
+ - fix(862): list external contributors in report
+ - fix(144): skip PR link when description is empty
+ - fix(813): add --allow-empty flag to bsky draft
+
+### Changed
+
+ - refactor: extract classify helpers to reduce complexity
+
+## [0.6.8] - 2026-03-03
+
+Summary: Chore[1], Fixed[2]
+
+### Fixed
+
+ - fix(deps): update rust crate tokio to 1.50.0
+ - fix: add app/renovate to default label authors
+
+## [0.6.7] - 2026-02-28
+
+Summary: Added[1], Changed[1], Chore[1], Fixed[2]
+
+### Added
+
+ - feat: add checkout subcommand
+
+### Fixed
+
+ - fix(deps): update rust crate tempfile to 3.26.0
+ - fix(deps): update rust crate chrono to 0.4.44
+
+### Changed
+
+ - refactor: address review comments on checkout subcommand
+
+## [0.6.6] - 2026-02-23
+
+Summary: Added[1], Documentation[1], Fixed[5], Testing[1]
+
+### Added
+
+ - feat(cli): add release utility subcommands
+
+### Fixed
+
+ - fix(deps): update rust crate owo-colors to 4.3.0
+ - fix(deps): update rust crate toml to 1.0.3
+ - fix(deps): update rust crate clap to 4.5.60
+ - fix(deps): update rust crate uuid to 1.21.0
+ - fix(cli): move tests module to end of release.rs
+
+## [0.6.5] - 2026-02-23
+
+Summary: Fixed[17]
+
+### Fixed
+
+ - fix(verify): include subkey IDs in GPG trust map
+ - fix(auth): warn when falling back to PAT
+ - fix: sync pcu version to 0.6.4 (matches crates.io)
+ - fix(git): use stored token for HTTPS push auth
+ - fix(pr): use git config identity in push error message
+ - fix(pr): include push identity in rejection error
+ - fix(git): log push URL and credential type
+ - fix(pr): detect push rejection via fetch-and-recheck
+ - fix: detect silent push rejection via branch-ahead check
+ - fix(deps): update rust crate toml to v1
+ - fix(deps): update rust crate tempfile to 3.25.0
+ - fix(deps): update rust crate toml to 0.9.12
+ - fix(deps): update rust crate reqwest to 0.13.2
+ - fix(deps): update rust crate regex to 1.12.3
+ - fix(deps): update rust crate env_logger to 0.11.9
+ - fix(deps): update rust crate clap to 4.5.58
+ - fix(deps): bump MSRV to 1.88 for time security fix
+
+## [0.6.4] - 2026-02-01
+
+Summary: Added[1], Changed[1], Fixed[16]
+
+### Added
+
+ - feat: add per-crate release workflow with independent versioning
+
+### Fixed
+
+ - fix(deps): update rust crate uuid to 1.20.0
+ - fix(deps): update rust crate gql_client to 1.1.0
+ - fix(deps): update rust crate clap to 4.5.56
+ - fix(deps): update rust crate tokio to 1.49.0
+ - fix(deps): update rust crate url to 2.5.8
+ - fix(deps): update rust crate toml to 0.9.11
+ - fix(deps): update rust crate thiserror to 2.0.18
+ - fix(deps): update rust crate serde_json to 1.0.149
+ - fix(deps): update rust crate clap to 4.5.54
+ - fix(deps): update rust crate chrono to 0.4.43
+ - fix(deps): update rust crate reqwest to 0.13.1
+ - fix: use correct authors list in label_next_pr filter
+ - fix: use NEW_VERSION env var in release hooks
+ - fix: reset pcu version to match crates.io
+ - fix: redirect error messages to stderr in release hooks
+ - fix: address SonarQube shell script code smells
+
+### Changed
+
+ - ♻️ refactor(client): streamline pull request title update
+
+## [0.6.3] - 2026-01-06
+
+Summary: Added[10], Changed[7], Chore[1], Documentation[2], Fixed[11], Testing[1]
+
+### Added
+
+ - ✨ feat: support read-only token for forked PR verification
+ - ✨ feat: update existing PR comments instead of creating duplicates
+ - ✨ feat: add PR comment reporting for signature verification
+ - ✅ feat: complete verify-signatures integration
+ - ✅ feat: add trust_fetcher module for GitHub API integration
+ - ✅ feat: add git commit extraction with signature info
+ - 🚀 feat: add verify-signatures subcommand scaffolding
+ - ✨ feat: add --from-merge flag to support PR log updates on main branch
+ - ✨ feat(linkedin): add linkedin share subcommand to pcu
+ - ✨ feat: implement commit message signoff with --no-signoff flag
+
+### Fixed
+
+ - fix(deps): update rust crate tempfile to 3.24.0
+ - fix(deps): update rust crate uuid to 1.19.0
+ - fix(deps): update rust crate toml to 0.9.10
+ - fix(deps): update rust crate serde_json to 1.0.147
+ - fix(deps): update rust crate reqwest to 0.12.28
+ - fix(deps): update rust crate log to 0.4.29
+ - fix(deps): update rust crate git2 to 0.20.3
+ - 🐛 fix: use octocrate issues API instead of gh CLI for PR comments
+ - 🐛 fix: import GPG keys into system keyring for git verification
+ - 🐛 fix: return error on verification failure for proper exit code
+ - 🐛 fix: handle commits without associated PRs gracefully in from-merge mode
+
+### Changed
+
+ - ♻️ refactor: reduce run_verify cognitive complexity from 19 to <15
+ - ♻️ refactor: reduce code duplication in PR comment generation
+ - ♻️ refactor: optimize trust_fetcher by passing mutable reference
+ - ♻️ refactor: reduce cognitive complexity in verify_commit
+ - ♻️ refactor: reduce cognitive complexity of run_pull_request
+ - ♻️ refactor(linkedin): factor helpers and integrate --linkedin-share into release flow
+ - ♻️ refactor(bsky): use config builder for settings overrides
+
+## [0.6.2] - 2025-11-28
+
+Summary: Chore[1], Fixed[4]
+
+### Fixed
+
+ - fix(deps): update rust crate tokio to 1.48.0
+ - fix(deps): update rust crate tempfile to 3.23.0
+ - fix(deps): update rust crate rstest to 0.26.1
+ - fix(deps): update rust crate clap to 4.5.53
+
+## [0.6.1] - 2025-10-28
+
+Summary: Added[1], Changed[1], Chore[2], Documentation[1], Fixed[15]
+
+### Added
+
+ - ✨ feat(cli): support multiple authors in label command
+
+### Fixed
+
+ - fix(deps): update rust crate regex to 1.12.2
+ - fix(deps): update rust crate toml to 0.9.8
+ - fix(deps): update rust crate thiserror to 2.0.17
+ - fix(deps): update rust crate serde to 1.0.228
+ - fix(deps): update rust crate owo-colors to 4.2.3
+ - fix(deps): update rust crate clap to 4.5.50
+ - fix(deps): update rust crate uuid to 1.18.1
+ - fix(deps): update rust crate url to 2.5.7
+ - fix(deps): update rust crate tracing-subscriber to 0.3.20
+ - fix(deps): update rust crate toml to 0.9.7
+ - fix(deps): update rust crate regex to 1.11.2
+ - fix(deps): update rust crate log to 0.4.28
+ - fix(deps): update rust crate clap to 4.5.48
+ - fix(deps): update rust crate chrono to 0.4.42
+ - fix(deps): update rust crate base62 to 2.2.3
+
+### Changed
+
+ - ♻️ refactor(git_ops): enhance PR filtering by authors
+
+## [0.6.0] - 
+
+Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[148], Security[1]
+
+### Added
+
+ - ✨ feat(cli): save settings to file upon successful build
+ - ✨ feat(error): add new PostError variant
+ - ✨ feat(cli): enhance site config path handling
+ - ✨ feat(cli): add www_src_root parameter to CmdDraft
+ - ✨ feat(cli): support multiple paths for CmdDraft
+ - ✨ feat(pcu): enable serde feature for url crate
+ - ✨ feat(logging): add logging filter for gen_bsky module
+ - ✨ feat(cli): add trace logging for key parameters in cmd_draft
+ - ✨ feat(cli): add site_config management in bsky draft command
+ - ✨ feat(error): add new error variant for front matter
+ - ✨ feat(pcu): add Cargo.toml for pcu crate
+
+### Fixed
+
+ - 🐛 fix(cli): correct configuration key for prlog setting
+ - 🐛 fix(git_ops): re-enable credential callback for git operations
+ - 🐛 fix(make_release): correct options variable name
+ - 🐛 fix(update_from_pr): correct changelog variable usage
+ - 🐛 fix(make_release): correct error handling in changelog parsing
+ - 🐛 fix(cli): correct default log file setting
+ - fix(deps): update rust crate tracing-subscriber to v0.3.20 [security]
+ - fix(deps): update rust crate toml to 0.9.5
+ - fix(deps): update rust crate tokio to 1.47.1
+ - fix(deps): update rust crate thiserror to 2.0.16
+ - fix(deps): update rust crate serde_json to 1.0.143
+ - fix(deps): update rust crate clap-verbosity-flag to 3.0.4
+ - fix(deps): update rust crate clap to 4.5.45
+ - fix(deps): update rust crate cargo_toml to 0.22.3
+ - 🐛 fix(cli): correct date handling in draft command
+ - 🐛 fix(cli): handle file read errors gracefully
+ - 🐛 fix(cmd_draft): add await for async bluesky post writing
+ - 🐛 fix(cli): correct path handling in cmd_draft
+ - 🐛 fix(cli): fix borrow issues in command execution
+ - fix(deps): update rust crate uuid to 1.17.0
+ - fix(deps): update rust crate toml to 0.9.2
+ - fix(deps): update rust crate tokio to 1.46.1
+ - fix(deps): update rust crate tempfile to 3.20.0
+ - fix(deps): update rust crate serde_json to 1.0.141
+ - fix(deps): update rust crate config to 0.15.13
+ - fix(deps): update rust crate clap to 4.5.41
+ - fix(deps): update rust crate url to 2.5.4
+ - fix(deps): update rust crate toml to 0.8.23
+ - fix(deps): update rust crate owo-colors to 4.2.2
+ - fix(deps): update rust crate gql_client to 1.0.8
+ - fix(deps): update rust crate git2 to 0.20.2
+ - fix(deps): update rust crate color-eyre to 0.6.5
+ - fix(deps): update rust crate clap-verbosity-flag to 3.0.3
+ - fix(deps): update rust crate clap to 4.5.40
+ - fix(deps): update rust crate toml to 0.8.22
+ - fix(deps): update rust crate chrono to 0.4.41
+ - fix(deps): update rust crate clap to 4.5.37
+ - fix(deps): update rust crate tokio to 1.44.2
+ - fix(deps): update rust crate clap to 4.5.36
+ - fix(deps): update rust crate env_logger to 0.11.8
+ - fix(deps): update rust crate clap to 4.5.35
+ - fix(deps): update rust crate log to 0.4.27
+ - fix(deps): update rust crate log to 0.4.27
+ - fix(deps): update rust crate clap to 4.5.34
+ - fix(deps): update rust crate tempfile to 3.19.1
+ - fix(deps): update rust crate git2 to 0.20.1
+ - fix(deps): update rust crate uuid to 1.16.0
+ - fix(deps): update rust crate tokio to 1.44.1
+ - fix(deps): update rust crate cargo_toml to 0.22.1
+ - fix(deps): update rust crate serde to 1.0.219
+ - fix(deps): update rust crate config to 0.15.11
+ - fix(deps): update rust crate clap to 4.5.32
+ - fix(deps): update rust crate env_logger to 0.11.7
+ - fix(deps): update rust crate rstest to 0.25.0
+ - fix(deps): update rust crate thiserror to 2.0.12
+ - fix(deps): update rust crate config to 0.15.9
+ - fix(deps): update rust crate uuid to 1.15.1
+ - fix(deps): update rust crate owo-colors to 4.2.0
+ - fix(deps): update rust crate clap to 4.5.31
+ - fix(deps): update rust crate chrono to 0.4.40
+ - fix(deps): update rust crate uuid to 1.14.0
+ - fix(deps): update rust crate log to 0.4.26
+ - fix(deps): update rust crate octocrate to 2.2.0
+ - fix(deps): update rust crate serde to 1.0.218
+ - fix(deps): update rust crate clap to 4.5.30
+ - fix(deps): update rust crate config to 0.15.8
+ - fix(deps): update rust crate clap to 4.5.29
+ - fix(deps): update rust crate uuid to 1.13.1
+ - fix(deps): update rust crate clap to 4.5.28
+ - fix(deps): update rust crate uuid to 1.12.1
+ - fix(deps): update rust crate config to 0.15.7
+ - fix(deps): update rust crate tokio to 1.43.0
+ - fix(deps): update rust crate git2 to 0.20.0
+ - fix(deps): update rust crate clap to 4.5.27
+ - fix(deps): update rust crate thiserror to 2.0.11
+ - fix(deps): update rust crate log to 0.4.25
+ - fix(deps): update rust crate config to 0.15.6
+ - fix(deps): update rust crate clap to 4.5.26
+ - fix(deps): update rust crate rstest to 0.24.0
+ - fix(deps): update rust crate tokio to 1.42.0
+ - fix(deps): update rust crate serde to 1.0.217
+ - fix(deps): update rust crate thiserror to 2.0.9
+ - fix(deps): update rust crate env_logger to 0.11.6
+ - fix(deps): update rust crate config to 0.15.4
+ - fix(deps): update rust crate config to 0.15.3
+ - fix(deps): update rust crate thiserror to 2.0.8
+ - fix(deps): update rust crate clap-verbosity-flag to 3.0.2
+ - fix(deps): update rust crate thiserror to 2.0.6
+ - fix(deps): update rust crate serde to 1.0.216
+ - fix(deps): update rust crate chrono to 0.4.39
+ - fix(deps): update rust crate cargo_toml to 0.21.0
+ - fix(deps): update rust crate tracing-subscriber to 0.3.19
+ - fix(deps): update rust crate thiserror to 2.0.4
+ - fix(deps): update rust crate clap to 4.5.23
+ - fix(deps): update rust crate tracing to 0.1.41
+ - fix(deps): update rust crate clap-verbosity-flag to 3.0.1
+ - fix(deps): update rust crate clap-verbosity-flag to v3
+ - fix(deps): update rust crate clap-verbosity-flag to 2.2.3
+ - fix(deps): update rust crate clap to 4.5.21
+ - fix(deps): update rust crate thiserror to 2.0.3
+ - fix(deps): update rust crate serde to 1.0.215
+ - fix(deps): update rust crate thiserror to 2.0.2
+ - fix(deps): update rust crate thiserror to 2.0.1
+ - fix(deps): update rust crate tokio to 1.41.1
+ - fix(deps): update rust crate thiserror to v2
+ - fix(deps): update rust crate thiserror to 1.0.68
+ - fix(deps): update rust crate url to 2.5.3
+ - fix(deps): update rust crate thiserror to 1.0.67
+ - fix(deps): update rust crate thiserror to 1.0.66
+ - fix(deps): update rust crate serde to 1.0.214
+ - fix(deps): update rust crate regex to 1.11.1
+ - fix(deps): update rust crate config to 0.14.1
+ - fix(deps): update rust crate thiserror to 1.0.65
+ - fix(deps): update rust crate serde to 1.0.213
+ - fix(deps): update rust crate tokio to 1.41.0
+ - fix(deps): update rust crate serde to 1.0.211
+ - fix(deps): update rust crate uuid to 1.11.0
+ - fix(deps): update rust crate clap to 4.5.20
+ - fix(deps): update rust crate clap to 4.5.19
+ - fix(deps): update rust crate regex to 1.11.0
+ - fix(deps): update rust crate rstest to 0.23.0
+ - fix(deps): update rust crate clap-verbosity-flag to 2.2.2
+ - fix(deps): update rust crate clap to 4.5.18
+ - fix(deps): update rust crate thiserror to 1.0.64
+ - fix(deps): update rust crate tokio to 1.40.0
+ - fix(deps): update rust crate serde to 1.0.210
+ - fix(deps): update rust crate clap to 4.5.17
+ - fix(deps): update rust crate regex to 1.10.6
+ - fix(deps): update rust crate env_logger to 0.11.5
+ - fix(deps): update rust crate clap-verbosity-flag to 2.2.1
+ - fix(deps): update rust crate clap to 4.5.15
+ - fix(deps): update rust crate rstest to 0.22.0
+ - fix(deps): update rust crate tokio to 1.39.0
+ - fix(deps): update rust crate tokio to 1.38.1
+ - fix(deps): update rust crate thiserror to 1.0.63
+ - fix(deps): update rust crate clap to 4.5.9
+ - fix(deps): update rust crate keep-a-changelog to 0.1.4
+ - fix(deps): update rust crate uuid to 1.10.0
+ - fix(deps): update rust crate uuid to 1.9.1
+ - fix(deps): update rust crate url to 2.5.2
+ - fix(deps): update rust crate regex to 1.10.5
+ - fix(deps): update rust crate tokio to 1.38.0
+ - fix(deps): update rust crate clap to 4.5.8
+ - fix(deps): update rust crate log to 0.4.22
+ - fix(deps): update rust crate clap to v4.5.8
+ - fix(deps): update rust crate log to v0.4.22
+ - fix(deps): update rust crate url to v2.5.2
+ - fix(deps): update rust crate git2 to 0.19.0
+
+### Changed
+
+ - ♻️ refactor(prlog): rename changelog to prlog
+ - ♻️ refactor(cli): rename update_changelog to update_prlog
+ - ♻️ refactor(update_from_pr): rename changelog to prlog
+ - ♻️ refactor(pr_title): rename changelog to prlog
+ - ♻️ refactor(make_release): rename changelog to prlog
+ - ♻️ refactor(cli): rename changelog to prlog in release process
+ - ♻️ refactor(client): rename changelog to prlog
+ - ♻️ refactor(cli): rename changelog function to prlog
+ - ♻️ refactor(cli): remove unnecessary file write operation
+ - ♻️ refactor(git_ops): improve reference handling in GitOps
+ - ♻️ refactor(update_from_pr): rename changelog to prlog
+ - ♻️ refactor(client): rename changelog fields to prlog
+ - ♻️ refactor(cli): add trace log for initial settings
+ - ♻️ refactor(tests): rename changelog files to prlog
+ - ♻️ refactor(client)!: rename changelog to prlog
+ - ♻️ refactor(cmd_draft): streamline post writing logic
+ - ♻️ refactor(ops): simplify git_ops module import
+ - ♻️ refactor(git_ops): restructure import statements
+ - ♻️ refactor(graphql): reorder imports for clarity
+ - ♻️ refactor(graphql): reorder imports for clarity
+ - ♻️ refactor(graphql): reorder imports for clarity
+ - ♻️ refactor(cli): reorder imports for better organization
+ - ♻️ refactor(lib): simplify import statements
+ - ♻️ refactor(client): reorder imports for clarity
+ - ♻️ refactor(cli): reorder imports for clarity
+ - ♻️ refactor(cmd_post): streamline post and delete process
+ - ♻️ refactor(error): remove unused error variants
+ - ♻️ refactor(cli): update post command dependencies
+ - ♻️ refactor(post): rename and restructure post module
+ - ♻️ refactor(cli): enhance draft command flexibility
+ - ♻️ refactor(cli): update site configuration initialization
+ - ♻️ refactor(poster): simplify error handling in post creation
+ - ♻️ refactor(site_config): use Url type for base_url
+ - ♻️ refactor(error): remove unused FrontMatterError variant
+ - ♻️ refactor(cli): update method for path handling in draft command
+ - ♻️ refactor(cli): enhance draft processing and configuration
+ - ♻️ refactor(error): update error enum definitions
+ - ♻️ refactor(draft): simplify bluesky record writing process
+ - ♻️ refactor(draft): improve post processing logic
+ - ♻️ refactor(draft): update front matter module import
+
+### Security
+
+ - chore(deps): update rust crate rstest to 0.21.0
+
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.30...HEAD
+[0.6.30]: https://github.com/jerus-org/pcu/compare/v0.6.29...v0.6.30
+[0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
+[0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28
+[0.6.27]: https://github.com/jerus-org/pcu/compare/v0.6.26...v0.6.27
+[0.6.26]: https://github.com/jerus-org/pcu/compare/v0.6.25...v0.6.26
+[0.6.25]: https://github.com/jerus-org/pcu/compare/v0.6.24...v0.6.25
+[0.6.24]: https://github.com/jerus-org/pcu/compare/v0.6.23...v0.6.24
+[0.6.23]: https://github.com/jerus-org/pcu/compare/v0.6.22...v0.6.23
+[0.6.22]: https://github.com/jerus-org/pcu/compare/v0.6.21...v0.6.22
+[0.6.21]: https://github.com/jerus-org/pcu/compare/v0.6.20...v0.6.21
+[0.6.20]: https://github.com/jerus-org/pcu/compare/v0.6.19...v0.6.20
+[0.6.19]: https://github.com/jerus-org/pcu/compare/v0.6.18...v0.6.19
+[0.6.18]: https://github.com/jerus-org/pcu/compare/v0.6.17...v0.6.18
+[0.6.17]: https://github.com/jerus-org/pcu/compare/v0.6.16...v0.6.17
+[0.6.16]: https://github.com/jerus-org/pcu/compare/v0.6.15...v0.6.16
+[0.6.15]: https://github.com/jerus-org/pcu/compare/v0.6.14...v0.6.15
+[0.6.14]: https://github.com/jerus-org/pcu/compare/v0.6.13...v0.6.14
+[0.6.13]: https://github.com/jerus-org/pcu/compare/v0.6.12...v0.6.13
+[0.6.12]: https://github.com/jerus-org/pcu/compare/v0.6.11...v0.6.12
+[0.6.11]: https://github.com/jerus-org/pcu/compare/v0.6.10...v0.6.11
+[0.6.10]: https://github.com/jerus-org/pcu/compare/v0.6.9...v0.6.10
+[0.6.9]: https://github.com/jerus-org/pcu/compare/v0.6.8...v0.6.9
+[0.6.8]: https://github.com/jerus-org/pcu/compare/v0.6.7...v0.6.8
+[0.6.7]: https://github.com/jerus-org/pcu/compare/v0.6.6...v0.6.7
+[0.6.6]: https://github.com/jerus-org/pcu/compare/v0.6.5...v0.6.6
+[0.6.5]: https://github.com/jerus-org/pcu/compare/v0.6.4...v0.6.5
+[0.6.4]: https://github.com/jerus-org/pcu/compare/v0.6.3...v0.6.4
+[0.6.3]: https://github.com/jerus-org/pcu/compare/v0.6.2...v0.6.3
+[0.6.2]: https://github.com/jerus-org/pcu/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/jerus-org/pcu/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/jerus-org/pcu/releases/tag/v0.6.0
 
