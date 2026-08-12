@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - gate bsky and linkedin behind features(pr [#1035])
 
+### Fixed
+
+- deps: update dependency toolkit to v7(pr [#1043])
+
 ## [0.6.30] - 2026-07-31
 
 ### Added
@@ -2520,6 +2524,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1034]: https://github.com/jerus-org/pcu/pull/1034
 [#1033]: https://github.com/jerus-org/pcu/pull/1033
 [#1035]: https://github.com/jerus-org/pcu/pull/1035
+[#1043]: https://github.com/jerus-org/pcu/pull/1043
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.30...HEAD
 [0.6.30]: https://github.com/jerus-org/pcu/compare/v0.6.29...v0.6.30
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
