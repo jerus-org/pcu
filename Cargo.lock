@@ -2475,9 +2475,9 @@ dependencies = [
 
 [[package]]
 name = "kdeets"
-version = "0.1.31"
+version = "0.1.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "635c4e36ddcbc7ebbbe1e84b862daf25f1a00d7dc5b5bd0a5ec81bb37d58adc6"
+checksum = "b4d9a673d97bb1a695d5b8fb49b1bcd4c9296385837ee9890f43964899312125"
 dependencies = [
  "clap",
  "clap-verbosity",
