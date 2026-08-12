@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- gate bsky and linkedin behind features(pr [#1035])
+
 ## [0.6.30] - 2026-07-31
 
 ### Added
@@ -2513,6 +2519,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1032]: https://github.com/jerus-org/pcu/pull/1032
 [#1034]: https://github.com/jerus-org/pcu/pull/1034
 [#1033]: https://github.com/jerus-org/pcu/pull/1033
+[#1035]: https://github.com/jerus-org/pcu/pull/1035
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.30...HEAD
 [0.6.30]: https://github.com/jerus-org/pcu/compare/v0.6.29...v0.6.30
 [0.6.29]: https://github.com/jerus-org/pcu/compare/v0.6.28...v0.6.29
 [0.6.28]: https://github.com/jerus-org/pcu/compare/v0.6.27...v0.6.28

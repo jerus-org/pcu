@@ -1,9 +1,11 @@
+#[cfg(feature = "bsky")]
 mod bsky;
 mod checkout;
 mod comment_pr;
 mod commit;
 mod create_issue;
 mod label;
+#[cfg(feature = "linkedin")]
 mod linkedin;
 mod pull_request;
 mod push;
@@ -13,6 +15,7 @@ mod verify_signatures;
 
 use std::{env, fmt::Display, fs};
 
+#[cfg(feature = "bsky")]
 use bsky::Bsky;
 use checkout::Checkout;
 use clap::{Parser, Subcommand};
@@ -22,6 +25,7 @@ use commit::Commit;
 use config::Config;
 use create_issue::CreateIssue;
 use label::Label;
+#[cfg(feature = "linkedin")]
 use linkedin::Linkedin;
 use pull_request::Pr;
 use push::Push;
@@ -42,15 +46,23 @@ pub enum CIExit {
     Released,
     Label(String),
     NoLabel,
+    #[cfg(feature = "bsky")]
     DraftedForBluesky,
+    #[cfg(feature = "bsky")]
     PostedToBluesky,
     NoFilesToProcess,
     NothingToPush,
+    #[cfg(feature = "linkedin")]
     SharedToLinkedIn,
+    #[cfg(feature = "linkedin")]
     NoContentForLinkedIn,
+    #[cfg(feature = "bsky")]
     NoBlogPostsForBluesky,
+    #[cfg(feature = "linkedin")]
     DraftedForLinkedIn,
+    #[cfg(feature = "linkedin")]
     PostedToLinkedIn,
+    #[cfg(feature = "linkedin")]
     NoBlogPostsForLinkedIn,
     VerificationPassed,
     SwitchedBranch(String),
@@ -93,8 +105,10 @@ In default use applies the `rebase` label to the pull request with
 the lowest number submitted by the `renovate` or `app/renovate` user")]
     Label(Label),
     /// Post summaries and link to new or changed blog posts to bluesky
+    #[cfg(feature = "bsky")]
     Bsky(Bsky),
     /// Share release/news posts to LinkedIn
+    #[cfg(feature = "linkedin")]
     Linkedin(Linkedin),
     /// Verify commit signatures to prevent identity impersonation
     VerifySignatures(VerifySignatures),
@@ -116,7 +130,9 @@ impl Display for Commands {
             Commands::Commit(_) => write!(f, "commit"),
             Commands::Push(_) => write!(f, "push"),
             Commands::Label(_) => write!(f, "label"),
+            #[cfg(feature = "bsky")]
             Commands::Bsky(_) => write!(f, "bluesky"),
+            #[cfg(feature = "linkedin")]
             Commands::Linkedin(_) => write!(f, "linkedin"),
             Commands::VerifySignatures(_) => write!(f, "verify-signatures"),
             Commands::Checkout(_) => write!(f, "checkout"),
@@ -175,10 +191,12 @@ impl Commands {
             Commands::Label(_) => settings
                 .set_override("commit_message", "chore: update prlog for release")?
                 .set_override("command", "label")?,
+            #[cfg(feature = "bsky")]
             Commands::Bsky(bsky) => settings
                 .set_override("commit_message", "chore: add Bluesky posts to repository")?
                 .set_override("store", bsky.store.clone())?
                 .set_override("command", "bsky")?,
+            #[cfg(feature = "linkedin")]
             Commands::Linkedin(_) => settings
                 .set_override("commit_message", "chore: announce release on LinkedIn")?
                 .set_override("command", "linkedin")?,
@@ -191,35 +209,18 @@ impl Commands {
             Commands::CommentPr(_) => settings.set_override("command", "comment-pr")?,
         };
 
-        settings = if let Commands::Bsky(bsky) = self {
-            if let Some(_owner) = &bsky.owner {
-                settings.set_override("username", "OWNER")?
-            } else {
-                settings
+        #[cfg(feature = "bsky")]
+        if let Commands::Bsky(bsky) = self {
+            if bsky.owner.is_some() {
+                settings = settings.set_override("username", "OWNER")?;
             }
-        } else {
-            settings
-        };
-
-        settings = if let Commands::Bsky(bsky) = self {
-            if let Some(_repo) = &bsky.repo {
-                settings.set_override("reponame", "REPO")?
-            } else {
-                settings
+            if bsky.repo.is_some() {
+                settings = settings.set_override("reponame", "REPO")?;
             }
-        } else {
-            settings
-        };
-
-        settings = if let Commands::Bsky(bsky) = self {
-            if let Some(_branch) = &bsky.branch {
-                settings.set_override("branch", "BRANCH")?
-            } else {
-                settings
+            if bsky.branch.is_some() {
+                settings = settings.set_override("branch", "BRANCH")?;
             }
-        } else {
-            settings
-        };
+        }
 
         settings = if let Ok(pat) = env::var(GITHUB_PAT) {
             settings.set_override("pat", pat.to_string())?
@@ -495,5 +496,51 @@ mod tests {
             !sign_config.is_signoff_enabled(),
             "signoff should be disabled"
         );
+    }
+
+    #[cfg(feature = "bsky")]
+    #[test]
+    fn bsky_without_owner_repo_branch_keeps_defaults() {
+        let cmd = Cli::try_parse_from(["pcu", "bsky", "draft"])
+            .unwrap()
+            .command;
+        let settings = cmd.get_settings().unwrap();
+        assert_eq!(
+            settings.get::<String>("username").unwrap(),
+            "CIRCLE_PROJECT_USERNAME",
+            "no --owner given: username should stay the default env-var name"
+        );
+        assert_eq!(
+            settings.get::<String>("reponame").unwrap(),
+            "CIRCLE_PROJECT_REPONAME",
+            "no --repo given: reponame should stay the default env-var name"
+        );
+        assert_eq!(
+            settings.get::<String>("branch").unwrap(),
+            "CIRCLE_BRANCH",
+            "no --branch given: branch should stay the default env-var name"
+        );
+    }
+
+    #[cfg(feature = "bsky")]
+    #[test]
+    fn bsky_with_owner_repo_branch_overrides_settings() {
+        let cmd = Cli::try_parse_from([
+            "pcu",
+            "bsky",
+            "--owner",
+            "acme",
+            "--repo",
+            "widgets",
+            "--branch",
+            "feature-x",
+            "draft",
+        ])
+        .unwrap()
+        .command;
+        let settings = cmd.get_settings().unwrap();
+        assert_eq!(settings.get::<String>("username").unwrap(), "OWNER");
+        assert_eq!(settings.get::<String>("reponame").unwrap(), "REPO");
+        assert_eq!(settings.get::<String>("branch").unwrap(), "BRANCH");
     }
 }

@@ -21,16 +21,15 @@ categories = ["development-tools::build-utils", "command-line-utilities"]
 [dependencies]
 base64.workspace = true
 base62.workspace = true
-bsky-sdk.workspace = true
 cargo_toml.workspace = true
-chrono.workspace = true
+chrono = { workspace = true, features = ["serde"] }
 clap.workspace = true
 clap-verbosity-flag.workspace = true
 color-eyre.workspace = true
 config.workspace = true
 env_logger.workspace = true
-gen-bsky.workspace = true
-gen-linkedin.workspace = true
+gen-bsky = { workspace = true, optional = true }
+gen-linkedin = { workspace = true, optional = true }
 git2.workspace = true
 git2_credentials.workspace = true
 gql_client.workspace = true
@@ -58,7 +57,7 @@ unicode-segmentation.workspace = true
 url = { features = ["serde"], workspace = true }
 
 [features]
-default = ["attest"]
+default = ["attest", "bsky", "linkedin"]
 # SLSA v0.2 provenance attestation, signed via Sigstore keyless (OIDC -> Fulcio
 # -> Rekor). Carries `openidconnect` and `sigstore`, and through them `rsa`,
 # which has an unfixable advisory (RUSTSEC-2023-0071). Consumers that use pcu
@@ -66,6 +65,14 @@ default = ["attest"]
 # keep all three out of their dependency graph; the pcu binary keeps attestation
 # on by default, so nothing changes for it or for `cargo install pcu`.
 attest = ["dep:openidconnect", "dep:sigstore", "dep:sigstore_protobuf_specs"]
+# Bluesky posting (`pcu bsky ...`). Carries gen-bsky -> bsky-sdk -> atrium-api,
+# and through them `lru` 0.16.4, which has an unfixable advisory
+# (RUSTSEC-2026-0253). Consumers that only need git/GitHub operations can take
+# `default-features = false` and keep it out of their graph; the pcu binary
+# keeps it on by default.
+bsky = ["dep:gen-bsky"]
+# LinkedIn posting/sharing (`pcu linkedin ...`, `pcu release --linkedin-share`).
+linkedin = ["dep:gen-linkedin"]
 
 [dev-dependencies]
 rstest.workspace = true
