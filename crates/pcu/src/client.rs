@@ -505,10 +505,7 @@ impl Client {
             )));
         }
 
-        let release_ref = self
-            .find_release_for_tag(tag)
-            .await?
-            .ok_or_else(|| Error::GitError(format!("GitHub release for tag '{tag}' not found")))?;
+        let release_ref = self.require_release_for_tag(tag).await?;
 
         // Assets are frozen at publication, so neither the upload nor the
         // delete-then-replace below can succeed. Refusing here names the cause
@@ -521,23 +518,16 @@ impl Client {
             ));
         }
 
-        let release = self
-            .github_rest
-            .repos
-            .get_release(&self.owner, &self.repo, release_ref.id)
-            .send()
-            .await?;
-
         // Delete-then-replace: if an asset of the same name already exists on
         // the release (e.g. from a previous, partially-completed run), GitHub
         // rejects a fresh upload with HTTP 422. Remove it first so the upload
         // is idempotent across retries. On a published immutable release the
         // deletion is refused too, which is why the error is translated rather
         // than surfaced raw.
-        if let Some(asset_id) = find_existing_asset_id(
-            release.assets.iter().map(|a| (a.name.as_str(), a.id)),
-            asset_name,
-        ) {
+        if let Some(asset_id) = self
+            .find_asset_in_release(release_ref.id, asset_name)
+            .await?
+        {
             log::info!("Replacing existing asset '{asset_name}' (id={asset_id})");
             let del_token = PersonalAccessToken::new(self.github_token.clone());
             let del_config = APIConfig::with_token(del_token).shared();
@@ -581,6 +571,94 @@ impl Client {
 
         log::info!("Successfully uploaded {asset_name}");
         Ok(())
+    }
+
+    /// Download a named asset from an existing GitHub release, returning its
+    /// raw bytes.
+    ///
+    /// Looks up the release by `tag` (draft-aware, same as
+    /// `upload_release_asset`), finds the asset by name in the release's
+    /// asset list, then fetches the raw bytes.
+    ///
+    /// octocrate's typed `send()` always deserializes the response as JSON,
+    /// so it has no path for raw binary content — the byte fetch goes
+    /// through a bare `reqwest` GET against GitHub's asset API endpoint
+    /// instead, with `Accept: application/octet-stream` and the same bearer
+    /// token used elsewhere. This works uniformly for public and private
+    /// repos, unlike `asset.browser_download_url`, which only works
+    /// unauthenticated and only for public repos.
+    ///
+    /// Immutability does not apply here: it only blocks writes to a
+    /// release's assets, and a published/immutable release is the steady
+    /// state this reads from.
+    pub async fn download_release_asset(
+        &self,
+        tag: &str,
+        asset_name: &str,
+    ) -> Result<Vec<u8>, Error> {
+        let release_ref = self.require_release_for_tag(tag).await?;
+
+        let asset_id = self
+            .find_asset_in_release(release_ref.id, asset_name)
+            .await?
+            .ok_or_else(|| asset_not_found_error(asset_name, tag))?;
+
+        let url = asset_download_url(&self.owner, &self.repo, asset_id);
+
+        let response = reqwest::Client::new()
+            .get(&url)
+            .header("Accept", "application/octet-stream")
+            .header("Authorization", format!("Bearer {}", self.github_token))
+            .header("User-Agent", "pcu")
+            .send()
+            .await
+            .map_err(|e| {
+                Error::GitError(format!("failed to download asset '{asset_name}': {e}"))
+            })?;
+
+        check_download_response_status(response.status(), tag, asset_name)?;
+
+        let bytes = response.bytes().await.map_err(|e| {
+            Error::GitError(format!("failed to read body of asset '{asset_name}': {e}"))
+        })?;
+
+        log::info!("Downloaded {} bytes for asset '{asset_name}'", bytes.len());
+        Ok(bytes.to_vec())
+    }
+
+    /// Look up the release for `tag`, erroring if none exists.
+    ///
+    /// Shared by `upload_release_asset` and `download_release_asset` — both
+    /// need the release to already exist and give up identically when it
+    /// doesn't.
+    async fn require_release_for_tag(&self, tag: &str) -> Result<ReleaseRef, Error> {
+        self.find_release_for_tag(tag)
+            .await?
+            .ok_or_else(|| release_not_found_error(tag))
+    }
+
+    /// Fetch `release_id`'s current asset list and look up `asset_name` in
+    /// it, returning its id if present.
+    ///
+    /// Shared by `upload_release_asset` (to decide whether to
+    /// delete-then-replace) and `download_release_asset` (which requires the
+    /// asset to already exist).
+    async fn find_asset_in_release(
+        &self,
+        release_id: i64,
+        asset_name: &str,
+    ) -> Result<Option<i64>, Error> {
+        let release = self
+            .github_rest
+            .repos
+            .get_release(&self.owner, &self.repo, release_id)
+            .send()
+            .await?;
+
+        Ok(find_existing_asset_id(
+            release.assets.iter().map(|a| (a.name.as_str(), a.id)),
+            asset_name,
+        ))
     }
 
     /// Publish the release for `tag` when it is still a draft.
@@ -656,6 +734,46 @@ fn find_existing_asset_id<'a>(
         .into_iter()
         .find(|(n, _)| *n == name)
         .map(|(_, id)| id)
+}
+
+/// Build GitHub's REST asset-download URL for `asset_id`.
+///
+/// Deliberately not `asset.browser_download_url`: that field only works
+/// unauthenticated, and only for public repos. This endpoint accepts the
+/// same bearer token used for every other GitHub call and works uniformly
+/// for public and private repos.
+fn asset_download_url(owner: &str, repo: &str, asset_id: i64) -> String {
+    format!("https://api.github.com/repos/{owner}/{repo}/releases/assets/{asset_id}")
+}
+
+/// Build the error for "no release exists for this tag".
+/// Pure so the message is unit-testable without a network round trip.
+fn release_not_found_error(tag: &str) -> Error {
+    Error::GitError(format!("GitHub release for tag '{tag}' not found"))
+}
+
+/// Build the error for "this release has no asset by this name".
+/// Pure so the message is unit-testable without a network round trip.
+fn asset_not_found_error(asset_name: &str, tag: &str) -> Error {
+    Error::GitError(format!(
+        "no asset named '{asset_name}' found on release for tag '{tag}'"
+    ))
+}
+
+/// Translate a non-success HTTP status from the asset-download endpoint into
+/// an `Error`, or `Ok(())` if the status indicates success.
+/// Pure so the message is unit-testable without a real HTTP round trip.
+fn check_download_response_status(
+    status: reqwest::StatusCode,
+    tag: &str,
+    asset_name: &str,
+) -> Result<(), Error> {
+    if status.is_success() {
+        return Ok(());
+    }
+    Err(Error::GitError(format!(
+        "GitHub returned {status} downloading asset '{asset_name}' for tag '{tag}'"
+    )))
 }
 
 /// Attempts made before concluding no release exists for a tag.
@@ -847,6 +965,51 @@ mod tests {
             find_existing_asset_id(assets.iter().copied(), "absent"),
             None
         );
+    }
+
+    #[test]
+    fn asset_download_url_builds_the_rest_assets_endpoint() {
+        assert_eq!(
+            asset_download_url("jerus-org", "jci-audit", 999),
+            "https://api.github.com/repos/jerus-org/jci-audit/releases/assets/999"
+        );
+    }
+
+    #[test]
+    fn release_not_found_error_names_the_tag() {
+        let msg = release_not_found_error("pcu-v1.0.0").to_string();
+        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
+    }
+
+    #[test]
+    fn asset_not_found_error_names_the_asset_and_tag() {
+        let msg = asset_not_found_error("asset.json", "pcu-v1.0.0").to_string();
+        assert!(msg.contains("asset.json"), "unexpected: {msg}");
+        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
+    }
+
+    #[test]
+    fn check_download_response_status_ok_on_success() {
+        assert!(check_download_response_status(
+            reqwest::StatusCode::OK,
+            "pcu-v1.0.0",
+            "asset.json"
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn check_download_response_status_errors_on_failure() {
+        let msg = check_download_response_status(
+            reqwest::StatusCode::NOT_FOUND,
+            "pcu-v1.0.0",
+            "asset.json",
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(msg.contains("404"), "unexpected: {msg}");
+        assert!(msg.contains("asset.json"), "unexpected: {msg}");
+        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
     }
 
     #[tokio::test]
