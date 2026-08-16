@@ -1696,7 +1696,7 @@ dependencies = [
 
 [[package]]
 name = "gen-bsky"
-version = "0.1.34"
+version = "0.1.35"
 dependencies = [
  "base62",
  "bsky-sdk",
