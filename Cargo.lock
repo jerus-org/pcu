@@ -3312,7 +3312,7 @@ dependencies = [
 
 [[package]]
 name = "pcu"
-version = "0.6.31"
+version = "0.6.32"
 dependencies = [
  "base62",
  "base64 0.23.1",
