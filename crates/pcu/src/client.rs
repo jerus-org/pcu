@@ -576,27 +576,28 @@ impl Client {
     /// Download a named asset from an existing GitHub release, returning its
     /// raw bytes.
     ///
-    /// Looks up the release by `tag` (draft-aware, same as
-    /// `upload_release_asset`), finds the asset by name in the release's
-    /// asset list, then fetches the raw bytes.
+    /// Refuses a draft release unless `allow_draft` is `true` — a draft's
+    /// assets can still be replaced, so callers that need a finalised
+    /// artefact (e.g. an audit record) should read from a published release
+    /// by default and opt in explicitly if a draft is acceptable.
     ///
-    /// octocrate's typed `send()` always deserializes the response as JSON,
-    /// so it has no path for raw binary content — the byte fetch goes
-    /// through a bare `reqwest` GET against GitHub's asset API endpoint
-    /// instead, with `Accept: application/octet-stream` and the same bearer
-    /// token used elsewhere. This works uniformly for public and private
-    /// repos, unlike `asset.browser_download_url`, which only works
-    /// unauthenticated and only for public repos.
-    ///
-    /// Immutability does not apply here: it only blocks writes to a
-    /// release's assets, and a published/immutable release is the steady
-    /// state this reads from.
+    /// The GitHub API returns an object describing the asset — with a
+    /// download link — not the asset's bytes. octocrate's typed `send()`
+    /// only deserializes JSON, so it can't follow that link. This fetches
+    /// the bytes via a bare `reqwest` GET instead, with
+    /// `Accept: application/octet-stream` and the same bearer token used
+    /// elsewhere, which works for public and private repos (unlike
+    /// `asset.browser_download_url`, which is unauthenticated and
+    /// public-only).
     pub async fn download_release_asset(
         &self,
         tag: &str,
         asset_name: &str,
+        allow_draft: bool,
     ) -> Result<Vec<u8>, Error> {
         let release_ref = self.require_release_for_tag(tag).await?;
+
+        check_draft_allowed(release_ref.draft, allow_draft, tag)?;
 
         let asset_id = self
             .find_asset_in_release(release_ref.id, asset_name)
@@ -774,6 +775,18 @@ fn check_download_response_status(
     Err(Error::GitError(format!(
         "GitHub returned {status} downloading asset '{asset_name}' for tag '{tag}'"
     )))
+}
+
+/// Refuse a draft release unless the caller explicitly opted in via
+/// `allow_draft`. Pure so the message is unit-testable without a network
+/// round trip.
+fn check_draft_allowed(draft: bool, allow_draft: bool, tag: &str) -> Result<(), Error> {
+    if draft && !allow_draft {
+        return Err(Error::GitError(format!(
+            "release for tag '{tag}' is still a draft; pass allow_draft=true to download from it anyway"
+        )));
+    }
+    Ok(())
 }
 
 /// Attempts made before concluding no release exists for a tag.
@@ -1010,6 +1023,25 @@ mod tests {
         assert!(msg.contains("404"), "unexpected: {msg}");
         assert!(msg.contains("asset.json"), "unexpected: {msg}");
         assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
+    }
+
+    #[test]
+    fn check_draft_allowed_ok_when_not_draft() {
+        assert!(check_draft_allowed(false, false, "pcu-v1.0.0").is_ok());
+    }
+
+    #[test]
+    fn check_draft_allowed_ok_when_draft_and_allowed() {
+        assert!(check_draft_allowed(true, true, "pcu-v1.0.0").is_ok());
+    }
+
+    #[test]
+    fn check_draft_allowed_errors_when_draft_and_not_allowed() {
+        let msg = check_draft_allowed(true, false, "pcu-v1.0.0")
+            .unwrap_err()
+            .to_string();
+        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
+        assert!(msg.to_lowercase().contains("draft"), "unexpected: {msg}");
     }
 
     #[tokio::test]
