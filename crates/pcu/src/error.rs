@@ -66,6 +66,14 @@ pub enum Error {
     Git2(#[from] git2::Error),
     #[error("Git error: {0}")]
     GitError(String),
+    /// Transparent: `pcu_release_assets::Error`'s own variants already carry
+    /// enough context (not-found, still-a-draft, HTTP status), and this
+    /// crate's `require_release_for_tag`/`release_not_found_error` produce
+    /// the same "not found" wording for the upload path — an extra wrapper
+    /// prefix here would just make the two paths look inconsistent for the
+    /// same underlying condition.
+    #[error("{0}")]
+    ReleaseAssets(#[from] pcu_release_assets::Error),
     #[error("{0}")]
     MissingSigningScaffold(String),
     #[error("io error says: {0:?}")]

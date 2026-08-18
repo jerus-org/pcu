@@ -40,6 +40,7 @@ link-bridge.workspace = true
 log.workspace = true
 octocrate.workspace = true
 owo-colors.workspace = true
+pcu-release-assets.workspace = true
 regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
