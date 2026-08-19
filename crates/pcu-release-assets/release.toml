@@ -1,0 +1,7 @@
+pre-release-commit-message = "chore: Release pcu-release-assets v{{version}} [skip ci]"
+tag-message = "{{tag_name}}"
+tag-name = "pcu-release-assets-v{{version}}"
+pre-release-hook = ["./release-hook.sh"]
+pre-release-replacements = [
+    { file = "README.md", search = "pcu-release-assets = \"\\d+\\.\\d+\\.\\d+\"", replace = "pcu-release-assets = \"{{version}}\"", exactly = 1 },
+]

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsString, fmt::Debug};
+use std::{collections::HashMap, env, ffi::OsString, fmt::Debug, sync::Arc};
 
 pub(crate) mod graphql;
 mod pull_request;
@@ -9,7 +9,6 @@ use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
 use octocrate::{APIConfig, AppAuthorization, GitHubAPI, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
-use self::graphql::GraphQLGetReleases;
 use self::pull_request::PullRequest;
 use crate::{Error, PrTitle};
 
@@ -19,11 +18,15 @@ pub struct Client {
     #[allow(dead_code)]
     // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
-    pub(crate) github_rest: GitHubAPI,
-    pub(crate) github_graphql: gql_client::Client,
+    pub(crate) github_rest: Arc<GitHubAPI>,
+    pub(crate) github_graphql: Arc<gql_client::Client>,
     pub(crate) github_token: String,
     pub(crate) owner: String,
     pub(crate) repo: String,
+    /// Release-lookup/asset-download read path, in its own crate so a
+    /// consumer like jci-audit can depend on just that (jerus-org/pcu#1051).
+    /// Shares `github_rest`/`github_graphql` above via `Arc`.
+    release_assets: pcu_release_assets::ReleaseAssetClient,
     pub(crate) default_branch: String,
     pub(crate) branch: Option<String>,
     pull_request: Option<PullRequest>,
@@ -146,6 +149,16 @@ impl Client {
             tag_prefix: Some(prefix),
         };
 
+        let github_rest = Arc::new(github_rest);
+        let github_graphql = Arc::new(github_graphql);
+        let release_assets = pcu_release_assets::ReleaseAssetClient::from_shared(
+            owner.clone(),
+            repo.clone(),
+            github_token.clone(),
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
+
         Ok(Self {
             git_repo,
             github_rest,
@@ -155,6 +168,7 @@ impl Client {
             branch,
             owner,
             repo,
+            release_assets,
             pull_request,
             prlog,
             line_limit,
@@ -372,15 +386,15 @@ impl Client {
         // fail with an auth error, which is expected for a local-only client.
         let dummy_pat = PersonalAccessToken::new("");
         let dummy_config = APIConfig::with_token(dummy_pat).shared();
-        let github_rest = GitHubAPI::new(&dummy_config);
-        let github_graphql = gql_client::Client::new_with_headers(
+        let github_rest = Arc::new(GitHubAPI::new(&dummy_config));
+        let github_graphql = Arc::new(gql_client::Client::new_with_headers(
             END_POINT,
             HashMap::from([
                 ("X-Github-Next-Global-ID", "1"),
                 ("User-Agent", "pcu-local"),
                 ("Authorization", "Bearer local"),
             ]),
-        );
+        ));
 
         let prlog = OsString::from("PRLOG.md");
         let prlog_parse_options = ChangelogParseOptions {
@@ -389,6 +403,14 @@ impl Client {
             tag_prefix: Some("v".to_string()),
         };
 
+        let release_assets = pcu_release_assets::ReleaseAssetClient::from_shared(
+            owner.clone(),
+            repo.clone(),
+            "",
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
+
         Ok(Self {
             git_repo,
             github_rest,
@@ -396,6 +418,7 @@ impl Client {
             github_token: String::new(),
             owner,
             repo,
+            release_assets,
             default_branch: "main".to_string(),
             branch,
             pull_request: None,
@@ -417,66 +440,18 @@ impl Client {
     /// could coerce a 404 or a phantom response into "exists" and silently skip
     /// release creation, the failure that stranded gen-circleci-orb 0.0.53.
     ///
-    /// One GraphQL round trip gathers every candidate; see
-    /// [`GraphQLGetReleases`] for why both a by-tag lookup and a listing are
-    /// required, and why the listing is affordable in GraphQL but not in REST.
-    ///
     /// `Ok(None)` means no release exists for the tag — a legitimate answer when
     /// deciding whether to create one, and an error only at the call sites that
     /// require a release to already be there.
+    ///
+    /// Delegates to [`pcu_release_assets::ReleaseAssetClient`] — see
+    /// jerus-org/pcu#1051 for why the release lookup and asset fetch live in
+    /// their own crate.
     pub(crate) async fn find_release_for_tag(
         &self,
         tag: &str,
-    ) -> Result<Option<ReleaseRef>, Error> {
-        lookup_with_retry(
-            tag,
-            RELEASE_LOOKUP_ATTEMPTS,
-            RELEASE_LOOKUP_DELAY,
-            || async { self.probe_release_for_tag(tag).await },
-        )
-        .await
-    }
-
-    /// One pass of the lookup: fetch the candidates and pick between them.
-    ///
-    /// Retried by [`Self::find_release_for_tag`] because GitHub's API lags
-    /// briefly behind release creation. The retry wraps the whole query rather
-    /// than any half of it, so a draft costs no more attempts than a published
-    /// release — the draft path is the normal one under draft-first, and must
-    /// not spend the retry window, or fill the log with warnings, to reach it.
-    async fn probe_release_for_tag(&self, tag: &str) -> Result<Option<ReleaseRef>, Error> {
-        let candidates = self.get_release_candidates(tag).await?;
-
-        let Some(id) = find_release_id_by_tag(
-            candidates.iter().filter_map(|r| {
-                r.database_id
-                    .map(|id| (r.tag_name.as_str(), id, r.is_draft))
-            }),
-            tag,
-        ) else {
-            return Ok(None);
-        };
-
-        let chosen = candidates
-            .iter()
-            .find(|r| r.database_id == Some(id))
-            .ok_or_else(|| {
-                Error::GitError(format!(
-                    "release {id} for '{tag}' vanished from the candidates"
-                ))
-            })?;
-
-        log::info!(
-            "Found release {id} for tag '{tag}' (draft={}, immutable={})",
-            chosen.is_draft,
-            chosen.immutable
-        );
-
-        Ok(Some(ReleaseRef {
-            id,
-            draft: chosen.is_draft,
-            immutable: chosen.immutable,
-        }))
+    ) -> Result<Option<pcu_release_assets::ReleaseRef>, Error> {
+        Ok(self.release_assets.find_release_for_tag(tag).await?)
     }
 
     /// Upload a binary asset to an existing GitHub release.
@@ -581,58 +556,31 @@ impl Client {
     /// artefact (e.g. an audit record) should read from a published release
     /// by default and opt in explicitly if a draft is acceptable.
     ///
-    /// The GitHub API returns an object describing the asset — with a
-    /// download link — not the asset's bytes. octocrate's typed `send()`
-    /// only deserializes JSON, so it can't follow that link. This fetches
-    /// the bytes via a bare `reqwest` GET instead, with
-    /// `Accept: application/octet-stream` and the same bearer token used
-    /// elsewhere, which works for public and private repos (unlike
-    /// `asset.browser_download_url`, which is unauthenticated and
-    /// public-only).
+    /// Delegates to [`pcu_release_assets::ReleaseAssetClient`] (jerus-org/pcu#1051).
+    /// For a read-only, checkout-free, no-draft-access client see
+    /// [`pcu_release_assets::ReleaseAssetClient::download_release_asset`] directly.
     pub async fn download_release_asset(
         &self,
         tag: &str,
         asset_name: &str,
         allow_draft: bool,
     ) -> Result<Vec<u8>, Error> {
-        let release_ref = self.require_release_for_tag(tag).await?;
-
-        check_draft_allowed(release_ref.draft, allow_draft, tag)?;
-
-        let asset_id = self
-            .find_asset_in_release(release_ref.id, asset_name)
-            .await?
-            .ok_or_else(|| asset_not_found_error(asset_name, tag))?;
-
-        let url = asset_download_url(&self.owner, &self.repo, asset_id);
-
-        let response = reqwest::Client::new()
-            .get(&url)
-            .header("Accept", "application/octet-stream")
-            .header("Authorization", format!("Bearer {}", self.github_token))
-            .header("User-Agent", "pcu")
-            .send()
-            .await
-            .map_err(|e| {
-                Error::GitError(format!("failed to download asset '{asset_name}': {e}"))
-            })?;
-
-        check_download_response_status(response.status(), tag, asset_name)?;
-
-        let bytes = response.bytes().await.map_err(|e| {
-            Error::GitError(format!("failed to read body of asset '{asset_name}': {e}"))
-        })?;
-
-        log::info!("Downloaded {} bytes for asset '{asset_name}'", bytes.len());
-        Ok(bytes.to_vec())
+        Ok(self
+            .release_assets
+            .download_release_asset_allowing_draft(tag, asset_name, allow_draft)
+            .await?)
     }
 
     /// Look up the release for `tag`, erroring if none exists.
     ///
-    /// Shared by `upload_release_asset` and `download_release_asset` — both
-    /// need the release to already exist and give up identically when it
-    /// doesn't.
-    async fn require_release_for_tag(&self, tag: &str) -> Result<ReleaseRef, Error> {
+    /// Used by `upload_release_asset`, which needs the release to already
+    /// exist before it can attach to it. `download_release_asset` has its
+    /// own copy of this lookup inside `pcu_release_assets::ReleaseAssetClient`
+    /// (jerus-org/pcu#1051) — it no longer calls this method.
+    async fn require_release_for_tag(
+        &self,
+        tag: &str,
+    ) -> Result<pcu_release_assets::ReleaseRef, Error> {
         self.find_release_for_tag(tag)
             .await?
             .ok_or_else(|| release_not_found_error(tag))
@@ -641,25 +589,19 @@ impl Client {
     /// Fetch `release_id`'s current asset list and look up `asset_name` in
     /// it, returning its id if present.
     ///
-    /// Shared by `upload_release_asset` (to decide whether to
-    /// delete-then-replace) and `download_release_asset` (which requires the
-    /// asset to already exist).
+    /// Used by `upload_release_asset` to decide whether to
+    /// delete-then-replace. `download_release_asset` delegates straight to
+    /// `pcu_release_assets::ReleaseAssetClient`, which has its own copy of
+    /// this lookup — it no longer calls this method.
     async fn find_asset_in_release(
         &self,
         release_id: i64,
         asset_name: &str,
     ) -> Result<Option<i64>, Error> {
-        let release = self
-            .github_rest
-            .repos
-            .get_release(&self.owner, &self.repo, release_id)
-            .send()
-            .await?;
-
-        Ok(find_existing_asset_id(
-            release.assets.iter().map(|a| (a.name.as_str(), a.id)),
-            asset_name,
-        ))
+        Ok(self
+            .release_assets
+            .find_asset_in_release(release_id, asset_name)
+            .await?)
     }
 
     /// Publish the release for `tag` when it is still a draft.
@@ -724,120 +666,10 @@ fn parse_owner_repo_from_url(url: &str) -> Option<(String, String)> {
     Some((owner, repo))
 }
 
-/// Find the id of a release asset whose name matches `name`, if present.
-/// Pure helper so the match logic is unit-testable without constructing
-/// octocrate types.
-fn find_existing_asset_id<'a>(
-    assets: impl IntoIterator<Item = (&'a str, i64)>,
-    name: &str,
-) -> Option<i64> {
-    assets
-        .into_iter()
-        .find(|(n, _)| *n == name)
-        .map(|(_, id)| id)
-}
-
-/// Build GitHub's REST asset-download URL for `asset_id`.
-///
-/// Deliberately not `asset.browser_download_url`: that field only works
-/// unauthenticated, and only for public repos. This endpoint accepts the
-/// same bearer token used for every other GitHub call and works uniformly
-/// for public and private repos.
-fn asset_download_url(owner: &str, repo: &str, asset_id: i64) -> String {
-    format!("https://api.github.com/repos/{owner}/{repo}/releases/assets/{asset_id}")
-}
-
 /// Build the error for "no release exists for this tag".
 /// Pure so the message is unit-testable without a network round trip.
 fn release_not_found_error(tag: &str) -> Error {
     Error::GitError(format!("GitHub release for tag '{tag}' not found"))
-}
-
-/// Build the error for "this release has no asset by this name".
-/// Pure so the message is unit-testable without a network round trip.
-fn asset_not_found_error(asset_name: &str, tag: &str) -> Error {
-    Error::GitError(format!(
-        "no asset named '{asset_name}' found on release for tag '{tag}'"
-    ))
-}
-
-/// Translate a non-success HTTP status from the asset-download endpoint into
-/// an `Error`, or `Ok(())` if the status indicates success.
-/// Pure so the message is unit-testable without a real HTTP round trip.
-fn check_download_response_status(
-    status: reqwest::StatusCode,
-    tag: &str,
-    asset_name: &str,
-) -> Result<(), Error> {
-    if status.is_success() {
-        return Ok(());
-    }
-    Err(Error::GitError(format!(
-        "GitHub returned {status} downloading asset '{asset_name}' for tag '{tag}'"
-    )))
-}
-
-/// Refuse a draft release unless the caller explicitly opted in via
-/// `allow_draft`. Pure so the message is unit-testable without a network
-/// round trip.
-fn check_draft_allowed(draft: bool, allow_draft: bool, tag: &str) -> Result<(), Error> {
-    if draft && !allow_draft {
-        return Err(Error::GitError(format!(
-            "release for tag '{tag}' is still a draft; pass allow_draft=true to download from it anyway"
-        )));
-    }
-    Ok(())
-}
-
-/// Attempts made before concluding no release exists for a tag.
-const RELEASE_LOOKUP_ATTEMPTS: u32 = 5;
-/// Delay between release-lookup attempts, covering GitHub's
-/// eventual-consistency window after a release is created.
-const RELEASE_LOOKUP_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
-
-/// A release located for a tag, reduced to what the callers act on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct ReleaseRef {
-    /// REST id — asset upload is REST-only, so this is what it needs.
-    pub(crate) id: i64,
-    pub(crate) draft: bool,
-    /// GitHub has frozen this release's assets. Only ever true for a published
-    /// release; a draft is by definition still open.
-    pub(crate) immutable: bool,
-}
-
-/// Select the release id for `tag` from a listing, preferring a published
-/// release over a draft.
-///
-/// A tag can carry both. GitHub rejects a second *published* release for a tag
-/// but happily accepts multiple drafts, so a failed run leaves a draft behind
-/// that a later successful run does not replace — jerus-org/gen-circleci-orb
-/// carries an abandoned empty draft for `v0.0.41` alongside the published
-/// release created 37 minutes later.
-///
-/// The published release wins because it is the finished article: in a
-/// draft-first pipeline its existence means the run already completed, so the
-/// right response is to do nothing. Reusing the stale draft instead would upload
-/// assets into a release nobody can see, then attempt to publish a second
-/// release for a tag that already has one. With no published release, the first
-/// draft is reused — the retry case draft-first depends on.
-///
-/// Matching is exact: `v0.1.6` must not match inside `gen-changelog-v0.1.6`.
-fn find_release_id_by_tag<'a>(
-    releases: impl IntoIterator<Item = (&'a str, i64, bool)>,
-    tag: &str,
-) -> Option<i64> {
-    let mut draft_id = None;
-    for (tag_name, id, draft) in releases {
-        if tag_name != tag {
-            continue;
-        }
-        if !draft {
-            return Some(id);
-        }
-        draft_id.get_or_insert(id);
-    }
-    draft_id
 }
 
 /// Translate an asset-upload failure into an actionable error.
@@ -850,51 +682,6 @@ pub(crate) fn map_asset_upload_error(tag: &str, api_message: &str) -> Error {
         return Error::ImmutableRelease(tag.to_string(), api_message.to_string());
     }
     Error::GitError(api_message.to_string())
-}
-
-/// Retry `probe` until it finds something, distinguishing "not there" from
-/// "could not tell".
-///
-/// `Ok(None)` is a legitimate answer — it is how the creation path decides to
-/// create a release — so exhausting the attempts on `Ok(None)` returns
-/// `Ok(None)` rather than an error. An `Err`, by contrast, means the lookup was
-/// undetermined: it is retried, and if every attempt fails the last error is
-/// propagated. Coercing that case into "absent" is what let a release-creation
-/// step go green having created nothing, stranding gen-circleci-orb 0.0.53.
-async fn lookup_with_retry<F, Fut, T>(
-    tag: &str,
-    max_attempts: u32,
-    retry_delay: std::time::Duration,
-    mut probe: F,
-) -> Result<Option<T>, Error>
-where
-    F: FnMut() -> Fut,
-    Fut: std::future::Future<Output = Result<Option<T>, Error>>,
-{
-    let mut last_error = None;
-
-    for attempt in 1..=max_attempts {
-        match probe().await {
-            Ok(Some(found)) => return Ok(Some(found)),
-            Ok(None) => {
-                log::debug!("no release for '{tag}' yet (attempt {attempt}/{max_attempts})");
-            }
-            Err(e) => {
-                log::warn!(
-                    "release lookup for '{tag}' failed (attempt {attempt}/{max_attempts}): {e}"
-                );
-                last_error = Some(e);
-            }
-        }
-        if attempt < max_attempts {
-            tokio::time::sleep(retry_delay).await;
-        }
-    }
-
-    match last_error {
-        Some(e) => Err(e),
-        None => Ok(None),
-    }
 }
 
 #[cfg(test)]
@@ -964,228 +751,9 @@ mod tests {
     }
 
     #[test]
-    fn find_existing_asset_id_matches_by_name() {
-        let assets = [("tool_mcp-linux-x86_64", 11i64), ("tool.tar.gz.sig", 22i64)];
-        assert_eq!(
-            find_existing_asset_id(assets.iter().copied(), "tool.tar.gz.sig"),
-            Some(22)
-        );
-        assert_eq!(
-            find_existing_asset_id(assets.iter().copied(), "tool_mcp-linux-x86_64"),
-            Some(11)
-        );
-        assert_eq!(
-            find_existing_asset_id(assets.iter().copied(), "absent"),
-            None
-        );
-    }
-
-    #[test]
-    fn asset_download_url_builds_the_rest_assets_endpoint() {
-        assert_eq!(
-            asset_download_url("jerus-org", "jci-audit", 999),
-            "https://api.github.com/repos/jerus-org/jci-audit/releases/assets/999"
-        );
-    }
-
-    #[test]
     fn release_not_found_error_names_the_tag() {
         let msg = release_not_found_error("pcu-v1.0.0").to_string();
         assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
-    }
-
-    #[test]
-    fn asset_not_found_error_names_the_asset_and_tag() {
-        let msg = asset_not_found_error("asset.json", "pcu-v1.0.0").to_string();
-        assert!(msg.contains("asset.json"), "unexpected: {msg}");
-        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
-    }
-
-    #[test]
-    fn check_download_response_status_ok_on_success() {
-        assert!(check_download_response_status(
-            reqwest::StatusCode::OK,
-            "pcu-v1.0.0",
-            "asset.json"
-        )
-        .is_ok());
-    }
-
-    #[test]
-    fn check_download_response_status_errors_on_failure() {
-        let msg = check_download_response_status(
-            reqwest::StatusCode::NOT_FOUND,
-            "pcu-v1.0.0",
-            "asset.json",
-        )
-        .unwrap_err()
-        .to_string();
-        assert!(msg.contains("404"), "unexpected: {msg}");
-        assert!(msg.contains("asset.json"), "unexpected: {msg}");
-        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
-    }
-
-    #[test]
-    fn check_draft_allowed_ok_when_not_draft() {
-        assert!(check_draft_allowed(false, false, "pcu-v1.0.0").is_ok());
-    }
-
-    #[test]
-    fn check_draft_allowed_ok_when_draft_and_allowed() {
-        assert!(check_draft_allowed(true, true, "pcu-v1.0.0").is_ok());
-    }
-
-    #[test]
-    fn check_draft_allowed_errors_when_draft_and_not_allowed() {
-        let msg = check_draft_allowed(true, false, "pcu-v1.0.0")
-            .unwrap_err()
-            .to_string();
-        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
-        assert!(msg.to_lowercase().contains("draft"), "unexpected: {msg}");
-    }
-
-    #[tokio::test]
-    async fn lookup_with_retry_returns_on_first_success() {
-        let attempts = std::sync::atomic::AtomicU32::new(0);
-        let found = lookup_with_retry("pcu-v1.0.0", 5, std::time::Duration::ZERO, || {
-            attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            async { Ok(Some(7i64)) }
-        })
-        .await
-        .unwrap();
-        assert_eq!(found, Some(7));
-        assert_eq!(attempts.load(std::sync::atomic::Ordering::SeqCst), 1);
-    }
-
-    #[tokio::test]
-    async fn lookup_with_retry_tolerates_api_lag() {
-        // A release is not visible immediately after creation.
-        let attempts = std::sync::atomic::AtomicU32::new(0);
-        let found = lookup_with_retry("pcu-v1.0.0", 5, std::time::Duration::ZERO, || {
-            let n = attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            async move {
-                if n >= 2 {
-                    Ok(Some(7i64))
-                } else {
-                    Ok(None)
-                }
-            }
-        })
-        .await
-        .unwrap();
-        assert_eq!(found, Some(7));
-        assert_eq!(attempts.load(std::sync::atomic::Ordering::SeqCst), 3);
-    }
-
-    #[tokio::test]
-    async fn lookup_with_retry_reports_absence_without_error() {
-        // "No release exists" is a legitimate answer — it is how the creation
-        // path decides to create one — so it must not surface as an error.
-        let found = lookup_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
-            Ok(None::<i64>)
-        })
-        .await
-        .unwrap();
-        assert_eq!(found, None);
-    }
-
-    #[tokio::test]
-    async fn lookup_with_retry_propagates_a_persistent_api_error() {
-        // An undetermined lookup must NOT be coerced into "absent": that is the
-        // silent skip that stranded gen-circleci-orb 0.0.53.
-        let result = lookup_with_retry("pcu-v1.0.0", 3, std::time::Duration::ZERO, || async {
-            Err::<Option<i64>, Error>(Error::GitError("api 500".into()))
-        })
-        .await;
-        assert!(result.is_err(), "a persistent API error must surface");
-    }
-
-    #[tokio::test]
-    async fn lookup_with_retry_recovers_from_a_transient_api_error() {
-        let attempts = std::sync::atomic::AtomicU32::new(0);
-        let found = lookup_with_retry("pcu-v1.0.0", 5, std::time::Duration::ZERO, || {
-            let n = attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            async move {
-                if n == 0 {
-                    Err(Error::GitError("api 500".into()))
-                } else {
-                    Ok(Some(7i64))
-                }
-            }
-        })
-        .await
-        .unwrap();
-        assert_eq!(found, Some(7));
-    }
-
-    #[test]
-    fn find_release_id_by_tag_matches_published_release() {
-        let releases = [("pcu-v0.6.28", 10i64, false), ("pcu-v0.6.29", 11, false)];
-        assert_eq!(
-            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
-            Some(11)
-        );
-    }
-
-    #[test]
-    fn find_release_id_by_tag_matches_draft_release() {
-        // The case get_release_by_tag cannot serve: drafts 404 on that endpoint,
-        // so the listing scan is the only way to find one.
-        let releases = [("pcu-v0.6.29", 11i64, true)];
-        assert_eq!(
-            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
-            Some(11)
-        );
-    }
-
-    #[test]
-    fn find_release_id_by_tag_prefers_published_over_draft() {
-        // A tag really can carry both: jerus-org/gen-circleci-orb v0.0.41 has an
-        // abandoned empty draft (13:06) alongside the published release that
-        // followed it (13:43). The published one is the finished article, and in
-        // a draft-first pipeline its existence means the run already completed —
-        // so it wins. Preferring the draft would upload assets into an invisible
-        // release and then try to publish a second release for the same tag.
-        let releases = [
-            ("pcu-v0.6.29", 10i64, true),
-            ("pcu-v0.6.29", 11, false),
-            ("pcu-v0.6.29", 12, true),
-        ];
-        assert_eq!(
-            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
-            Some(11)
-        );
-    }
-
-    #[test]
-    fn find_release_id_by_tag_falls_back_to_the_first_draft() {
-        // With no published release the draft is the one to reuse — the retry
-        // case a draft-first pipeline depends on.
-        let releases = [("pcu-v0.6.29", 11i64, true), ("pcu-v0.6.29", 12, true)];
-        assert_eq!(
-            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
-            Some(11)
-        );
-    }
-
-    #[test]
-    fn find_release_id_by_tag_returns_none_when_absent() {
-        let releases = [("pcu-v0.6.28", 10i64, false)];
-        assert_eq!(
-            find_release_id_by_tag(releases.iter().copied(), "pcu-v0.6.29"),
-            None
-        );
-    }
-
-    #[test]
-    fn find_release_id_by_tag_requires_an_exact_match() {
-        // The nextsv prefix-regex class of bug: 'v0.1.6' must not match inside
-        // 'gen-changelog-v0.1.6'.
-        let releases = [("gen-changelog-v0.1.6", 10i64, false)];
-        assert_eq!(
-            find_release_id_by_tag(releases.iter().copied(), "v0.1.6"),
-            None
-        );
     }
 
     #[test]

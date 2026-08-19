@@ -66,6 +66,10 @@ pub enum Error {
     Git2(#[from] git2::Error),
     #[error("Git error: {0}")]
     GitError(String),
+    /// Transparent — `pcu_release_assets::Error` already carries its own
+    /// context (not-found, still-a-draft, HTTP status).
+    #[error("{0}")]
+    ReleaseAssets(#[from] pcu_release_assets::Error),
     #[error("{0}")]
     MissingSigningScaffold(String),
     #[error("io error says: {0:?}")]

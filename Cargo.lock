@@ -3336,6 +3336,7 @@ dependencies = [
  "octocrate",
  "openidconnect",
  "owo-colors",
+ "pcu-release-assets",
  "regex",
  "reqwest 0.13.4",
  "rstest",
@@ -3353,6 +3354,20 @@ dependencies = [
  "unicode-segmentation",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "pcu-release-assets"
+version = "0.0.0"
+dependencies = [
+ "gql_client",
+ "log",
+ "octocrate",
+ "reqwest 0.13.4",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "tokio",
 ]
 
 [[package]]
