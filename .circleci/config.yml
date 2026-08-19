@@ -452,8 +452,9 @@ workflows:
             branches:
               only: /pull\/[0-9]+/
       # toolkit/required_builds runs `cargo build --all-features` against the
-      # full workspace, covering all three crates (gen-bsky, gen-linkedin, pcu)
-      # in a single job — no separate per-package matrix jobs needed.
+      # full workspace, covering every crate (gen-bsky, gen-linkedin,
+      # pcu-release-assets, pcu) in a single job — no separate per-package
+      # matrix jobs needed.
       #
       # No branch filter here (unlike required_builds/msrv_build/test_doc_build/
       # optional_builds below): "security with sonarcloud" runs on main and

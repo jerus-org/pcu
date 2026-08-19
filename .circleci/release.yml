@@ -11,6 +11,7 @@ version: 2.1
 #   approve-release   - manual gate: review calculated versions before approving
 #   release-gen-bsky  - release gen-bsky crate (sequential to avoid Cargo.lock conflicts)
 #   release-gen-linkedin - release gen-linkedin crate
+#   release-pcu-release-assets - release pcu-release-assets crate (a pcu dependency)
 #   release-pcu       - release pcu crate
 #   toolkit/release_prlog - create workspace v* release and update PRLOG.md
 #
@@ -28,6 +29,10 @@ parameters:
     type: string
     default: ""
     description: "Override gen-linkedin crate version (empty = nextsv auto-detect)"
+  pcu_release_assets_version:
+    type: string
+    default: ""
+    description: "Override pcu-release-assets crate version (empty = nextsv auto-detect)"
   pcu_version:
     type: string
     default: ""
@@ -74,10 +79,12 @@ workflows:
           crates: |
             gen-bsky:gen-bsky-v
             gen-linkedin:gen-linkedin-v
+            pcu-release-assets:pcu-release-assets-v
             pcu:pcu-v
           crate_version_overrides: |
             gen-bsky:<< pipeline.parameters.gen_bsky_version >>
             gen-linkedin:<< pipeline.parameters.gen_linkedin_version >>
+            pcu-release-assets:<< pipeline.parameters.pcu_release_assets_version >>
             pcu:<< pipeline.parameters.pcu_version >>
           workspace_version_override: << pipeline.parameters.workspace_version >>
 
@@ -110,9 +117,21 @@ workflows:
             - bot-check
             - pcu-app
 
+      # Must publish before release-pcu — pcu depends on it.
+      - toolkit/release_crate:
+          name: release-pcu-release-assets
+          requires: [release-gen-linkedin]
+          package: pcu-release-assets
+          crate_tag_prefix: pcu-release-assets-v
+          update_pcu: << pipeline.parameters.update_pcu >>
+          context:
+            - release
+            - bot-check
+            - pcu-app
+
       - toolkit/release_crate:
           name: release-pcu
-          requires: [release-gen-linkedin]
+          requires: [release-pcu-release-assets]
           package: pcu
           crate_tag_prefix: pcu-v
           build_binary: true
