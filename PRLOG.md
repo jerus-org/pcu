@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- add pcu-release-assets crate for read-only asset downloads(pr [#1052])
+
 ### Fixed
 
 - deps: lock file maintenance(pr [#1050])
@@ -2560,6 +2564,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1047]: https://github.com/jerus-org/pcu/pull/1047
 [#1049]: https://github.com/jerus-org/pcu/pull/1049
 [#1050]: https://github.com/jerus-org/pcu/pull/1050
+[#1052]: https://github.com/jerus-org/pcu/pull/1052
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.32...HEAD
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
 [0.6.31]: https://github.com/jerus-org/pcu/compare/v0.6.30...v0.6.31
