@@ -11,10 +11,7 @@ version: 2.1
 #   approve-release   - manual gate: review calculated versions before approving
 #   release-gen-bsky  - release gen-bsky crate (sequential to avoid Cargo.lock conflicts)
 #   release-gen-linkedin - release gen-linkedin crate
-#   release-pcu-release-assets - release pcu-release-assets crate; pcu depends
-#                        on it (jerus-org/pcu#1051/#1052) so it must publish
-#                        before release-pcu, or `cargo publish` for pcu fails
-#                        on the unpublished path dependency
+#   release-pcu-release-assets - release pcu-release-assets crate (a pcu dependency)
 #   release-pcu       - release pcu crate
 #   toolkit/release_prlog - create workspace v* release and update PRLOG.md
 #
@@ -120,9 +117,7 @@ workflows:
             - bot-check
             - pcu-app
 
-      # pcu depends on this crate (jerus-org/pcu#1051/#1052) — it must be
-      # published before release-pcu, or `cargo publish` for pcu fails on
-      # the unpublished path dependency.
+      # Must publish before release-pcu — pcu depends on it.
       - toolkit/release_crate:
           name: release-pcu-release-assets
           requires: [release-gen-linkedin]
