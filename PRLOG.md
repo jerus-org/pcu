@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: lock file maintenance(pr [#1050])
+- release: release pcu-release-assets before pcu(pr [#1053])
 
 ## [0.6.32] - 2026-08-16
 
@@ -2565,6 +2566,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1049]: https://github.com/jerus-org/pcu/pull/1049
 [#1050]: https://github.com/jerus-org/pcu/pull/1050
 [#1052]: https://github.com/jerus-org/pcu/pull/1052
+[#1053]: https://github.com/jerus-org/pcu/pull/1053
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.32...HEAD
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
 [0.6.31]: https://github.com/jerus-org/pcu/compare/v0.6.30...v0.6.31
