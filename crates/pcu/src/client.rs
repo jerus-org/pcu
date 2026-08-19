@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsString, fmt::Debug};
+use std::{collections::HashMap, env, ffi::OsString, fmt::Debug, sync::Arc};
 
 pub(crate) mod graphql;
 mod pull_request;
@@ -18,19 +18,14 @@ pub struct Client {
     #[allow(dead_code)]
     // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
-    pub(crate) github_rest: GitHubAPI,
-    pub(crate) github_graphql: gql_client::Client,
+    pub(crate) github_rest: Arc<GitHubAPI>,
+    pub(crate) github_graphql: Arc<gql_client::Client>,
     pub(crate) github_token: String,
     pub(crate) owner: String,
     pub(crate) repo: String,
-    /// Owns the release-lookup/asset-download read path (jerus-org/pcu#1051)
-    /// — kept as its own crate so a consumer that only needs this capability
-    /// (e.g. jci-audit) can depend on it without pulling in git2/clap/config.
-    /// Deliberately builds its own `github_rest`/`github_graphql` from the
-    /// same token rather than sharing `Client`'s: reusing them would require
-    /// passing pcu's auth objects into the standalone crate, recoupling the
-    /// two and defeating the isolation this split exists for. The extra
-    /// client construction is one-time, per-`Client`, not per-call.
+    /// Release-lookup/asset-download read path, in its own crate so a
+    /// consumer like jci-audit can depend on just that (jerus-org/pcu#1051).
+    /// Shares `github_rest`/`github_graphql` above via `Arc`.
     release_assets: pcu_release_assets::ReleaseAssetClient,
     pub(crate) default_branch: String,
     pub(crate) branch: Option<String>,
@@ -154,8 +149,15 @@ impl Client {
             tag_prefix: Some(prefix),
         };
 
-        let release_assets =
-            pcu_release_assets::ReleaseAssetClient::new(owner.clone(), repo.clone(), &github_token);
+        let github_rest = Arc::new(github_rest);
+        let github_graphql = Arc::new(github_graphql);
+        let release_assets = pcu_release_assets::ReleaseAssetClient::from_shared(
+            owner.clone(),
+            repo.clone(),
+            github_token.clone(),
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
 
         Ok(Self {
             git_repo,
@@ -384,15 +386,15 @@ impl Client {
         // fail with an auth error, which is expected for a local-only client.
         let dummy_pat = PersonalAccessToken::new("");
         let dummy_config = APIConfig::with_token(dummy_pat).shared();
-        let github_rest = GitHubAPI::new(&dummy_config);
-        let github_graphql = gql_client::Client::new_with_headers(
+        let github_rest = Arc::new(GitHubAPI::new(&dummy_config));
+        let github_graphql = Arc::new(gql_client::Client::new_with_headers(
             END_POINT,
             HashMap::from([
                 ("X-Github-Next-Global-ID", "1"),
                 ("User-Agent", "pcu-local"),
                 ("Authorization", "Bearer local"),
             ]),
-        );
+        ));
 
         let prlog = OsString::from("PRLOG.md");
         let prlog_parse_options = ChangelogParseOptions {
@@ -401,8 +403,13 @@ impl Client {
             tag_prefix: Some("v".to_string()),
         };
 
-        let release_assets =
-            pcu_release_assets::ReleaseAssetClient::new(owner.clone(), repo.clone(), "");
+        let release_assets = pcu_release_assets::ReleaseAssetClient::from_shared(
+            owner.clone(),
+            repo.clone(),
+            "",
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
 
         Ok(Self {
             git_repo,

@@ -10,4 +10,4 @@ mod client;
 mod error;
 
 pub use client::{ReleaseAssetClient, ReleaseRef};
-pub use error::{Error, GraphQLWrapper};
+pub use error::Error;

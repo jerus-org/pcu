@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, GraphQLWrapper};
+use crate::Error;
 
 const END_POINT: &str = "https://api.github.com/graphql";
 
@@ -34,13 +34,19 @@ pub struct ReleaseAssetClient {
     owner: String,
     repo: String,
     github_token: String,
-    github_rest: GitHubAPI,
-    github_graphql: gql_client::Client,
+    github_rest: Arc<GitHubAPI>,
+    github_graphql: Arc<gql_client::Client>,
 }
 
 impl ReleaseAssetClient {
     /// Construct a client for `owner`/`repo`, authenticating with
     /// `github_token`. Does not touch the filesystem or git in any way.
+    ///
+    /// Builds its own API clients — for a headless consumer (e.g.
+    /// jci-audit) with no pre-existing authenticated client to reuse. A
+    /// caller that already has one (e.g. `pcu::Client`) should use
+    /// [`Self::from_shared`] instead, to avoid a second, redundant auth
+    /// object for the same token.
     pub fn new(
         owner: impl Into<String>,
         repo: impl Into<String>,
@@ -62,10 +68,31 @@ impl ReleaseAssetClient {
             ]),
         );
 
+        Self::from_shared(
+            owner,
+            repo,
+            github_token,
+            Arc::new(github_rest),
+            Arc::new(github_graphql),
+        )
+    }
+
+    /// Construct a client for `owner`/`repo` from an already-authenticated
+    /// `github_rest`/`github_graphql` pair — e.g. the ones `pcu::Client`
+    /// already built. `pcu`'s auth is a superset of what this read-only
+    /// client needs, so there is no reason to derive a second one for the
+    /// same token.
+    pub fn from_shared(
+        owner: impl Into<String>,
+        repo: impl Into<String>,
+        github_token: impl Into<String>,
+        github_rest: Arc<GitHubAPI>,
+        github_graphql: Arc<gql_client::Client>,
+    ) -> Self {
         Self {
             owner: owner.into(),
             repo: repo.into(),
-            github_token,
+            github_token: github_token.into(),
             github_rest,
             github_graphql,
         }
@@ -166,7 +193,7 @@ impl ReleaseAssetClient {
             .github_graphql
             .query_with_vars_unwrap::<GetReleases, Vars>(query, vars)
             .await
-            .map_err(GraphQLWrapper::from)?;
+            .map_err(|e| Error::ReleaseAsset(format!("GraphQL error: {e}")))?;
 
         Ok(collect_candidates(data.repository))
     }
@@ -437,6 +464,45 @@ mod tests {
         let client = ReleaseAssetClient::new("test-org", "test-repo", "token");
         assert_eq!(client.owner(), "test-org");
         assert_eq!(client.repo(), "test-repo");
+    }
+
+    /// `from_shared` exists specifically so `pcu::Client` can pass in its
+    /// own already-authenticated clients instead of `ReleaseAssetClient`
+    /// building a second, redundant pair for the same token. Locks that
+    /// contract in with `Arc::strong_count`: if `from_shared` ever started
+    /// wrapping fresh clones instead of storing the given `Arc`s directly,
+    /// the count below would stay at 1 instead of rising to 2.
+    #[test]
+    fn from_shared_reuses_the_given_clients_rather_than_building_new_ones() {
+        let dummy_pat = PersonalAccessToken::new("token");
+        let dummy_config = APIConfig::with_token(dummy_pat).shared();
+        let github_rest = Arc::new(GitHubAPI::new(&dummy_config));
+        let github_graphql = Arc::new(gql_client::Client::new_with_headers(
+            END_POINT,
+            HashMap::<&str, &str>::new(),
+        ));
+
+        assert_eq!(Arc::strong_count(&github_rest), 1);
+        assert_eq!(Arc::strong_count(&github_graphql), 1);
+
+        let _client = ReleaseAssetClient::from_shared(
+            "test-org",
+            "test-repo",
+            "token",
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
+
+        assert_eq!(
+            Arc::strong_count(&github_rest),
+            2,
+            "from_shared should hold the same GitHubAPI instance, not build a new one"
+        );
+        assert_eq!(
+            Arc::strong_count(&github_graphql),
+            2,
+            "from_shared should hold the same gql_client::Client instance, not build a new one"
+        );
     }
 
     #[test]

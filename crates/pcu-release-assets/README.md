@@ -2,7 +2,40 @@
 
 Read-only client for downloading a named asset from an already-published GitHub release, with no git checkout required.
 
+[![Rust 1.89+][version-badge]][version-url]
+[![circleci-badge]][circleci-url]
+[![Crates.io][crates-badge]][crates-url]
+[![Docs][docs-badge]][docs-url]
+[![MIT licensed][mit-badge]][mit-url]
+[![APACHE licensed][apache-badge]][apache-url]
+[![BuyMeaCoffee][bmac-badge]][bmac-url]
+[![GitHubSponsors][ghub-badge]][ghub-url]
+
+[crates-badge]: https://img.shields.io/crates/v/pcu-release-assets.svg
+[crates-url]: https://crates.io/crates/pcu-release-assets
+[mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[mit-url]: https://github.com/jerus-org/pcu/blob/main/crates/pcu-release-assets/LICENSE-MIT
+[apache-badge]: https://img.shields.io/badge/license-APACHE-blue.svg
+[apache-url]: https://github.com/jerus-org/pcu/blob/main/crates/pcu-release-assets/LICENSE-APACHE
+[circleci-badge]: https://dl.circleci.com/status-badge/img/gh/jerus-org/pcu/tree/main.svg?style=svg
+[circleci-url]: https://dl.circleci.com/status-badge/redirect/gh/jerus-org/pcu/tree/main
+[version-badge]: https://img.shields.io/badge/rust-1.89+-orange.svg
+[version-url]: https://www.rust-lang.org
+[docs-badge]:  https://docs.rs/pcu-release-assets/badge.svg
+[docs-url]:  https://docs.rs/pcu-release-assets
+[bmac-badge]: https://badgen.net/badge/icon/buymeacoffee?color=yellow&icon=buymeacoffee&label
+[bmac-url]: https://buymeacoffee.com/jerusdp
+[ghub-badge]: https://img.shields.io/badge/sponsor-30363D?logo=GitHub-Sponsors&logoColor=#white
+[ghub-url]: https://github.com/sponsors/jerusdp
+
 Extracted from `pcu`'s `Client` (jerus-org/pcu#1051) so a consumer that only needs this one capability — e.g. `jci-audit verify --release-version` fetching a signed audit record from a bare directory, with no clone — does not have to depend on `pcu`'s git/CLI/changelog toolchain to get it.
+
+## Installation
+
+```toml
+[dependencies]
+pcu-release-assets = "0.0.0"
+```
 
 ## Design
 
@@ -31,6 +64,7 @@ let bytes = client
 - [ ] Upload/replace an asset — deliberately out of scope; see `pcu::Client::upload_release_asset` for the write path
 
 [Contributing Guide](https://github.com/jerus-org/pcu/blob/main/CONTRIBUTING.md)
+
 [Code of Conduct](https://github.com/jerus-org/pcu/blob/main/CODE_OF_CONDUCT.md)
 
 ## License
