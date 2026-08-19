@@ -1719,7 +1719,7 @@ dependencies = [
 
 [[package]]
 name = "gen-linkedin"
-version = "0.1.28"
+version = "0.1.29"
 dependencies = [
  "chrono",
  "log",
