@@ -34,7 +34,7 @@ Extracted from `pcu`'s `Client` (jerus-org/pcu#1051) so a consumer that only nee
 
 ```toml
 [dependencies]
-pcu-release-assets = "0.0.0"
+pcu-release-assets = "0.1.0"
 ```
 
 ## Design

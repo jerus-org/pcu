@@ -1,6 +1,6 @@
 [package]
 name = "pcu-release-assets"
-version = "0.0.0"
+version = "0.1.0"
 edition.workspace = true
 authors.workspace = true
 description = "Read-only client for downloading a named asset from an already-published GitHub release, with no git checkout required"
