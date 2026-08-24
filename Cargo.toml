@@ -64,7 +64,7 @@ tracing-subscriber = { version = "0.3.23", features = ["std", "env-filter"] }
 rstest = "0.26.1"
 unicode-segmentation = "1.13.3"
 url = "2.5.8"
-uuid = { version = "1.24.0", features = ["v4"] }
+uuid = { version = "1.25.0", features = ["v4"] }
 walkdir = "2.5.0"
 wiremock = "0.6.5"
 
