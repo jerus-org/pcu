@@ -34,9 +34,9 @@ bytes = "1.12.1"
 kdeets = "0.1.32"
 reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }
 keep-a-changelog = "0.1.4"
-link-bridge = "0.2.6"
+link-bridge = "0.2.7"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
-log = "0.4.33"
+log = "0.4.34"
 octocrate = { version = "2.2.0", features = [
     "apps",
     "file-body",
@@ -56,7 +56,7 @@ thiserror = "2.0.20"
 sha2 = "0.11.0"
 openidconnect = { version = "4.0.1", default-features = false }
 sigstore = { version = "0.14.0", default-features = false, features = ["sign", "sigstore-trust-root", "rustls-tls"] }
-sigstore_protobuf_specs = "0.5.1"
+sigstore_protobuf_specs = "0.5.2"
 tokio = { version = "1.53.1", features = ["fs", "macros", "rt-multi-thread", "time"] }
 toml = "1.1.4"
 tracing = "0.1.44"
