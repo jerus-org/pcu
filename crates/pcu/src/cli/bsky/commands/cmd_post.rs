@@ -4,7 +4,7 @@ use clap::Parser;
 use config::Config;
 use gen_bsky::{Post, PostError};
 
-use crate::{cli::push::Push, CIExit, Client, Error, GitOps, SignConfig};
+use crate::{cli::push::Push, BskyExit, CIExit, Client, Error, GitOps, SignConfig};
 
 #[derive(Debug, Parser, Clone)]
 pub struct CmdPost {
@@ -56,14 +56,14 @@ impl CmdPost {
 
         if env::var("CI").is_ok() && !self.release {
             log::info!("Running in CI, skipping push to remote");
-            return Ok(CIExit::DraftedForBluesky);
+            return Ok(CIExit::Bsky(BskyExit::Drafted));
         }
 
         Push::new_with(None, false, "v".to_string())
             .run_push()
             .await?;
 
-        Ok(CIExit::PostedToBluesky)
+        Ok(CIExit::Bsky(BskyExit::Posted))
     }
 }
 
