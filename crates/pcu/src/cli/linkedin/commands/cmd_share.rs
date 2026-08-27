@@ -4,7 +4,7 @@ use gen_linkedin::posts::{PostsClient, TextPost};
 use gen_linkedin::{auth::StaticTokenProvider, client::Client as LiClient};
 
 use crate::utilities::linkedin_post::{build_release_text, compute_release_url};
-use crate::{CIExit, Error};
+use crate::{CIExit, Error, LinkedInExit};
 
 #[derive(Debug, Parser, Clone)]
 pub struct CmdShare {
@@ -56,7 +56,7 @@ impl CmdShare {
         }
         let text = match text {
             Some(t) if !t.trim().is_empty() => t,
-            _ if self.allow_empty => return Ok(CIExit::NoContentForLinkedIn),
+            _ if self.allow_empty => return Ok(CIExit::LinkedIn(LinkedInExit::NoContent)),
             _ => {
                 return Err(Error::Config(config::ConfigError::NotFound(
                     "linkedin text".into(),
@@ -73,7 +73,7 @@ impl CmdShare {
             post = post.with_link(u);
         }
         let _resp = pc.create_text_post(&post).await?;
-        Ok(CIExit::SharedToLinkedIn)
+        Ok(CIExit::LinkedIn(LinkedInExit::Shared))
     }
 }
 

@@ -8,7 +8,7 @@ use gen_bsky::{Draft, DraftError};
 use git2::Delta;
 use site_config::SiteConfig;
 
-use crate::{CIExit, Client, Error, GitOps, SignConfig};
+use crate::{BskyExit, CIExit, Client, Error, GitOps, SignConfig};
 use std::env;
 
 const DEFAULT_PATH: &str = "content/blog";
@@ -92,7 +92,7 @@ impl CmdDraft {
             Ok(p) => p,
             Err(DraftError::BlogPostListEmpty) if self.allow_empty => {
                 log::warn!("No blog posts found matching the filter — skipping (--allow-empty)");
-                return Ok(CIExit::NoBlogPostsForBluesky);
+                return Ok(CIExit::Bsky(BskyExit::NoBlogPosts));
             }
             Err(e) => return Err(Error::DraftError(e)),
         };
@@ -186,7 +186,7 @@ fn resolve_post_draft_exit(push_requested: bool, commits_ahead: usize) -> CIExit
     if push_requested && commits_ahead > 0 {
         CIExit::Pushed("Bluesky drafts committed and pushed to remote repository.".to_string())
     } else {
-        CIExit::DraftedForBluesky
+        CIExit::Bsky(BskyExit::Drafted)
     }
 }
 
@@ -215,8 +215,8 @@ mod tests {
     #[test]
     fn test_no_blog_posts_for_bluesky_ci_exit() {
         assert!(matches!(
-            CIExit::NoBlogPostsForBluesky,
-            CIExit::NoBlogPostsForBluesky
+            CIExit::Bsky(BskyExit::NoBlogPosts),
+            CIExit::Bsky(BskyExit::NoBlogPosts)
         ));
     }
 
@@ -272,8 +272,8 @@ mod tests {
     fn test_resolve_post_draft_exit_push_no_commits() {
         let exit = resolve_post_draft_exit(true, 0);
         assert!(
-            matches!(exit, CIExit::DraftedForBluesky),
-            "expected DraftedForBluesky, got {exit:?}"
+            matches!(exit, CIExit::Bsky(BskyExit::Drafted)),
+            "expected Bsky(Drafted), got {exit:?}"
         );
     }
 
@@ -281,8 +281,8 @@ mod tests {
     fn test_resolve_post_draft_exit_no_push() {
         let exit = resolve_post_draft_exit(false, 5);
         assert!(
-            matches!(exit, CIExit::DraftedForBluesky),
-            "expected DraftedForBluesky, got {exit:?}"
+            matches!(exit, CIExit::Bsky(BskyExit::Drafted)),
+            "expected Bsky(Drafted), got {exit:?}"
         );
     }
 

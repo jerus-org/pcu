@@ -17,6 +17,8 @@ use std::{env, fmt::Display, fs};
 
 #[cfg(feature = "bsky")]
 use bsky::Bsky;
+#[cfg(feature = "bsky")]
+pub use bsky::BskyExit;
 use checkout::Checkout;
 use clap::{Parser, Subcommand};
 use color_eyre::Result;
@@ -25,6 +27,8 @@ use commit::Commit;
 use config::Config;
 use create_issue::CreateIssue;
 use label::Label;
+#[cfg(feature = "linkedin")]
+pub use linkedin::LinkedInExit;
 #[cfg(feature = "linkedin")]
 use linkedin::Linkedin;
 use pull_request::Pr;
@@ -47,23 +51,11 @@ pub enum CIExit {
     Label(String),
     NoLabel,
     #[cfg(feature = "bsky")]
-    DraftedForBluesky,
-    #[cfg(feature = "bsky")]
-    PostedToBluesky,
+    Bsky(BskyExit),
     NoFilesToProcess,
     NothingToPush,
     #[cfg(feature = "linkedin")]
-    SharedToLinkedIn,
-    #[cfg(feature = "linkedin")]
-    NoContentForLinkedIn,
-    #[cfg(feature = "bsky")]
-    NoBlogPostsForBluesky,
-    #[cfg(feature = "linkedin")]
-    DraftedForLinkedIn,
-    #[cfg(feature = "linkedin")]
-    PostedToLinkedIn,
-    #[cfg(feature = "linkedin")]
-    NoBlogPostsForLinkedIn,
+    LinkedIn(LinkedInExit),
     VerificationPassed,
     SwitchedBranch(String),
     WebhookTriggered(String),

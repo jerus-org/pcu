@@ -5,6 +5,10 @@ use env_logger::Env;
 const LOG_ENV_VAR: &str = "RUST_LOG";
 const LOG_STYLE_ENV_VAR: &str = "RUST_LOG_STYLE";
 
+#[cfg(feature = "bsky")]
+use pcu::BskyExit;
+#[cfg(feature = "linkedin")]
+use pcu::LinkedInExit;
 use pcu::{CIExit, Cli, Commands, SignConfig};
 use tracing_subscriber::EnvFilter;
 
@@ -50,27 +54,23 @@ async fn main() -> Result<()> {
                 CIExit::Label(pr) => log::info!("Rebased PR request #{pr}"),
                 CIExit::NoLabel => log::info!("No label required"),
                 #[cfg(feature = "bsky")]
-                CIExit::DraftedForBluesky => log::info!("Drafted for Bluesky"),
-                #[cfg(feature = "bsky")]
-                CIExit::PostedToBluesky => log::info!("Posted to Bluesky"),
+                CIExit::Bsky(exit) => match exit {
+                    BskyExit::Drafted => log::info!("Drafted for Bluesky"),
+                    BskyExit::Posted => log::info!("Posted to Bluesky"),
+                    BskyExit::NoBlogPosts => log::warn!("No blog posts to draft for Bluesky"),
+                },
                 CIExit::NoFilesToProcess => log::info!("No files to process"),
                 CIExit::NothingToPush => log::info!("No commits to push"),
                 #[cfg(feature = "linkedin")]
-                CIExit::SharedToLinkedIn => log::info!("Shared to LinkedIn"),
-                #[cfg(feature = "linkedin")]
-                CIExit::NoContentForLinkedIn => log::info!("No LinkedIn content to share"),
-                #[cfg(feature = "bsky")]
-                CIExit::NoBlogPostsForBluesky => {
-                    log::warn!("No blog posts to draft for Bluesky")
-                }
-                #[cfg(feature = "linkedin")]
-                CIExit::DraftedForLinkedIn => log::info!("Drafted for LinkedIn"),
-                #[cfg(feature = "linkedin")]
-                CIExit::PostedToLinkedIn => log::info!("Posted to LinkedIn"),
-                #[cfg(feature = "linkedin")]
-                CIExit::NoBlogPostsForLinkedIn => {
-                    log::warn!("No blog posts to draft for LinkedIn")
-                }
+                CIExit::LinkedIn(exit) => match exit {
+                    LinkedInExit::Shared => log::info!("Shared to LinkedIn"),
+                    LinkedInExit::NoContent => log::info!("No LinkedIn content to share"),
+                    LinkedInExit::Drafted => log::info!("Drafted for LinkedIn"),
+                    LinkedInExit::Posted => log::info!("Posted to LinkedIn"),
+                    LinkedInExit::NoBlogPosts => {
+                        log::warn!("No blog posts to draft for LinkedIn")
+                    }
+                },
                 CIExit::VerificationPassed => log::info!("✓ All signature checks passed!"),
                 CIExit::SwitchedBranch(s) => log::info!("Switched to branch: {s}"),
                 CIExit::WebhookTriggered(url) => log::info!("Webhook triggered: {url}"),

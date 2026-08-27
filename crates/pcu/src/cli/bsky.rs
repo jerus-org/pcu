@@ -11,6 +11,14 @@ use crate::{Client, Error};
 
 const BSKY_POSTS_DIR: &str = "bluesky";
 
+/// Exit states from a `pcu bsky` subcommand run.
+#[derive(Debug)]
+pub enum BskyExit {
+    Drafted,
+    Posted,
+    NoBlogPosts,
+}
+
 /// Configuration for the Bsky command
 #[derive(Debug, Parser, Clone)]
 pub struct Bsky {

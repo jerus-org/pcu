@@ -6,6 +6,10 @@ mod pr_title;
 mod utilities;
 mod workspace;
 
+#[cfg(feature = "bsky")]
+pub use cli::BskyExit;
+#[cfg(feature = "linkedin")]
+pub use cli::LinkedInExit;
 pub use cli::{CIExit, Cli, Commands};
 pub use client::Client;
 pub use error::{Error, GraphQLWrapper};

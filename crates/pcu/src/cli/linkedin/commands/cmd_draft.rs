@@ -4,7 +4,7 @@ use clap::Parser;
 use config::Config;
 use gen_linkedin::{Draft, DraftError};
 
-use crate::{CIExit, Client, Error, GitOps, SignConfig};
+use crate::{CIExit, Client, Error, GitOps, LinkedInExit, SignConfig};
 use std::env;
 
 const DEFAULT_PATH: &str = "content/blog";
@@ -54,7 +54,7 @@ impl CmdDraft {
             Ok(d) => d,
             Err(DraftError::BlogPostListEmpty) if self.allow_empty => {
                 log::warn!("No blog posts found matching the filter — skipping (--allow-empty)");
-                return Ok(CIExit::NoBlogPostsForLinkedIn);
+                return Ok(CIExit::LinkedIn(LinkedInExit::NoBlogPosts));
             }
             Err(e) => return Err(Error::LinkedinDraftError(e)),
         };
@@ -84,7 +84,7 @@ fn resolve_draft_exit(push_requested: bool, commits_ahead: usize) -> CIExit {
     if push_requested && commits_ahead > 0 {
         CIExit::Pushed("LinkedIn drafts committed and pushed to remote repository.".to_string())
     } else {
-        CIExit::DraftedForLinkedIn
+        CIExit::LinkedIn(LinkedInExit::Drafted)
     }
 }
 
@@ -140,20 +140,20 @@ mod tests {
     #[test]
     fn test_resolve_draft_exit_push_no_commits() {
         let exit = resolve_draft_exit(true, 0);
-        assert!(matches!(exit, CIExit::DraftedForLinkedIn));
+        assert!(matches!(exit, CIExit::LinkedIn(LinkedInExit::Drafted)));
     }
 
     #[test]
     fn test_resolve_draft_exit_no_push() {
         let exit = resolve_draft_exit(false, 5);
-        assert!(matches!(exit, CIExit::DraftedForLinkedIn));
+        assert!(matches!(exit, CIExit::LinkedIn(LinkedInExit::Drafted)));
     }
 
     #[test]
     fn test_no_blog_posts_for_linkedin_ci_exit() {
         assert!(matches!(
-            CIExit::NoBlogPostsForLinkedIn,
-            CIExit::NoBlogPostsForLinkedIn
+            CIExit::LinkedIn(LinkedInExit::NoBlogPosts),
+            CIExit::LinkedIn(LinkedInExit::NoBlogPosts)
         ));
     }
 }

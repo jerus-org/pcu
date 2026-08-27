@@ -9,6 +9,16 @@ use config::Config;
 use super::Commands;
 use crate::{CIExit, Client, Error};
 
+/// Exit states from a `pcu linkedin` subcommand run.
+#[derive(Debug)]
+pub enum LinkedInExit {
+    Shared,
+    NoContent,
+    Drafted,
+    Posted,
+    NoBlogPosts,
+}
+
 /// Configuration for the LinkedIn command
 #[derive(Debug, Parser, Clone)]
 pub struct Linkedin {

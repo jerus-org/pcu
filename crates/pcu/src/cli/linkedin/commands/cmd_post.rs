@@ -4,7 +4,7 @@ use clap::Parser;
 use config::Config;
 use gen_linkedin::{posts::DEFAULT_API_VERSION, Post, PostError};
 
-use crate::{cli::push::Push, CIExit, Client, Error, GitOps, SignConfig};
+use crate::{cli::push::Push, CIExit, Client, Error, GitOps, LinkedInExit, SignConfig};
 use std::fmt::Display;
 
 #[derive(Debug, Parser, Clone)]
@@ -81,14 +81,14 @@ impl CmdPost {
 
         if env::var("CI").is_ok() && !self.release {
             log::info!("Running in CI, skipping push to remote");
-            return Ok(CIExit::DraftedForLinkedIn);
+            return Ok(CIExit::LinkedIn(LinkedInExit::Drafted));
         }
 
         Push::new_with(None, false, "v".to_string())
             .run_push()
             .await?;
 
-        Ok(CIExit::PostedToLinkedIn)
+        Ok(CIExit::LinkedIn(LinkedInExit::Posted))
     }
 }
 
@@ -156,7 +156,10 @@ mod tests {
 
     #[test]
     fn test_posted_to_linkedin_ci_exit() {
-        assert!(matches!(CIExit::PostedToLinkedIn, CIExit::PostedToLinkedIn));
+        assert!(matches!(
+            CIExit::LinkedIn(LinkedInExit::Posted),
+            CIExit::LinkedIn(LinkedInExit::Posted)
+        ));
     }
 
     // api_version_from_env_var: env var override logic
