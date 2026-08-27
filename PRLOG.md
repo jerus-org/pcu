@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- refactor-nest bsky/linkedin CIExit variants(pr [#1060])
+
 ### Fixed
 
 - deps: update dependency toolkit to v7.3.0(pr [#1057])
@@ -2582,6 +2586,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1055]: https://github.com/jerus-org/pcu/pull/1055
 [#1056]: https://github.com/jerus-org/pcu/pull/1056
 [#1058]: https://github.com/jerus-org/pcu/pull/1058
+[#1060]: https://github.com/jerus-org/pcu/pull/1060
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.33...HEAD
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
