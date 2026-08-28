@@ -5,9 +5,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.37] - 2026-08-28
+
+Summary: Fixed[2]
+
+### Fixed
+
+ - fix(deps): update rust crate link-bridge to 0.2.7
+ - fix(deps): update rust crate log to 0.4.34
+
 ## [0.1.36] - 2026-08-19
 
-Summary: 
+Summary: Chore[1]
 
 ## [0.1.35] - 2026-08-16
 
@@ -469,7 +478,8 @@ Summary: Added[21], Build[4], Changed[25], Chore[5], Documentation[10], Fixed[70
  - ♻️ refactor(gen-bsky): streamline error handling
  - ♻️ refactor(lib): restructure gen-bsky module
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.35...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.36...HEAD
+[0.1.36]: https://github.com/jerus-org/pcu/compare/v0.1.35...v0.1.36
 [0.1.35]: https://github.com/jerus-org/pcu/compare/v0.1.34...v0.1.35
 [0.1.34]: https://github.com/jerus-org/pcu/compare/v0.1.33...v0.1.34
 [0.1.33]: https://github.com/jerus-org/pcu/compare/v0.1.32...v0.1.33
