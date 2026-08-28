@@ -53,20 +53,7 @@ impl ReleaseAssetClient {
         github_token: impl Into<String>,
     ) -> Self {
         let github_token = github_token.into();
-
-        let pat = PersonalAccessToken::new(&github_token);
-        let config = APIConfig::with_token(pat).shared();
-        let github_rest = GitHubAPI::new(&config);
-
-        let auth = format!("Bearer {github_token}");
-        let github_graphql = gql_client::Client::new_with_headers(
-            END_POINT,
-            HashMap::from([
-                ("X-Github-Next-Global-ID", "1"),
-                ("User-Agent", "pcu-release-assets"),
-                ("Authorization", &auth),
-            ]),
-        );
+        let (github_rest, github_graphql) = build_authenticated_clients(&github_token);
 
         Self::from_shared(
             owner,
@@ -370,6 +357,29 @@ fn find_existing_asset_id<'a>(
         .map(|(_, id)| id)
 }
 
+/// Build a fresh authenticated REST + GraphQL client pair for `token`.
+///
+/// Shared by [`ReleaseAssetClient::new`] and `ReleaseAssetWriter::new` so a
+/// change to the auth headers (or the GraphQL endpoint) only needs to be
+/// made in one place.
+pub(crate) fn build_authenticated_clients(token: &str) -> (GitHubAPI, gql_client::Client) {
+    let pat = PersonalAccessToken::new(token);
+    let config = APIConfig::with_token(pat).shared();
+    let github_rest = GitHubAPI::new(&config);
+
+    let auth = format!("Bearer {token}");
+    let github_graphql = gql_client::Client::new_with_headers(
+        END_POINT,
+        HashMap::from([
+            ("X-Github-Next-Global-ID", "1"),
+            ("User-Agent", "pcu-release-assets"),
+            ("Authorization", &auth),
+        ]),
+    );
+
+    (github_rest, github_graphql)
+}
+
 /// Build GitHub's REST asset-download URL for `asset_id`. Deliberately not
 /// `asset.browser_download_url`: that field only works unauthenticated, and
 /// only for public repos.
@@ -377,7 +387,9 @@ fn asset_download_url(owner: &str, repo: &str, asset_id: i64) -> String {
     format!("https://api.github.com/repos/{owner}/{repo}/releases/assets/{asset_id}")
 }
 
-fn release_not_found_error(tag: &str) -> Error {
+/// Shared by [`ReleaseAssetClient`] and `ReleaseAssetWriter` — both need to
+/// name a not-found tag identically.
+pub(crate) fn release_not_found_error(tag: &str) -> Error {
     Error::ReleaseAsset(format!("GitHub release for tag '{tag}' not found"))
 }
 
