@@ -5,9 +5,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.34] - 2026-08-28
+
+Summary: Added[2], Changed[1], Chore[1], Documentation[1], Fixed[8]
+
+### Added
+
+ - feat: unauthenticated download_release_asset
+ - feat: headless release-asset writer
+
+### Fixed
+
+ - fix(deps): update rust crate owo-colors to 4.4.0
+ - fix(deps): update rust crate uuid to 1.26.0
+ - fix: delegate upload/publish to writer
+ - fix: dedupe ReleaseAssetClient/Writer new()
+ - fix(deps): update rust crate sigstore_protobuf_specs to 0.5.2
+ - fix(deps): update rust crate link-bridge to 0.2.7
+ - fix(deps): update rust crate uuid to 1.25.0
+ - fix(deps): update rust crate log to 0.4.34
+
+### Changed
+
+ - refactor: nest bsky/linkedin CIExit variants
+
 ## [0.6.33] - 2026-08-19
 
-Summary: Added[1], Chore[1], Fixed[1]
+Summary: Added[1], Chore[2], Fixed[1]
 
 ### Added
 
@@ -745,7 +769,8 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
 
  - chore(deps): update rust crate rstest to 0.21.0
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.32...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.33...HEAD
+[0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
 [0.6.31]: https://github.com/jerus-org/pcu/compare/v0.6.30...v0.6.31
 [0.6.30]: https://github.com/jerus-org/pcu/compare/v0.6.29...v0.6.30
