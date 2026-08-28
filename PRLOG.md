@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate sigstore_protobuf_specs to 0.5.2(pr [#1056])
 - deps: update rust crate uuid to 1.25.0(pr [#1058])
 - deps: lock file maintenance(pr [#1063])
+- delegate upload/publish to ReleaseAssetWriter(pr [#1065])
 
 ## [0.6.33] - 2026-08-19
 
@@ -2594,6 +2595,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1060]: https://github.com/jerus-org/pcu/pull/1060
 [#1063]: https://github.com/jerus-org/pcu/pull/1063
 [#1062]: https://github.com/jerus-org/pcu/pull/1062
+[#1065]: https://github.com/jerus-org/pcu/pull/1065
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.33...HEAD
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
