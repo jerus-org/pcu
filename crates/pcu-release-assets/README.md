@@ -42,6 +42,7 @@ pcu-release-assets = "0.1.0"
 - No `git2` dependency: neither client touches the filesystem or a git repository (beyond reading the local asset file to upload).
 - Capability boundary by type: `ReleaseAssetClient` has no upload or publish method at all — the boundary is enforced by the method not existing, not by a runtime flag. A consumer that only ever verifies/downloads never depends on write capability. `ReleaseAssetWriter` is a separate type for callers that do need to write.
 - No draft access on the read side: [`ReleaseAssetClient::download_release_asset`] always resolves to the published release for a tag — there is no `allow_draft` parameter on this entry point. A draft's assets can still be replaced, so a verifier must never trust one. `ReleaseAssetWriter::upload_release_asset` and `publish_release` do work against a draft, since a writer is the one attaching the assets before the draft is published.
+- A token is currently required for every call, even against a public repo: release lookup goes through `api.github.com/graphql`, which — unlike parts of GitHub's REST API — has no anonymous path; every GraphQL request must be authenticated. See jerus-org/pcu#1064 for a proposed unauthenticated path for the published-only lookup `download_release_asset` uses.
 
 ## Usage
 
