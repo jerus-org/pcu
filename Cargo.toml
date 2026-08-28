@@ -46,7 +46,7 @@ octocrate = { version = "2.2.0", features = [
     "users",
     "rustls-tls",
 ], default-features = false }
-owo-colors = "4.3.0"
+owo-colors = "4.4.0"
 pcu-release-assets = { path = "crates/pcu-release-assets", version = "0.1.0" }
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
