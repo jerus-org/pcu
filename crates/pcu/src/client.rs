@@ -27,6 +27,11 @@ pub struct Client {
     /// consumer like jci-audit can depend on just that (jerus-org/pcu#1051).
     /// Shares `github_rest`/`github_graphql` above via `Arc`.
     release_assets: pcu_release_assets::ReleaseAssetClient,
+    /// Asset-upload/publish write path (jerus-org/pcu#1059, delegated here
+    /// rather than duplicated per jerus-org/pcu#1061). Shares
+    /// `github_rest`/`github_graphql` above via `Arc`, same as
+    /// `release_assets`.
+    release_asset_writer: pcu_release_assets::ReleaseAssetWriter,
     pub(crate) default_branch: String,
     pub(crate) branch: Option<String>,
     pull_request: Option<PullRequest>,
@@ -158,6 +163,13 @@ impl Client {
             Arc::clone(&github_rest),
             Arc::clone(&github_graphql),
         );
+        let release_asset_writer = pcu_release_assets::ReleaseAssetWriter::from_shared(
+            owner.clone(),
+            repo.clone(),
+            github_token.clone(),
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
 
         Ok(Self {
             git_repo,
@@ -169,6 +181,7 @@ impl Client {
             owner,
             repo,
             release_assets,
+            release_asset_writer,
             pull_request,
             prlog,
             line_limit,
@@ -410,6 +423,13 @@ impl Client {
             Arc::clone(&github_rest),
             Arc::clone(&github_graphql),
         );
+        let release_asset_writer = pcu_release_assets::ReleaseAssetWriter::from_shared(
+            owner.clone(),
+            repo.clone(),
+            "",
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
 
         Ok(Self {
             git_repo,
@@ -419,6 +439,7 @@ impl Client {
             owner,
             repo,
             release_assets,
+            release_asset_writer,
             default_branch: "main".to_string(),
             branch,
             pull_request: None,
@@ -456,96 +477,22 @@ impl Client {
 
     /// Upload a binary asset to an existing GitHub release.
     ///
-    /// Looks up the release by `tag`, then uploads `binary` as `asset_name` to
-    /// `uploads.github.com`.  Retries the release lookup up to 5 times with a
-    /// 2-second delay to handle GitHub's eventual-consistency window after
-    /// release creation.
-    /// Upload a binary as a GitHub release asset.
-    ///
     /// Idempotent: if an asset with the same name already exists on the
     /// release it is deleted first (delete-then-replace), so retries don't
     /// fail with GitHub's 422 "Validation Failed".
+    ///
+    /// Delegates to [`pcu_release_assets::ReleaseAssetWriter`] — see
+    /// jerus-org/pcu#1061 for why this is no longer its own copy.
     pub async fn upload_release_asset(
         &self,
         tag: &str,
         binary: &std::path::Path,
         asset_name: &str,
     ) -> Result<(), Error> {
-        use octocrate::PersonalAccessToken;
-
-        if !binary.exists() {
-            return Err(Error::GitError(format!(
-                "Asset file not found: {}",
-                binary.display()
-            )));
-        }
-
-        let release_ref = self.require_release_for_tag(tag).await?;
-
-        // Assets are frozen at publication, so neither the upload nor the
-        // delete-then-replace below can succeed. Refusing here names the cause
-        // before anything is attempted, rather than translating the API's
-        // rejection after the fact.
-        if release_ref.immutable {
-            return Err(Error::ImmutableRelease(
-                tag.to_string(),
-                "the release is published with immutable assets".to_string(),
-            ));
-        }
-
-        // Delete-then-replace: if an asset of the same name already exists on
-        // the release (e.g. from a previous, partially-completed run), GitHub
-        // rejects a fresh upload with HTTP 422. Remove it first so the upload
-        // is idempotent across retries. On a published immutable release the
-        // deletion is refused too, which is why the error is translated rather
-        // than surfaced raw.
-        if let Some(asset_id) = self
-            .find_asset_in_release(release_ref.id, asset_name)
-            .await?
-        {
-            log::info!("Replacing existing asset '{asset_name}' (id={asset_id})");
-            let del_token = PersonalAccessToken::new(self.github_token.clone());
-            let del_config = APIConfig::with_token(del_token).shared();
-            let del_api = GitHubAPI::new(&del_config);
-            del_api
-                .repos
-                .delete_release_asset(&self.owner, &self.repo, asset_id)
-                .send()
-                .await
-                .map_err(|e| map_asset_upload_error(tag, &e.to_string()))?;
-        }
-
-        // Binary uploads must go to uploads.github.com, not api.github.com.
-        let upload_token = PersonalAccessToken::new(self.github_token.clone());
-        let upload_config = APIConfig::new("https://uploads.github.com", upload_token);
-        let upload_api = GitHubAPI::new(&upload_config);
-
-        let file = tokio::fs::File::open(binary).await?;
-        let content_length = file.metadata().await?.len();
-
-        let content_type = if asset_name.ends_with(".sig") {
-            "text/plain"
-        } else {
-            "application/octet-stream"
-        };
-
-        let query = octocrate::repos::upload_release_asset::Query::builder()
-            .name(asset_name)
-            .build();
-
-        upload_api
-            .repos
-            .upload_release_asset(&self.owner, &self.repo, release_ref.id)
-            .query(&query)
-            .header("Content-Type", content_type)
-            .header("Content-Length", content_length.to_string())
-            .file(file)
-            .send()
-            .await
-            .map_err(|e| map_asset_upload_error(tag, &e.to_string()))?;
-
-        log::info!("Successfully uploaded {asset_name}");
-        Ok(())
+        Ok(self
+            .release_asset_writer
+            .upload_release_asset(tag, binary, asset_name)
+            .await?)
     }
 
     /// Download a named asset from an existing GitHub release, returning its
@@ -571,65 +518,20 @@ impl Client {
             .await?)
     }
 
-    /// Look up the release for `tag`, erroring if none exists.
-    ///
-    /// Used by `upload_release_asset`, which needs the release to already
-    /// exist before it can attach to it. `download_release_asset` has its
-    /// own copy of this lookup inside `pcu_release_assets::ReleaseAssetClient`
-    /// (jerus-org/pcu#1051) — it no longer calls this method.
-    async fn require_release_for_tag(
-        &self,
-        tag: &str,
-    ) -> Result<pcu_release_assets::ReleaseRef, Error> {
-        self.find_release_for_tag(tag)
-            .await?
-            .ok_or_else(|| release_not_found_error(tag))
-    }
-
-    /// Fetch `release_id`'s current asset list and look up `asset_name` in
-    /// it, returning its id if present.
-    ///
-    /// Used by `upload_release_asset` to decide whether to
-    /// delete-then-replace. `download_release_asset` delegates straight to
-    /// `pcu_release_assets::ReleaseAssetClient`, which has its own copy of
-    /// this lookup — it no longer calls this method.
-    async fn find_asset_in_release(
-        &self,
-        release_id: i64,
-        asset_name: &str,
-    ) -> Result<Option<i64>, Error> {
-        Ok(self
-            .release_assets
-            .find_asset_in_release(release_id, asset_name)
-            .await?)
-    }
-
-    /// Publish the release for `tag` when it is still a draft.
+    /// Publish the release for `release_id` when it is still a draft.
     ///
     /// Unconditional by design — the release pipeline runs this as its last
     /// step with no condition attached — so it must be a
     /// no-op wherever there is nothing to publish. `make_latest` is set here
     /// rather than at creation because GitHub does not accept it on a draft.
+    ///
+    /// Delegates to [`pcu_release_assets::ReleaseAssetWriter`] — see
+    /// jerus-org/pcu#1061 for why this is no longer its own copy.
     pub(crate) async fn publish_release(&self, release_id: i64) -> Result<(), Error> {
-        let request = octocrate::repos::update_release::Request {
-            body: None,
-            discussion_category_name: None,
-            draft: Some(false),
-            make_latest: Some(octocrate::repos::update_release::RequestMakeLatest::True),
-            name: None,
-            prerelease: None,
-            tag_name: None,
-            target_commitish: None,
-        };
-
-        self.github_rest
-            .repos
-            .update_release(&self.owner, &self.repo, release_id)
-            .body(&request)
-            .send()
-            .await?;
-
-        Ok(())
+        Ok(self
+            .release_asset_writer
+            .publish_release_by_id(release_id)
+            .await?)
     }
 }
 
@@ -664,24 +566,6 @@ fn parse_owner_repo_from_url(url: &str) -> Option<(String, String)> {
     let owner = parts.next()?.to_string();
     let repo = parts.next()?.to_string();
     Some((owner, repo))
-}
-
-/// Build the error for "no release exists for this tag".
-/// Pure so the message is unit-testable without a network round trip.
-fn release_not_found_error(tag: &str) -> Error {
-    Error::GitError(format!("GitHub release for tag '{tag}' not found"))
-}
-
-/// Translate an asset-upload failure into an actionable error.
-///
-/// The immutable-release rejection is otherwise opaque: the raw API message
-/// says what was refused but not why the pipeline is wrong or what to do about
-/// it. Every other failure passes through unchanged.
-pub(crate) fn map_asset_upload_error(tag: &str, api_message: &str) -> Error {
-    if api_message.to_lowercase().contains("immutable release") {
-        return Error::ImmutableRelease(tag.to_string(), api_message.to_string());
-    }
-    Error::GitError(api_message.to_string())
 }
 
 #[cfg(test)]
@@ -748,46 +632,5 @@ mod tests {
         assert!(result.is_err());
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("Asset file not found"), "unexpected: {msg}");
-    }
-
-    #[test]
-    fn release_not_found_error_names_the_tag() {
-        let msg = release_not_found_error("pcu-v1.0.0").to_string();
-        assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
-    }
-
-    #[test]
-    fn map_asset_upload_error_translates_immutable_release() {
-        let err = map_asset_upload_error(
-            "pcu-v0.6.29",
-            "Cannot upload assets to an immutable release.",
-        );
-        let msg = err.to_string();
-        assert!(msg.contains("pcu-v0.6.29"), "tag missing: {msg}");
-        assert!(msg.contains("immutable"), "cause missing: {msg}");
-        assert!(
-            msg.contains("draft"),
-            "should name the draft-first remedy: {msg}"
-        );
-        assert!(
-            msg.contains("next patch version"),
-            "should say the release cannot be repaired in place: {msg}"
-        );
-    }
-
-    #[test]
-    fn map_asset_upload_error_is_case_insensitive() {
-        let err = map_asset_upload_error(
-            "pcu-v0.6.29",
-            "cannot upload assets to an IMMUTABLE release",
-        );
-        assert!(matches!(err, Error::ImmutableRelease(_, _)));
-    }
-
-    #[test]
-    fn map_asset_upload_error_passes_other_failures_through() {
-        let err = map_asset_upload_error("pcu-v0.6.29", "Validation Failed");
-        assert!(!matches!(err, Error::ImmutableRelease(_, _)));
-        assert!(err.to_string().contains("Validation Failed"));
     }
 }

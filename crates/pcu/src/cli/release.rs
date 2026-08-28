@@ -51,7 +51,6 @@ mod mode;
 
 use clap::Parser;
 use mode::Mode;
-use octocrate::{APIConfig, PersonalAccessToken};
 use owo_colors::{OwoColorize, Style};
 
 /// Poll `probe` up to `max_attempts` times, sleeping `retry_delay` between
@@ -750,9 +749,10 @@ impl Release {
 
     /// Upload a binary asset to an existing GitHub release.
     ///
-    /// Looks up the release ID via `get_release_by_tag`, then uploads to
-    /// `uploads.github.com` using a dedicated `APIConfig` (octocrate's
-    /// `upload_release_asset` requires this separate base URL).
+    /// Delegates to [`Client::upload_release_asset`] — see jerus-org/pcu#1061
+    /// for why this is no longer its own copy (it previously lacked that
+    /// method's delete-then-replace idempotency, a real bug this
+    /// consolidation also fixes).
     async fn upload_asset(self, client: Client) -> Result<CIExit, Error> {
         let Mode::UploadAsset(ref cmd) = self.mode else {
             return Err(Error::NoPackageSpecified);
@@ -769,64 +769,9 @@ impl Release {
             })
             .ok_or_else(|| Error::GitError("Could not determine asset name".to_string()))?;
 
-        if !cmd.asset_path.exists() {
-            return Err(Error::GitError(format!(
-                "Asset file not found: {}",
-                cmd.asset_path.display()
-            )));
-        }
-
-        log::info!("Looking up GitHub release for tag {}", cmd.tag);
-
-        // Draft-aware: on a draft-first pipeline the release is still unpublished
-        // at this point, and a draft is invisible to get_release_by_tag.
-        let release_ref = client
-            .find_release_for_tag(&cmd.tag)
-            .await?
-            .ok_or_else(|| {
-                Error::GitError(format!(
-                    "no GitHub release found for tag '{}' to upload to",
-                    cmd.tag
-                ))
-            })?;
-
-        if release_ref.immutable {
-            return Err(Error::ImmutableRelease(
-                cmd.tag.clone(),
-                "the release is published with immutable assets".to_string(),
-            ));
-        }
-
-        // GitHub binary uploads must go to uploads.github.com, not api.github.com.
-        // A dedicated APIConfig with the upload base URL is required.
-        let upload_token = PersonalAccessToken::new(client.github_token.clone());
-        let upload_config = APIConfig::new("https://uploads.github.com", upload_token);
-        let upload_api = octocrate::GitHubAPI::new(&upload_config);
-
-        let file = tokio::fs::File::open(&cmd.asset_path).await?;
-        let content_length = file.metadata().await?.len();
-
-        // Minisign signatures are text; binaries use octet-stream
-        let content_type = if asset_name.ends_with(".sig") {
-            "text/plain"
-        } else {
-            "application/octet-stream"
-        };
-
-        let query = octocrate::repos::upload_release_asset::Query::builder()
-            .name(asset_name.clone())
-            .build();
-
-        upload_api
-            .repos
-            .upload_release_asset(client.owner(), client.repo(), release_ref.id)
-            .query(&query)
-            .header("Content-Type", content_type)
-            .header("Content-Length", content_length.to_string())
-            .file(file)
-            .send()
-            .await
-            .map_err(|e| crate::client::map_asset_upload_error(&cmd.tag, &e.to_string()))?;
+        client
+            .upload_release_asset(&cmd.tag, &cmd.asset_path, &asset_name)
+            .await?;
 
         log::info!("Successfully uploaded {asset_name}");
         Ok(CIExit::Released)
