@@ -105,9 +105,9 @@ impl ReleaseAssetWriter {
         // async executor's thread) so a missing or inaccessible file fails
         // fast before the release lookup and, more importantly, before the
         // delete-then-replace below could remove an existing asset with
-        // nothing to replace it. The `Metadata` is kept for `content_length`
-        // below rather than stat-ing the file a second time after opening.
-        let metadata = tokio::fs::metadata(binary)
+        // nothing to replace it. Only existence/access matters here — the
+        // length is read fresh, right before the upload, below.
+        tokio::fs::metadata(binary)
             .await
             .map_err(|e| binary_access_error(binary, &e))?;
 
@@ -139,12 +139,31 @@ impl ReleaseAssetWriter {
             .await?
         {
             log::info!("Replacing existing asset '{asset_name}' (id={asset_id})");
-            self.github_rest
+            if let Err(e) = self
+                .github_rest
                 .repos
                 .delete_release_asset(&self.owner, &self.repo, asset_id)
                 .send()
                 .await
-                .map_err(|e| map_asset_upload_error(tag, &e.to_string()))?;
+            {
+                // A concurrent or previous partial run may have already
+                // deleted this asset between the listing above and this
+                // call. octocrate's error type carries no HTTP status (only
+                // GitHub's JSON error body), so rather than string-matching
+                // its "Not Found" message text, re-check the actual end
+                // state: if the asset is genuinely gone, the desired
+                // outcome — no conflicting asset — already holds, and this
+                // isn't a real failure.
+                if self
+                    .reader
+                    .find_asset_in_release(release_ref.id, asset_name)
+                    .await?
+                    .is_some()
+                {
+                    return Err(map_asset_upload_error(tag, &e.to_string()));
+                }
+                log::info!("Asset '{asset_name}' was already gone; treating delete as a no-op");
+            }
         }
 
         let file = tokio::fs::File::open(binary).await.map_err(|e| {
@@ -153,7 +172,24 @@ impl ReleaseAssetWriter {
                 binary.display()
             ))
         })?;
-        let content_length = metadata.len();
+        // Re-stat via the open file handle rather than reusing `metadata`
+        // from the existence check above: several await points (release
+        // lookup, asset lookup, delete-asset round-trips) separate that
+        // earlier stat from the actual upload, so its length could be stale
+        // if the file was still being written or rotated concurrently.
+        // Reading it from the handle we're about to stream is also immune
+        // to a path-level TOCTOU a second `tokio::fs::metadata(binary)` call
+        // wouldn't be.
+        let content_length = file
+            .metadata()
+            .await
+            .map_err(|e| {
+                Error::ReleaseAsset(format!(
+                    "failed to read metadata for asset file '{}': {e}",
+                    binary.display()
+                ))
+            })?
+            .len();
 
         let content_type = if asset_name.ends_with(".sig") {
             "text/plain"
@@ -182,19 +218,17 @@ impl ReleaseAssetWriter {
 
     /// Un-draft the release for `tag`, headless.
     ///
-    /// Errors if no release exists for `tag` — unlike `pcu::Client`'s
-    /// internal, release-id-based `publish_release` (always called with a
-    /// known id from the release pipeline), this tag-based entry point must
-    /// look the release up first, so "no such release" is an error rather
-    /// than a silent no-op.
+    /// Errors if no release exists for `tag` — unlike [`Self::publish_release_by_id`]
+    /// (always called with a known id from the release pipeline), this
+    /// tag-based entry point must look the release up first, so "no such
+    /// release" is an error rather than a silent no-op.
     ///
     /// Uses `make_latest: legacy` (GitHub's own creation-date/semver
-    /// heuristic), not an unconditional `true` — unlike `pcu::Client`'s
-    /// internal, release-id-based `publish_release`, which is only ever
-    /// called on the release the pipeline just created (so forcing `true`
-    /// is always correct there). This entry point is public and tag-based;
-    /// a caller could publish an **older** release (e.g. a backport), where
-    /// forcing `true` would wrongly demote the actual newest release.
+    /// heuristic), not an unconditional `true` — this entry point is public
+    /// and tag-based, so a caller could publish an **older** release (e.g.
+    /// a backport), where forcing `true` would wrongly demote the actual
+    /// newest release. See [`Self::publish_release_by_id`] for the
+    /// force-`true` counterpart.
     pub async fn publish_release(&self, tag: &str) -> Result<(), Error> {
         let release_ref = self
             .reader
@@ -202,28 +236,63 @@ impl ReleaseAssetWriter {
             .await?
             .ok_or_else(|| release_not_found_error(tag))?;
 
-        let request = octocrate::repos::update_release::Request {
-            body: None,
-            discussion_category_name: None,
-            draft: Some(false),
-            make_latest: Some(octocrate::repos::update_release::RequestMakeLatest::Legacy),
-            name: None,
-            prerelease: None,
-            tag_name: None,
-            target_commitish: None,
-        };
+        self.publish_release_ref(
+            release_ref.id,
+            octocrate::repos::update_release::RequestMakeLatest::Legacy,
+        )
+        .await
+        .map_err(|e| Error::ReleaseAsset(format!("failed to publish release for tag '{tag}': {e}")))
+    }
+
+    /// Un-draft `release_id`, forcing `make_latest: true` unconditionally.
+    ///
+    /// Exposed (like [`ReleaseAssetClient::find_release_for_tag`] and
+    /// [`ReleaseAssetClient::find_asset_in_release`]) because `pcu::Client`
+    /// needs it: its release pipeline calls this immediately after creating
+    /// the release it already has the id for, where forcing `true` is
+    /// always correct — unlike the public, tag-based [`Self::publish_release`]
+    /// (see its own doc comment), which a caller could point at an older
+    /// release. Consolidates what was previously a separate copy of this
+    /// same PATCH in `pcu::Client::publish_release` — see jerus-org/pcu#1061.
+    pub async fn publish_release_by_id(&self, release_id: i64) -> Result<(), Error> {
+        self.publish_release_ref(
+            release_id,
+            octocrate::repos::update_release::RequestMakeLatest::True,
+        )
+        .await
+        .map_err(|e| Error::ReleaseAsset(format!("failed to publish release {release_id}: {e}")))
+    }
+
+    async fn publish_release_ref(
+        &self,
+        release_id: i64,
+        make_latest: octocrate::repos::update_release::RequestMakeLatest,
+    ) -> Result<(), octocrate::Error> {
+        let request = publish_release_request(make_latest);
 
         self.github_rest
             .repos
-            .update_release(&self.owner, &self.repo, release_ref.id)
+            .update_release(&self.owner, &self.repo, release_id)
             .body(&request)
             .send()
-            .await
-            .map_err(|e| {
-                Error::ReleaseAsset(format!("failed to publish release for tag '{tag}': {e}"))
-            })?;
+            .await?;
 
         Ok(())
+    }
+}
+
+fn publish_release_request(
+    make_latest: octocrate::repos::update_release::RequestMakeLatest,
+) -> octocrate::repos::update_release::Request {
+    octocrate::repos::update_release::Request {
+        body: None,
+        discussion_category_name: None,
+        draft: Some(false),
+        make_latest: Some(make_latest),
+        name: None,
+        prerelease: None,
+        tag_name: None,
+        target_commitish: None,
     }
 }
 
@@ -407,5 +476,33 @@ mod tests {
     fn map_asset_upload_error_falls_back_to_release_asset_for_other_failures() {
         let err = map_asset_upload_error("pcu-v0.6.29", "422 Validation Failed");
         assert!(matches!(err, Error::ReleaseAsset(_)));
+    }
+
+    /// `pcu::Client`'s release pipeline calls the by-id publish path
+    /// immediately after creating the release it already has the id for —
+    /// forcing `true` is always correct there (jerus-org/pcu#1061).
+    #[test]
+    fn publish_release_request_forces_true_for_the_by_id_path() {
+        let req =
+            publish_release_request(octocrate::repos::update_release::RequestMakeLatest::True);
+        assert_eq!(req.draft, Some(false));
+        assert!(matches!(
+            req.make_latest,
+            Some(octocrate::repos::update_release::RequestMakeLatest::True)
+        ));
+    }
+
+    /// The public, tag-based path could target an older release (e.g. a
+    /// backport), so it must not force `true` — see `publish_release`'s own
+    /// doc comment.
+    #[test]
+    fn publish_release_request_uses_legacy_for_the_tag_based_path() {
+        let req =
+            publish_release_request(octocrate::repos::update_release::RequestMakeLatest::Legacy);
+        assert_eq!(req.draft, Some(false));
+        assert!(matches!(
+            req.make_latest,
+            Some(octocrate::repos::update_release::RequestMakeLatest::Legacy)
+        ));
     }
 }
