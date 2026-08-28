@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- headless release-asset writer(pr [#1062])
+
 ### Changed
 
 - refactor-nest bsky/linkedin CIExit variants(pr [#1060])
@@ -2589,6 +2593,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1058]: https://github.com/jerus-org/pcu/pull/1058
 [#1060]: https://github.com/jerus-org/pcu/pull/1060
 [#1063]: https://github.com/jerus-org/pcu/pull/1063
+[#1062]: https://github.com/jerus-org/pcu/pull/1062
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.33...HEAD
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
