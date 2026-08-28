@@ -1,6 +1,6 @@
 [package]
 name = "pcu-release-assets"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 authors.workspace = true
 description = "Headless clients for a GitHub release's assets — download, upload, and publish — with no git checkout required"
