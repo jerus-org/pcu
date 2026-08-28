@@ -3,7 +3,7 @@ use std::{path::Path, sync::Arc};
 use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
 
 use crate::{
-    client::{build_authenticated_clients, release_not_found_error, ReleaseAssetClient},
+    client::{new_headless, release_not_found_error, ReleaseAssetClient},
     Error,
 };
 
@@ -39,16 +39,7 @@ impl ReleaseAssetWriter {
         repo: impl Into<String>,
         github_token: impl Into<String>,
     ) -> Self {
-        let github_token = github_token.into();
-        let (github_rest, github_graphql) = build_authenticated_clients(&github_token);
-
-        Self::from_shared(
-            owner,
-            repo,
-            github_token,
-            Arc::new(github_rest),
-            Arc::new(github_graphql),
-        )
+        new_headless(owner, repo, github_token, Self::from_shared)
     }
 
     /// Construct a writer for `owner`/`repo` from an already-authenticated

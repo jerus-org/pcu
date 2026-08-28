@@ -52,16 +52,7 @@ impl ReleaseAssetClient {
         repo: impl Into<String>,
         github_token: impl Into<String>,
     ) -> Self {
-        let github_token = github_token.into();
-        let (github_rest, github_graphql) = build_authenticated_clients(&github_token);
-
-        Self::from_shared(
-            owner,
-            repo,
-            github_token,
-            Arc::new(github_rest),
-            Arc::new(github_graphql),
-        )
+        new_headless(owner, repo, github_token, Self::from_shared)
     }
 
     /// Construct a client for `owner`/`repo` from an already-authenticated
@@ -357,11 +348,32 @@ fn find_existing_asset_id<'a>(
         .map(|(_, id)| id)
 }
 
+/// Shared by every headless type's `new()` (`ReleaseAssetClient` and
+/// `ReleaseAssetWriter`): build a fresh authenticated client pair for
+/// `github_token`, then hand ownership to `from_shared`. Both types' `new()`
+/// bodies were identical before this was factored out — SonarQube flagged
+/// the duplication (jerus-org/pcu#1059's PR).
+pub(crate) fn new_headless<T>(
+    owner: impl Into<String>,
+    repo: impl Into<String>,
+    github_token: impl Into<String>,
+    from_shared: impl FnOnce(String, String, String, Arc<GitHubAPI>, Arc<gql_client::Client>) -> T,
+) -> T {
+    let owner = owner.into();
+    let repo = repo.into();
+    let github_token = github_token.into();
+    let (github_rest, github_graphql) = build_authenticated_clients(&github_token);
+
+    from_shared(
+        owner,
+        repo,
+        github_token,
+        Arc::new(github_rest),
+        Arc::new(github_graphql),
+    )
+}
+
 /// Build a fresh authenticated REST + GraphQL client pair for `token`.
-///
-/// Shared by [`ReleaseAssetClient::new`] and `ReleaseAssetWriter::new` so a
-/// change to the auth headers (or the GraphQL endpoint) only needs to be
-/// made in one place.
 pub(crate) fn build_authenticated_clients(token: &str) -> (GitHubAPI, gql_client::Client) {
     let pat = PersonalAccessToken::new(token);
     let config = APIConfig::with_token(pat).shared();
