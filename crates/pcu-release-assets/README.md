@@ -42,7 +42,7 @@ pcu-release-assets = "0.1.0"
 - No `git2` dependency: neither client touches the filesystem or a git repository (beyond reading the local asset file to upload).
 - Capability boundary by type: `ReleaseAssetClient` has no upload or publish method at all — the boundary is enforced by the method not existing, not by a runtime flag. A consumer that only ever verifies/downloads never depends on write capability. `ReleaseAssetWriter` is a separate type for callers that do need to write.
 - No draft access on the read side: [`ReleaseAssetClient::download_release_asset`] always resolves to the published release for a tag — there is no `allow_draft` parameter on this entry point. A draft's assets can still be replaced, so a verifier must never trust one. `ReleaseAssetWriter::upload_release_asset` and `publish_release` do work against a draft, since a writer is the one attaching the assets before the draft is published.
-- A token is currently required for every call, even against a public repo: release lookup goes through `api.github.com/graphql`, which — unlike parts of GitHub's REST API — has no anonymous path; every GraphQL request must be authenticated. See jerus-org/pcu#1064 for a proposed unauthenticated path for the published-only lookup `download_release_asset` uses.
+- Authentication is optional only for `download_release_asset`: build with [`ReleaseAssetClient::new_unauthenticated`] to read a **public** repo's published release with no `GITHUB_TOKEN` at all (jerus-org/pcu#1064) — that method looks the release up via REST, which serves public repos unauthenticated. Every other entry point — `find_release_for_tag`, `download_release_asset_allowing_draft`, and all of `ReleaseAssetWriter` — needs draft visibility or write access, both of which require a token regardless of repo visibility (draft lookups go through GitHub's GraphQL API, which has no anonymous path at all); calling one of these on an unauthenticated client returns a clear error instead of a confusing 401 from GitHub.
 
 ## Usage
 
@@ -51,6 +51,20 @@ pcu-release-assets = "0.1.0"
 use pcu_release_assets::ReleaseAssetClient;
 
 let client = ReleaseAssetClient::new("jerus-org", "jci-audit", std::env::var("GITHUB_TOKEN").unwrap());
+let bytes = client
+    .download_release_asset("jci-audit-v0.1.0", "release-0.1.0.json")
+    .await?;
+# Ok(())
+# }
+```
+
+```rust,no_run
+# async fn demo() -> Result<(), pcu_release_assets::Error> {
+use pcu_release_assets::ReleaseAssetClient;
+
+// No GITHUB_TOKEN needed — jci-audit is a public repo, and download_release_asset
+// is the one entry point that works with no authentication at all.
+let client = ReleaseAssetClient::new_unauthenticated("jerus-org", "jci-audit");
 let bytes = client
     .download_release_asset("jci-audit-v0.1.0", "release-0.1.0.json")
     .await?;
@@ -76,6 +90,7 @@ writer.publish_release("jci-audit-v0.1.0").await?;
 
 - [X] Locate the release for a tag (published or draft, listing both)
 - [X] Download a named asset from the **published** release for a tag
+- [X] Download a named asset from a public repo with no `GITHUB_TOKEN`
 - [X] Upload/replace an asset on a draft or published (non-immutable) release
 - [X] Publish (un-draft) a release
 

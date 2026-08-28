@@ -33,9 +33,22 @@ pub struct ReleaseRef {
 pub struct ReleaseAssetClient {
     owner: String,
     repo: String,
-    github_token: String,
     github_rest: Arc<GitHubAPI>,
-    github_graphql: Arc<gql_client::Client>,
+    auth: Auth,
+}
+
+/// Whether this client can reach GitHub's GraphQL API, which has no
+/// anonymous path at all (unlike GitHub's REST API, which serves public
+/// repos unauthenticated). Draft visibility and the `_allowing_draft` entry
+/// points need `Token`; [`ReleaseAssetClient::download_release_asset`]
+/// works with either, since it never needs GraphQL — see
+/// jerus-org/pcu#1064.
+enum Auth {
+    Token {
+        token: String,
+        graphql: Arc<gql_client::Client>,
+    },
+    Anonymous,
 }
 
 impl ReleaseAssetClient {
@@ -70,9 +83,34 @@ impl ReleaseAssetClient {
         Self {
             owner: owner.into(),
             repo: repo.into(),
-            github_token: github_token.into(),
             github_rest,
-            github_graphql,
+            auth: Auth::Token {
+                token: github_token.into(),
+                graphql: github_graphql,
+            },
+        }
+    }
+
+    /// Construct a read-only client for `owner`/`repo` with no
+    /// authentication at all — for downloading a named asset from a
+    /// **public** repo's published release with no `GITHUB_TOKEN`
+    /// (jerus-org/pcu#1064).
+    ///
+    /// Only [`Self::download_release_asset`] works with a client built this
+    /// way: it's the one entry point that never needs draft visibility, so
+    /// it never needs GitHub's GraphQL API — which, unlike GitHub's REST
+    /// API, has no anonymous path at all. [`Self::find_release_for_tag`]
+    /// and [`Self::download_release_asset_allowing_draft`] both need it, so
+    /// they return a clear "requires authentication" error on a client
+    /// built this way, rather than attempting the call and failing with a
+    /// confusing 401 from GitHub.
+    pub fn new_unauthenticated(owner: impl Into<String>, repo: impl Into<String>) -> Self {
+        let github_rest = Arc::new(GitHubAPI::new(&APIConfig::default().shared()));
+        Self {
+            owner: owner.into(),
+            repo: repo.into(),
+            github_rest,
+            auth: Auth::Anonymous,
         }
     }
 
@@ -91,6 +129,14 @@ impl ReleaseAssetClient {
     /// needs the same lookup, with the `draft` flag intact, for its own
     /// upload/publish path.
     pub async fn find_release_for_tag(&self, tag: &str) -> Result<Option<ReleaseRef>, Error> {
+        // Checked here, before the retry loop, rather than only inside
+        // `get_release_candidates`: an unauthenticated client can never
+        // succeed at this, so `lookup_with_retry`'s "could not tell, try
+        // again" handling — meant for transient failures like eventual
+        // consistency lag — would otherwise burn all 5 attempts (10s of
+        // sleeping) on a permanent, already-known-doomed error.
+        self.graphql_client()?;
+
         lookup_with_retry(
             tag,
             RELEASE_LOOKUP_ATTEMPTS,
@@ -168,12 +214,39 @@ impl ReleaseAssetClient {
         };
 
         let data = self
-            .github_graphql
+            .graphql_client()?
             .query_with_vars_unwrap::<GetReleases, Vars>(query, vars)
             .await
             .map_err(|e| Error::ReleaseAsset(format!("GraphQL error: {e}")))?;
 
         Ok(collect_candidates(data.repository))
+    }
+
+    /// The GraphQL client, or a clear error if this client was built via
+    /// [`Self::new_unauthenticated`] — GitHub's GraphQL API has no
+    /// anonymous path, so there is nothing to fall back to.
+    fn graphql_client(&self) -> Result<&gql_client::Client, Error> {
+        match &self.auth {
+            Auth::Token { graphql, .. } => Ok(graphql),
+            Auth::Anonymous => Err(Error::ReleaseAsset(
+                "this operation requires authentication: GitHub's GraphQL API has no \
+                 anonymous path. Construct with ReleaseAssetClient::new instead of \
+                 new_unauthenticated."
+                    .to_string(),
+            )),
+        }
+    }
+
+    /// The bearer token to send with a REST call, if this client has one.
+    /// `None` for a client built via [`Self::new_unauthenticated`] — such a
+    /// call is sent with no `Authorization` header at all, not an empty one
+    /// (GitHub treats an empty bearer token as invalid credentials, not as
+    /// anonymous).
+    fn token(&self) -> Option<&str> {
+        match &self.auth {
+            Auth::Token { token, .. } => Some(token),
+            Auth::Anonymous => None,
+        }
     }
 
     /// Fetch `release_id`'s current asset list and look up `asset_name` in
@@ -226,18 +299,94 @@ impl ReleaseAssetClient {
             .await?
             .ok_or_else(|| asset_not_found_error(asset_name, tag))?;
 
-        let url = asset_download_url(&self.owner, &self.repo, asset_id);
+        self.fetch_asset_bytes(asset_id, tag, asset_name).await
+    }
 
-        let response = reqwest::Client::new()
-            .get(&url)
-            .header("Accept", "application/octet-stream")
-            .header("Authorization", format!("Bearer {}", self.github_token))
-            .header("User-Agent", "pcu-release-assets")
+    /// Download a named asset from the **published** release for `tag`.
+    ///
+    /// This is the entry point for external, read-only consumers (e.g.
+    /// jci-audit's release verification, or a public-repo download with no
+    /// `GITHUB_TOKEN` at all — jerus-org/pcu#1064). There is no
+    /// `allow_draft` parameter — a draft's assets can still be replaced, so
+    /// a verifier must never trust one.
+    ///
+    /// Looks the release up via REST (`GET .../releases/tags/{tag}`)
+    /// instead of [`Self::find_release_for_tag`]'s GraphQL query — that
+    /// endpoint only ever resolves a *published* release, which is exactly
+    /// this method's contract, and unlike GraphQL it works without a token
+    /// against a public repo.
+    pub async fn download_release_asset(
+        &self,
+        tag: &str,
+        asset_name: &str,
+    ) -> Result<Vec<u8>, Error> {
+        let release_id = self
+            .find_published_release_id_for_tag(tag)
+            .await?
+            .ok_or_else(|| no_published_release_error(tag))?;
+
+        let asset_id = self
+            .find_asset_in_release(release_id, asset_name)
+            .await?
+            .ok_or_else(|| asset_not_found_error(asset_name, tag))?;
+
+        self.fetch_asset_bytes(asset_id, tag, asset_name).await
+    }
+
+    /// Locate the **published** release id for `tag` via REST. Works with
+    /// or without a token (unauthenticated is fine for a public repo),
+    /// unlike [`Self::find_release_for_tag`] — and, since GitHub's tag
+    /// endpoint only ever resolves a published release, this can never
+    /// return a draft to begin with.
+    async fn find_published_release_id_for_tag(&self, tag: &str) -> Result<Option<i64>, Error> {
+        lookup_with_retry(
+            tag,
+            RELEASE_LOOKUP_ATTEMPTS,
+            RELEASE_LOOKUP_DELAY,
+            || async { self.probe_published_release_for_tag(tag).await },
+        )
+        .await
+    }
+
+    async fn probe_published_release_for_tag(&self, tag: &str) -> Result<Option<i64>, Error> {
+        match self
+            .github_rest
+            .repos
+            .get_release_by_tag(&self.owner, &self.repo, tag)
             .send()
             .await
-            .map_err(|e| {
-                Error::ReleaseAsset(format!("failed to download asset '{asset_name}': {e}"))
-            })?;
+        {
+            Ok(release) => Ok(Some(release.id)),
+            Err(e) if is_not_found(&e) => Ok(None),
+            Err(e) => Err(Error::ReleaseAsset(format!(
+                "failed to look up release for tag '{tag}': {e}"
+            ))),
+        }
+    }
+
+    /// Fetch `asset_id`'s raw bytes from GitHub's REST asset-download
+    /// endpoint. Shared by [`Self::download_release_asset_allowing_draft`]
+    /// and [`Self::download_release_asset`] — both need the identical
+    /// fetch, only the release lookup that produces `asset_id` differs.
+    async fn fetch_asset_bytes(
+        &self,
+        asset_id: i64,
+        tag: &str,
+        asset_name: &str,
+    ) -> Result<Vec<u8>, Error> {
+        let url = asset_download_url(&self.owner, &self.repo, asset_id);
+
+        let mut request = reqwest::Client::new()
+            .get(&url)
+            .header("Accept", "application/octet-stream")
+            .header("User-Agent", "pcu-release-assets");
+        if let Some(token) = self.token() {
+            request = request.header("Authorization", format!("Bearer {token}"));
+        }
+
+        let response = request.send().await.map_err(|e| {
+            Error::ReleaseAsset(format!("failed to download asset '{asset_name}': {e}"))
+        })?;
 
         check_download_response_status(response.status(), tag, asset_name)?;
 
@@ -248,21 +397,27 @@ impl ReleaseAssetClient {
         log::info!("Downloaded {} bytes for asset '{asset_name}'", bytes.len());
         Ok(bytes.to_vec())
     }
+}
 
-    /// Download a named asset from the **published** release for `tag`.
-    ///
-    /// This is the entry point for external, read-only consumers (e.g.
-    /// jci-audit's release verification). There is no `allow_draft`
-    /// parameter — a draft's assets can still be replaced, so a verifier
-    /// must never trust one.
-    pub async fn download_release_asset(
-        &self,
-        tag: &str,
-        asset_name: &str,
-    ) -> Result<Vec<u8>, Error> {
-        self.download_release_asset_allowing_draft(tag, asset_name, false)
-            .await
-    }
+/// Recognise GitHub's standard 404 body for a REST call.
+///
+/// octocrate's error type carries no HTTP status at all (only the JSON
+/// error body — confirmed by reading `octocrate-core` 0.1.9's own
+/// `Error::RequestFailed`/`send_with_response` source, which discards the
+/// status before constructing either variant), so string-matching this
+/// documented, non-localised GitHub message is the only signal available
+/// here — unlike `ReleaseAssetWriter`'s delete-then-replace recovery in
+/// `writer.rs`, which avoids exactly this kind of message-matching by
+/// re-querying to verify the actual end state. That alternative doesn't
+/// apply here: there is no independent way to confirm "no published
+/// release for this tag" other than the same REST call that just failed,
+/// or a GraphQL fallback — which would defeat the point of this
+/// unauthenticated-capable lookup (jerus-org/pcu#1064). Residual risk: a
+/// differently-worded 404 body, or any other `RequestFailed` whose message
+/// happens to equal `"Not Found"`, is misread as "no release" rather than
+/// surfaced as a real failure.
+fn is_not_found(error: &octocrate::Error) -> bool {
+    matches!(error, octocrate::Error::RequestFailed(resp) if resp.message == "Not Found")
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -403,6 +558,24 @@ fn asset_download_url(owner: &str, repo: &str, asset_id: i64) -> String {
 /// name a not-found tag identically.
 pub(crate) fn release_not_found_error(tag: &str) -> Error {
     Error::ReleaseAsset(format!("GitHub release for tag '{tag}' not found"))
+}
+
+/// [`ReleaseAssetClient::download_release_asset`]'s own not-found error —
+/// distinct from [`release_not_found_error`] because the REST tag endpoint
+/// it uses only ever resolves a *published* release, unlike
+/// `find_release_for_tag`'s GraphQL query, which also sees a draft (and, on
+/// finding one, reports it specifically via `check_draft_allowed` rather
+/// than this generic message). So this case is genuinely ambiguous: it
+/// covers both "no release exists for this tag at all" and "a release
+/// exists but is still an unpublished draft" — the wording says so, rather
+/// than implying the more specific of the two when only the REST lookup
+/// (which cannot tell them apart) was actually consulted.
+fn no_published_release_error(tag: &str) -> Error {
+    Error::ReleaseAsset(format!(
+        "no published GitHub release for tag '{tag}' (this may mean no release exists, or \
+         it exists only as an unpublished draft — try \
+         ReleaseAssetClient::download_release_asset_allowing_draft with a token instead)"
+    ))
 }
 
 fn asset_not_found_error(asset_name: &str, tag: &str) -> Error {
@@ -560,6 +733,19 @@ mod tests {
         assert!(msg.contains("pcu-v1.0.0"), "unexpected: {msg}");
     }
 
+    /// The message must not claim more than the REST lookup actually knows
+    /// — it can't distinguish "no release" from "still a draft", so it must
+    /// name both possibilities rather than asserting the former.
+    #[test]
+    fn no_published_release_error_names_the_tag_and_the_draft_possibility() {
+        let msg = no_published_release_error("pcu-v1.0.0").to_string();
+        assert!(msg.contains("pcu-v1.0.0"), "tag missing: {msg}");
+        assert!(
+            msg.to_lowercase().contains("draft"),
+            "should name the draft possibility: {msg}"
+        );
+    }
+
     #[test]
     fn asset_not_found_error_names_the_asset_and_tag() {
         let msg = asset_not_found_error("asset.json", "pcu-v1.0.0").to_string();
@@ -610,16 +796,19 @@ mod tests {
         assert!(msg.to_lowercase().contains("draft"), "unexpected: {msg}");
     }
 
-    /// The public, external-facing entry point must have no way to opt into
-    /// reading a draft release — this is the reviewer's read-only/no-draft
-    /// constraint from pcu#1051, locked in as a compile-time signature fact
-    /// (no `allow_draft` parameter exists) plus this behavioural proof that
-    /// it always resolves through the draft-refusing path.
+    /// `download_release_asset_allowing_draft`'s own `allow_draft: false`
+    /// path — its read-only/no-draft constraint from pcu#1051, proven via
+    /// `check_draft_allowed`, the single source of truth for that refusal.
+    ///
+    /// This does NOT cover `download_release_asset` (the published-only
+    /// entry point) — since jerus-org/pcu#1064 that method no longer calls
+    /// `download_release_asset_allowing_draft` or `check_draft_allowed` at
+    /// all. Its own draft-exclusion is a property of the REST
+    /// `get_release_by_tag` endpoint's documented contract (GitHub: "Get a
+    /// published release with the specified tag"), not of any in-crate
+    /// logic — so there is nothing here left to unit test for it.
     #[test]
-    fn download_release_asset_always_refuses_a_draft() {
-        // download_release_asset_allowing_draft(..., false) is exactly what
-        // download_release_asset delegates to; check_draft_allowed is the
-        // single source of truth for that refusal, already proven above.
+    fn download_release_asset_allowing_draft_refuses_a_draft_by_default() {
         assert!(check_draft_allowed(true, false, "pcu-v1.0.0").is_err());
     }
 
@@ -790,6 +979,55 @@ mod tests {
             "by-tag result plus every listed release"
         );
         assert_eq!(candidates[0].database_id, Some(333744509));
+    }
+
+    #[test]
+    fn new_unauthenticated_builds_without_git_checkout_or_a_token() {
+        let client = ReleaseAssetClient::new_unauthenticated("test-org", "test-repo");
+        assert_eq!(client.owner(), "test-org");
+        assert_eq!(client.repo(), "test-repo");
+    }
+
+    /// Draft visibility needs GitHub's GraphQL API, which has no anonymous
+    /// path at all — an unauthenticated client must refuse with a clear
+    /// error rather than attempting (and confusingly failing) the call.
+    /// No network call happens here: the guard fires before any request is
+    /// sent, same as `upload_release_asset_returns_error_for_missing_file`'s
+    /// fail-fast pattern in `writer.rs`.
+    #[tokio::test]
+    async fn find_release_for_tag_refuses_anonymous_access() {
+        let client = ReleaseAssetClient::new_unauthenticated("test-org", "test-repo");
+        let result = client.find_release_for_tag("v1.0.0").await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(
+            msg.to_lowercase().contains("authentication"),
+            "unexpected: {msg}"
+        );
+    }
+
+    #[test]
+    fn is_not_found_recognises_githubs_standard_404_body() {
+        let error = octocrate::Error::RequestFailed(octocrate::APIErrorResponse {
+            message: "Not Found".to_string(),
+            documentation_url: "https://docs.github.com/rest".to_string(),
+        });
+        assert!(is_not_found(&error));
+    }
+
+    #[test]
+    fn is_not_found_is_false_for_other_api_errors() {
+        let error = octocrate::Error::RequestFailed(octocrate::APIErrorResponse {
+            message: "Validation Failed".to_string(),
+            documentation_url: "https://docs.github.com/rest".to_string(),
+        });
+        assert!(!is_not_found(&error));
+    }
+
+    #[test]
+    fn is_not_found_is_false_for_a_transport_error() {
+        let error = octocrate::Error::Error("connection reset".to_string());
+        assert!(!is_not_found(&error));
     }
 
     #[test]
