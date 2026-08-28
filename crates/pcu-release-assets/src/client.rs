@@ -52,29 +52,7 @@ impl ReleaseAssetClient {
         repo: impl Into<String>,
         github_token: impl Into<String>,
     ) -> Self {
-        let github_token = github_token.into();
-
-        let pat = PersonalAccessToken::new(&github_token);
-        let config = APIConfig::with_token(pat).shared();
-        let github_rest = GitHubAPI::new(&config);
-
-        let auth = format!("Bearer {github_token}");
-        let github_graphql = gql_client::Client::new_with_headers(
-            END_POINT,
-            HashMap::from([
-                ("X-Github-Next-Global-ID", "1"),
-                ("User-Agent", "pcu-release-assets"),
-                ("Authorization", &auth),
-            ]),
-        );
-
-        Self::from_shared(
-            owner,
-            repo,
-            github_token,
-            Arc::new(github_rest),
-            Arc::new(github_graphql),
-        )
+        new_headless(owner, repo, github_token, Self::from_shared)
     }
 
     /// Construct a client for `owner`/`repo` from an already-authenticated
@@ -370,6 +348,50 @@ fn find_existing_asset_id<'a>(
         .map(|(_, id)| id)
 }
 
+/// Shared by every headless type's `new()` (`ReleaseAssetClient` and
+/// `ReleaseAssetWriter`): build a fresh authenticated client pair for
+/// `github_token`, then hand ownership to `from_shared`. Both types' `new()`
+/// bodies were identical before this was factored out — SonarQube flagged
+/// the duplication (jerus-org/pcu#1059's PR).
+pub(crate) fn new_headless<T>(
+    owner: impl Into<String>,
+    repo: impl Into<String>,
+    github_token: impl Into<String>,
+    from_shared: impl FnOnce(String, String, String, Arc<GitHubAPI>, Arc<gql_client::Client>) -> T,
+) -> T {
+    let owner = owner.into();
+    let repo = repo.into();
+    let github_token = github_token.into();
+    let (github_rest, github_graphql) = build_authenticated_clients(&github_token);
+
+    from_shared(
+        owner,
+        repo,
+        github_token,
+        Arc::new(github_rest),
+        Arc::new(github_graphql),
+    )
+}
+
+/// Build a fresh authenticated REST + GraphQL client pair for `token`.
+pub(crate) fn build_authenticated_clients(token: &str) -> (GitHubAPI, gql_client::Client) {
+    let pat = PersonalAccessToken::new(token);
+    let config = APIConfig::with_token(pat).shared();
+    let github_rest = GitHubAPI::new(&config);
+
+    let auth = format!("Bearer {token}");
+    let github_graphql = gql_client::Client::new_with_headers(
+        END_POINT,
+        HashMap::from([
+            ("X-Github-Next-Global-ID", "1"),
+            ("User-Agent", "pcu-release-assets"),
+            ("Authorization", &auth),
+        ]),
+    );
+
+    (github_rest, github_graphql)
+}
+
 /// Build GitHub's REST asset-download URL for `asset_id`. Deliberately not
 /// `asset.browser_download_url`: that field only works unauthenticated, and
 /// only for public repos.
@@ -377,7 +399,9 @@ fn asset_download_url(owner: &str, repo: &str, asset_id: i64) -> String {
     format!("https://api.github.com/repos/{owner}/{repo}/releases/assets/{asset_id}")
 }
 
-fn release_not_found_error(tag: &str) -> Error {
+/// Shared by [`ReleaseAssetClient`] and `ReleaseAssetWriter` — both need to
+/// name a not-found tag identically.
+pub(crate) fn release_not_found_error(tag: &str) -> Error {
     Error::ReleaseAsset(format!("GitHub release for tag '{tag}' not found"))
 }
 

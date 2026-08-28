@@ -1,6 +1,6 @@
 # pcu-release-assets
 
-Read-only client for downloading a named asset from an already-published GitHub release, with no git checkout required.
+Headless clients for a GitHub release's assets — download, upload, and publish — with no git checkout required.
 
 [![Rust 1.89+][version-badge]][version-url]
 [![circleci-badge]][circleci-url]
@@ -28,7 +28,7 @@ Read-only client for downloading a named asset from an already-published GitHub 
 [ghub-badge]: https://img.shields.io/badge/sponsor-30363D?logo=GitHub-Sponsors&logoColor=#white
 [ghub-url]: https://github.com/sponsors/jerusdp
 
-Extracted from `pcu`'s `Client` (jerus-org/pcu#1051) so a consumer that only needs this one capability — e.g. `jci-audit verify --release-version` fetching a signed audit record from a bare directory, with no clone — does not have to depend on `pcu`'s git/CLI/changelog toolchain to get it.
+`ReleaseAssetClient` (read-only) was extracted from `pcu`'s `Client` (jerus-org/pcu#1051) so a consumer that only needs this one capability — e.g. `jci-audit verify --release-version` fetching a signed audit record from a bare directory, with no clone — does not have to depend on `pcu`'s git/CLI/changelog toolchain to get it. `ReleaseAssetWriter` (jerus-org/pcu#1059) is its write-capable sibling, for a consumer that needs to upload an asset and/or publish the release, still headless.
 
 ## Installation
 
@@ -39,9 +39,10 @@ pcu-release-assets = "0.1.0"
 
 ## Design
 
-- No `git2` dependency: `ReleaseAssetClient` never touches the filesystem or a git repository.
-- No write capability: there is no upload or publish method on this type. The capability boundary is enforced by the method not existing, not by a runtime flag.
-- No draft access: [`ReleaseAssetClient::download_release_asset`] always resolves to the published release for a tag — there is no `allow_draft` parameter on this entry point. A draft's assets can still be replaced, so a verifier must never trust one.
+- No `git2` dependency: neither client touches the filesystem or a git repository (beyond reading the local asset file to upload).
+- Capability boundary by type: `ReleaseAssetClient` has no upload or publish method at all — the boundary is enforced by the method not existing, not by a runtime flag. A consumer that only ever verifies/downloads never depends on write capability. `ReleaseAssetWriter` is a separate type for callers that do need to write.
+- No draft access on the read side: [`ReleaseAssetClient::download_release_asset`] always resolves to the published release for a tag — there is no `allow_draft` parameter on this entry point. A draft's assets can still be replaced, so a verifier must never trust one. `ReleaseAssetWriter::upload_release_asset` and `publish_release` do work against a draft, since a writer is the one attaching the assets before the draft is published.
+- A token is currently required for every call, even against a public repo: release lookup goes through `api.github.com/graphql`, which — unlike parts of GitHub's REST API — has no anonymous path; every GraphQL request must be authenticated. See jerus-org/pcu#1064 for a proposed unauthenticated path for the published-only lookup `download_release_asset` uses.
 
 ## Usage
 
@@ -57,11 +58,26 @@ let bytes = client
 # }
 ```
 
+```rust,no_run
+# async fn demo() -> Result<(), pcu_release_assets::Error> {
+use pcu_release_assets::ReleaseAssetWriter;
+use std::path::Path;
+
+let writer = ReleaseAssetWriter::new("jerus-org", "jci-audit", std::env::var("GITHUB_TOKEN").unwrap());
+writer
+    .upload_release_asset("jci-audit-v0.1.0", Path::new("release-0.1.0.json"), "release-0.1.0.json")
+    .await?;
+writer.publish_release("jci-audit-v0.1.0").await?;
+# Ok(())
+# }
+```
+
 ## Feature set
 
 - [X] Locate the release for a tag (published or draft, listing both)
 - [X] Download a named asset from the **published** release for a tag
-- [ ] Upload/replace an asset — deliberately out of scope; see `pcu::Client::upload_release_asset` for the write path
+- [X] Upload/replace an asset on a draft or published (non-immutable) release
+- [X] Publish (un-draft) a release
 
 [Contributing Guide](https://github.com/jerus-org/pcu/blob/main/CONTRIBUTING.md)
 

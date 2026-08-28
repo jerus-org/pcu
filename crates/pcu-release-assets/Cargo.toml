@@ -3,7 +3,7 @@ name = "pcu-release-assets"
 version = "0.1.0"
 edition.workspace = true
 authors.workspace = true
-description = "Read-only client for downloading a named asset from an already-published GitHub release, with no git checkout required"
+description = "Headless clients for a GitHub release's assets — download, upload, and publish — with no git checkout required"
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -25,17 +25,23 @@ gql_client.workspace = true
 log.workspace = true
 # Deliberately narrower than the workspace's own octocrate feature set (which
 # also carries apps/issues/pulls/users for pcu's CLI): a consumer depending on
-# this crate alone only ever needs the `repos` endpoints this client calls.
+# this crate alone only ever needs the `repos` endpoints this client calls,
+# plus `file-body` for ReleaseAssetWriter's binary asset upload.
 octocrate = { version = "2.2.0", default-features = false, features = [
     "repos",
+    "file-body",
     "rustls-tls",
 ] }
 reqwest.workspace = true
 serde.workspace = true
 thiserror.workspace = true
-# Only `time::sleep` for the release-lookup retry backoff — no runtime
-# feature, since the crate never drives its own executor.
-tokio = { version = "1.53.1", default-features = false, features = ["time"] }
+# `time::sleep` for the release-lookup retry backoff, `fs` for reading an
+# asset file to upload — no runtime feature, since the crate never drives its
+# own executor.
+tokio = { version = "1.53.1", default-features = false, features = [
+    "time",
+    "fs",
+] }
 
 [dev-dependencies]
 serde_json.workspace = true
