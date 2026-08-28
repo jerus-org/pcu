@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - headless release-asset writer(pr [#1062])
+- unauthenticated download_release_asset(pr [#1066])
 
 ### Changed
 
@@ -2596,6 +2597,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1063]: https://github.com/jerus-org/pcu/pull/1063
 [#1062]: https://github.com/jerus-org/pcu/pull/1062
 [#1065]: https://github.com/jerus-org/pcu/pull/1065
+[#1066]: https://github.com/jerus-org/pcu/pull/1066
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.33...HEAD
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
