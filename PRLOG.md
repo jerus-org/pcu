@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate uuid to 1.25.0(pr [#1058])
 - deps: lock file maintenance(pr [#1063])
 - delegate upload/publish to ReleaseAssetWriter(pr [#1065])
+- deps: update rust crate uuid to 1.26.0(pr [#1068])
 
 ## [0.6.33] - 2026-08-19
 
@@ -2598,6 +2599,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1062]: https://github.com/jerus-org/pcu/pull/1062
 [#1065]: https://github.com/jerus-org/pcu/pull/1065
 [#1066]: https://github.com/jerus-org/pcu/pull/1066
+[#1068]: https://github.com/jerus-org/pcu/pull/1068
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.33...HEAD
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
