@@ -6,8 +6,9 @@ mod pull_request;
 use config::Config;
 use git2::Repository;
 use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
-use octocrate::{APIConfig, AppAuthorization, GitHubAPI, PersonalAccessToken};
+use octocrab::{models::AppId, Octocrab};
 use owo_colors::{OwoColorize, Style};
+use secrecy::ExposeSecret;
 
 use self::pull_request::PullRequest;
 use crate::{Error, PrTitle};
@@ -18,7 +19,7 @@ pub struct Client {
     #[allow(dead_code)]
     // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
-    pub(crate) github_rest: Arc<GitHubAPI>,
+    pub(crate) github_rest: Arc<Octocrab>,
     pub(crate) github_graphql: Arc<gql_client::Client>,
     pub(crate) github_token: String,
     pub(crate) owner: String,
@@ -196,11 +197,11 @@ impl Client {
         settings: &Config,
         owner: &str,
         repo: &str,
-    ) -> Result<(GitHubAPI, gql_client::Client, String), Error> {
+    ) -> Result<(Octocrab, gql_client::Client, String), Error> {
         let bld_style = Style::new().bold();
         log::info!("\n***Get GitHub API instance***\n");
         log::trace!("Settings: {settings:#?}");
-        let (config, token) = match settings.get::<String>("app_id") {
+        let (github_rest, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::info!("Using {} for authentication", "GitHub App".style(bld_style));
 
@@ -210,28 +211,24 @@ impl Client {
 
                 log::trace!("Using private key {private_key:#?} for authentication");
 
-                let app_authorization = AppAuthorization::new(app_id, private_key);
-                let config = APIConfig::with_token(app_authorization).shared();
+                let app_id: u64 = app_id
+                    .parse()
+                    .map_err(|_| Error::InvalidAppId(app_id.clone()))?;
+                let encoding_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key.as_bytes())
+                    .map_err(|_| Error::NoGitHubAPIPrivateKey)?;
 
-                let api = GitHubAPI::new(&config);
+                let app_client = Octocrab::builder()
+                    .app(AppId(app_id), encoding_key)
+                    .build()?;
 
-                let installation = api
-                    .apps
-                    .get_repo_installation(owner, repo)
-                    .send()
-                    .await
-                    .unwrap();
-                let installation_token = api
-                    .apps
-                    .create_installation_access_token(installation.id)
-                    .send()
-                    .await
-                    .unwrap();
+                let installation = app_client
+                    .apps()
+                    .get_repository_installation(owner, repo)
+                    .await?;
+                let (github_rest, token) =
+                    app_client.installation_and_token(installation.id).await?;
 
-                (
-                    APIConfig::with_token(installation_token.clone()).shared(),
-                    installation_token.token,
-                )
+                (github_rest, token.expose_secret().to_string())
             }
             Err(_) => {
                 let pat = settings
@@ -242,11 +239,9 @@ impl Client {
                     "Personal Access Token".style(bld_style)
                 );
 
-                // Create a personal access token
-                let personal_access_token = PersonalAccessToken::new(&pat);
+                let github_rest = Octocrab::builder().personal_token(pat.clone()).build()?;
 
-                // Use the personal access token to create a API configuration
-                (APIConfig::with_token(personal_access_token).shared(), pat)
+                (github_rest, pat)
             }
         };
 
@@ -259,8 +254,6 @@ impl Client {
         ]);
 
         let github_graphql = gql_client::Client::new_with_headers(END_POINT, headers);
-
-        let github_rest = GitHubAPI::new(&config);
 
         Ok((github_rest, github_graphql, token))
     }
@@ -397,9 +390,12 @@ impl Client {
 
         // Create minimal API stubs — any method that actually uses these will
         // fail with an auth error, which is expected for a local-only client.
-        let dummy_pat = PersonalAccessToken::new("");
-        let dummy_config = APIConfig::with_token(dummy_pat).shared();
-        let github_rest = Arc::new(GitHubAPI::new(&dummy_config));
+        let github_rest = Arc::new(
+            Octocrab::builder()
+                .personal_token(String::new())
+                .build()
+                .expect("building an Octocrab client from an empty token cannot fail"),
+        );
         let github_graphql = Arc::new(gql_client::Client::new_with_headers(
             END_POINT,
             HashMap::from([
@@ -594,8 +590,12 @@ mod tests {
         assert_eq!(repo, "pcu");
     }
 
-    #[test]
-    fn new_local_at_derives_owner_repo_from_remote() {
+    // `Octocrab::builder().build()` (inside `Client::new_local_at`) spawns a
+    // tower buffer task internally (the default "retry"/"timeout" features),
+    // so building one needs an active Tokio runtime — hence `#[tokio::test]`
+    // on these constructor tests even though none of them await anything.
+    #[tokio::test]
+    async fn new_local_at_derives_owner_repo_from_remote() {
         let dir = tempfile::tempdir().unwrap();
         let repo = git2::Repository::init(dir.path()).unwrap();
         repo.remote("origin", "https://github.com/test-org/test-repo.git")
@@ -606,8 +606,8 @@ mod tests {
         assert_eq!(client.repo(), "test-repo");
     }
 
-    #[test]
-    fn new_local_at_falls_back_when_no_remote() {
+    #[tokio::test]
+    async fn new_local_at_falls_back_when_no_remote() {
         let dir = tempfile::tempdir().unwrap();
         git2::Repository::init(dir.path()).unwrap();
 
@@ -617,18 +617,19 @@ mod tests {
         assert_eq!(client.repo(), "local");
     }
 
-    #[test]
-    fn upload_release_asset_returns_error_for_missing_file() {
+    #[tokio::test]
+    async fn upload_release_asset_returns_error_for_missing_file() {
         let dir = tempfile::tempdir().unwrap();
         git2::Repository::init(dir.path()).unwrap();
         let client = Client::new_local_at(dir.path()).unwrap();
 
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let result = rt.block_on(client.upload_release_asset(
-            "v1.0.0",
-            std::path::Path::new("/nonexistent/binary"),
-            "binary",
-        ));
+        let result = client
+            .upload_release_asset(
+                "v1.0.0",
+                std::path::Path::new("/nonexistent/binary"),
+                "binary",
+            )
+            .await;
         assert!(result.is_err());
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("Asset file not found"), "unexpected: {msg}");

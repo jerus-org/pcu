@@ -11,8 +11,6 @@
 //! its dispatch arm are gated too, so the CLI simply does not offer the command
 //! when it is compiled out.
 
-use octocrate::{APIConfig, PersonalAccessToken};
-
 use super::{resolve_version, Mode, Release};
 use crate::{CIExit, Client, Error};
 
@@ -61,9 +59,9 @@ impl Release {
             })?;
         let release = client
             .github_rest
-            .repos
-            .get_release(client.owner(), client.repo(), release_ref.id)
-            .send()
+            .repos(client.owner(), client.repo())
+            .releases()
+            .get(release_ref.id as u64)
             .await?;
         let existing_assets: std::collections::HashSet<String> =
             release.assets.iter().map(|a| a.name.clone()).collect();
@@ -195,26 +193,16 @@ impl Release {
         // Step 6: Upload bundle and provenance to GitHub release
         log::info!("Uploading attestation assets to release {release_tag}...");
 
-        let upload_token = PersonalAccessToken::new(client.github_token.clone());
-        let upload_config = APIConfig::new("https://uploads.github.com", upload_token);
-        let upload_api = octocrate::GitHubAPI::new(&upload_config);
-
         for (path, name) in [
             (&bundle_path, bundle_filename.as_str()),
             (&provenance_path, provenance_filename.as_str()),
         ] {
-            let file = tokio::fs::File::open(path).await?;
-            let content_length = file.metadata().await?.len();
-            let query = octocrate::repos::upload_release_asset::Query::builder()
-                .name(name)
-                .build();
-            upload_api
-                .repos
-                .upload_release_asset(client.owner(), client.repo(), release.id)
-                .query(&query)
-                .header("Content-Type", "application/octet-stream")
-                .header("Content-Length", content_length.to_string())
-                .file(file)
+            let content = tokio::fs::read(path).await?;
+            client
+                .github_rest
+                .repos(client.owner(), client.repo())
+                .releases()
+                .upload_asset(release.id.into_inner(), name, content.into())
                 .send()
                 .await?;
             log::info!("Uploaded {name}");

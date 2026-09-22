@@ -2,7 +2,7 @@
 
 Headless clients for a GitHub release's assets — download, upload, and publish — with no git checkout required.
 
-[![Rust 1.89+][version-badge]][version-url]
+[![Rust 1.91+][version-badge]][version-url]
 [![circleci-badge]][circleci-url]
 [![Crates.io][crates-badge]][crates-url]
 [![Docs][docs-badge]][docs-url]
@@ -19,7 +19,7 @@ Headless clients for a GitHub release's assets — download, upload, and publish
 [apache-url]: https://github.com/jerus-org/pcu/blob/main/crates/pcu-release-assets/LICENSE-APACHE
 [circleci-badge]: https://dl.circleci.com/status-badge/img/gh/jerus-org/pcu/tree/main.svg?style=svg
 [circleci-url]: https://dl.circleci.com/status-badge/redirect/gh/jerus-org/pcu/tree/main
-[version-badge]: https://img.shields.io/badge/rust-1.89+-orange.svg
+[version-badge]: https://img.shields.io/badge/rust-1.91+-orange.svg
 [version-url]: https://www.rust-lang.org
 [docs-badge]:  https://docs.rs/pcu-release-assets/badge.svg
 [docs-url]:  https://docs.rs/pcu-release-assets

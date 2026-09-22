@@ -1,13 +1,11 @@
 use std::{path::Path, sync::Arc};
 
-use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
+use octocrab::{repos::releases::MakeLatest, Octocrab};
 
 use crate::{
     client::{new_headless, release_not_found_error, ReleaseAssetClient},
     Error,
 };
-
-const UPLOADS_END_POINT: &str = "https://uploads.github.com";
 
 /// A headless, write-capable client for a GitHub release's assets — upload
 /// and publish, with no git checkout required.
@@ -21,13 +19,7 @@ const UPLOADS_END_POINT: &str = "https://uploads.github.com";
 pub struct ReleaseAssetWriter {
     owner: String,
     repo: String,
-    github_rest: Arc<GitHubAPI>,
-    /// A second REST client pointed at `uploads.github.com` — binary uploads
-    /// must go there, not `api.github.com`. Built once at construction and
-    /// reused across calls, rather than per-upload, since a single writer is
-    /// commonly used to attach several assets (binary, `.sig`, attestation
-    /// bundle) to the same release.
-    upload_rest: Arc<GitHubAPI>,
+    github_rest: Arc<Octocrab>,
     reader: ReleaseAssetClient,
 }
 
@@ -47,13 +39,15 @@ impl ReleaseAssetWriter {
     /// already built. The `Arc`s are cloned (refcount only), not rebuilt, and
     /// the same clones back an internal [`ReleaseAssetClient`] for shared
     /// read operations — no second, redundant auth object for the same
-    /// token. `github_token` is only needed transiently here, to build the
-    /// `uploads.github.com`-pointed client — it is not retained afterward.
+    /// token. Unlike the octocrate-based client this replaced,
+    /// `octocrab`'s `upload_asset` resolves the release's own upload URL
+    /// itself, so there is no separate `uploads.github.com`-pointed client
+    /// to build here any more.
     pub fn from_shared(
         owner: impl Into<String>,
         repo: impl Into<String>,
         github_token: impl Into<String>,
-        github_rest: Arc<GitHubAPI>,
+        github_rest: Arc<Octocrab>,
         github_graphql: Arc<gql_client::Client>,
     ) -> Self {
         let owner = owner.into();
@@ -63,20 +57,15 @@ impl ReleaseAssetWriter {
         let reader = ReleaseAssetClient::from_shared(
             owner.clone(),
             repo.clone(),
-            github_token.clone(),
+            github_token,
             Arc::clone(&github_rest),
             github_graphql,
         );
-
-        let upload_token = PersonalAccessToken::new(github_token);
-        let upload_config = APIConfig::new(UPLOADS_END_POINT, upload_token);
-        let upload_rest = Arc::new(GitHubAPI::new(&upload_config));
 
         Self {
             owner,
             repo,
             github_rest,
-            upload_rest,
             reader,
         }
     }
@@ -139,21 +128,23 @@ impl ReleaseAssetWriter {
             .await?
         {
             log::info!("Replacing existing asset '{asset_name}' (id={asset_id})");
+            // octocrab's `ReleasesHandler` has no dedicated delete-asset
+            // method, so this goes through the generic route — see
+            // jerus-org/pcu#1070.
+            let delete_route = format!(
+                "repos/{}/{}/releases/assets/{asset_id}",
+                self.owner, self.repo
+            );
             if let Err(e) = self
                 .github_rest
-                .repos
-                .delete_release_asset(&self.owner, &self.repo, asset_id)
-                .send()
+                .delete::<(), _, ()>(delete_route, None)
                 .await
             {
                 // A concurrent or previous partial run may have already
                 // deleted this asset between the listing above and this
-                // call. octocrate's error type carries no HTTP status (only
-                // GitHub's JSON error body), so rather than string-matching
-                // its "Not Found" message text, re-check the actual end
-                // state: if the asset is genuinely gone, the desired
-                // outcome — no conflicting asset — already holds, and this
-                // isn't a real failure.
+                // call. Re-check the actual end state: if the asset is
+                // genuinely gone, the desired outcome — no conflicting
+                // asset — already holds, and this isn't a real failure.
                 if self
                     .reader
                     .find_asset_in_release(release_ref.id, asset_name)
@@ -166,48 +157,32 @@ impl ReleaseAssetWriter {
             }
         }
 
-        let file = tokio::fs::File::open(binary).await.map_err(|e| {
+        // octocrab's `upload_asset` takes fully-buffered `Bytes` (it has no
+        // streamed-file variant, unlike the octocrate client this replaced —
+        // see jerus-org/pcu#1070), so the file is read in full here rather
+        // than opened and streamed. Read fresh right before the upload
+        // (rather than reusing the existence check's `metadata` above) to
+        // stay immune to a TOCTOU: several await points (release lookup,
+        // asset lookup, delete-asset round-trip) separate that earlier stat
+        // from this read.
+        let content = tokio::fs::read(binary).await.map_err(|e| {
             Error::ReleaseAsset(format!(
-                "failed to open asset file '{}': {e}",
+                "failed to read asset file '{}': {e}",
                 binary.display()
             ))
         })?;
-        // Re-stat via the open file handle rather than reusing `metadata`
-        // from the existence check above: several await points (release
-        // lookup, asset lookup, delete-asset round-trips) separate that
-        // earlier stat from the actual upload, so its length could be stale
-        // if the file was still being written or rotated concurrently.
-        // Reading it from the handle we're about to stream is also immune
-        // to a path-level TOCTOU a second `tokio::fs::metadata(binary)` call
-        // wouldn't be.
-        let content_length = file
-            .metadata()
-            .await
-            .map_err(|e| {
-                Error::ReleaseAsset(format!(
-                    "failed to read metadata for asset file '{}': {e}",
-                    binary.display()
-                ))
-            })?
-            .len();
 
-        let content_type = if asset_name.ends_with(".sig") {
-            "text/plain"
-        } else {
-            "application/octet-stream"
-        };
-
-        let query = octocrate::repos::upload_release_asset::Query::builder()
-            .name(asset_name)
-            .build();
-
-        self.upload_rest
-            .repos
-            .upload_release_asset(&self.owner, &self.repo, release_ref.id)
-            .query(&query)
-            .header("Content-Type", content_type)
-            .header("Content-Length", content_length.to_string())
-            .file(file)
+        // octocrab's `UploadAssetBuilder` always sends
+        // `Content-Type: application/octet-stream` with no override hook, so
+        // the `.sig`-vs-binary distinction the octocrate client made (`.sig`
+        // as `text/plain`) is lost here. Accepted: nothing reads that header
+        // to decide validity (`cosign verify-blob` doesn't consult it) — it
+        // only affected how a browser would render the asset if opened
+        // directly. See jerus-org/pcu#1070.
+        self.github_rest
+            .repos(&self.owner, &self.repo)
+            .releases()
+            .upload_asset(release_ref.id as u64, asset_name, content.into())
             .send()
             .await
             .map_err(|e| map_asset_upload_error(tag, &e.to_string()))?;
@@ -236,12 +211,11 @@ impl ReleaseAssetWriter {
             .await?
             .ok_or_else(|| release_not_found_error(tag))?;
 
-        self.publish_release_ref(
-            release_ref.id,
-            octocrate::repos::update_release::RequestMakeLatest::Legacy,
-        )
-        .await
-        .map_err(|e| Error::ReleaseAsset(format!("failed to publish release for tag '{tag}': {e}")))
+        self.publish_release_ref(release_ref.id, MakeLatest::Legacy)
+            .await
+            .map_err(|e| {
+                Error::ReleaseAsset(format!("failed to publish release for tag '{tag}': {e}"))
+            })
     }
 
     /// Un-draft `release_id`, forcing `make_latest: true` unconditionally.
@@ -255,44 +229,28 @@ impl ReleaseAssetWriter {
     /// release. Consolidates what was previously a separate copy of this
     /// same PATCH in `pcu::Client::publish_release` — see jerus-org/pcu#1061.
     pub async fn publish_release_by_id(&self, release_id: i64) -> Result<(), Error> {
-        self.publish_release_ref(
-            release_id,
-            octocrate::repos::update_release::RequestMakeLatest::True,
-        )
-        .await
-        .map_err(|e| Error::ReleaseAsset(format!("failed to publish release {release_id}: {e}")))
+        self.publish_release_ref(release_id, MakeLatest::True)
+            .await
+            .map_err(|e| {
+                Error::ReleaseAsset(format!("failed to publish release {release_id}: {e}"))
+            })
     }
 
     async fn publish_release_ref(
         &self,
         release_id: i64,
-        make_latest: octocrate::repos::update_release::RequestMakeLatest,
-    ) -> Result<(), octocrate::Error> {
-        let request = publish_release_request(make_latest);
-
+        make_latest: MakeLatest,
+    ) -> Result<(), octocrab::Error> {
         self.github_rest
-            .repos
-            .update_release(&self.owner, &self.repo, release_id)
-            .body(&request)
+            .repos(&self.owner, &self.repo)
+            .releases()
+            .update(release_id as u64)
+            .draft(false)
+            .make_latest(make_latest)
             .send()
             .await?;
 
         Ok(())
-    }
-}
-
-fn publish_release_request(
-    make_latest: octocrate::repos::update_release::RequestMakeLatest,
-) -> octocrate::repos::update_release::Request {
-    octocrate::repos::update_release::Request {
-        body: None,
-        discussion_category_name: None,
-        draft: Some(false),
-        make_latest: Some(make_latest),
-        name: None,
-        prerelease: None,
-        tag_name: None,
-        target_commitish: None,
     }
 }
 
@@ -342,27 +300,33 @@ mod tests {
         assert!(msg.contains("Asset file not found"), "unexpected: {msg}");
     }
 
-    #[test]
-    fn release_asset_writer_builds_without_git_checkout() {
+    // `Octocrab::builder().build()` needs an active Tokio runtime (its
+    // default "retry"/"timeout" features spawn a tower buffer task) — hence
+    // `#[tokio::test]` here even though nothing is actually awaited.
+    #[tokio::test]
+    async fn release_asset_writer_builds_without_git_checkout() {
         let writer = ReleaseAssetWriter::new("test-org", "test-repo", "token");
         assert_eq!(writer.owner(), "test-org");
         assert_eq!(writer.repo(), "test-repo");
     }
 
     /// `from_shared` must reuse the given `Arc`s rather than building a new
-    /// `GitHubAPI` for the same token. `ReleaseAssetWriter` holds the `Arc`
+    /// `Octocrab` for the same token. `ReleaseAssetWriter` holds the `Arc`
     /// twice — once in its own field (for write calls) and once inside the
     /// composed `reader: ReleaseAssetClient` (for read calls) — so the
     /// count rises by exactly 2 (the caller's own explicit clone passed in,
     /// then the writer's field, then the reader's field: 1 -> 2 -> 3). If
-    /// `from_shared` ever started constructing a fresh `GitHubAPI` instead
+    /// `from_shared` ever started constructing a fresh `Octocrab` instead
     /// of cloning the given `Arc`, this given `Arc`'s count would stay at 2
     /// (bumped only by the caller's own clone) instead of reaching 3.
-    #[test]
-    fn writer_from_shared_reuses_the_given_clients() {
-        let dummy_pat = PersonalAccessToken::new("token");
-        let dummy_config = APIConfig::with_token(dummy_pat).shared();
-        let github_rest = Arc::new(GitHubAPI::new(&dummy_config));
+    #[tokio::test]
+    async fn writer_from_shared_reuses_the_given_clients() {
+        let github_rest = Arc::new(
+            Octocrab::builder()
+                .personal_token("token".to_string())
+                .build()
+                .unwrap(),
+        );
         let github_graphql = Arc::new(gql_client::Client::new_with_headers(
             "https://api.github.com/graphql",
             std::collections::HashMap::<&str, &str>::new(),
@@ -478,31 +442,95 @@ mod tests {
         assert!(matches!(err, Error::ReleaseAsset(_)));
     }
 
+    /// A writer whose `github_rest` points at a mock server, for asserting
+    /// on the actual outgoing request rather than an octocrate-era
+    /// inspectable `Request` struct — octocrab's `UpdateReleaseBuilder` is a
+    /// fluent builder with no such struct to unit-test in isolation.
+    async fn writer_against(server: &wiremock::MockServer) -> ReleaseAssetWriter {
+        let github_rest = Arc::new(
+            Octocrab::builder()
+                .base_uri(server.uri())
+                .unwrap()
+                .personal_token("token".to_string())
+                .build()
+                .unwrap(),
+        );
+        let github_graphql = Arc::new(gql_client::Client::new_with_headers(
+            "https://api.github.com/graphql",
+            std::collections::HashMap::<&str, &str>::new(),
+        ));
+        ReleaseAssetWriter::from_shared(
+            "test-org",
+            "test-repo",
+            "token",
+            github_rest,
+            github_graphql,
+        )
+    }
+
     /// `pcu::Client`'s release pipeline calls the by-id publish path
     /// immediately after creating the release it already has the id for —
     /// forcing `true` is always correct there (jerus-org/pcu#1061).
-    #[test]
-    fn publish_release_request_forces_true_for_the_by_id_path() {
-        let req =
-            publish_release_request(octocrate::repos::update_release::RequestMakeLatest::True);
-        assert_eq!(req.draft, Some(false));
-        assert!(matches!(
-            req.make_latest,
-            Some(octocrate::repos::update_release::RequestMakeLatest::True)
-        ));
+    #[tokio::test]
+    async fn publish_release_by_id_forces_make_latest_true() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("PATCH"))
+            .and(wiremock::matchers::path(
+                "/repos/test-org/test-repo/releases/42",
+            ))
+            .and(wiremock::matchers::body_partial_json(
+                serde_json::json!({"draft": false, "make_latest": "true"}),
+            ))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": 42, "tag_name": "pcu-v1.0.0", "draft": false, "prerelease": false,
+                "assets": [], "target_commitish": "main", "name": null, "body": null,
+                "created_at": null, "published_at": null, "author": null,
+                "url": "https://api.github.com/repos/test-org/test-repo/releases/42",
+                "html_url": "https://github.com/test-org/test-repo/releases/tag/pcu-v1.0.0",
+                "assets_url": "https://api.github.com/repos/test-org/test-repo/releases/42/assets",
+                "upload_url": "https://uploads.github.com/repos/test-org/test-repo/releases/42/assets",
+                "tarball_url": null, "zipball_url": null, "node_id": "R_1"
+            })))
+            .mount(&server)
+            .await;
+
+        let writer = writer_against(&server).await;
+        writer.publish_release_by_id(42).await.unwrap();
     }
 
-    /// The public, tag-based path could target an older release (e.g. a
-    /// backport), so it must not force `true` — see `publish_release`'s own
-    /// doc comment.
-    #[test]
-    fn publish_release_request_uses_legacy_for_the_tag_based_path() {
-        let req =
-            publish_release_request(octocrate::repos::update_release::RequestMakeLatest::Legacy);
-        assert_eq!(req.draft, Some(false));
-        assert!(matches!(
-            req.make_latest,
-            Some(octocrate::repos::update_release::RequestMakeLatest::Legacy)
-        ));
+    /// `publish_release`'s tag-based path passes `MakeLatest::Legacy` (not
+    /// `True`) to `publish_release_ref` — a caller could target an older
+    /// release (e.g. a backport), where forcing `true` would wrongly demote
+    /// the actual newest release. Exercised here directly against
+    /// `publish_release_ref`, since going through the public `publish_release`
+    /// would also require mocking the GraphQL release lookup it does first.
+    #[tokio::test]
+    async fn publish_release_ref_sends_make_latest_legacy() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("PATCH"))
+            .and(wiremock::matchers::path(
+                "/repos/test-org/test-repo/releases/42",
+            ))
+            .and(wiremock::matchers::body_partial_json(
+                serde_json::json!({"draft": false, "make_latest": "legacy"}),
+            ))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": 42, "tag_name": "pcu-v1.0.0", "draft": false, "prerelease": false,
+                "assets": [], "target_commitish": "main", "name": null, "body": null,
+                "created_at": null, "published_at": null, "author": null,
+                "url": "https://api.github.com/repos/test-org/test-repo/releases/42",
+                "html_url": "https://github.com/test-org/test-repo/releases/tag/pcu-v1.0.0",
+                "assets_url": "https://api.github.com/repos/test-org/test-repo/releases/42/assets",
+                "upload_url": "https://uploads.github.com/repos/test-org/test-repo/releases/42/assets",
+                "tarball_url": null, "zipball_url": null, "node_id": "R_1"
+            })))
+            .mount(&server)
+            .await;
+
+        let writer = writer_against(&server).await;
+        writer
+            .publish_release_ref(42, MakeLatest::Legacy)
+            .await
+            .unwrap();
     }
 }

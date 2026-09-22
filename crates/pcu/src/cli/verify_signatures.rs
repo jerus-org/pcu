@@ -5,7 +5,7 @@ use crate::ops::{
 };
 use crate::Error;
 use clap::Parser;
-use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
+use octocrab::Octocrab;
 use owo_colors::OwoColorize;
 use std::env;
 
@@ -141,7 +141,7 @@ impl VerifySignatures {
 
 /// Post verification results as a PR comment
 async fn post_verification_comment(
-    github: &GitHubAPI,
+    github: &Octocrab,
     owner: &str,
     repo: &str,
     pr_number: u64,
@@ -309,18 +309,15 @@ fn write_external_contributors(
     Ok(())
 }
 
-/// Post comment to GitHub using octocrate issues API
+/// Post comment to GitHub using octocrab's issues API
 /// Updates existing comment if found, otherwise creates a new one
 async fn post_comment_to_github(
-    github: &GitHubAPI,
+    github: &Octocrab,
     owner: &str,
     repo: &str,
     pr_number: u64,
     comment: &str,
 ) -> Result<(), Error> {
-    use octocrate::issues::create_comment::Request as CreateRequest;
-    use octocrate::issues::update_comment::Request as UpdateRequest;
-
     // First, try to find an existing verification comment
     let existing_comment_id =
         find_existing_verification_comment(github, owner, repo, pr_number).await?;
@@ -328,29 +325,17 @@ async fn post_comment_to_github(
     if let Some(comment_id) = existing_comment_id {
         // Update existing comment
         log::info!("Updating existing PR comment (ID: {comment_id})");
-        let update_body = UpdateRequest {
-            body: comment.to_string(),
-        };
-
         github
-            .issues
-            .update_comment(owner, repo, comment_id)
-            .body(&update_body)
-            .send()
+            .issues(owner, repo)
+            .update_comment(comment_id, comment)
             .await
             .map_err(|e| Error::GpgError(format!("Failed to update PR comment: {e}")))?;
     } else {
         // Create new comment
         log::info!("Creating new PR comment");
-        let create_body = CreateRequest {
-            body: comment.to_string(),
-        };
-
         github
-            .issues
-            .create_comment(owner, repo, pr_number as i64)
-            .body(&create_body)
-            .send()
+            .issues(owner, repo)
+            .create_comment(pr_number, comment)
             .await
             .map_err(|e| Error::GpgError(format!("Failed to create PR comment: {e}")))?;
     }
@@ -361,15 +346,15 @@ async fn post_comment_to_github(
 /// Find existing verification comment on the PR
 /// Returns the comment ID if found
 async fn find_existing_verification_comment(
-    github: &GitHubAPI,
+    github: &Octocrab,
     owner: &str,
     repo: &str,
     pr_number: u64,
-) -> Result<Option<i64>, Error> {
+) -> Result<Option<octocrab::models::CommentId>, Error> {
     // List all comments on the PR
     let comments = github
-        .issues
-        .list_comments(owner, repo, pr_number as i64)
+        .issues(owner, repo)
+        .list_comments(pr_number)
         .send()
         .await
         .map_err(|e| Error::GpgError(format!("Failed to list PR comments: {e}")))?;
@@ -389,27 +374,23 @@ async fn find_existing_verification_comment(
 }
 
 /// Initialize GitHub API client from GITHUB_TOKEN env var
-fn initialize_github_client_from_env() -> Result<GitHubAPI, Error> {
+fn initialize_github_client_from_env() -> Result<Octocrab, Error> {
     let github_token = env::var("GITHUB_TOKEN")
         .map_err(|_| Error::GpgError("GITHUB_TOKEN environment variable not set".to_string()))?;
 
-    let pat = PersonalAccessToken::new(github_token);
-    let config = APIConfig::with_token(pat).shared();
-    Ok(GitHubAPI::new(&config))
+    Ok(Octocrab::builder().personal_token(github_token).build()?)
 }
 
 /// Initialize GitHub API client with provided token or fallback
 fn initialize_github_client_with_token(
     token: Option<&str>,
     error_msg: &str,
-) -> Result<GitHubAPI, Error> {
+) -> Result<Octocrab, Error> {
     let github_token = token
         .map(String::from)
         .ok_or_else(|| Error::GpgError(error_msg.to_string()))?;
 
-    let pat = PersonalAccessToken::new(github_token);
-    let config = APIConfig::with_token(pat).shared();
-    Ok(GitHubAPI::new(&config))
+    Ok(Octocrab::builder().personal_token(github_token).build()?)
 }
 
 /// Detect repository owner and name from git config or CLI args

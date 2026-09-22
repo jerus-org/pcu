@@ -6,7 +6,7 @@ resolver = "2"
 [workspace.package]
 edition = "2021"
 authors = ["jerusdp <jrussell@jerus.ie>"]
-rust-version = "1.89"
+rust-version = "1.91"
 repository = "https://github.com/jerus-org/pcu"
 
 [workspace.dependencies]
@@ -36,17 +36,11 @@ reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] 
 keep-a-changelog = "0.1.4"
 link-bridge = "0.2.7"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
+jsonwebtoken = { version = "10", default-features = false, features = ["rust_crypto"] }
 log = "0.4.34"
-octocrate = { version = "2.2.0", features = [
-    "apps",
-    "file-body",
-    "issues",
-    "pulls",
-    "repos",
-    "users",
-    "rustls-tls",
-], default-features = false }
+octocrab = "0.54.2"
 owo-colors = "4.4.0"
+secrecy = "0.10.3"
 pcu-release-assets = { path = "crates/pcu-release-assets", version = "0.1.1" }
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }

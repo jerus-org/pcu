@@ -1,7 +1,33 @@
 use super::signature_ops::TrustMap;
 use crate::Error;
-use octocrate::{Collaborator, GitHubAPI};
+use octocrab::{models::Collaborator, Octocrab};
+use serde::Deserialize;
 use std::process::Command;
+
+/// The subset of GitHub's `GET /users/{username}/gpg_keys` response that
+/// `process_gpg_keys` actually reads. octocrab has no dedicated wrapper for
+/// this endpoint (unlike octocrate, which this replaced — see
+/// jerus-org/pcu#1070), so it is fetched via `Octocrab::get`'s generic route
+/// escape hatch and deserialized into this crate-owned shape rather than a
+/// full upstream model.
+#[derive(Debug, Clone, Deserialize)]
+struct GpgKey {
+    key_id: String,
+    raw_key: Option<String>,
+    emails: Vec<GpgKeyEmail>,
+    #[serde(default)]
+    subkeys: Vec<GpgSubkey>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct GpgKeyEmail {
+    email: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct GpgSubkey {
+    key_id: Option<String>,
+}
 
 /// Fetch trusted collaborators and their GPG keys from GitHub
 ///
@@ -12,24 +38,23 @@ use std::process::Command;
 ///
 /// Privacy: Only logs aggregate counts, not individual names/emails
 pub async fn fetch_trust_list(
-    github: &GitHubAPI,
+    github: &Octocrab,
     owner: &str,
     repo: &str,
 ) -> Result<TrustMap, Error> {
     log::info!("Fetching trusted collaborators from GitHub API");
 
     // Fetch collaborators with push/admin permissions
-    let collaborators = github.repos.list_collaborators(owner, repo).send().await?;
+    let collaborators = github
+        .repos(owner, repo)
+        .list_collaborators()
+        .send()
+        .await?;
 
     // Filter to only those with write or admin access
     let trusted_collaborators: Vec<_> = collaborators
         .into_iter()
-        .filter(|collab| {
-            collab
-                .permissions
-                .as_ref()
-                .is_some_and(|perms| perms.push || perms.admin)
-        })
+        .filter(|collab| collab.permissions.push || collab.permissions.admin)
         .collect();
 
     log::info!(
@@ -53,17 +78,20 @@ pub async fn fetch_trust_list(
 }
 
 async fn process_collaborators(
-    github: &GitHubAPI,
-    trusted_collaborators: Vec<octocrate::Collaborator>,
+    github: &Octocrab,
+    trusted_collaborators: Vec<Collaborator>,
     trust_map: &mut TrustMap,
 ) -> Result<usize, Error> {
     let mut total_keys = 0;
 
     for collaborator in trusted_collaborators {
-        let username = &collaborator.login;
+        let username = &collaborator.author.login;
 
-        // Fetch GPG keys for this user
-        let gpg_keys = match github.users.list_gpg_keys_for_user(username).send().await {
+        // Fetch GPG keys for this user — no dedicated octocrab wrapper for
+        // this endpoint, so it goes through the generic route (see the
+        // module-level `GpgKey` doc comment).
+        let route = format!("users/{username}/gpg_keys");
+        let gpg_keys = match github.get::<Vec<GpgKey>, _, ()>(route, None).await {
             Ok(keys) => keys,
             Err(e) => {
                 log::debug!("Failed to fetch GPG keys for user: {e}");
@@ -83,12 +111,12 @@ async fn process_collaborators(
 }
 
 fn process_gpg_keys(
-    gpg_keys: Vec<octocrate::GpgKey>,
+    gpg_keys: Vec<GpgKey>,
     collaborator: &Collaborator,
     trust_map: &mut TrustMap,
 ) -> Result<usize, Error> {
-    let username = &collaborator.login;
-    let user_id = collaborator.id;
+    let username = &collaborator.author.login;
+    let user_id = collaborator.author.id;
     let key_count = gpg_keys.len();
 
     // Process each GPG key
@@ -223,17 +251,16 @@ fn add_github_webflow_key(trust_map: &mut TrustMap) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use octocrate::{Collaborator, GpgKey};
 
     fn make_collaborator(login: &str, id: i64) -> Collaborator {
+        let u = "https://example.test/";
         serde_json::from_str(&format!(
-            r#"{{"login":"{login}","id":{id},"node_id":"","avatar_url":"","gravatar_id":null,
-               "url":"","html_url":"","followers_url":"","following_url":"",
-               "gists_url":"","starred_url":"","subscriptions_url":"",
-               "organizations_url":"","repos_url":"","events_url":"",
-               "received_events_url":"","type":"User","site_admin":false,
-               "permissions":{{"pull":true,"push":true,"admin":false}},
-               "role_name":"write"}}"#
+            r#"{{"login":"{login}","id":{id},"node_id":"","avatar_url":"{u}","gravatar_id":"",
+               "url":"{u}","html_url":"{u}","followers_url":"{u}","following_url":"{u}",
+               "gists_url":"{u}","starred_url":"{u}","subscriptions_url":"{u}",
+               "organizations_url":"{u}","repos_url":"{u}","events_url":"{u}",
+               "received_events_url":"{u}","type":"User","site_admin":false,
+               "permissions":{{"pull":true,"push":true,"admin":false}}}}"#
         ))
         .unwrap()
     }
@@ -241,24 +268,13 @@ mod tests {
     fn make_gpg_key(primary_id: &str, email: &str, subkey_ids: &[&str]) -> GpgKey {
         let subkeys_json: String = subkey_ids
             .iter()
-            .map(|k| {
-                format!(
-                    r#"{{"can_certify":null,"can_encrypt_comms":null,"can_encrypt_storage":null,
-                        "can_sign":true,"created_at":null,"emails":null,"expires_at":null,
-                        "id":null,"key_id":"{k}","primary_key_id":null,"public_key":null,
-                        "raw_key":null,"revoked":null,"subkeys":null}}"#
-                )
-            })
+            .map(|k| format!(r#"{{"key_id":"{k}"}}"#))
             .collect::<Vec<_>>()
             .join(",");
 
         serde_json::from_str(&format!(
-            r#"{{"can_certify":false,"can_encrypt_comms":false,"can_encrypt_storage":false,
-               "can_sign":true,"created_at":"2025-01-01T00:00:00Z",
-               "emails":[{{"email":"{email}","verified":true}}],
-               "expires_at":null,"id":1,"key_id":"{primary_id}","name":null,
-               "primary_key_id":null,"public_key":"test","raw_key":null,
-               "revoked":false,"subkeys":[{subkeys_json}]}}"#
+            r#"{{"key_id":"{primary_id}","raw_key":null,
+               "emails":[{{"email":"{email}"}}],"subkeys":[{subkeys_json}]}}"#
         ))
         .unwrap()
     }

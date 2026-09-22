@@ -1,5 +1,5 @@
 use keep_a_changelog::{Changelog, ChangelogParseOptions};
-use octocrate::repos::create_release::RequestMakeLatest;
+use octocrab::repos::releases::MakeLatest;
 
 use crate::{
     utilities::{ReleaseNotesProvider, ReleaseUnreleased},
@@ -52,26 +52,23 @@ impl MakeRelease for Client {
         // `make_latest` is only set when publishing directly: GitHub documents
         // that "Drafts and prereleases cannot be set as latest", so for a draft
         // it moves to the publish call that flips `draft` to false.
-        let builder = octocrate::repos::create_release::Request::builder()
-            .body(release_notes.body.to_string())
-            .name(release_notes.name.to_string())
-            .tag_name(tag)
-            .target_commitish(commit);
+        let repo_handler = self.github_rest.repos(self.owner(), self.repo());
+        let releases = repo_handler.releases();
+        let body = release_notes.body.to_string();
+        let name = release_notes.name.to_string();
+        let builder = releases
+            .create(&tag)
+            .body(&body)
+            .name(&name)
+            .target_commitish(&commit);
 
         let release_request = if draft {
-            builder.draft(true).build()
+            builder.draft(true)
         } else {
-            builder.make_latest(RequestMakeLatest::True).build()
+            builder.make_latest(MakeLatest::True)
         };
 
-        let release = match self
-            .github_rest
-            .repos
-            .create_release(self.owner(), self.repo())
-            .body(&release_request)
-            .send()
-            .await
-        {
+        let release = match release_request.send().await {
             Ok(release) => release,
             Err(e) => {
                 log::error!("Error creating release: {e}");

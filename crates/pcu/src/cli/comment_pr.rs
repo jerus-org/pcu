@@ -1,7 +1,6 @@
 use clap::Parser;
 use color_eyre::Result;
-use octocrate::issues;
-use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
+use octocrab::Octocrab;
 use std::env;
 
 use super::CIExit;
@@ -94,22 +93,16 @@ impl CommentPr {
             .or(env_token.as_deref())
             .ok_or(Error::NoGitHubAPIAuth)?;
 
-        let pat = PersonalAccessToken::new(token);
-        let config = APIConfig::with_token(pat).shared();
-        let api = GitHubAPI::new(&config);
-
-        let request = issues::create_comment::Request {
-            body: self.body.clone(),
-        };
+        let api = Octocrab::builder()
+            .personal_token(token.to_string())
+            .build()?;
 
         let comment = api
-            .issues
-            .create_comment(&owner, &repo, pr_number as i64)
-            .body(&request)
-            .send()
+            .issues(&owner, &repo)
+            .create_comment(pr_number, &self.body)
             .await?;
 
-        let url = comment.html_url;
+        let url = comment.html_url.to_string();
         println!("PR comment created: {url}");
         Ok(CIExit::PrCommentCreated(url))
     }
