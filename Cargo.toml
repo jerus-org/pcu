@@ -36,9 +36,26 @@ reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] 
 keep-a-changelog = "0.1.4"
 link-bridge = "0.2.7"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
-jsonwebtoken = { version = "10", default-features = false, features = ["rust_crypto"] }
+# default-features = false + "use_pem" only: pcu's own use of jsonwebtoken is
+# limited to `EncodingKey::from_rsa_pem` (PEM/ASN.1 parsing), never signing —
+# octocrab does the actual JWT signing internally. Signing needs a crypto
+# backend feature ("rust_crypto" or "aws_lc_rs"); "rust_crypto" pulls the
+# `rsa` crate (RUSTSEC-2023-0071, no fixed version) unconditionally, which
+# broke the CI guard asserting `rsa` is absent without the `attest` feature
+# (jerus-org/pcu#1071). octocrab is pinned below to its "jwt-aws-lc-rs"
+# feature instead of its default "jwt-rust-crypto" for the same reason.
+jsonwebtoken = { version = "10", default-features = false, features = ["use_pem"] }
 log = "0.4.34"
-octocrab = "0.54.2"
+octocrab = { version = "0.54.2", default-features = false, features = [
+    "follow-redirect",
+    "retry",
+    "rustls",
+    "timeout",
+    "tracing",
+    "default-client",
+    "rustls-ring",
+    "jwt-aws-lc-rs",
+] }
 owo-colors = "4.4.0"
 secrecy = "0.10.3"
 pcu-release-assets = { path = "crates/pcu-release-assets", version = "0.1.1" }
