@@ -1741,7 +1741,7 @@ version = "0.1.30"
 dependencies = [
  "chrono",
  "log",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "serde",
  "serde_json",
  "tempfile",
@@ -2532,7 +2532,7 @@ dependencies = [
  "colorful",
  "env_logger",
  "log",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "rustls",
  "semver",
  "smol_str",
@@ -3050,7 +3050,7 @@ dependencies = [
  "oci-spec",
  "olpc-cjson",
  "regex",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -3364,7 +3364,7 @@ dependencies = [
  "owo-colors",
  "pcu-release-assets",
  "regex",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "rstest",
  "secrecy",
  "serde",
@@ -3390,7 +3390,7 @@ dependencies = [
  "gql_client",
  "log",
  "octocrab",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
@@ -4005,11 +4005,11 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
+checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "bytes",
  "futures-channel",
  "futures-core",
@@ -4673,7 +4673,7 @@ dependencies = [
  "p256",
  "pem",
  "pkcs8",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "rustls-pki-types",
  "rustls-webpki",
  "scrypt 0.12.0",
@@ -4945,7 +4945,7 @@ dependencies = [
  "libc",
  "memchr",
  "rayon",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "rustc-stable-hash",
  "semver",
  "serde",
