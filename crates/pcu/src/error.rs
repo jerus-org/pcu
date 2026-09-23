@@ -46,6 +46,8 @@ pub enum Error {
     NoGitHubAPIPrivateKey,
     #[error("No GitHub API Authorisation found")]
     NoGitHubAPIAuth,
+    #[error("Invalid GitHub App id {0:?}: expected a numeric id")]
+    InvalidAppId(String),
     #[error("Unknown format for pull request: {0}")]
     UnknownPullRequestFormat(String),
     #[error("No default prlog file found")]
@@ -56,8 +58,8 @@ pub enum Error {
     InvalidMergeCommitMessage,
     #[error("ParseInt says: {0:?}")]
     ParseInt(#[from] ParseIntError),
-    #[error("Octocrate says: {0:?}")]
-    Octocrate(#[from] octocrate::Error),
+    #[error("Octocrab says: {0:?}")]
+    Octocrab(#[from] octocrab::Error),
     #[error("GraphQL says: {0:?}")]
     GraphQL(#[from] GraphQLWrapper),
     #[error("Url says: {0:?}")]

@@ -12,7 +12,6 @@ use git2::{
 };
 use git2_credentials::CredentialHandler;
 use log::log_enabled;
-// use octocrate::repos::list_tags::Query;
 use owo_colors::{OwoColorize, Style};
 use tracing::instrument;
 
@@ -1455,8 +1454,8 @@ mod tests {
         (dir, client)
     }
 
-    #[test]
-    fn stage_paths_stages_new_file() {
+    #[tokio::test]
+    async fn stage_paths_stages_new_file() {
         let (dir, client) = make_test_client();
         let file_path = dir.path().join("new_file.txt");
         std::fs::write(&file_path, "hello").unwrap();
@@ -1478,8 +1477,8 @@ mod tests {
     /// environment, and a separate job performs the push. A regression here
     /// (e.g. a future refactor coupling commit to the GitHub API) would silently
     /// break auto-record, so it is locked explicitly.
-    #[test]
-    fn ambient_client_commits_staged_changes_without_auth() {
+    #[tokio::test]
+    async fn ambient_client_commits_staged_changes_without_auth() {
         let (dir, client) = make_test_client();
         std::fs::write(dir.path().join("regenerated.yml"), "orb: source\n").unwrap();
         client.stage_paths(&[Path::new("regenerated.yml")]).unwrap();
@@ -1506,8 +1505,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stage_paths_stages_an_absolute_path_under_the_workdir() {
+    #[tokio::test]
+    async fn stage_paths_stages_an_absolute_path_under_the_workdir() {
         // The reported failure (#1030): `Path::join` returns its argument
         // unchanged when that argument is absolute, so an absolute path passed
         // the existence filter; `add_all` then treated it as a pathspec relative
@@ -1527,8 +1526,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stage_paths_stages_an_absolute_path_in_a_subdirectory() {
+    #[tokio::test]
+    async fn stage_paths_stages_an_absolute_path_in_a_subdirectory() {
         let (dir, client) = make_test_client();
         std::fs::create_dir(dir.path().join(".security")).unwrap();
         let file_path = dir.path().join(".security").join("release-0.0.3.json");
@@ -1545,8 +1544,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stage_paths_rejects_an_absolute_path_outside_the_workdir() {
+    #[tokio::test]
+    async fn stage_paths_rejects_an_absolute_path_outside_the_workdir() {
         // Unstageable by definition, so silently skipping it can only mislead.
         let (_dir, client) = make_test_client();
         let outside = tempfile::tempdir().unwrap();
@@ -1560,8 +1559,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stage_paths_errors_when_an_existing_file_stages_nothing() {
+    #[tokio::test]
+    async fn stage_paths_errors_when_an_existing_file_stages_nothing() {
         // A file that exists but is ignored matches no pathspec, so `add_all`
         // returns Ok having staged nothing — the same silence as #1030 by a
         // different route. `git add` on an ignored file errors; so does this.
@@ -1576,8 +1575,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stage_paths_skips_nonexistent_path() {
+    #[tokio::test]
+    async fn stage_paths_skips_nonexistent_path() {
         let (_dir, client) = make_test_client();
         let result = client.stage_paths(&[Path::new("does_not_exist.txt")]);
         assert!(
@@ -1586,8 +1585,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stage_paths_stages_file_in_subdirectory() {
+    #[tokio::test]
+    async fn stage_paths_stages_file_in_subdirectory() {
         let (dir, client) = make_test_client();
         std::fs::create_dir(dir.path().join("sub")).unwrap();
         std::fs::write(dir.path().join("sub").join("file.txt"), "data").unwrap();
@@ -1602,8 +1601,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stage_paths_stages_directory_recursively() {
+    #[tokio::test]
+    async fn stage_paths_stages_directory_recursively() {
         let (dir, client) = make_test_client();
         let subdir = dir.path().join("prior-versions");
         std::fs::create_dir(&subdir).unwrap();

@@ -1,7 +1,6 @@
 use clap::Parser;
 use color_eyre::Result;
-use octocrate::issues;
-use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken, StringOrInteger};
+use octocrab::Octocrab;
 use std::env;
 
 use super::CIExit;
@@ -48,26 +47,19 @@ const DEFAULT_LABEL_COLOR: &str = "e4e669";
 
 /// Ensure a label exists on the repository, creating it if absent.
 async fn ensure_label_exists(
-    api: &octocrate::GitHubAPI,
+    api: &Octocrab,
     owner: &str,
     repo: &str,
     label: &str,
 ) -> Result<(), crate::Error> {
-    match api.issues.get_label(owner, repo, label).send().await {
+    match api.issues(owner, repo).get_label(label).await {
         Ok(_) => {
             log::debug!("Label '{label}' already exists");
         }
         Err(_) => {
             log::info!("Label '{label}' not found — creating it");
-            let req = octocrate::issues::create_label::Request {
-                name: label.to_string(),
-                color: Some(DEFAULT_LABEL_COLOR.to_string()),
-                description: None,
-            };
-            api.issues
-                .create_label(owner, repo)
-                .body(&req)
-                .send()
+            api.issues(owner, repo)
+                .create_label(label, DEFAULT_LABEL_COLOR, "")
                 .await?;
         }
     }
@@ -101,44 +93,26 @@ impl CreateIssue {
             .or(env_token.as_deref())
             .ok_or(Error::NoGitHubAPIAuth)?;
 
-        let pat = PersonalAccessToken::new(token);
-        let config = APIConfig::with_token(pat).shared();
-        let api = GitHubAPI::new(&config);
+        let api = Octocrab::builder()
+            .personal_token(token.to_string())
+            .build()?;
+        let issue_handler = api.issues(&owner, &repo);
 
-        let body = if self.body.is_empty() {
-            None
-        } else {
-            Some(self.body.clone())
-        };
+        let mut create = issue_handler.create(self.title.clone());
+        if !self.body.is_empty() {
+            create = create.body(&self.body);
+        }
+        let issue = create.send().await?;
 
-        let request = issues::create::Request {
-            title: StringOrInteger::String(self.title.clone()),
-            body,
-            assignee: None,
-            assignees: None,
-            labels: None,
-            milestone: None,
-        };
-
-        let issue = api
-            .issues
-            .create(&owner, &repo)
-            .body(&request)
-            .send()
-            .await?;
-
-        let url = issue.html_url;
+        let url = issue.html_url.to_string();
         let issue_number = issue.number;
         println!("Issue created: {url}");
 
         if !self.no_label {
             ensure_label_exists(&api, &owner, &repo, &self.label).await?;
 
-            let add_req = issues::add_labels::Request::StringArray(vec![self.label.clone()]);
-            api.issues
-                .add_labels(&owner, &repo, issue_number)
-                .body(&add_req)
-                .send()
+            api.issues(&owner, &repo)
+                .add_labels(issue_number, std::slice::from_ref(&self.label))
                 .await?;
             log::info!("Label '{}' applied to issue #{issue_number}", self.label);
         }

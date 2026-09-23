@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use octocrate::{APIConfig, GitHubAPI, PersonalAccessToken};
+use octocrab::Octocrab;
 use serde::{Deserialize, Serialize};
 
 use crate::Error;
@@ -33,7 +33,7 @@ pub struct ReleaseRef {
 pub struct ReleaseAssetClient {
     owner: String,
     repo: String,
-    github_rest: Arc<GitHubAPI>,
+    github_rest: Arc<Octocrab>,
     auth: Auth,
 }
 
@@ -77,7 +77,7 @@ impl ReleaseAssetClient {
         owner: impl Into<String>,
         repo: impl Into<String>,
         github_token: impl Into<String>,
-        github_rest: Arc<GitHubAPI>,
+        github_rest: Arc<Octocrab>,
         github_graphql: Arc<gql_client::Client>,
     ) -> Self {
         Self {
@@ -105,7 +105,11 @@ impl ReleaseAssetClient {
     /// built this way, rather than attempting the call and failing with a
     /// confusing 401 from GitHub.
     pub fn new_unauthenticated(owner: impl Into<String>, repo: impl Into<String>) -> Self {
-        let github_rest = Arc::new(GitHubAPI::new(&APIConfig::default().shared()));
+        let github_rest = Arc::new(
+            Octocrab::builder()
+                .build()
+                .expect("building an unauthenticated Octocrab client cannot fail"),
+        );
         Self {
             owner: owner.into(),
             repo: repo.into(),
@@ -261,13 +265,16 @@ impl ReleaseAssetClient {
     ) -> Result<Option<i64>, Error> {
         let release = self
             .github_rest
-            .repos
-            .get_release(&self.owner, &self.repo, release_id)
-            .send()
+            .repos(&self.owner, &self.repo)
+            .releases()
+            .get(release_id as u64)
             .await?;
 
         Ok(find_existing_asset_id(
-            release.assets.iter().map(|a| (a.name.as_str(), a.id)),
+            release
+                .assets
+                .iter()
+                .map(|a| (a.name.as_str(), a.id.into_inner() as i64)),
             asset_name,
         ))
     }
@@ -351,12 +358,12 @@ impl ReleaseAssetClient {
     async fn probe_published_release_for_tag(&self, tag: &str) -> Result<Option<i64>, Error> {
         match self
             .github_rest
-            .repos
-            .get_release_by_tag(&self.owner, &self.repo, tag)
-            .send()
+            .repos(&self.owner, &self.repo)
+            .releases()
+            .get_by_tag(tag)
             .await
         {
-            Ok(release) => Ok(Some(release.id)),
+            Ok(release) => Ok(Some(release.id.into_inner() as i64)),
             Err(e) if is_not_found(&e) => Ok(None),
             Err(e) => Err(Error::ReleaseAsset(format!(
                 "failed to look up release for tag '{tag}': {e}"
@@ -399,25 +406,18 @@ impl ReleaseAssetClient {
     }
 }
 
-/// Recognise GitHub's standard 404 body for a REST call.
+/// Recognise a GitHub 404 for a REST call.
 ///
-/// octocrate's error type carries no HTTP status at all (only the JSON
-/// error body — confirmed by reading `octocrate-core` 0.1.9's own
-/// `Error::RequestFailed`/`send_with_response` source, which discards the
-/// status before constructing either variant), so string-matching this
-/// documented, non-localised GitHub message is the only signal available
-/// here — unlike `ReleaseAssetWriter`'s delete-then-replace recovery in
-/// `writer.rs`, which avoids exactly this kind of message-matching by
-/// re-querying to verify the actual end state. That alternative doesn't
-/// apply here: there is no independent way to confirm "no published
-/// release for this tag" other than the same REST call that just failed,
-/// or a GraphQL fallback — which would defeat the point of this
-/// unauthenticated-capable lookup (jerus-org/pcu#1064). Residual risk: a
-/// differently-worded 404 body, or any other `RequestFailed` whose message
-/// happens to equal `"Not Found"`, is misread as "no release" rather than
-/// surfaced as a real failure.
-fn is_not_found(error: &octocrate::Error) -> bool {
-    matches!(error, octocrate::Error::RequestFailed(resp) if resp.message == "Not Found")
+/// Unlike octocrate's error type (which carried no HTTP status at all, only
+/// GitHub's JSON error body — see jerus-org/pcu#1070 for the octocrate to
+/// octocrab migration this replaced), `octocrab::Error::GitHub` carries the
+/// real `http::StatusCode` from the response, so this checks that directly
+/// instead of string-matching the error message.
+fn is_not_found(error: &octocrab::Error) -> bool {
+    matches!(
+        error,
+        octocrab::Error::GitHub { source, .. } if source.status_code == reqwest::StatusCode::NOT_FOUND
+    )
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -512,7 +512,7 @@ pub(crate) fn new_headless<T>(
     owner: impl Into<String>,
     repo: impl Into<String>,
     github_token: impl Into<String>,
-    from_shared: impl FnOnce(String, String, String, Arc<GitHubAPI>, Arc<gql_client::Client>) -> T,
+    from_shared: impl FnOnce(String, String, String, Arc<Octocrab>, Arc<gql_client::Client>) -> T,
 ) -> T {
     let owner = owner.into();
     let repo = repo.into();
@@ -529,10 +529,11 @@ pub(crate) fn new_headless<T>(
 }
 
 /// Build a fresh authenticated REST + GraphQL client pair for `token`.
-pub(crate) fn build_authenticated_clients(token: &str) -> (GitHubAPI, gql_client::Client) {
-    let pat = PersonalAccessToken::new(token);
-    let config = APIConfig::with_token(pat).shared();
-    let github_rest = GitHubAPI::new(&config);
+pub(crate) fn build_authenticated_clients(token: &str) -> (Octocrab, gql_client::Client) {
+    let github_rest = Octocrab::builder()
+        .personal_token(token.to_string())
+        .build()
+        .expect("building an Octocrab client from a personal access token cannot fail");
 
     let auth = format!("Bearer {token}");
     let github_graphql = gql_client::Client::new_with_headers(
@@ -654,8 +655,12 @@ where
 mod tests {
     use super::*;
 
-    #[test]
-    fn release_asset_client_builds_without_git_checkout() {
+    // `Octocrab::builder().build()` spawns a tower buffer task internally
+    // (the default "retry"/"timeout" features), so building one needs an
+    // active Tokio runtime — hence `#[tokio::test]` on these constructor
+    // tests even though none of them actually await anything.
+    #[tokio::test]
+    async fn release_asset_client_builds_without_git_checkout() {
         // No tempdir, no git2::Repository::init anywhere in scope — this
         // crate has no git dependency at all.
         let client = ReleaseAssetClient::new("test-org", "test-repo", "token");
@@ -669,11 +674,14 @@ mod tests {
     /// contract in with `Arc::strong_count`: if `from_shared` ever started
     /// wrapping fresh clones instead of storing the given `Arc`s directly,
     /// the count below would stay at 1 instead of rising to 2.
-    #[test]
-    fn from_shared_reuses_the_given_clients_rather_than_building_new_ones() {
-        let dummy_pat = PersonalAccessToken::new("token");
-        let dummy_config = APIConfig::with_token(dummy_pat).shared();
-        let github_rest = Arc::new(GitHubAPI::new(&dummy_config));
+    #[tokio::test]
+    async fn from_shared_reuses_the_given_clients_rather_than_building_new_ones() {
+        let github_rest = Arc::new(
+            Octocrab::builder()
+                .personal_token("token".to_string())
+                .build()
+                .unwrap(),
+        );
         let github_graphql = Arc::new(gql_client::Client::new_with_headers(
             END_POINT,
             HashMap::<&str, &str>::new(),
@@ -981,8 +989,8 @@ mod tests {
         assert_eq!(candidates[0].database_id, Some(333744509));
     }
 
-    #[test]
-    fn new_unauthenticated_builds_without_git_checkout_or_a_token() {
+    #[tokio::test]
+    async fn new_unauthenticated_builds_without_git_checkout_or_a_token() {
         let client = ReleaseAssetClient::new_unauthenticated("test-org", "test-repo");
         assert_eq!(client.owner(), "test-org");
         assert_eq!(client.repo(), "test-repo");
@@ -1006,27 +1014,71 @@ mod tests {
         );
     }
 
-    #[test]
-    fn is_not_found_recognises_githubs_standard_404_body() {
-        let error = octocrate::Error::RequestFailed(octocrate::APIErrorResponse {
-            message: "Not Found".to_string(),
-            documentation_url: "https://docs.github.com/rest".to_string(),
-        });
+    /// `octocrab::Error` and its `GitHubError` payload are both
+    /// `#[non_exhaustive]`, so this crate cannot hand-construct one — the
+    /// only way to get a real instance is to provoke a real HTTP response
+    /// through an `Octocrab` client, hence the mock server round trip here
+    /// rather than a fabricated error value.
+    async fn get_release_by_tag_error(mock_status: u16, mock_body: &str) -> octocrab::Error {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path(
+                "/repos/test-org/test-repo/releases/tags/v1.0.0",
+            ))
+            .respond_with(
+                wiremock::ResponseTemplate::new(mock_status)
+                    .set_body_string(mock_body)
+                    .insert_header("content-type", "application/json"),
+            )
+            .mount(&server)
+            .await;
+
+        let octocrab = octocrab::Octocrab::builder()
+            .base_uri(server.uri())
+            .unwrap()
+            .build()
+            .unwrap();
+
+        octocrab
+            .repos("test-org", "test-repo")
+            .releases()
+            .get_by_tag("v1.0.0")
+            .await
+            .expect_err("mock server response should surface as an error")
+    }
+
+    #[tokio::test]
+    async fn is_not_found_recognises_a_github_404() {
+        let error =
+            get_release_by_tag_error(404, r#"{"message":"Not Found","documentation_url":""}"#)
+                .await;
         assert!(is_not_found(&error));
     }
 
-    #[test]
-    fn is_not_found_is_false_for_other_api_errors() {
-        let error = octocrate::Error::RequestFailed(octocrate::APIErrorResponse {
-            message: "Validation Failed".to_string(),
-            documentation_url: "https://docs.github.com/rest".to_string(),
-        });
+    #[tokio::test]
+    async fn is_not_found_is_false_for_other_api_errors() {
+        let error = get_release_by_tag_error(
+            422,
+            r#"{"message":"Validation Failed","documentation_url":""}"#,
+        )
+        .await;
         assert!(!is_not_found(&error));
     }
 
-    #[test]
-    fn is_not_found_is_false_for_a_transport_error() {
-        let error = octocrate::Error::Error("connection reset".to_string());
+    #[tokio::test]
+    async fn is_not_found_is_false_for_a_transport_error() {
+        let octocrab = octocrab::Octocrab::builder()
+            .base_uri("http://127.0.0.1:1")
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let error = octocrab
+            .repos("test-org", "test-repo")
+            .releases()
+            .get_by_tag("v1.0.0")
+            .await
+            .expect_err("connection to a closed port should fail");
         assert!(!is_not_found(&error));
     }
 
