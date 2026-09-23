@@ -160,7 +160,10 @@ impl Commands {
             // Add in settings from the environment (with a prefix of PCU)
             .add_source(config::Environment::with_prefix("PCU"));
 
-        log::trace!("Initial settings (default, pcu.toml and environment: {settings:#?}");
+        // Does not dump `settings` — the environment source can carry
+        // PCU_PRIVATE_KEY/PCU_PAT, and `Config`'s Debug output has no secret
+        // redaction.
+        log::trace!("Loaded initial settings from defaults, pcu.toml, and environment");
 
         settings = match self {
             // `[skip ci]` is NOT decided here: it depends on the branch being
