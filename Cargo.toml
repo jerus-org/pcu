@@ -72,7 +72,7 @@ tokio = { version = "1.53.1", features = ["fs", "macros", "rt-multi-thread", "ti
 toml = "1.1.6"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["std", "env-filter"] }
-rstest = "0.26.1"
+rstest = "0.27.0"
 unicode-segmentation = "1.13.3"
 url = "2.5.8"
 uuid = { version = "1.26.1", features = ["v4"] }
