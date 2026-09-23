@@ -94,7 +94,9 @@ impl Client {
 
         let line_limit = settings.get::<usize>("line_limit").unwrap_or(10);
 
-        log::trace!("Getting the github api with {settings:#?}, {owner}, {repo}");
+        // Does not dump `settings` — it can carry a GitHub App private key or
+        // PAT, and `Config`'s Debug output has no secret redaction.
+        log::trace!("Getting the github api for {owner}, {repo}");
         let (github_rest, github_graphql, github_token) =
             Client::get_github_apis(settings, &owner, &repo).await?;
 
@@ -200,7 +202,8 @@ impl Client {
     ) -> Result<(Octocrab, gql_client::Client, String), Error> {
         let bld_style = Style::new().bold();
         log::info!("\n***Get GitHub API instance***\n");
-        log::trace!("Settings: {settings:#?}");
+        // Does not dump `settings` — it can carry a GitHub App private key or
+        // PAT, and `Config`'s Debug output has no secret redaction.
         let (github_rest, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::info!("Using {} for authentication", "GitHub App".style(bld_style));
@@ -208,8 +211,6 @@ impl Client {
                 let private_key = settings
                     .get::<String>("private_key")
                     .map_err(|_| Error::NoGitHubAPIPrivateKey)?;
-
-                log::trace!("Using private key {private_key:#?} for authentication");
 
                 let app_id: u64 = app_id
                     .parse()
