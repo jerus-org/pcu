@@ -44,7 +44,7 @@ link-bridge = "0.2.7"
 # broke the CI guard asserting `rsa` is absent without the `attest` feature
 # (jerus-org/pcu#1071). octocrab is pinned below to its "jwt-aws-lc-rs"
 # feature instead of its default "jwt-rust-crypto" for the same reason.
-jsonwebtoken = { version = "10.4.0", default-features = false, features = ["use_pem"] }
+jsonwebtoken = { version = "11.1.0", default-features = false, features = ["use_pem"] }
 log = "0.4.34"
 octocrab = { version = "0.54.2", default-features = false, features = [
     "follow-redirect",
