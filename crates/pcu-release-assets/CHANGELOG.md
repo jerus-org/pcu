@@ -5,9 +5,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-09-23
+
+Summary: Fixed[1], Security[1]
+
+### Fixed
+
+ - fix(deps): update rust crate reqwest to 0.13.5
+
+### Security
+
+ - chore(deps): replace octocrate with octocrab
+
 ## [0.1.1] - 2026-08-28
 
-Summary: Added[2], Documentation[1], Fixed[3]
+Summary: Added[2], Chore[1], Documentation[1], Fixed[3]
 
 ### Added
 
@@ -22,7 +34,7 @@ Summary: Added[2], Documentation[1], Fixed[3]
 
 ## [0.1.0] - 2026-08-19
 
-Summary: Added[1], Chore[1], Fixed[75]
+Summary: Added[1], Chore[1], Fixed[76]
 
 ### Added
 
@@ -50,6 +62,7 @@ Summary: Added[1], Chore[1], Fixed[75]
  - fix(deps): update rust crate thiserror to 2.0.18
  - fix(deps): update rust crate serde_json to 1.0.149
  - fix(deps): update rust crate reqwest to 0.13.1
+ - fix(deps): update rust crate wiremock to 0.6.5
  - fix(deps): update rust crate serde_json to 1.0.147
  - fix(deps): update rust crate reqwest to 0.12.28
  - fix(deps): update rust crate log to 0.4.29
@@ -70,7 +83,6 @@ Summary: Added[1], Chore[1], Fixed[75]
  - fix(deps): update rust crate serde to 1.0.219
  - fix(deps): update rust crate thiserror to 2.0.12
  - fix(deps): update rust crate log to 0.4.26
- - fix(deps): update rust crate octocrate to 2.2.0
  - fix(deps): update rust crate serde to 1.0.218
  - fix(deps): update rust crate tokio to 1.43.0
  - fix(deps): update rust crate thiserror to 2.0.11
@@ -99,6 +111,7 @@ Summary: Added[1], Chore[1], Fixed[75]
  - fix(deps): update rust crate thiserror to 1.0.64
  - fix(deps): update rust crate tokio to 1.40.0
  - fix(deps): update rust crate serde to 1.0.210
+ - fix(deps): update rust crate octocrab to 0.39.0
  - fix(deps): update rust crate tokio to 1.39.0
  - fix(deps): update rust crate tokio to 1.38.1
  - fix(deps): update rust crate thiserror to 1.0.63
@@ -106,6 +119,7 @@ Summary: Added[1], Chore[1], Fixed[75]
  - fix(deps): update rust crate log to 0.4.22
  - fix(deps): update rust crate log to v0.4.22
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/jerus-org/pcu/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/jerus-org/pcu/releases/tag/v0.1.0
 
