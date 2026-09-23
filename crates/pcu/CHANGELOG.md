@@ -5,9 +5,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.35] - 2026-09-23
+
+Summary: Chore[1], Fixed[10], Security[1]
+
+### Fixed
+
+ - fix(security): stop logging secrets at trace
+ - fix(deps): update rust crate rstest to 0.27.0
+ - fix(deps): update rust crate toml to 1.1.6
+ - fix(deps): update rust crate reqwest to 0.13.5
+ - fix(deps): update rust crate jsonwebtoken to 10.4.0
+ - fix(deps): update rust crate config to 0.15.26
+ - fix(deps): update rust crate clap to 4.6.7
+ - fix(deps): update rust crate cargo_toml to 1.0.1
+ - fix(deps): update rust crate base62 to 2.2.6
+ - fix(deps): update rust crate uuid to 1.26.1
+
+### Security
+
+ - chore(deps): replace octocrate with octocrab
+
 ## [0.6.34] - 2026-08-28
 
-Summary: Added[2], Changed[1], Chore[1], Documentation[1], Fixed[8]
+Summary: Added[2], Changed[1], Chore[2], Documentation[1], Fixed[8]
 
 ### Added
 
@@ -635,7 +656,6 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
  - fix(deps): update rust crate chrono to 0.4.40
  - fix(deps): update rust crate uuid to 1.14.0
  - fix(deps): update rust crate log to 0.4.26
- - fix(deps): update rust crate octocrate to 2.2.0
  - fix(deps): update rust crate serde to 1.0.218
  - fix(deps): update rust crate clap to 4.5.30
  - fix(deps): update rust crate config to 0.15.8
@@ -705,6 +725,7 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
  - fix(deps): update rust crate clap-verbosity-flag to 2.2.1
  - fix(deps): update rust crate clap to 4.5.15
  - fix(deps): update rust crate rstest to 0.22.0
+ - fix(deps): update rust crate octocrab to 0.39.0
  - fix(deps): update rust crate tokio to 1.39.0
  - fix(deps): update rust crate tokio to 1.38.1
  - fix(deps): update rust crate thiserror to 1.0.63
@@ -769,7 +790,8 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
 
  - chore(deps): update rust crate rstest to 0.21.0
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.33...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.34...HEAD
+[0.6.34]: https://github.com/jerus-org/pcu/compare/v0.6.33...v0.6.34
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
 [0.6.31]: https://github.com/jerus-org/pcu/compare/v0.6.30...v0.6.31
