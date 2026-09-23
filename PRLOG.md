@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: lock file maintenance(pr [#1069])
+- deps: update dependency toolkit to v8(pr [#1072])
 
 ### Security
 
@@ -2614,6 +2615,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1067]: https://github.com/jerus-org/pcu/pull/1067
 [#1069]: https://github.com/jerus-org/pcu/pull/1069
 [#1071]: https://github.com/jerus-org/pcu/pull/1071
+[#1072]: https://github.com/jerus-org/pcu/pull/1072
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.34...HEAD
 [0.6.34]: https://github.com/jerus-org/pcu/compare/v0.6.33...v0.6.34
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
