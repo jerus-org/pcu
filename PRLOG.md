@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate cargo_toml to 1.0.1(pr [#1074])
 - deps: update rust crate clap to 4.6.7(pr [#1075])
 - deps: update rust crate config to 0.15.26(pr [#1076])
+- deps: update rust crate jsonwebtoken to 10.4.0(pr [#1077])
 
 ### Security
 
@@ -2626,6 +2627,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1074]: https://github.com/jerus-org/pcu/pull/1074
 [#1075]: https://github.com/jerus-org/pcu/pull/1075
 [#1076]: https://github.com/jerus-org/pcu/pull/1076
+[#1077]: https://github.com/jerus-org/pcu/pull/1077
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.34...HEAD
 [0.6.34]: https://github.com/jerus-org/pcu/compare/v0.6.33...v0.6.34
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
