@@ -112,6 +112,31 @@ impl ReleaseAssetClient {
         }
     }
 
+    /// Construct a client for `owner`/`repo` sharing a caller's own
+    /// still-possibly-empty, lazily-built `Octocrab` cell — e.g.
+    /// `pcu::Client::new_local_at`'s own deferred cell (jerus-org/pcu#1085),
+    /// so its `Client`, this `ReleaseAssetClient`, and a sibling
+    /// `ReleaseAssetWriter` all build (and cache) the same single instance
+    /// on first real use, rather than each independently deferring its own.
+    /// Unlike [`Self::from_shared`], the given cell need not be filled yet.
+    pub fn from_shared_cell(
+        owner: impl Into<String>,
+        repo: impl Into<String>,
+        github_token: impl Into<String>,
+        github_rest: Arc<OnceCell<Arc<Octocrab>>>,
+        github_graphql: Arc<gql_client::Client>,
+    ) -> Self {
+        Self {
+            owner: owner.into(),
+            repo: repo.into(),
+            github_rest,
+            auth: Auth::Token {
+                token: github_token.into(),
+                graphql: github_graphql,
+            },
+        }
+    }
+
     /// Construct a read-only client for `owner`/`repo` with no
     /// authentication at all — for downloading a named asset from a
     /// **public** repo's published release with no `GITHUB_TOKEN`

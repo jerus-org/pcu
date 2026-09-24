@@ -438,14 +438,26 @@ impl Client {
             tag_prefix: Some("v".to_string()),
         };
 
-        // `ReleaseAssetClient::new`/`ReleaseAssetWriter::new` (not
-        // `from_shared`) — each defers its own `Octocrab` construction the
-        // same way `github_rest` above does, so none of the three needs an
-        // already-built client to hand around at construction time.
-        let release_assets =
-            pcu_release_assets::ReleaseAssetClient::new(owner.clone(), repo.clone(), "");
-        let release_asset_writer =
-            pcu_release_assets::ReleaseAssetWriter::new(owner.clone(), repo.clone(), "");
+        // `from_shared_cell`, not `from_shared` — `github_rest` above is
+        // still empty, not a ready-built client, but sharing the same cell
+        // (rather than each independently deferring its own, as a plain
+        // `::new` would) means `Client`, `release_assets`, and
+        // `release_asset_writer` all build and cache a single instance on
+        // first real use instead of three.
+        let release_assets = pcu_release_assets::ReleaseAssetClient::from_shared_cell(
+            owner.clone(),
+            repo.clone(),
+            "",
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
+        let release_asset_writer = pcu_release_assets::ReleaseAssetWriter::from_shared_cell(
+            owner.clone(),
+            repo.clone(),
+            "",
+            Arc::clone(&github_rest),
+            Arc::clone(&github_graphql),
+        );
 
         Ok(Self {
             git_repo,
@@ -620,6 +632,21 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         git2::Repository::init(dir.path()).unwrap();
         let _client = Client::new_local_at(dir.path()).unwrap();
+    }
+
+    /// `release_assets`/`release_asset_writer` are built via
+    /// `from_shared_cell`, sharing `Client`'s own deferred `github_rest`
+    /// cell — so all three build (and cache) a single `Octocrab` instance on
+    /// first real use, rather than three independent ones (jerus-org/pcu#1085
+    /// code review follow-up). The count is exactly 3: `Client`'s own field,
+    /// plus one clone handed to each of `release_assets` and
+    /// `release_asset_writer`.
+    #[test]
+    fn new_local_at_shares_one_deferred_client_across_all_three_fields() {
+        let dir = tempfile::tempdir().unwrap();
+        git2::Repository::init(dir.path()).unwrap();
+        let client = Client::new_local_at(dir.path()).unwrap();
+        assert_eq!(Arc::strong_count(&client.github_rest), 3);
     }
 
     #[test]

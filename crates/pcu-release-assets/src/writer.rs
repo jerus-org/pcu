@@ -1,6 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use octocrab::{repos::releases::MakeLatest, Octocrab};
+use tokio::sync::OnceCell;
 
 use crate::{
     client::{release_not_found_error, ReleaseAssetClient},
@@ -67,6 +68,37 @@ impl ReleaseAssetWriter {
         let repo = repo.into();
 
         let reader = ReleaseAssetClient::from_shared(
+            owner.clone(),
+            repo.clone(),
+            github_token,
+            github_rest,
+            github_graphql,
+        );
+
+        Self {
+            owner,
+            repo,
+            reader,
+        }
+    }
+
+    /// Construct a writer for `owner`/`repo` sharing a caller's own
+    /// still-possibly-empty, lazily-built `Octocrab` cell — the writer-side
+    /// counterpart to [`ReleaseAssetClient::from_shared_cell`], for the same
+    /// reason (jerus-org/pcu#1085): `pcu::Client::new_local_at`'s `Client`,
+    /// `ReleaseAssetClient`, and this writer all build (and cache) the same
+    /// single instance on first real use.
+    pub fn from_shared_cell(
+        owner: impl Into<String>,
+        repo: impl Into<String>,
+        github_token: impl Into<String>,
+        github_rest: Arc<OnceCell<Arc<Octocrab>>>,
+        github_graphql: Arc<gql_client::Client>,
+    ) -> Self {
+        let owner = owner.into();
+        let repo = repo.into();
+
+        let reader = ReleaseAssetClient::from_shared_cell(
             owner.clone(),
             repo.clone(),
             github_token,
