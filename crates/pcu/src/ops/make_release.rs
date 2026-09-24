@@ -52,7 +52,7 @@ impl MakeRelease for Client {
         // `make_latest` is only set when publishing directly: GitHub documents
         // that "Drafts and prereleases cannot be set as latest", so for a draft
         // it moves to the publish call that flips `draft` to false.
-        let repo_handler = self.github_rest.repos(self.owner(), self.repo());
+        let repo_handler = self.octocrab().await?.repos(self.owner(), self.repo());
         let releases = repo_handler.releases();
         let body = release_notes.body.to_string();
         let name = release_notes.name.to_string();

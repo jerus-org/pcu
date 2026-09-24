@@ -1,9 +1,10 @@
 use std::{path::Path, sync::Arc};
 
 use octocrab::{repos::releases::MakeLatest, Octocrab};
+use tokio::sync::OnceCell;
 
 use crate::{
-    client::{new_headless, release_not_found_error, ReleaseAssetClient},
+    client::{release_not_found_error, ReleaseAssetClient},
     Error,
 };
 
@@ -19,27 +20,40 @@ use crate::{
 pub struct ReleaseAssetWriter {
     owner: String,
     repo: String,
-    github_rest: Arc<Octocrab>,
     reader: ReleaseAssetClient,
 }
 
 impl ReleaseAssetWriter {
     /// Construct a writer for `owner`/`repo`, authenticating with
     /// `github_token`. Does not touch the filesystem or git in any way.
+    ///
+    /// Delegates entirely to [`ReleaseAssetClient::new`] for the actual
+    /// client — including its runtime-deferred construction (see that
+    /// type's `github_rest` field doc, jerus-org/pcu#1085) — rather than
+    /// building its own, since a writer only ever needs the single
+    /// `Octocrab` instance the composed `reader` already holds.
     pub fn new(
         owner: impl Into<String>,
         repo: impl Into<String>,
         github_token: impl Into<String>,
     ) -> Self {
-        new_headless(owner, repo, github_token, Self::from_shared)
+        let owner = owner.into();
+        let repo = repo.into();
+        let reader = ReleaseAssetClient::new(owner.clone(), repo.clone(), github_token);
+        Self {
+            owner,
+            repo,
+            reader,
+        }
     }
 
     /// Construct a writer for `owner`/`repo` from an already-authenticated
     /// `github_rest`/`github_graphql` pair — e.g. the ones `pcu::Client`
     /// already built. The `Arc`s are cloned (refcount only), not rebuilt, and
-    /// the same clones back an internal [`ReleaseAssetClient`] for shared
-    /// read operations — no second, redundant auth object for the same
-    /// token. Unlike the octocrate-based client this replaced,
+    /// back an internal [`ReleaseAssetClient`] for shared read operations —
+    /// no second, redundant auth object for the same token, and no separate
+    /// copy kept on `Self` either (unlike the octocrate-based client this
+    /// replaced): every REST call goes through `self.reader.octocrab()`.
     /// `octocrab`'s `upload_asset` resolves the release's own upload URL
     /// itself, so there is no separate `uploads.github.com`-pointed client
     /// to build here any more.
@@ -52,20 +66,49 @@ impl ReleaseAssetWriter {
     ) -> Self {
         let owner = owner.into();
         let repo = repo.into();
-        let github_token = github_token.into();
 
         let reader = ReleaseAssetClient::from_shared(
             owner.clone(),
             repo.clone(),
             github_token,
-            Arc::clone(&github_rest),
+            github_rest,
             github_graphql,
         );
 
         Self {
             owner,
             repo,
+            reader,
+        }
+    }
+
+    /// Construct a writer for `owner`/`repo` sharing a caller's own
+    /// still-possibly-empty, lazily-built `Octocrab` cell — the writer-side
+    /// counterpart to [`ReleaseAssetClient::from_shared_cell`], for the same
+    /// reason (jerus-org/pcu#1085): `pcu::Client::new_local_at`'s `Client`,
+    /// `ReleaseAssetClient`, and this writer all build (and cache) the same
+    /// single instance on first real use.
+    pub fn from_shared_cell(
+        owner: impl Into<String>,
+        repo: impl Into<String>,
+        github_token: impl Into<String>,
+        github_rest: Arc<OnceCell<Arc<Octocrab>>>,
+        github_graphql: Arc<gql_client::Client>,
+    ) -> Self {
+        let owner = owner.into();
+        let repo = repo.into();
+
+        let reader = ReleaseAssetClient::from_shared_cell(
+            owner.clone(),
+            repo.clone(),
+            github_token,
             github_rest,
+            github_graphql,
+        );
+
+        Self {
+            owner,
+            repo,
             reader,
         }
     }
@@ -119,9 +162,6 @@ impl ReleaseAssetWriter {
 
         // Delete-then-replace: if an asset of the same name already exists
         // on the release, GitHub rejects a fresh upload with HTTP 422.
-        // `self.github_rest` already points at api.github.com, so it is
-        // reused directly here rather than building a second client for the
-        // same endpoint.
         if let Some(asset_id) = self
             .reader
             .find_asset_in_release(release_ref.id, asset_name)
@@ -136,7 +176,9 @@ impl ReleaseAssetWriter {
                 self.owner, self.repo
             );
             if let Err(e) = self
-                .github_rest
+                .reader
+                .octocrab()
+                .await?
                 .delete::<(), _, ()>(delete_route, None)
                 .await
             {
@@ -179,7 +221,9 @@ impl ReleaseAssetWriter {
         // to decide validity (`cosign verify-blob` doesn't consult it) — it
         // only affected how a browser would render the asset if opened
         // directly. See jerus-org/pcu#1070.
-        self.github_rest
+        self.reader
+            .octocrab()
+            .await?
             .repos(&self.owner, &self.repo)
             .releases()
             .upload_asset(release_ref.id as u64, asset_name, content.into())
@@ -240,8 +284,10 @@ impl ReleaseAssetWriter {
         &self,
         release_id: i64,
         make_latest: MakeLatest,
-    ) -> Result<(), octocrab::Error> {
-        self.github_rest
+    ) -> Result<(), Error> {
+        self.reader
+            .octocrab()
+            .await?
             .repos(&self.owner, &self.repo)
             .releases()
             .update(release_id as u64)
@@ -300,25 +346,30 @@ mod tests {
         assert!(msg.contains("Asset file not found"), "unexpected: {msg}");
     }
 
-    // `Octocrab::builder().build()` needs an active Tokio runtime (its
-    // default "retry"/"timeout" features spawn a tower buffer task) — hence
-    // `#[tokio::test]` here even though nothing is actually awaited.
-    #[tokio::test]
-    async fn release_asset_writer_builds_without_git_checkout() {
+    /// jerus-org/pcu#1085: mirrors jci-audit's `publish_record.rs`, which
+    /// builds a `ReleaseAssetWriter` in a field-init statement before
+    /// building the runtime it will later `block_on` with. Deliberately
+    /// plain `#[test]`, not `#[tokio::test]` — no runtime exists at all.
+    #[test]
+    fn new_does_not_require_a_tokio_runtime() {
+        let _writer = ReleaseAssetWriter::new("test-org", "test-repo", "token");
+    }
+
+    #[test]
+    fn release_asset_writer_builds_without_git_checkout() {
         let writer = ReleaseAssetWriter::new("test-org", "test-repo", "token");
         assert_eq!(writer.owner(), "test-org");
         assert_eq!(writer.repo(), "test-repo");
     }
 
     /// `from_shared` must reuse the given `Arc`s rather than building a new
-    /// `Octocrab` for the same token. `ReleaseAssetWriter` holds the `Arc`
-    /// twice — once in its own field (for write calls) and once inside the
-    /// composed `reader: ReleaseAssetClient` (for read calls) — so the
-    /// count rises by exactly 2 (the caller's own explicit clone passed in,
-    /// then the writer's field, then the reader's field: 1 -> 2 -> 3). If
-    /// `from_shared` ever started constructing a fresh `Octocrab` instead
-    /// of cloning the given `Arc`, this given `Arc`'s count would stay at 2
-    /// (bumped only by the caller's own clone) instead of reaching 3.
+    /// `Octocrab` for the same token. `ReleaseAssetWriter` keeps no field of
+    /// its own for it (jerus-org/pcu#1085 removed that duplicate copy) —
+    /// every REST call goes through the composed `reader: ReleaseAssetClient`
+    /// — so the count rises by exactly 1: the caller's own explicit clone
+    /// passed in, then the reader's `OnceCell`-wrapped copy: 1 -> 2. If
+    /// `from_shared` ever started constructing a fresh `Octocrab` instead of
+    /// wrapping the given `Arc`, this given `Arc`'s count would stay at 1.
     #[tokio::test]
     async fn writer_from_shared_reuses_the_given_clients() {
         let github_rest = Arc::new(
@@ -344,9 +395,9 @@ mod tests {
 
         assert_eq!(
             Arc::strong_count(&github_rest),
-            3,
-            "from_shared should hold the same GitHubAPI instance (in both its own field \
-             and the composed reader's field), not build a new one"
+            2,
+            "from_shared should hold the same Octocrab instance (via the composed reader), \
+             not build a new one"
         );
     }
 

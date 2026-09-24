@@ -28,11 +28,13 @@ reqwest.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 # `time::sleep` for the release-lookup retry backoff, `fs` for reading an
-# asset file to upload — no runtime feature, since the crate never drives its
-# own executor.
+# asset file to upload, `sync` for `OnceCell`'s runtime-deferred Octocrab
+# construction (jerus-org/pcu#1085) — no runtime feature, since the crate
+# never drives its own executor.
 tokio = { version = "1.53.1", default-features = false, features = [
     "time",
     "fs",
+    "sync",
 ] }
 
 [dev-dependencies]
