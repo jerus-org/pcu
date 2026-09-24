@@ -9,6 +9,7 @@ use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
 use octocrab::{models::AppId, Octocrab};
 use owo_colors::{OwoColorize, Style};
 use secrecy::ExposeSecret;
+use tokio::sync::OnceCell;
 
 use self::pull_request::PullRequest;
 use crate::{Error, PrTitle};
@@ -19,7 +20,15 @@ pub struct Client {
     #[allow(dead_code)]
     // pub(crate) settings: Config,
     pub(crate) git_repo: Repository,
-    pub(crate) github_rest: Arc<Octocrab>,
+    /// Deferred: `Octocrab::builder().build()` spawns a tower buffer task
+    /// internally, so it must never run outside an already-entered Tokio
+    /// runtime. `new_with` (already `pub async fn`) pre-fills this via
+    /// `octocrab()`'s first call; `new_local_at` (a sync fn, documented as
+    /// callable before any runtime exists) leaves it empty and lets
+    /// `octocrab()` build it lazily on first actual use — see
+    /// jerus-org/pcu#1085, and `pcu_release_assets::ReleaseAssetClient`'s
+    /// identical field, which has the same rationale in more detail.
+    pub(crate) github_rest: Arc<OnceCell<Arc<Octocrab>>>,
     pub(crate) github_graphql: Arc<gql_client::Client>,
     pub(crate) github_token: String,
     pub(crate) owner: String,
@@ -173,6 +182,7 @@ impl Client {
             Arc::clone(&github_rest),
             Arc::clone(&github_graphql),
         );
+        let github_rest = Arc::new(OnceCell::new_with(Some(github_rest)));
 
         Ok(Self {
             git_repo,
@@ -295,6 +305,23 @@ impl Client {
         }
     }
 
+    /// The `Octocrab` REST client, building it on first use if this
+    /// `Client` was constructed via [`Self::new_local`]/[`Self::new_local_at`]
+    /// (deferred — see the field doc on `github_rest`) or returning the
+    /// already-built one immediately if constructed via [`Self::new_with`].
+    pub(crate) async fn octocrab(&self) -> Result<&Octocrab, Error> {
+        let arc = self
+            .github_rest
+            .get_or_try_init(|| async {
+                Octocrab::builder()
+                    .personal_token(self.github_token.clone())
+                    .build()
+                    .map(Arc::new)
+            })
+            .await?;
+        Ok(arc.as_ref())
+    }
+
     pub fn owner(&self) -> &str {
         &self.owner
     }
@@ -389,14 +416,12 @@ impl Client {
             .ok()
             .and_then(|h| h.shorthand().ok().map(str::to_string));
 
-        // Create minimal API stubs — any method that actually uses these will
-        // fail with an auth error, which is expected for a local-only client.
-        let github_rest = Arc::new(
-            Octocrab::builder()
-                .personal_token(String::new())
-                .build()
-                .expect("building an Octocrab client from an empty token cannot fail"),
-        );
+        // Deferred, like `github_rest` itself (see its field doc) — building
+        // an `Octocrab` client eagerly here would need a Tokio runtime this
+        // sync constructor is documented not to require. Any method that
+        // actually uses one of these will fail with an auth error, which is
+        // expected for a local-only client with an empty token.
+        let github_rest = Arc::new(OnceCell::new());
         let github_graphql = Arc::new(gql_client::Client::new_with_headers(
             END_POINT,
             HashMap::from([
@@ -413,20 +438,14 @@ impl Client {
             tag_prefix: Some("v".to_string()),
         };
 
-        let release_assets = pcu_release_assets::ReleaseAssetClient::from_shared(
-            owner.clone(),
-            repo.clone(),
-            "",
-            Arc::clone(&github_rest),
-            Arc::clone(&github_graphql),
-        );
-        let release_asset_writer = pcu_release_assets::ReleaseAssetWriter::from_shared(
-            owner.clone(),
-            repo.clone(),
-            "",
-            Arc::clone(&github_rest),
-            Arc::clone(&github_graphql),
-        );
+        // `ReleaseAssetClient::new`/`ReleaseAssetWriter::new` (not
+        // `from_shared`) — each defers its own `Octocrab` construction the
+        // same way `github_rest` above does, so none of the three needs an
+        // already-built client to hand around at construction time.
+        let release_assets =
+            pcu_release_assets::ReleaseAssetClient::new(owner.clone(), repo.clone(), "");
+        let release_asset_writer =
+            pcu_release_assets::ReleaseAssetWriter::new(owner.clone(), repo.clone(), "");
 
         Ok(Self {
             git_repo,
@@ -591,12 +610,20 @@ mod tests {
         assert_eq!(repo, "pcu");
     }
 
-    // `Octocrab::builder().build()` (inside `Client::new_local_at`) spawns a
-    // tower buffer task internally (the default "retry"/"timeout" features),
-    // so building one needs an active Tokio runtime — hence `#[tokio::test]`
-    // on these constructor tests even though none of them await anything.
-    #[tokio::test]
-    async fn new_local_at_derives_owner_repo_from_remote() {
+    /// jerus-org/pcu#1085: `new_local`/`new_local_at` are documented as
+    /// callable with no GitHub API access at all — the same sync-before-any-
+    /// runtime contract as `pcu_release_assets::ReleaseAssetClient::new`.
+    /// Deliberately plain `#[test]`, not `#[tokio::test]` — no runtime
+    /// exists anywhere in this test at all.
+    #[test]
+    fn new_local_at_does_not_require_a_tokio_runtime() {
+        let dir = tempfile::tempdir().unwrap();
+        git2::Repository::init(dir.path()).unwrap();
+        let _client = Client::new_local_at(dir.path()).unwrap();
+    }
+
+    #[test]
+    fn new_local_at_derives_owner_repo_from_remote() {
         let dir = tempfile::tempdir().unwrap();
         let repo = git2::Repository::init(dir.path()).unwrap();
         repo.remote("origin", "https://github.com/test-org/test-repo.git")
@@ -607,8 +634,8 @@ mod tests {
         assert_eq!(client.repo(), "test-repo");
     }
 
-    #[tokio::test]
-    async fn new_local_at_falls_back_when_no_remote() {
+    #[test]
+    fn new_local_at_falls_back_when_no_remote() {
         let dir = tempfile::tempdir().unwrap();
         git2::Repository::init(dir.path()).unwrap();
 

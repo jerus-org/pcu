@@ -58,7 +58,8 @@ impl Release {
             ))
             })?;
         let release = client
-            .github_rest
+            .octocrab()
+            .await?
             .repos(client.owner(), client.repo())
             .releases()
             .get(release_ref.id as u64)
@@ -199,7 +200,8 @@ impl Release {
         ] {
             let content = tokio::fs::read(path).await?;
             client
-                .github_rest
+                .octocrab()
+                .await?
                 .repos(client.owner(), client.repo())
                 .releases()
                 .upload_asset(release.id.into_inner(), name, content.into())

@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use octocrab::Octocrab;
 use serde::{Deserialize, Serialize};
+use tokio::sync::OnceCell;
 
 use crate::Error;
 
@@ -33,7 +34,17 @@ pub struct ReleaseRef {
 pub struct ReleaseAssetClient {
     owner: String,
     repo: String,
-    github_rest: Arc<Octocrab>,
+    /// Deferred: `Octocrab::builder().build()` spawns a tower buffer task
+    /// internally, so it must never run outside an already-entered Tokio
+    /// runtime. `new`/`new_unauthenticated` are documented as safe to call
+    /// before any runtime exists — see jerus-org/pcu#1085 — so building the
+    /// client eagerly there is not an option; it is instead built lazily,
+    /// the first time [`Self::octocrab`] is awaited, which is guaranteed to
+    /// only ever happen while a future is being polled inside a runtime.
+    /// `from_shared` pre-fills the cell with the caller's already-built
+    /// client instead (a plain, sync `OnceCell::new_with`, no runtime
+    /// needed) since that one was always built inside an async fn.
+    github_rest: Arc<OnceCell<Arc<Octocrab>>>,
     auth: Auth,
 }
 
@@ -65,7 +76,17 @@ impl ReleaseAssetClient {
         repo: impl Into<String>,
         github_token: impl Into<String>,
     ) -> Self {
-        new_headless(owner, repo, github_token, Self::from_shared)
+        let github_token = github_token.into();
+        let github_graphql = Arc::new(build_graphql_client(&github_token));
+        Self {
+            owner: owner.into(),
+            repo: repo.into(),
+            github_rest: Arc::new(OnceCell::new()),
+            auth: Auth::Token {
+                token: github_token,
+                graphql: github_graphql,
+            },
+        }
     }
 
     /// Construct a client for `owner`/`repo` from an already-authenticated
@@ -83,7 +104,7 @@ impl ReleaseAssetClient {
         Self {
             owner: owner.into(),
             repo: repo.into(),
-            github_rest,
+            github_rest: Arc::new(OnceCell::new_with(Some(github_rest))),
             auth: Auth::Token {
                 token: github_token.into(),
                 graphql: github_graphql,
@@ -105,15 +126,10 @@ impl ReleaseAssetClient {
     /// built this way, rather than attempting the call and failing with a
     /// confusing 401 from GitHub.
     pub fn new_unauthenticated(owner: impl Into<String>, repo: impl Into<String>) -> Self {
-        let github_rest = Arc::new(
-            Octocrab::builder()
-                .build()
-                .expect("building an unauthenticated Octocrab client cannot fail"),
-        );
         Self {
             owner: owner.into(),
             repo: repo.into(),
-            github_rest,
+            github_rest: Arc::new(OnceCell::new()),
             auth: Auth::Anonymous,
         }
     }
@@ -241,6 +257,24 @@ impl ReleaseAssetClient {
         }
     }
 
+    /// The `Octocrab` REST client, building it on first use if this client
+    /// was constructed via [`Self::new`]/[`Self::new_unauthenticated`]
+    /// (deferred — see the field doc on `github_rest`) or returning the
+    /// caller's own one immediately if constructed via [`Self::from_shared`].
+    pub(crate) async fn octocrab(&self) -> Result<&Octocrab, Error> {
+        let arc = self
+            .github_rest
+            .get_or_try_init(|| async {
+                let mut builder = Octocrab::builder();
+                if let Some(token) = self.token() {
+                    builder = builder.personal_token(token.to_string());
+                }
+                builder.build().map(Arc::new)
+            })
+            .await?;
+        Ok(arc.as_ref())
+    }
+
     /// The bearer token to send with a REST call, if this client has one.
     /// `None` for a client built via [`Self::new_unauthenticated`] — such a
     /// call is sent with no `Authorization` header at all, not an empty one
@@ -264,7 +298,8 @@ impl ReleaseAssetClient {
         asset_name: &str,
     ) -> Result<Option<i64>, Error> {
         let release = self
-            .github_rest
+            .octocrab()
+            .await?
             .repos(&self.owner, &self.repo)
             .releases()
             .get(release_id as u64)
@@ -357,7 +392,8 @@ impl ReleaseAssetClient {
 
     async fn probe_published_release_for_tag(&self, tag: &str) -> Result<Option<i64>, Error> {
         match self
-            .github_rest
+            .octocrab()
+            .await?
             .repos(&self.owner, &self.repo)
             .releases()
             .get_by_tag(tag)
@@ -503,49 +539,20 @@ fn find_existing_asset_id<'a>(
         .map(|(_, id)| id)
 }
 
-/// Shared by every headless type's `new()` (`ReleaseAssetClient` and
-/// `ReleaseAssetWriter`): build a fresh authenticated client pair for
-/// `github_token`, then hand ownership to `from_shared`. Both types' `new()`
-/// bodies were identical before this was factored out — SonarQube flagged
-/// the duplication (jerus-org/pcu#1059's PR).
-pub(crate) fn new_headless<T>(
-    owner: impl Into<String>,
-    repo: impl Into<String>,
-    github_token: impl Into<String>,
-    from_shared: impl FnOnce(String, String, String, Arc<Octocrab>, Arc<gql_client::Client>) -> T,
-) -> T {
-    let owner = owner.into();
-    let repo = repo.into();
-    let github_token = github_token.into();
-    let (github_rest, github_graphql) = build_authenticated_clients(&github_token);
-
-    from_shared(
-        owner,
-        repo,
-        github_token,
-        Arc::new(github_rest),
-        Arc::new(github_graphql),
-    )
-}
-
-/// Build a fresh authenticated REST + GraphQL client pair for `token`.
-pub(crate) fn build_authenticated_clients(token: &str) -> (Octocrab, gql_client::Client) {
-    let github_rest = Octocrab::builder()
-        .personal_token(token.to_string())
-        .build()
-        .expect("building an Octocrab client from a personal access token cannot fail");
-
+/// Build a GraphQL client for `token`. Unlike `Octocrab::builder().build()`,
+/// this never spawns anything, so it stays safe to build eagerly in a
+/// synchronous constructor — see the `github_rest` field doc for why the
+/// REST client can't do the same.
+pub(crate) fn build_graphql_client(token: &str) -> gql_client::Client {
     let auth = format!("Bearer {token}");
-    let github_graphql = gql_client::Client::new_with_headers(
+    gql_client::Client::new_with_headers(
         END_POINT,
         HashMap::from([
             ("X-Github-Next-Global-ID", "1"),
             ("User-Agent", "pcu-release-assets"),
             ("Authorization", &auth),
         ]),
-    );
-
-    (github_rest, github_graphql)
+    )
 }
 
 /// Build GitHub's REST asset-download URL for `asset_id`. Deliberately not
@@ -655,12 +662,25 @@ where
 mod tests {
     use super::*;
 
-    // `Octocrab::builder().build()` spawns a tower buffer task internally
-    // (the default "retry"/"timeout" features), so building one needs an
-    // active Tokio runtime — hence `#[tokio::test]` on these constructor
-    // tests even though none of them actually await anything.
-    #[tokio::test]
-    async fn release_asset_client_builds_without_git_checkout() {
+    /// jerus-org/pcu#1085: `new`/`new_unauthenticated` are documented as
+    /// safe to call before any Tokio runtime exists (that's the whole point
+    /// of `ReleaseAssetClient` being a headless, sync-constructible type —
+    /// see jerus-org/jci-audit's `PcuAssetSource::new`, which builds the
+    /// client in a field-init statement *before* building the runtime it
+    /// will later `block_on` with). Deliberately plain `#[test]`, not
+    /// `#[tokio::test]` — no runtime exists anywhere in this test at all.
+    #[test]
+    fn new_does_not_require_a_tokio_runtime() {
+        let _client = ReleaseAssetClient::new("test-org", "test-repo", "token");
+    }
+
+    #[test]
+    fn new_unauthenticated_does_not_require_a_tokio_runtime() {
+        let _client = ReleaseAssetClient::new_unauthenticated("test-org", "test-repo");
+    }
+
+    #[test]
+    fn release_asset_client_builds_without_git_checkout() {
         // No tempdir, no git2::Repository::init anywhere in scope — this
         // crate has no git dependency at all.
         let client = ReleaseAssetClient::new("test-org", "test-repo", "token");
@@ -989,8 +1009,8 @@ mod tests {
         assert_eq!(candidates[0].database_id, Some(333744509));
     }
 
-    #[tokio::test]
-    async fn new_unauthenticated_builds_without_git_checkout_or_a_token() {
+    #[test]
+    fn new_unauthenticated_builds_without_git_checkout_or_a_token() {
         let client = ReleaseAssetClient::new_unauthenticated("test-org", "test-repo");
         assert_eq!(client.owner(), "test-org");
         assert_eq!(client.repo(), "test-repo");
