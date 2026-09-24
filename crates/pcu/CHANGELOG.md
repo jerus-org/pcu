@@ -5,9 +5,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.36] - 2026-09-24
+
+Summary: Chore[1], Fixed[3]
+
+### Fixed
+
+ - fix(deps): update rust crate thiserror to 2.0.21
+ - fix: address code-review findings on lazy client
+ - fix: defer Octocrab construction past runtime
+
 ## [0.6.35] - 2026-09-23
 
-Summary: Chore[1], Fixed[10], Security[1]
+Summary: Chore[2], Fixed[10], Security[1]
 
 ### Fixed
 
@@ -790,7 +800,8 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
 
  - chore(deps): update rust crate rstest to 0.21.0
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.34...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.35...HEAD
+[0.6.35]: https://github.com/jerus-org/pcu/compare/v0.6.34...v0.6.35
 [0.6.34]: https://github.com/jerus-org/pcu/compare/v0.6.33...v0.6.34
 [0.6.33]: https://github.com/jerus-org/pcu/compare/v0.6.32...v0.6.33
 [0.6.32]: https://github.com/jerus-org/pcu/compare/v0.6.31...v0.6.32
