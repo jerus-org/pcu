@@ -3385,7 +3385,7 @@ dependencies = [
 
 [[package]]
 name = "pcu-release-assets"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "gql_client",
  "log",
