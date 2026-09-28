@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.40] - 2026-09-28
+
+Summary: 
+
 ## [0.1.39] - 2026-09-24
 
-Summary: Fixed[1]
+Summary: Chore[1], Fixed[1]
 
 ### Fixed
 
@@ -495,7 +499,8 @@ Summary: Added[21], Build[4], Changed[25], Chore[5], Documentation[10], Fixed[70
  - ♻️ refactor(gen-bsky): streamline error handling
  - ♻️ refactor(lib): restructure gen-bsky module
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.38...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.39...HEAD
+[0.1.39]: https://github.com/jerus-org/pcu/compare/v0.1.38...v0.1.39
 [0.1.38]: https://github.com/jerus-org/pcu/compare/v0.1.37...v0.1.38
 [0.1.37]: https://github.com/jerus-org/pcu/compare/v0.1.36...v0.1.37
 [0.1.36]: https://github.com/jerus-org/pcu/compare/v0.1.35...v0.1.36
