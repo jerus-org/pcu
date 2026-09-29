@@ -793,6 +793,8 @@ impl GitOps for Client {
 
         log::trace!("Push refs: {push_refs:?}");
         let token_push = self.github_token.clone();
+        // Declared before the callbacks that borrow it (#1089).
+        let updates = std::cell::RefCell::new(Vec::new());
         let mut call_backs = RemoteCallbacks::new();
         call_backs.credentials(move |url, username, allowed| {
             log::info!(
@@ -802,11 +804,21 @@ impl GitOps for Client {
             make_credential(&token_push, url, username, allowed)
         });
         call_backs.push_transfer_progress(progress_bar);
+        // Remote::push returns Ok even when the server rejects a ref (branch
+        // protection, a declining hook): per-ref outcomes arrive only here.
+        call_backs.push_update_reference(|refname, status| {
+            updates
+                .borrow_mut()
+                .push((refname.to_string(), status.map(str::to_string)));
+            Ok(())
+        });
         let mut push_opts = PushOptions::new();
         push_opts.remote_callbacks(call_backs);
 
         if !no_push {
             remote.push(&push_refs, Some(&mut push_opts))?;
+            drop(push_opts);
+            push_rejections(&updates.borrow())?;
         }
 
         Ok(())
@@ -955,6 +967,24 @@ impl GitOps for Client {
 
         Ok(BranchReport { ahead, behind })
     }
+}
+
+/// Fail when the remote rejected any pushed ref. `updates` holds each ref's
+/// outcome from libgit2's `push_update_reference` callback: `None` accepted,
+/// `Some(reason)` rejected. Without this a rejected push (e.g. to a protected
+/// branch) reports success and the commit is silently lost (#1089).
+fn push_rejections(updates: &[(String, Option<String>)]) -> Result<(), Error> {
+    let rejected: Vec<String> = updates
+        .iter()
+        .filter_map(|(refname, status)| status.as_ref().map(|s| format!("{refname}: {s}")))
+        .collect();
+    if rejected.is_empty() {
+        return Ok(());
+    }
+    Err(Error::GitError(format!(
+        "The remote rejected the push: {}",
+        rejected.join("; ")
+    )))
 }
 
 /// Refuse to push `branch` when the local branch is `behind` its remote — the
@@ -1205,6 +1235,82 @@ mod tests {
     use super::*;
     use git2::Signature;
     use rstest::rstest;
+
+    // ── #1089: a ref the remote rejects must fail the push ─────────────────
+
+    #[test]
+    fn push_rejections_ok_when_every_ref_accepted() {
+        let updates = vec![
+            ("refs/heads/main".to_string(), None),
+            ("refs/tags/v1.0.0".to_string(), None),
+        ];
+        assert!(push_rejections(&updates).is_ok());
+    }
+
+    #[test]
+    fn push_rejections_errors_naming_each_rejected_ref_and_reason() {
+        // libgit2's Remote::push returns Ok even when the server rejects a ref
+        // (e.g. branch protection); the rejection only reaches the
+        // push_update_reference callback. Treating that as success silently
+        // lost a regenerated-orb commit in jerus-org/jci-coverage (#1089).
+        let updates = vec![
+            (
+                "refs/heads/main".to_string(),
+                Some("protected branch hook declined".to_string()),
+            ),
+            ("refs/tags/v1.0.0".to_string(), None),
+        ];
+        let err = push_rejections(&updates).unwrap_err().to_string();
+        assert!(err.contains("refs/heads/main"), "names the ref: {err}");
+        assert!(
+            err.contains("protected branch hook declined"),
+            "carries the server's reason: {err}"
+        );
+        assert!(
+            !err.contains("refs/tags/v1.0.0"),
+            "accepted refs not listed: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn push_commit_pushes_to_a_local_bare_remote() {
+        // End-to-end success path through the real callbacks: registering the
+        // rejection check must not turn an accepted push into an error.
+        let (dir, client) = make_test_client();
+        let remote_dir = tempfile::tempdir().unwrap();
+        git2::Repository::init_bare(remote_dir.path()).unwrap();
+        let repo = git2::Repository::open(dir.path()).unwrap();
+        let branch = repo.head().unwrap().shorthand().unwrap().to_string();
+        let url = format!("file://{}", remote_dir.path().display());
+        let mut origin = repo.remote("origin", &url).unwrap();
+        let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
+        origin.push(&[refspec.as_str()], None).unwrap();
+
+        std::fs::write(dir.path().join("regenerated.yml"), "orb: source\n").unwrap();
+        client.stage_paths(&[Path::new("regenerated.yml")]).unwrap();
+        let sign = SignConfig::new(Sign::None).with_identity("Bot", "bot@example.com");
+        client
+            .commit_staged(sign, "chore: regenerate orb", "", None)
+            .unwrap();
+
+        client
+            .push_commit("", None, false, "Bot")
+            .expect("an accepted push must succeed");
+
+        let remote = git2::Repository::open_bare(remote_dir.path()).unwrap();
+        let pushed = remote
+            .find_reference(&format!("refs/heads/{branch}"))
+            .unwrap()
+            .peel_to_commit()
+            .unwrap();
+        assert!(
+            pushed
+                .message()
+                .unwrap()
+                .starts_with("chore: regenerate orb"),
+            "remote must hold the pushed commit"
+        );
+    }
 
     #[test]
     fn ensure_fast_forward_refuses_when_behind() {
