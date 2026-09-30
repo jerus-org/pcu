@@ -1,6 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use octocrab::{repos::releases::MakeLatest, Octocrab};
+use secrecy::ExposeSecret;
 use tokio::sync::OnceCell;
 
 use crate::{
@@ -214,22 +215,17 @@ impl ReleaseAssetWriter {
             ))
         })?;
 
-        // octocrab's `UploadAssetBuilder` always sends
-        // `Content-Type: application/octet-stream` with no override hook, so
-        // the `.sig`-vs-binary distinction the octocrate client made (`.sig`
-        // as `text/plain`) is lost here. Accepted: nothing reads that header
-        // to decide validity (`cosign verify-blob` doesn't consult it) — it
-        // only affected how a browser would render the asset if opened
-        // directly. See jerus-org/pcu#1070.
-        self.reader
-            .octocrab()
-            .await?
-            .repos(&self.owner, &self.repo)
-            .releases()
-            .upload_asset(release_ref.id as u64, asset_name, content.into())
-            .send()
-            .await
-            .map_err(|e| map_asset_upload_error(tag, &describe_api_error(&e)))?;
+        let octocrab = self.reader.octocrab().await?;
+        send_asset(
+            octocrab,
+            &self.owner,
+            &self.repo,
+            release_ref.id as u64,
+            asset_name,
+            content,
+        )
+        .await
+        .map_err(|e| map_asset_upload_error(tag, &e))?;
 
         log::info!("Successfully uploaded {asset_name}");
         Ok(())
@@ -300,6 +296,80 @@ impl ReleaseAssetWriter {
     }
 }
 
+/// POST `content` as `asset_name` to release `release_id`, returning what
+/// GitHub said on failure.
+///
+/// This builds the upload request itself rather than using octocrab's
+/// `upload_asset`, for two reasons:
+///
+/// - A GitHub App installation client (how `pcu::Client` authenticates in
+///   CI) must carry its token on the upload. `Octocrab::execute` only
+///   attaches an installation token to requests for `api.github.com`, and
+///   the upload goes to the release's `upload_url` on `uploads.github.com`,
+///   so octocrab would send it with no credentials and GitHub would reject
+///   it. The installation token is set on the request here. A token client
+///   needs nothing extra: octocrab's auth layer already sends its token to
+///   the upload host.
+/// - `upload_asset` puts the asset name into the query string unencoded,
+///   so a name with a space or `&` breaks the URL.
+///
+/// The body is sent as `application/octet-stream`: the `.sig` vs binary
+/// distinction the octocrate client made (`.sig` as `text/plain`) is not
+/// kept. Nothing reads that header to decide validity (`cosign verify-blob`
+/// doesn't consult it); it only affected how a browser would render the
+/// asset if opened directly. See jerus-org/pcu#1070.
+async fn send_asset(
+    octocrab: &Octocrab,
+    owner: &str,
+    repo: &str,
+    release_id: u64,
+    asset_name: &str,
+    content: Vec<u8>,
+) -> Result<(), String> {
+    let installation_token = match octocrab.installation_token().await {
+        Ok(token) => Some(token),
+        Err(octocrab::Error::InstallationTokenInvalidAuth { .. }) => None,
+        Err(e) => return Err(describe_api_error(&e)),
+    };
+
+    // The upload URL comes from the release itself, as octocrab's own
+    // `upload_asset` does, rather than being assembled from a fixed host.
+    let release = octocrab
+        .repos(owner, repo)
+        .releases()
+        .get(release_id)
+        .await
+        .map_err(|e| describe_api_error(&e))?;
+    let mut url = reqwest::Url::parse(&release.upload_url.replace("{?name,label}", ""))
+        .map_err(|e| format!("invalid upload URL '{}': {e}", release.upload_url))?;
+    url.query_pairs_mut().append_pair("name", asset_name);
+
+    let mut request = http::Request::builder()
+        .method(http::Method::POST)
+        .uri(url.as_str());
+    if let Some(token) = installation_token {
+        let mut authorization =
+            http::HeaderValue::from_str(&format!("Bearer {}", token.expose_secret()))
+                .map_err(|e| format!("invalid installation token header: {e}"))?;
+        authorization.set_sensitive(true);
+        request = request.header(http::header::AUTHORIZATION, authorization);
+    }
+    let request = request
+        .header(http::header::CONTENT_TYPE, "application/octet-stream")
+        .header(http::header::CONTENT_LENGTH, content.len())
+        .body(content)
+        .map_err(|e| format!("failed to build upload request: {e}"))?;
+
+    let response = octocrab
+        .execute(request)
+        .await
+        .map_err(|e| describe_api_error(&e))?;
+    octocrab::map_github_error(response)
+        .await
+        .map_err(|e| describe_api_error(&e))?;
+    Ok(())
+}
+
 fn binary_not_found_error(binary: &Path) -> Error {
     Error::ReleaseAsset(format!("Asset file not found: {}", binary.display()))
 }
@@ -317,9 +387,6 @@ fn binary_access_error(binary: &Path, source: &std::io::Error) -> Error {
     ))
 }
 
-/// Translate a GitHub API error message into a typed [`Error`], recognising
-/// the immutable-release rejection so callers get an actionable message
-/// instead of a raw API string.
 /// What GitHub actually said, for an error message. octocrab's `Display`
 /// for an API rejection is just "GitHub": the status, message, field
 /// errors and documentation link all live in the error's source, so
@@ -346,6 +413,9 @@ fn describe_api_error(e: &octocrab::Error) -> String {
     described
 }
 
+/// Translate a GitHub API error message into a typed [`Error`], recognising
+/// the immutable-release rejection so callers get an actionable message
+/// instead of a raw API string.
 fn map_asset_upload_error(tag: &str, api_message: &str) -> Error {
     if api_message.to_lowercase().contains("immutable release") {
         return Error::ImmutableRelease(tag.to_string(), api_message.to_string());
@@ -672,5 +742,209 @@ mod tests {
             .publish_release_ref(42, MakeLatest::Legacy)
             .await
             .unwrap();
+    }
+
+    /// A GitHub release body whose `upload_url` points back at `server`.
+    fn release_json(server: &wiremock::MockServer) -> serde_json::Value {
+        serde_json::json!({
+            "id": 42, "tag_name": "pcu-v1.0.0", "draft": true, "prerelease": false,
+            "assets": [], "target_commitish": "main", "name": null, "body": null,
+            "created_at": null, "published_at": null, "author": null,
+            "url": format!("{}/repos/test-org/test-repo/releases/42", server.uri()),
+            "html_url": "https://github.com/test-org/test-repo/releases/tag/pcu-v1.0.0",
+            "assets_url": format!("{}/repos/test-org/test-repo/releases/42/assets", server.uri()),
+            "upload_url": format!(
+                "{}/upload/repos/test-org/test-repo/releases/42/assets{{?name,label}}",
+                server.uri()
+            ),
+            "tarball_url": null, "zipball_url": null, "node_id": "R_1"
+        })
+    }
+
+    /// Mount the upload endpoint, answering only a request that carries
+    /// `authorization`; anything else gets wiremock's default 404.
+    async fn mount_upload(server: &wiremock::MockServer, authorization: &str) {
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .and(wiremock::matchers::path(
+                "/upload/repos/test-org/test-repo/releases/42/assets",
+            ))
+            .and(wiremock::matchers::query_param("name", "bin v1.tar.gz"))
+            .and(wiremock::matchers::header("authorization", authorization))
+            .and(wiremock::matchers::header(
+                "content-type",
+                "application/octet-stream",
+            ))
+            .and(wiremock::matchers::body_bytes(b"payload".to_vec()))
+            .respond_with(
+                wiremock::ResponseTemplate::new(201)
+                    .set_body_json(serde_json::json!({"id": 7, "name": "bin v1.tar.gz"})),
+            )
+            .expect(1)
+            .mount(server)
+            .await;
+    }
+
+    /// A throwaway GitHub App key: generated per run, so no private key is
+    /// kept in the repository.
+    fn app_key() -> jsonwebtoken::EncodingKey {
+        use aws_lc_rs::encoding::AsDer;
+        use base64::Engine;
+
+        let key = aws_lc_rs::rsa::KeyPair::generate(aws_lc_rs::rsa::KeySize::Rsa2048).unwrap();
+        let der: aws_lc_rs::encoding::Pkcs8V1Der = key.as_der().unwrap();
+        let pem = format!(
+            "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----\n",
+            base64::engine::general_purpose::STANDARD.encode(der.as_ref())
+        );
+        jsonwebtoken::EncodingKey::from_rsa_pem(pem.as_bytes()).unwrap()
+    }
+
+    /// A GitHub App installation client — how `pcu::Client` authenticates in
+    /// CI — must send its installation token with the upload. octocrab's
+    /// own `upload_asset` leaves it off (it only authenticates requests to
+    /// `api.github.com`, and uploads go to `uploads.github.com`), which is
+    /// what failed the gen-circleci-orb 0.2.0 release with a bare "GitHub".
+    #[tokio::test]
+    async fn send_asset_authenticates_installation_upload() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .and(wiremock::matchers::path(
+                "/app/installations/99/access_tokens",
+            ))
+            .respond_with(
+                wiremock::ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                    "token": "ghs_installation",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                    "permissions": {}
+                })),
+            )
+            .mount(&server)
+            .await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path(
+                "/repos/test-org/test-repo/releases/42",
+            ))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(release_json(&server)))
+            .mount(&server)
+            .await;
+        mount_upload(&server, "Bearer ghs_installation").await;
+
+        let app = Octocrab::builder()
+            .base_uri(server.uri())
+            .unwrap()
+            .app(octocrab::models::AppId(1), app_key())
+            .build()
+            .unwrap();
+        let (installation, _token) = app
+            .installation_and_token(octocrab::models::InstallationId(99))
+            .await
+            .unwrap();
+
+        send_asset(
+            &installation,
+            "test-org",
+            "test-repo",
+            42,
+            "bin v1.tar.gz",
+            b"payload".to_vec(),
+        )
+        .await
+        .unwrap();
+    }
+
+    /// A token client's upload is authenticated by octocrab's auth layer,
+    /// which sends the token to the configured upload host.
+    #[tokio::test]
+    async fn send_asset_authenticates_token_upload() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path(
+                "/repos/test-org/test-repo/releases/42",
+            ))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(release_json(&server)))
+            .mount(&server)
+            .await;
+        mount_upload(&server, "Bearer token").await;
+
+        let octocrab = Octocrab::builder()
+            .base_uri(server.uri())
+            .unwrap()
+            .upload_uri(server.uri())
+            .unwrap()
+            .personal_token("token".to_string())
+            .build()
+            .unwrap();
+
+        send_asset(
+            &octocrab,
+            "test-org",
+            "test-repo",
+            42,
+            "bin v1.tar.gz",
+            b"payload".to_vec(),
+        )
+        .await
+        .unwrap();
+    }
+
+    /// A rejected upload reports GitHub's status and message, not octocrab's
+    /// bare "GitHub".
+    #[tokio::test]
+    async fn send_asset_reports_github_rejection() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .and(wiremock::matchers::path(
+                "/app/installations/99/access_tokens",
+            ))
+            .respond_with(
+                wiremock::ResponseTemplate::new(201).set_body_json(serde_json::json!({
+                    "token": "ghs_installation",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                    "permissions": {}
+                })),
+            )
+            .mount(&server)
+            .await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path(
+                "/repos/test-org/test-repo/releases/42",
+            ))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(release_json(&server)))
+            .mount(&server)
+            .await;
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .and(wiremock::matchers::path(
+                "/upload/repos/test-org/test-repo/releases/42/assets",
+            ))
+            .respond_with(
+                wiremock::ResponseTemplate::new(422)
+                    .set_body_json(serde_json::json!({"message": "Validation Failed"})),
+            )
+            .mount(&server)
+            .await;
+
+        let app = Octocrab::builder()
+            .base_uri(server.uri())
+            .unwrap()
+            .app(octocrab::models::AppId(1), app_key())
+            .build()
+            .unwrap();
+        let (installation, _token) = app
+            .installation_and_token(octocrab::models::InstallationId(99))
+            .await
+            .unwrap();
+
+        let err = send_asset(
+            &installation,
+            "test-org",
+            "test-repo",
+            42,
+            "bin v1.tar.gz",
+            b"payload".to_vec(),
+        )
+        .await
+        .unwrap_err();
+        assert!(err.contains("422"), "status missing: {err}");
+        assert!(err.contains("Validation Failed"), "message missing: {err}");
     }
 }
