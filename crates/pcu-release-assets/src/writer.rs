@@ -193,7 +193,7 @@ impl ReleaseAssetWriter {
                     .await?
                     .is_some()
                 {
-                    return Err(map_asset_upload_error(tag, &e.to_string()));
+                    return Err(map_asset_upload_error(tag, &describe_api_error(&e)));
                 }
                 log::info!("Asset '{asset_name}' was already gone; treating delete as a no-op");
             }
@@ -229,7 +229,7 @@ impl ReleaseAssetWriter {
             .upload_asset(release_ref.id as u64, asset_name, content.into())
             .send()
             .await
-            .map_err(|e| map_asset_upload_error(tag, &e.to_string()))?;
+            .map_err(|e| map_asset_upload_error(tag, &describe_api_error(&e)))?;
 
         log::info!("Successfully uploaded {asset_name}");
         Ok(())
@@ -320,6 +320,32 @@ fn binary_access_error(binary: &Path, source: &std::io::Error) -> Error {
 /// Translate a GitHub API error message into a typed [`Error`], recognising
 /// the immutable-release rejection so callers get an actionable message
 /// instead of a raw API string.
+/// What GitHub actually said, for an error message. octocrab's `Display`
+/// for an API rejection is just "GitHub": the status, message, field
+/// errors and documentation link all live in the error's source, so
+/// `to_string()` drops exactly the part that explains the failure. Other
+/// errors (transport, parsing) are rendered with their full source chain.
+fn describe_api_error(e: &octocrab::Error) -> String {
+    if let octocrab::Error::GitHub { source, .. } = e {
+        let mut described = format!("{} {}", source.status_code, source.message);
+        if let Some(errors) = source.errors.as_ref().filter(|errors| !errors.is_empty()) {
+            let details: Vec<String> = errors.iter().map(ToString::to_string).collect();
+            described.push_str(&format!(" [{}]", details.join(", ")));
+        }
+        if let Some(url) = &source.documentation_url {
+            described.push_str(&format!(" (see {url})"));
+        }
+        return described;
+    }
+    let mut described = e.to_string();
+    let mut cause = std::error::Error::source(e);
+    while let Some(c) = cause {
+        described.push_str(&format!(": {c}"));
+        cause = c.source();
+    }
+    described
+}
+
 fn map_asset_upload_error(tag: &str, api_message: &str) -> Error {
     if api_message.to_lowercase().contains("immutable release") {
         return Error::ImmutableRelease(tag.to_string(), api_message.to_string());
@@ -485,6 +511,69 @@ mod tests {
             "cannot upload assets to an IMMUTABLE release",
         );
         assert!(matches!(err, Error::ImmutableRelease(_, _)));
+    }
+
+    /// A real octocrab API error: GitHub's error body served by a mock
+    /// server, since `GitHubError` is non-exhaustive and can't be built
+    /// directly.
+    async fn github_api_error(status: u16, body: serde_json::Value) -> octocrab::Error {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .respond_with(wiremock::ResponseTemplate::new(status).set_body_json(body))
+            .mount(&server)
+            .await;
+        let octocrab = Octocrab::builder()
+            .base_uri(server.uri())
+            .unwrap()
+            .personal_token("token".to_string())
+            .build()
+            .unwrap();
+        octocrab
+            .get::<serde_json::Value, _, ()>("/repos/test-org/test-repo/releases/1", None)
+            .await
+            .expect_err("the mock rejects every request")
+    }
+
+    /// octocrab renders an API rejection as just "GitHub"; the description
+    /// must carry the status, message and field errors instead, so an
+    /// upload failure says why.
+    #[tokio::test]
+    async fn describe_api_error_keeps_githubs_status_message_and_errors() {
+        let e = github_api_error(
+            422,
+            serde_json::json!({
+                "message": "Validation Failed",
+                "errors": [{"resource": "ReleaseAsset", "code": "already_exists", "field": "name"}],
+                "documentation_url": "https://docs.github.com/rest"
+            }),
+        )
+        .await;
+        assert_eq!(
+            e.to_string(),
+            "GitHub",
+            "precondition: octocrab's Display hides the detail"
+        );
+        let described = describe_api_error(&e);
+        assert!(described.contains("422"), "{described}");
+        assert!(described.contains("Validation Failed"), "{described}");
+        assert!(described.contains("already_exists"), "{described}");
+        assert!(
+            described.contains("https://docs.github.com/rest"),
+            "{described}"
+        );
+    }
+
+    /// The immutable-release translation matches on GitHub's message, so it
+    /// can only fire once that message survives.
+    #[tokio::test]
+    async fn describe_api_error_lets_an_immutable_rejection_be_recognised() {
+        let e = github_api_error(
+            422,
+            serde_json::json!({"message": "Cannot upload assets to an immutable release."}),
+        )
+        .await;
+        let err = map_asset_upload_error("pcu-v0.6.38", &describe_api_error(&e));
+        assert!(matches!(err, Error::ImmutableRelease(_, _)), "{err}");
     }
 
     #[test]
