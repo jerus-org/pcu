@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- fail push_commit when the remote rejects a ref(pr [#1090])
+
 ## [0.6.36] - 2026-09-24
 
 ### Fixed
@@ -2645,6 +2651,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1084]: https://github.com/jerus-org/pcu/pull/1084
 [#1087]: https://github.com/jerus-org/pcu/pull/1087
 [#1086]: https://github.com/jerus-org/pcu/pull/1086
+[#1090]: https://github.com/jerus-org/pcu/pull/1090
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.36...HEAD
 [0.6.36]: https://github.com/jerus-org/pcu/compare/v0.6.35...v0.6.36
 [0.6.35]: https://github.com/jerus-org/pcu/compare/v0.6.34...v0.6.35
 [0.6.34]: https://github.com/jerus-org/pcu/compare/v0.6.33...v0.6.34
