@@ -198,14 +198,12 @@ impl Release {
             (&bundle_path, bundle_filename.as_str()),
             (&provenance_path, provenance_filename.as_str()),
         ] {
-            let content = tokio::fs::read(path).await?;
+            // Through the shared asset writer rather than octocrab's
+            // `upload_asset`, which sends a GitHub App client's upload
+            // without credentials (see `send_asset` in pcu-release-assets).
+            // The writer also replaces an asset a partial earlier run left.
             client
-                .octocrab()
-                .await?
-                .repos(client.owner(), client.repo())
-                .releases()
-                .upload_asset(release.id.into_inner(), name, content.into())
-                .send()
+                .upload_release_asset(&release_tag, path, name)
                 .await?;
             log::info!("Uploaded {name}");
         }
