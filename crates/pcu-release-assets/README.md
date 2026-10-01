@@ -34,7 +34,7 @@ Headless clients for a GitHub release's assets — download, upload, and publish
 
 ```toml
 [dependencies]
-pcu-release-assets = "0.1.4"
+pcu-release-assets = "0.1.5"
 ```
 
 ## Design
