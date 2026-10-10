@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: lock file maintenance(pr [#1094])
+- deps: update rust crate octocrab to 0.54.3(pr [#1098])
 
 ## [0.6.38] - 2026-10-01
 
@@ -2670,6 +2671,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1092]: https://github.com/jerus-org/pcu/pull/1092
 [#1093]: https://github.com/jerus-org/pcu/pull/1093
 [#1094]: https://github.com/jerus-org/pcu/pull/1094
+[#1098]: https://github.com/jerus-org/pcu/pull/1098
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
