@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate config to 0.15.27(pr [#1097])
 - deps: update rust crate tokio to 1.53.2(pr [#1099])
 - deps: update rust crate toml to 1.1.8(pr [#1100])
+- deps: update rust crate uuid to 1.28.0(pr [#1101])
 
 ## [0.6.38] - 2026-10-01
 
@@ -2682,6 +2683,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1097]: https://github.com/jerus-org/pcu/pull/1097
 [#1099]: https://github.com/jerus-org/pcu/pull/1099
 [#1100]: https://github.com/jerus-org/pcu/pull/1100
+[#1101]: https://github.com/jerus-org/pcu/pull/1101
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
