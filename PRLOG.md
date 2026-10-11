@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate octocrab to 0.54.3(pr [#1098])
 - deps: update dependency toolkit to v8.0.3(pr [#1095])
 - deps: update rust crate aws-lc-rs to 1.18.1(pr [#1096])
+- deps: update rust crate config to 0.15.27(pr [#1097])
 
 ## [0.6.38] - 2026-10-01
 
@@ -2676,6 +2677,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1098]: https://github.com/jerus-org/pcu/pull/1098
 [#1095]: https://github.com/jerus-org/pcu/pull/1095
 [#1096]: https://github.com/jerus-org/pcu/pull/1096
+[#1097]: https://github.com/jerus-org/pcu/pull/1097
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
