@@ -41,7 +41,7 @@ tokio = { version = "1.53.1", default-features = false, features = [
 
 [dev-dependencies]
 # RSA key generation for a throwaway GitHub App key in the upload-auth tests.
-aws-lc-rs = "1.18.0"
+aws-lc-rs = "1.18.1"
 base64.workspace = true
 jsonwebtoken.workspace = true
 serde_json.workspace = true
