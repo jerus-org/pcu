@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: lock file maintenance(pr [#1103])
 - deps: update rust crate sha2 to 0.11.1(pr [#1106])
 - deps: update rust crate aws-lc-rs to 1.18.2(pr [#1104])
+- deps: update rust crate serde_json to 1.0.154(pr [#1105])
 
 ## [0.6.38] - 2026-10-01
 
@@ -2692,6 +2693,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1103]: https://github.com/jerus-org/pcu/pull/1103
 [#1106]: https://github.com/jerus-org/pcu/pull/1106
 [#1104]: https://github.com/jerus-org/pcu/pull/1104
+[#1105]: https://github.com/jerus-org/pcu/pull/1105
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
