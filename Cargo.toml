@@ -62,7 +62,7 @@ secrecy = "0.10.3"
 pcu-release-assets = { path = "crates/pcu-release-assets", version = "0.1.5" }
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
+serde_json = "1.0.154"
 tempfile = "3.27.0"
 thiserror = "2.0.21"
 sha2 = "0.11.1"
