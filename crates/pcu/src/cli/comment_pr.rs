@@ -1,7 +1,8 @@
+use std::env;
+
 use clap::Parser;
 use color_eyre::Result;
 use octocrab::Octocrab;
-use std::env;
 
 use super::CIExit;
 use crate::Error;
@@ -112,9 +113,8 @@ impl CommentPr {
 mod tests {
     use clap::Parser;
 
-    use crate::Cli;
-
     use super::*;
+    use crate::Cli;
 
     #[test]
     fn test_comment_pr_parses_with_no_flags() {

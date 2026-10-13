@@ -1,14 +1,20 @@
 use clap::Parser;
 use config::Config;
-use gen_linkedin::posts::{PostsClient, TextPost};
-use gen_linkedin::{auth::StaticTokenProvider, client::Client as LiClient};
+use gen_linkedin::{
+    auth::StaticTokenProvider,
+    client::Client as LiClient,
+    posts::{PostsClient, TextPost},
+};
 
-use crate::utilities::linkedin_post::{build_release_text, compute_release_url};
-use crate::{CIExit, Error, LinkedInExit};
+use crate::{
+    utilities::linkedin_post::{build_release_text, compute_release_url},
+    CIExit, Error, LinkedInExit,
+};
 
 #[derive(Debug, Parser, Clone)]
 pub struct CmdShare {
-    /// Post text. If omitted, we will build from release notes when --from-release is used.
+    /// Post text. If omitted, we will build from release notes when
+    /// --from-release is used.
     #[arg(long)]
     pub text: Option<String>,
     /// Build content from PRLOG release notes
@@ -79,10 +85,11 @@ impl CmdShare {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::env;
-    use std::fs;
+    use std::{env, fs};
+
     use tempfile::tempdir;
+
+    use super::*;
 
     #[test]
     fn test_build_release_text_and_url() {

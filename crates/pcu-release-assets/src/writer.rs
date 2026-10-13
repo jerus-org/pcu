@@ -233,10 +233,11 @@ impl ReleaseAssetWriter {
 
     /// Un-draft the release for `tag`, headless.
     ///
-    /// Errors if no release exists for `tag` — unlike [`Self::publish_release_by_id`]
-    /// (always called with a known id from the release pipeline), this
-    /// tag-based entry point must look the release up first, so "no such
-    /// release" is an error rather than a silent no-op.
+    /// Errors if no release exists for `tag` — unlike
+    /// [`Self::publish_release_by_id`] (always called with a known id from
+    /// the release pipeline), this tag-based entry point must look the
+    /// release up first, so "no such release" is an error rather than a
+    /// silent no-op.
     ///
     /// Uses `make_latest: legacy` (GitHub's own creation-date/semver
     /// heuristic), not an unconditional `true` — this entry point is public
@@ -302,16 +303,15 @@ impl ReleaseAssetWriter {
 /// This builds the upload request itself rather than using octocrab's
 /// `upload_asset`, for two reasons:
 ///
-/// - A GitHub App installation client (how `pcu::Client` authenticates in
-///   CI) must carry its token on the upload. `Octocrab::execute` only
-///   attaches an installation token to requests for `api.github.com`, and
-///   the upload goes to the release's `upload_url` on `uploads.github.com`,
-///   so octocrab would send it with no credentials and GitHub would reject
-///   it. The installation token is set on the request here. A token client
-///   needs nothing extra: octocrab's auth layer already sends its token to
-///   the upload host.
-/// - `upload_asset` puts the asset name into the query string unencoded,
-///   so a name with a space or `&` breaks the URL.
+/// - A GitHub App installation client (how `pcu::Client` authenticates in CI)
+///   must carry its token on the upload. `Octocrab::execute` only attaches an
+///   installation token to requests for `api.github.com`, and the upload goes
+///   to the release's `upload_url` on `uploads.github.com`, so octocrab would
+///   send it with no credentials and GitHub would reject it. The installation
+///   token is set on the request here. A token client needs nothing extra:
+///   octocrab's auth layer already sends its token to the upload host.
+/// - `upload_asset` puts the asset name into the query string unencoded, so a
+///   name with a space or `&` breaks the URL.
 ///
 /// The body is sent as `application/octet-stream`: the `.sig` vs binary
 /// distinction the octocrate client made (`.sig` as `text/plain`) is not
@@ -786,7 +786,7 @@ mod tests {
 
     /// A throwaway GitHub App key: generated per run, so no private key is
     /// kept in the repository.
-    fn app_key() -> jsonwebtoken::EncodingKey {
+    fn app_key() -> octocrab::EncodingKey {
         use aws_lc_rs::encoding::AsDer;
         use base64::Engine;
 
@@ -796,7 +796,7 @@ mod tests {
             "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----\n",
             base64::engine::general_purpose::STANDARD.encode(der.as_ref())
         );
-        jsonwebtoken::EncodingKey::from_rsa_pem(pem.as_bytes()).unwrap()
+        octocrab::EncodingKey::from_rsa_pem(pem.as_bytes()).unwrap()
     }
 
     /// A GitHub App installation client — how `pcu::Client` authenticates in

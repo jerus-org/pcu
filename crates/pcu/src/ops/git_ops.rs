@@ -36,7 +36,8 @@ pub enum Sign {
 /// When set on a [`SignConfig`], the commit signature is built directly from
 /// this identity instead of reading it from the repository's git config. This
 /// removes the dependency on ambient config being readable from the repo
-/// handle (which can fail in CI, e.g. under `safe.directory`/dubious ownership).
+/// handle (which can fail in CI, e.g. under `safe.directory`/dubious
+/// ownership).
 #[derive(Debug, Clone, PartialEq)]
 pub struct CommitIdentity {
     pub name: String,
@@ -190,8 +191,8 @@ impl Display for BranchReport {
 /// Canonicalise when possible, falling back to the path as given.
 ///
 /// Canonicalisation resolves symlinks, which matters because a repository
-/// reached through a symlinked parent (`/tmp` on some platforms) otherwise fails
-/// a prefix comparison against its own working directory.
+/// reached through a symlinked parent (`/tmp` on some platforms) otherwise
+/// fails a prefix comparison against its own working directory.
 fn canonical_or_owned(path: &Path) -> PathBuf {
     path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
 }
@@ -218,12 +219,13 @@ pub trait GitOps {
     fn repo_files_not_staged(&self) -> Result<Vec<(String, Status)>, Error>;
     fn repo_files_staged(&self) -> Result<Vec<(String, Status)>, Error>;
     fn stage_files(&self, files: Vec<(String, Status)>) -> Result<(), Error>;
-    /// Stage a list of paths directly, without needing pre-computed [`Status`] values.
+    /// Stage a list of paths directly, without needing pre-computed [`Status`]
+    /// values.
     ///
     /// Paths may be relative to the working directory or absolute; an absolute
     /// path under the working directory is converted before staging, since git
-    /// index entries are always relative. An absolute path *outside* the working
-    /// directory cannot be staged and is an error.
+    /// index entries are always relative. An absolute path *outside* the
+    /// working directory cannot be staged and is an error.
     ///
     /// Staging uses `index.add_all()` — not `add_path()`, which errors on
     /// directories — so a directory argument stages its contents recursively,
@@ -232,8 +234,8 @@ pub trait GitOps {
     /// unstaged (an ignored file, say) is reported as an error rather than
     /// passing silently.
     ///
-    /// Non-existent paths are silently skipped. The index is written once, after
-    /// all paths are processed.
+    /// Non-existent paths are silently skipped. The index is written once,
+    /// after all paths are processed.
     fn stage_paths(&self, paths: &[&Path]) -> Result<(), Error>;
     #[allow(async_fn_in_trait)]
     async fn commit_changed_files(
@@ -507,12 +509,13 @@ impl GitOps for Client {
         index.add_all(to_stage.iter(), git2::IndexAddOption::DEFAULT, None)?;
 
         // `add_all` takes pathspecs, and a pathspec that matches nothing is not
-        // an error — the silence that let an empty commit be pushed as though it
-        // carried a file (#1030). Absolute paths were the reported cause and are
-        // handled above; an ignored file reaches the same dead end by another
-        // route. Every requested *file* must therefore be in the index. A
-        // directory is left unchecked: `git add` on a directory whose contents
-        // are all ignored legitimately stages nothing.
+        // an error — the silence that let an empty commit be pushed as though
+        // it carried a file (#1030). Absolute paths were the reported
+        // cause and are handled above; an ignored file reaches the same
+        // dead end by another route. Every requested *file* must
+        // therefore be in the index. A directory is left unchecked:
+        // `git add` on a directory whose contents are all ignored
+        // legitimately stages nothing.
         for relative in &to_stage {
             if workdir.join(relative).is_dir() {
                 continue;
@@ -722,12 +725,14 @@ impl GitOps for Client {
     ) -> Result<(), Error> {
         log::trace!("version: {version:?} and no_push: {no_push}");
 
-        // Guarantee the push is a fast-forward before touching the remote: refresh
-        // the target branch and refuse clearly if it has advanced beyond our local
-        // history. pcu owns this assurance so a moved `main` produces an actionable
-        // error here, not git2's opaque NotFastForward at push time (or a silently
-        // swallowed push). The release_crate job refreshes its base before building
-        // the commit/tag, so in the normal case `behind` is 0 and this is a no-op.
+        // Guarantee the push is a fast-forward before touching the remote:
+        // refresh the target branch and refuse clearly if it has
+        // advanced beyond our local history. pcu owns this assurance so
+        // a moved `main` produces an actionable error here, not git2's
+        // opaque NotFastForward at push time (or a silently
+        // swallowed push). The release_crate job refreshes its base before
+        // building the commit/tag, so in the normal case `behind` is 0
+        // and this is a no-op.
         if !no_push {
             let branch = self.branch_or_main().to_string();
             self.fetch_branch(&branch)?;
@@ -1128,8 +1133,8 @@ fn print_long(statuses: &git2::Statuses) -> String {
     // Print workdir changes to tracked files
     for entry in statuses.iter() {
         // With `Status::OPT_INCLUDE_UNMODIFIED` (not used in this example)
-        // `index_to_workdir` may not be `None` even if there are no differences,
-        // in which case it will be a `Delta::Unmodified`.
+        // `index_to_workdir` may not be `None` even if there are no
+        // differences, in which case it will be a `Delta::Unmodified`.
         if entry.status() == git2::Status::CURRENT || entry.index_to_workdir().is_none() {
             continue;
         }
@@ -1232,9 +1237,10 @@ pub(crate) fn ssh_to_https_url(url: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use git2::Signature;
     use rstest::rstest;
+
+    use super::*;
 
     // ── #1089: a ref the remote rejects must fail the push ─────────────────
 
@@ -1581,8 +1587,8 @@ mod tests {
     /// network and no credentials. This is the contract the auto-record push
     /// redesign relies on: the binary commits via pcu using only the ambient
     /// environment, and a separate job performs the push. A regression here
-    /// (e.g. a future refactor coupling commit to the GitHub API) would silently
-    /// break auto-record, so it is locked explicitly.
+    /// (e.g. a future refactor coupling commit to the GitHub API) would
+    /// silently break auto-record, so it is locked explicitly.
     #[tokio::test]
     async fn ambient_client_commits_staged_changes_without_auth() {
         let (dir, client) = make_test_client();
@@ -1615,9 +1621,10 @@ mod tests {
     async fn stage_paths_stages_an_absolute_path_under_the_workdir() {
         // The reported failure (#1030): `Path::join` returns its argument
         // unchanged when that argument is absolute, so an absolute path passed
-        // the existence filter; `add_all` then treated it as a pathspec relative
-        // to the working directory, matched nothing, and returned Ok. The caller
-        // committed an empty commit believing the file was in it.
+        // the existence filter; `add_all` then treated it as a pathspec
+        // relative to the working directory, matched nothing, and
+        // returned Ok. The caller committed an empty commit believing
+        // the file was in it.
         let (dir, client) = make_test_client();
         let file_path = dir.path().join("release-0.0.3.json");
         std::fs::write(&file_path, "{}").unwrap();

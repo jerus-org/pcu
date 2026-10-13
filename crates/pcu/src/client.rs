@@ -77,16 +77,16 @@ impl Client {
             .map_err(|_| Error::CommandNotSet)?;
         log::trace!("cmd: {cmd:?}");
 
-        // Use the username config settings to direct to the appropriate CI environment
-        // variable to find the owner
+        // Use the username config settings to direct to the appropriate CI
+        // environment variable to find the owner
         log::trace!("owner: {:?}", settings.get::<String>("username"));
         let pcu_owner: String = settings
             .get("username")
             .map_err(|_| Error::EnvVarBranchNotSet)?;
         let owner = env::var(pcu_owner).map_err(|_| Error::EnvVarBranchNotFound)?;
 
-        // Use the reponame config settings to direct to the appropriate CI environment
-        // variable to find the repo
+        // Use the reponame config settings to direct to the appropriate CI
+        // environment variable to find the repo
         log::trace!("repo: {:?}", settings.get::<String>("reponame"));
         let pcu_repo: String = settings
             .get("reponame")
@@ -113,8 +113,8 @@ impl Client {
 
         log::trace!("Executing for command: {cmd}");
         let (branch, pull_request) = if &cmd == "pr" || &cmd == "push" {
-            // Use the branch config settings to direct to the appropriate CI environment
-            // variable to find the branch data
+            // Use the branch config settings to direct to the appropriate CI
+            // environment variable to find the branch data
             log::trace!("branch: {:?}", settings.get::<String>("branch"));
             let pcu_branch: String = settings
                 .get("branch")
@@ -225,7 +225,7 @@ impl Client {
                 let app_id: u64 = app_id
                     .parse()
                     .map_err(|_| Error::InvalidAppId(app_id.clone()))?;
-                let encoding_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key.as_bytes())
+                let encoding_key = octocrab::EncodingKey::from_rsa_pem(private_key.as_bytes())
                     .map_err(|_| Error::NoGitHubAPIPrivateKey)?;
 
                 let app_client = Octocrab::builder()
@@ -389,10 +389,10 @@ impl Client {
 
     /// Construct a `Client` that reads only the local git repository.
     ///
-    /// Unlike [`Client::new_with`], this constructor does not make any GitHub API calls
-    /// and does not require CI environment variables.  It derives `owner` and
-    /// `repo` from the `origin` remote URL of the repository at the current
-    /// working directory.
+    /// Unlike [`Client::new_with`], this constructor does not make any GitHub
+    /// API calls and does not require CI environment variables.  It derives
+    /// `owner` and `repo` from the `origin` remote URL of the repository at
+    /// the current working directory.
     ///
     /// Methods that require GitHub authentication (e.g. `push_commit` with App
     /// bypass) will fail unless credentials are available through the usual
@@ -402,7 +402,8 @@ impl Client {
         Self::new_local_at(std::path::Path::new("."))
     }
 
-    /// Like [`Client::new_local`] but opens the repository at an explicit `path`.
+    /// Like [`Client::new_local`] but opens the repository at an explicit
+    /// `path`.
     ///
     /// Intended for tests that operate on a temporary git repository.
     pub fn new_local_at(path: &std::path::Path) -> Result<Self, Error> {
@@ -489,9 +490,9 @@ impl Client {
     /// could coerce a 404 or a phantom response into "exists" and silently skip
     /// release creation, the failure that stranded gen-circleci-orb 0.0.53.
     ///
-    /// `Ok(None)` means no release exists for the tag — a legitimate answer when
-    /// deciding whether to create one, and an error only at the call sites that
-    /// require a release to already be there.
+    /// `Ok(None)` means no release exists for the tag — a legitimate answer
+    /// when deciding whether to create one, and an error only at the call
+    /// sites that require a release to already be there.
     ///
     /// Delegates to [`pcu_release_assets::ReleaseAssetClient`] — see
     /// jerus-org/pcu#1051 for why the release lookup and asset fetch live in
@@ -531,9 +532,11 @@ impl Client {
     /// artefact (e.g. an audit record) should read from a published release
     /// by default and opt in explicitly if a draft is acceptable.
     ///
-    /// Delegates to [`pcu_release_assets::ReleaseAssetClient`] (jerus-org/pcu#1051).
-    /// For a read-only, checkout-free, no-draft-access client see
-    /// [`pcu_release_assets::ReleaseAssetClient::download_release_asset`] directly.
+    /// Delegates to [`pcu_release_assets::ReleaseAssetClient`]
+    /// (jerus-org/pcu#1051). For a read-only, checkout-free,
+    /// no-draft-access client see
+    /// [`pcu_release_assets::ReleaseAssetClient::download_release_asset`]
+    /// directly.
     pub async fn download_release_asset(
         &self,
         tag: &str,

@@ -1,6 +1,9 @@
 mod site_config;
 
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use clap::Parser;
 use config::Config;
@@ -9,7 +12,6 @@ use git2::Delta;
 use site_config::SiteConfig;
 
 use crate::{BskyExit, CIExit, Client, Error, GitOps, SignConfig};
-use std::env;
 
 const DEFAULT_PATH: &str = "content/blog";
 
@@ -34,8 +36,8 @@ pub struct CmdDraft {
     /// Push committed drafts to the remote repository
     #[arg(long, default_value_t = false)]
     pub push: bool,
-    /// Detect new/modified posts via git diff vs base branch instead of date filter.
-    /// BASE defaults to origin/main if not specified.
+    /// Detect new/modified posts via git diff vs base branch instead of date
+    /// filter. BASE defaults to origin/main if not specified.
     #[arg(
         long,
         num_args = 0..=1,
@@ -121,8 +123,9 @@ impl CmdDraft {
     }
 }
 
-/// Returns true if a diff entry (delta + path) is a candidate for Bluesky drafting:
-/// the file must be added or modified, and must live under `blog_dir`.
+/// Returns true if a diff entry (delta + path) is a candidate for Bluesky
+/// drafting: the file must be added or modified, and must live under
+/// `blog_dir`.
 fn is_candidate_for_draft(delta: Delta, path: &Path, blog_dir: &Path) -> bool {
     matches!(delta, Delta::Added | Delta::Modified) && path.starts_with(blog_dir)
 }
@@ -192,10 +195,10 @@ fn resolve_post_draft_exit(push_requested: bool, commits_ahead: usize) -> CIExit
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::cli::bsky::Cmd;
-    use crate::Cli;
     use clap::Parser;
+
+    use super::*;
+    use crate::{cli::bsky::Cmd, Cli};
 
     #[test]
     fn test_cmd_draft_has_allow_empty_field() {

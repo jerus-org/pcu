@@ -9,17 +9,22 @@ use crate::Error;
 /// ```
 ///
 /// # Arguments
-/// * `b64_key` — Base64-encoded GPG private key (may contain literal `\n` escape sequences
-///   as stored by CircleCI; these are expanded before decoding)
-/// * `trust` — Ownertrust string (e.g. `FINGERPRINT:6:`); a trailing newline is added if absent.
-///   Literal `\n` escape sequences are normalised to real newlines before import.
+/// * `b64_key` — Base64-encoded GPG private key (may contain literal `\n`
+///   escape sequences as stored by CircleCI; these are expanded before
+///   decoding)
+/// * `trust` — Ownertrust string (e.g. `FINGERPRINT:6:`); a trailing newline is
+///   added if absent. Literal `\n` escape sequences are normalised to real
+///   newlines before import.
 pub fn import_gpg_key(b64_key: &str, trust: &str) -> Result<(), Error> {
-    use std::io::Write as _;
-    use std::process::{Command, Stdio};
+    use std::{
+        io::Write as _,
+        process::{Command, Stdio},
+    };
 
     // --- Import GPG private key ---
     // `printf '%b'` expands `\n` escape sequences in the base64 data, matching
-    // the toolkit's `echo -e` step.  `--ignore-garbage` absorbs any stray chars.
+    // the toolkit's `echo -e` step.  `--ignore-garbage` absorbs any stray
+    // chars.
     let import_result = Command::new("sh")
         .args([
             "-c",

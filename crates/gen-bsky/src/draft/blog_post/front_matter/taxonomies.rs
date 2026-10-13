@@ -17,7 +17,6 @@
 ///   method
 ///
 /// ## Module Architecture
-///
 #[doc = simple_mermaid::mermaid!("taxonomies_architecture.mmd")]
 ///
 /// ## Integration With Other Modules

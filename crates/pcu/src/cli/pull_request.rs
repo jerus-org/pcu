@@ -35,9 +35,9 @@ pub struct Pr {
     #[clap(long, default_value_t = true)]
     pub allow_no_pull_request: bool,
     /// Skip CI on the PRLOG commit by appending the ci-avoidance marker so the
-    /// push to the default branch does not trigger a redundant CI pipeline (e.g.
-    /// the second validation run after a "pr merged" PRLOG update). Only takes
-    /// effect on the default branch.
+    /// push to the default branch does not trigger a redundant CI pipeline
+    /// (e.g. the second validation run after a "pr merged" PRLOG update).
+    /// Only takes effect on the default branch.
     #[clap(long, overrides_with = "no_skip_ci", default_value_t = false)]
     pub skip_ci: bool,
     /// Explicitly do NOT skip CI on the PRLOG commit (the default). Provided so
@@ -186,9 +186,9 @@ impl Pr {
         client: Client,
         sign_config: SignConfig,
     ) -> Result<CIExit, Error> {
-        // Append the CI-skip marker only when committing the PRLOG update to the
-        // default branch (the post-merge update). On a PR branch we WANT
-        // validation to run, so never skip CI there.
+        // Append the CI-skip marker only when committing the PRLOG update to
+        // the default branch (the post-merge update). On a PR branch we
+        // WANT validation to run, so never skip CI there.
         let on_default_branch = client.branch_or_main() == client.default_branch.as_str();
         let commit_message =
             super::with_skip_ci(&client.commit_message, self.skip_ci, on_default_branch);
@@ -228,8 +228,9 @@ impl Pr {
         let bot_user_name = std::env::var("BOT_USER_NAME").unwrap_or_else(|_| "bot".to_string());
         log::debug!("Using bot user name: {bot_user_name}");
 
-        // Read the git-configured identity — this is what git itself will use for the push,
-        // independent of what we believe is configured via environment variables.
+        // Read the git-configured identity — this is what git itself will use
+        // for the push, independent of what we believe is configured
+        // via environment variables.
         let git_identity = client
             .git_repo
             .config()
@@ -243,8 +244,9 @@ impl Pr {
 
         let res = client.push_commit(&self.prefix, None, false, &bot_user_name);
 
-        // Propagate hard errors immediately (anything other than non-fast-forward,
-        // which may be a race condition that fetch-and-check can diagnose).
+        // Propagate hard errors immediately (anything other than
+        // non-fast-forward, which may be a race condition that
+        // fetch-and-check can diagnose).
         if let Err(e) = &res {
             if !e
                 .to_string()
@@ -254,10 +256,11 @@ impl Pr {
             }
         }
 
-        // Fetch to get the true remote state, then check ahead/behind to distinguish:
-        //   ahead=0           → push succeeded
+        // Fetch to get the true remote state, then check ahead/behind to
+        // distinguish:   ahead=0           → push succeeded
         //   ahead>0, behind>0 → race condition (parallel job pushed first)
-        //   ahead>0, behind=0 → genuine server rejection (silent or non-fast-forward)
+        //   ahead>0, behind=0 → genuine server rejection (silent or
+        // non-fast-forward)
         client.fetch_origin()?;
 
         let hdr_style = Style::new().bold().underline();
@@ -285,7 +288,8 @@ impl Pr {
                 )))
             }
         } else {
-            // ahead > 0, behind = 0: server rejected the push (silent or non-fast-forward).
+            // ahead > 0, behind = 0: server rejected the push (silent or
+            // non-fast-forward).
             Err(Error::GitError(format!(
                 "Push rejected by server: branch is still {ahead} commit(s) ahead after fetch \
                  (push identity: {git_identity}) — check branch protection rules or \
@@ -297,9 +301,10 @@ impl Pr {
 
 #[cfg(test)]
 mod commit_message_tests {
+    use std::path::Path;
+
     use super::*;
     use crate::{Client, Sign, SignConfig};
-    use std::path::Path;
 
     /// Build a temp git repo with one commit, an `origin/<branch>` tracking ref
     /// (so `branch_status` works without a real remote — it looks up
@@ -362,8 +367,8 @@ mod commit_message_tests {
     }
 
     /// Regression guard: on a PR (non-default) branch, --skip-ci must NOT add
-    /// `[skip ci]` — we want validation to run for the PR. `[skip ci]` was being
-    /// added to the wrong commit before this gate.
+    /// `[skip ci]` — we want validation to run for the PR. `[skip ci]` was
+    /// being added to the wrong commit before this gate.
     #[tokio::test]
     async fn skip_ci_omits_marker_on_pr_branch() {
         assert_eq!(

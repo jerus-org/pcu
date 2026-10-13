@@ -9,7 +9,8 @@
 //!
 //! 1. Author writes a blog post and adds a `[linkedin]` section with either
 //!    `description` (inline) or `description_file` (path to a separate file).
-//! 2. `pcu linkedin draft` calls [`Draft::new`] then [`Draft::write_linkedin_drafts`].
+//! 2. `pcu linkedin draft` calls [`Draft::new`] then
+//!    [`Draft::write_linkedin_drafts`].
 //! 3. Draft files (`.linkedin` JSON) appear in the store directory.
 //! 4. `pcu linkedin post` reads the store and publishes each draft.
 //!
@@ -93,7 +94,8 @@ pub struct LinkedinFile {
     pub link: Option<String>,
     /// ISO date the draft was created (`YYYY-MM-DD`).
     pub created_at: String,
-    /// Absolute path to the source markdown file (used for `published` write-back).
+    /// Absolute path to the source markdown file (used for `published`
+    /// write-back).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_path: Option<PathBuf>,
 }
@@ -144,7 +146,8 @@ impl Draft {
     /// Returns [`DraftError::PostTooLong`] if any post's text + link exceeds
     /// [`LINKEDIN_POST_MAX_CHARS`] characters.
     ///
-    /// Returns [`DraftError::BlogPostListEmpty`] when no qualifying posts remain.
+    /// Returns [`DraftError::BlogPostListEmpty`] when no qualifying posts
+    /// remain.
     pub fn new(
         www_src_root: &Path,
         blog_paths: &[PathBuf],
@@ -342,8 +345,9 @@ fn derive_link(path: &Path, www_src_root: &Path, base_url: &str) -> Option<Strin
 mod tests {
     use std::str::FromStr;
 
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     fn write_file(dir: &Path, name: &str, content: &str) -> PathBuf {
         let path = dir.join(name);

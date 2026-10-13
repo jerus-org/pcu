@@ -624,7 +624,8 @@ mod tests {
             // Error messages should not be empty
             assert!(!message.is_empty());
 
-            // Error messages should not end with punctuation (common convention)
+            // Error messages should not end with punctuation (common
+            // convention)
             assert!(!message.ends_with('.'));
             assert!(!message.ends_with('!'));
         }
@@ -1159,6 +1160,7 @@ mod tests {
     #[tokio::test]
     async fn test_excludes_files_starting_with_underscore() {
         use std::fs;
+
         use tempfile::TempDir;
 
         // Create a temporary directory structure
@@ -1202,7 +1204,8 @@ Test content"#;
         // Should succeed with only the regular file
         let draft = result.expect("Failed to build draft");
 
-        // Should only have 1 blog post (the regular one), not the _index.md or _draft.md
+        // Should only have 1 blog post (the regular one), not the _index.md or
+        // _draft.md
         assert_eq!(draft.blog_posts.len(), 1);
         assert_eq!(draft.blog_posts[0].title(), "Test Post");
     }

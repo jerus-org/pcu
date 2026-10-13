@@ -15,16 +15,21 @@ use super::{resolve_version, Mode, Release};
 use crate::{CIExit, Client, Error};
 
 impl Release {
-    /// Attest a published crate with SLSA v0.2 provenance signed via Sigstore keyless.
+    /// Attest a published crate with SLSA v0.2 provenance signed via Sigstore
+    /// keyless.
     ///
     /// Steps:
     /// 1. Download the .crate from crates.io (with retry for indexing delay)
     /// 2. Compute SHA256 of the downloaded artifact
-    /// 3. Generate SLSA v0.2 provenance JSON recording source, environment, and artifact
-    /// 4. Sign the .crate with cosign-compatible keyless signing (CircleCI OIDC → Fulcio → Rekor)
-    /// 5. Upload the .sigstore.json bundle and provenance.json to the GitHub release
+    /// 3. Generate SLSA v0.2 provenance JSON recording source, environment, and
+    ///    artifact
+    /// 4. Sign the .crate with cosign-compatible keyless signing (CircleCI OIDC
+    ///    → Fulcio → Rekor)
+    /// 5. Upload the .sigstore.json bundle and provenance.json to the GitHub
+    ///    release
     ///
-    /// Requires CIRCLE_OIDC_TOKEN_V2 with audience "sigstore" in the environment.
+    /// Requires CIRCLE_OIDC_TOKEN_V2 with audience "sigstore" in the
+    /// environment.
     pub(super) async fn attest(self, client: Client) -> Result<CIExit, Error> {
         let Mode::Attest(ref cmd) = self.mode else {
             return Err(Error::NoPackageSpecified);
@@ -42,8 +47,9 @@ impl Release {
         let bundle_filename = format!("{crate_filename}.sigstore.json");
         let provenance_filename = format!("{pkg}-{version}.provenance.json");
 
-        // Step 1: Check whether attestation assets already exist on the GitHub release.
-        // If both assets are present the previous run completed successfully — skip all work.
+        // Step 1: Check whether attestation assets already exist on the GitHub
+        // release. If both assets are present the previous run
+        // completed successfully — skip all work.
         let release_tag = format!("{}{}", cmd.crate_tag_prefix, version);
         // Draft-aware: attestation assets are uploaded BEFORE publication on a
         // draft-first pipeline (assets freeze at publication), so the release
@@ -181,7 +187,8 @@ impl Release {
         std::fs::write(&provenance_path, serde_json::to_string_pretty(&provenance)?)?;
         log::info!("Generated provenance: {provenance_filename}");
 
-        // Step 5: Sign with Sigstore keyless (CircleCI OIDC → Fulcio v1 → Rekor)
+        // Step 5: Sign with Sigstore keyless (CircleCI OIDC → Fulcio v1 →
+        // Rekor)
         let oidc_token_str = get_oidc_token()?;
 
         log::info!("Signing {crate_filename} via Fulcio v1 API...");
@@ -254,10 +261,11 @@ fn get_oidc_token() -> Result<String, Error> {
     })
 }
 
-/// Extract the `sub` claim from a raw JWT string without requiring an `email` claim.
+/// Extract the `sub` claim from a raw JWT string without requiring an `email`
+/// claim.
 ///
-/// CircleCI machine OIDC tokens do not include an `email` field; only `sub` is needed
-/// as the challenge value for the Fulcio v1 signing endpoint.
+/// CircleCI machine OIDC tokens do not include an `email` field; only `sub` is
+/// needed as the challenge value for the Fulcio v1 signing endpoint.
 fn extract_sub_from_jwt(raw_jwt: &str) -> Result<String, Error> {
     use base64::Engine as _;
     let parts: Vec<&str> = raw_jwt.split('.').collect();
@@ -266,7 +274,8 @@ fn extract_sub_from_jwt(raw_jwt: &str) -> Result<String, Error> {
             "Invalid JWT format: expected at least 2 dot-separated parts".to_string(),
         ));
     }
-    // JWT uses base64url (URL_SAFE_NO_PAD); fall back to STANDARD_NO_PAD for test tokens.
+    // JWT uses base64url (URL_SAFE_NO_PAD); fall back to STANDARD_NO_PAD for
+    // test tokens.
     let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
         .decode(parts[1])
         .or_else(|_| base64::engine::general_purpose::STANDARD_NO_PAD.decode(parts[1]))
@@ -301,27 +310,32 @@ fn pem_to_der(pem_str: &str) -> Result<Vec<u8>, Error> {
 
 /// Sign `artifact` bytes using the Fulcio v1 API with a CircleCI OIDC token.
 ///
-/// The v1 path (`FulcioClient::request_cert`) uses `TokenProvider::Static` and signs
-/// the challenge (= `sub` claim) to prove key possession.  It does NOT require an
-/// `email` claim — making it compatible with CircleCI machine OIDC tokens.
+/// The v1 path (`FulcioClient::request_cert`) uses `TokenProvider::Static` and
+/// signs the challenge (= `sub` claim) to prove key possession.  It does NOT
+/// require an `email` claim — making it compatible with CircleCI machine OIDC
+/// tokens.
 ///
 /// Returns the Sigstore bundle JSON string.
 async fn sign_artifact_fulcio_v1(artifact: &[u8], oidc_token_str: &str) -> Result<String, Error> {
     use base64::Engine as _;
     use sha2::Digest as _;
-    use sigstore::crypto::SigningScheme;
-    use sigstore::fulcio::{FulcioClient, TokenProvider, FULCIO_ROOT};
-    use sigstore::rekor::apis::configuration::Configuration as RekorConfiguration;
-    use sigstore::rekor::apis::entries_api::create_log_entry;
-    use sigstore::rekor::models::hashedrekord;
-    use sigstore::rekor::models::proposed_entry::ProposedEntry as ProposedLogEntry;
-    use sigstore_protobuf_specs::dev::sigstore::bundle::v1::bundle;
-    use sigstore_protobuf_specs::dev::sigstore::bundle::v1::verification_material;
-    use sigstore_protobuf_specs::dev::sigstore::bundle::v1::{Bundle, VerificationMaterial};
-    use sigstore_protobuf_specs::dev::sigstore::common::v1::{
-        HashAlgorithm, HashOutput, MessageSignature, X509Certificate, X509CertificateChain,
+    use sigstore::{
+        crypto::SigningScheme,
+        fulcio::{FulcioClient, TokenProvider, FULCIO_ROOT},
+        rekor::{
+            apis::{
+                configuration::Configuration as RekorConfiguration, entries_api::create_log_entry,
+            },
+            models::{hashedrekord, proposed_entry::ProposedEntry as ProposedLogEntry},
+        },
     };
-    use sigstore_protobuf_specs::dev::sigstore::rekor::v1::TransparencyLogEntry;
+    use sigstore_protobuf_specs::dev::sigstore::{
+        bundle::v1::{bundle, verification_material, Bundle, VerificationMaterial},
+        common::v1::{
+            HashAlgorithm, HashOutput, MessageSignature, X509Certificate, X509CertificateChain,
+        },
+        rekor::v1::TransparencyLogEntry,
+    };
     use url::Url;
 
     // Extract sub claim (challenge for Fulcio)

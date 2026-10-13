@@ -18,7 +18,8 @@
 //!
 //! # Frontmatter convention
 //!
-//! A blog post opts in by adding a `[linkedin]` section to its TOML frontmatter:
+//! A blog post opts in by adding a `[linkedin]` section to its TOML
+//! frontmatter:
 //!
 //! ```toml
 //! [linkedin]
@@ -54,7 +55,9 @@ pub mod post;
 #[cfg(feature = "posts")]
 pub mod posts;
 
-pub use crate::draft::{Draft, DraftError, LinkedinFile, LINKEDIN_POST_MAX_CHARS};
-pub use crate::error::Error;
-pub use crate::frontmatter::{FrontMatter, LinkedIn};
-pub use crate::post::{Post, PostError};
+pub use crate::{
+    draft::{Draft, DraftError, LinkedinFile, LINKEDIN_POST_MAX_CHARS},
+    error::Error,
+    frontmatter::{FrontMatter, LinkedIn},
+    post::{Post, PostError},
+};

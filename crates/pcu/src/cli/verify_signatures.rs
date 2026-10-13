@@ -1,13 +1,17 @@
-use super::CIExit;
-use crate::ops::{
-    git_signature_ops::extract_commits, signature_ops::verify_commits,
-    trust_fetcher::fetch_trust_list,
-};
-use crate::Error;
+use std::env;
+
 use clap::Parser;
 use octocrab::Octocrab;
 use owo_colors::OwoColorize;
-use std::env;
+
+use super::CIExit;
+use crate::{
+    ops::{
+        git_signature_ops::extract_commits, signature_ops::verify_commits,
+        trust_fetcher::fetch_trust_list,
+    },
+    Error,
+};
 
 #[derive(Debug, Parser, Clone)]
 pub struct VerifySignatures {
@@ -59,8 +63,9 @@ impl VerifySignatures {
         // Get owner and repo (auto-detect from git config if not provided)
         let (owner, repo) = detect_repository(&git_repo, &self.repo_owner, &self.repo_name)?;
 
-        // Initialize GitHub client for read-only operations (fetching trust list)
-        // Uses --github-token flag or falls back to GITHUB_TOKEN env var
+        // Initialize GitHub client for read-only operations (fetching trust
+        // list) Uses --github-token flag or falls back to GITHUB_TOKEN
+        // env var
         let env_token = env::var("GITHUB_TOKEN").ok();
         let token = self.github_token.as_deref().or(env_token.as_deref());
         let readonly_client = initialize_github_client_with_token(
@@ -105,8 +110,9 @@ impl VerifySignatures {
             if let Some(pr_number) = self.pr_number {
                 log::info!("Posting verification results to PR #{pr_number}");
 
-                // Create a separate client with write access for posting comments
-                // This requires GITHUB_TOKEN env var with write permissions
+                // Create a separate client with write access for posting
+                // comments This requires GITHUB_TOKEN env var
+                // with write permissions
                 match initialize_github_client_from_env() {
                     Ok(write_client) => {
                         if let Err(e) = post_verification_comment(
@@ -280,8 +286,9 @@ fn write_external_contributors(
     comment: &mut String,
     results: &[crate::ops::signature_ops::VerificationResult],
 ) -> std::fmt::Result {
-    use crate::ops::signature_ops::VerificationReason;
     use std::fmt::Write;
+
+    use crate::ops::signature_ops::VerificationReason;
 
     writeln!(comment, "### External Contributors")?;
     writeln!(comment)?;
@@ -550,8 +557,8 @@ mod tests {
         }
     }
 
-    /// RED: issue #862 — success comment must include "External Contributors" section
-    /// when there are external contributor results
+    /// RED: issue #862 — success comment must include "External Contributors"
+    /// section when there are external contributor results
     #[test]
     fn test_build_comment_includes_external_contributors_section() {
         let results = vec![make_external_result(
@@ -572,7 +579,8 @@ mod tests {
         );
     }
 
-    /// RED: issue #862 — success comment must include author email of external contributor
+    /// RED: issue #862 — success comment must include author email of external
+    /// contributor
     #[test]
     fn test_build_comment_includes_external_contributor_email() {
         let results = vec![make_external_result(
@@ -593,7 +601,8 @@ mod tests {
         );
     }
 
-    /// RED: issue #862 — success comment must include short SHA of external contributor commit
+    /// RED: issue #862 — success comment must include short SHA of external
+    /// contributor commit
     #[test]
     fn test_build_comment_includes_external_contributor_sha() {
         let results = vec![make_external_result(

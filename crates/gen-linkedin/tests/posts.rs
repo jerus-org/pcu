@@ -4,8 +4,10 @@ use gen_linkedin::{
     posts::{PostsClient, TextPost, DEFAULT_API_VERSION},
 };
 use url::Url;
-use wiremock::matchers::{header, method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
+use wiremock::{
+    matchers::{header, method, path},
+    Mock, MockServer, ResponseTemplate,
+};
 
 async fn make_posts_client(server: &MockServer) -> PostsClient<StaticTokenProvider> {
     let token = StaticTokenProvider("TOKEN".to_string());

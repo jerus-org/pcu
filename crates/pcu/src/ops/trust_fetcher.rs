@@ -1,8 +1,10 @@
-use super::signature_ops::TrustMap;
-use crate::Error;
+use std::process::Command;
+
 use octocrab::{models::Collaborator, Octocrab};
 use serde::Deserialize;
-use std::process::Command;
+
+use super::signature_ops::TrustMap;
+use crate::Error;
 
 /// The subset of GitHub's `GET /users/{username}/gpg_keys` response that
 /// `process_gpg_keys` actually reads. octocrab has no dedicated wrapper for
@@ -323,7 +325,8 @@ mod tests {
     fn test_add_github_webflow_key() {
         let mut trust_map = TrustMap::new();
 
-        // May fail to fetch/import key in test environment, but should add to trust map
+        // May fail to fetch/import key in test environment, but should add to
+        // trust map
         let _ = add_github_webflow_key(&mut trust_map);
 
         assert!(trust_map.contains_key("noreply@github.com"));

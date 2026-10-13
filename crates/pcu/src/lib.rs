@@ -26,8 +26,9 @@ mod git2_build_features {
     //! default features to `[]` (0.20 defaulted to `["ssh", "https"]`), so a
     //! bare `git2 = "0.21"` builds libgit2 WITHOUT a TLS backend — any HTTPS
     //! git operation then fails at runtime with
-    //! `there is no TLS stream available; class=Ssl (16)` (pcu checkout/pr/push).
-    //! These tests fail fast at build/test time if the features regress again.
+    //! `there is no TLS stream available; class=Ssl (16)` (pcu
+    //! checkout/pr/push). These tests fail fast at build/test time if the
+    //! features regress again.
 
     #[test]
     fn libgit2_has_https_support() {

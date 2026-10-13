@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Error, GraphQLWrapper};
 
-/// Default number of retry attempts when `associatedPullRequests` returns empty.
+/// Default number of retry attempts when `associatedPullRequests` returns
+/// empty.
 const DEFAULT_RETRY_ATTEMPTS: u32 = 3;
 
 /// Default base delay between retry attempts (seconds).
@@ -297,7 +298,8 @@ mod tests {
                 let mut count = call_count.lock().unwrap();
                 *count += 1;
                 if *count == 1 {
-                    // First attempt: empty PR list — simulates GitHub indexing lag.
+                    // First attempt: empty PR list — simulates GitHub indexing
+                    // lag.
                     Ok(data_with_prs(vec![]))
                 } else {
                     // Second attempt: PR is now indexed.
