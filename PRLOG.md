@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use jsonwebtoken from octocrab(pr [#1107])
+
 ### Fixed
 
 - deps: lock file maintenance(pr [#1094])
@@ -2694,6 +2698,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1106]: https://github.com/jerus-org/pcu/pull/1106
 [#1104]: https://github.com/jerus-org/pcu/pull/1104
 [#1105]: https://github.com/jerus-org/pcu/pull/1105
+[#1107]: https://github.com/jerus-org/pcu/pull/1107
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
