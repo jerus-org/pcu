@@ -13,13 +13,14 @@ use super::tags;
 /// during serialization when `None`.
 ///
 /// For usage and the JSON/TOML round-trip behaviour, see the unit tests in this
-/// module (e.g. `tests::test_default_creation`, `tests::test_serialize_deserialize`,
-/// `tests::test_hashtags_with_tags`).
+/// module (e.g. `tests::test_default_creation`,
+/// `tests::test_serialize_deserialize`, `tests::test_hashtags_with_tags`).
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Bluesky {
     description: Option<String>,
     tags: Option<Vec<String>>,
-    /// Date the Bluesky draft was first generated. Set by `bsky draft`, never overwritten.
+    /// Date the Bluesky draft was first generated. Set by `bsky draft`, never
+    /// overwritten.
     #[serde(skip_serializing_if = "Option::is_none")]
     created: Option<Datetime>,
     /// Date the post was successfully published to Bluesky. Set by `bsky post`.
@@ -125,7 +126,8 @@ mod tests {
     #[test]
     fn test_hashtags_with_tags() {
         // Note: This test assumes the tags::hashtags function exists and works
-        // You may need to mock this or adjust based on your actual implementation
+        // You may need to mock this or adjust based on your actual
+        // implementation
         let tags_vec = vec!["rust".to_string(), "programming".to_string()];
         let bluesky = Bluesky {
             description: None,

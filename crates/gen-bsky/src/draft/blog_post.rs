@@ -323,10 +323,10 @@ impl BlogPost {
 
     /// Get bluesky record based on frontmatter data.
     ///
-    /// If `created_at_override` is `Some`, the provided `BskyDatetime` is used as
-    /// `createdAt` instead of the current time.  This ensures the `.post` file's
-    /// timestamp is stable across re-runs once `[bluesky].created` is written to the
-    /// frontmatter.
+    /// If `created_at_override` is `Some`, the provided `BskyDatetime` is used
+    /// as `createdAt` instead of the current time.  This ensures the
+    /// `.post` file's timestamp is stable across re-runs once
+    /// `[bluesky].created` is written to the frontmatter.
     pub async fn get_bluesky_record(
         &self,
         created_at_override: Option<BskyDatetime>,
@@ -428,8 +428,9 @@ impl BlogPost {
     /// and filename to ensure that similarly named posts have unique
     /// bluesky post names.
     ///
-    /// Idempotency: if `[bluesky].created` is already set in the post's frontmatter,
-    /// the write is skipped entirely (the draft was already generated on a previous run).
+    /// Idempotency: if `[bluesky].created` is already set in the post's
+    /// frontmatter, the write is skipped entirely (the draft was already
+    /// generated on a previous run).
     pub async fn write_bluesky_record_to(&mut self, store_dir: &Path) -> Result<(), BlogPostError> {
         log::trace!("Store path to write to bluesky record: `{store_dir:#?}`");
         log::trace!(
@@ -437,7 +438,8 @@ impl BlogPost {
             self.path.is_file()
         );
 
-        // Primary idempotency guard: skip if frontmatter already has [bluesky].created.
+        // Primary idempotency guard: skip if frontmatter already has
+        // [bluesky].created.
         if self.frontmatter.bluesky_created().is_some() {
             log::debug!(
                 "Skipping draft — [bluesky].created already set in `{}`",
@@ -537,9 +539,9 @@ impl BlogPost {
     }
 }
 
-/// Convert a `toml::value::Datetime` (date-only, e.g. `2026-04-03`) to a `BskyDatetime`
-/// set to midnight UTC on that date.  Falls back to `BskyDatetime::now()` if the TOML
-/// datetime has no date component.
+/// Convert a `toml::value::Datetime` (date-only, e.g. `2026-04-03`) to a
+/// `BskyDatetime` set to midnight UTC on that date.  Falls back to
+/// `BskyDatetime::now()` if the TOML datetime has no date component.
 fn toml_date_to_bsky_datetime(dt: toml::value::Datetime) -> BskyDatetime {
     if let Some(d) = dt.date {
         if let Some(naive_date) =
@@ -553,9 +555,10 @@ fn toml_date_to_bsky_datetime(dt: toml::value::Datetime) -> BskyDatetime {
     BskyDatetime::now()
 }
 
-/// Returns `true` if a bluesky post file should be written (i.e. it does not yet exist).
-/// Returning `false` prevents overwriting an existing file and re-generating a new
-/// `createdAt` timestamp, which would mark the file as changed and cause an infinite CI push loop.
+/// Returns `true` if a bluesky post file should be written (i.e. it does not
+/// yet exist). Returning `false` prevents overwriting an existing file and
+/// re-generating a new `createdAt` timestamp, which would mark the file as
+/// changed and cause an infinite CI push loop.
 fn should_write_post_file(path: &Path) -> bool {
     !path.exists()
 }
@@ -717,8 +720,8 @@ tags = ["rust", "testing"]
         let post_text = post.build_post_text().unwrap();
         log::debug!("Generated post text:\n{post_text:#?}");
 
-        // Check format: title + double newline + description + tags + double newline +
-        // link
+        // Check format: title + double newline + description + tags + double
+        // newline + link
         let lines: Vec<&str> = post_text.split("\n\n").collect();
         assert_eq!(lines.len(), 3);
         assert_eq!(lines[0], "Test Blog Post");
@@ -832,8 +835,9 @@ Long content here."#
 
     #[tokio::test]
     async fn test_write_bluesky_record_multiple_times() {
-        // Now that write_bluesky_record_to is idempotent, repeated calls for the same
-        // post must not overwrite the file or re-increment bluesky_count.
+        // Now that write_bluesky_record_to is idempotent, repeated calls for
+        // the same post must not overwrite the file or re-increment
+        // bluesky_count.
         let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
         let content = format!("{}\n\nContent here.", create_test_frontmatter_content());
         let blog_path = temp_dir.path().join("content").join("blog");
@@ -863,8 +867,8 @@ Long content here."#
     // test_utils::setup_test_environment(LevelFilter::Trace);     let content =
     // format!("{}\n\nContent here.", create_test_frontmatter_content());
     //     let blog_path = temp_dir.path().join("content").join("blog/");
-    //     let _blog_file = create_test_blog_file(&blog_path, "basename-test.md",
-    // &content);
+    //     let _blog_file = create_test_blog_file(&blog_path,
+    // "basename-test.md", &content);
 
     //     // Create a blog path that doesn't have a filename
     //     let _min_date = Datetime::from_str("2024-01-01T00:00:00Z").unwrap();
@@ -923,8 +927,8 @@ Long content here."#
     fn test_unicode_grapheme_handling() {
         let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
 
-        // Create content with Unicode characters that have different byte vs grapheme
-        // counts
+        // Create content with Unicode characters that have different byte vs
+        // grapheme counts
         let unicode_content = r##"+++
 title = "Test 👋 Post 🦀"
 date = 2024-01-15T10:30:00Z
@@ -976,7 +980,8 @@ created = 2026-04-03
 
     #[tokio::test]
     async fn test_write_bluesky_record_skips_when_created_in_frontmatter() {
-        // If [bluesky].created is already set, write_bluesky_record_to must be a no-op.
+        // If [bluesky].created is already set, write_bluesky_record_to must be
+        // a no-op.
         let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
         let content = format!(
             "{}\n\nThis is the blog post content.",
@@ -992,7 +997,8 @@ created = 2026-04-03
         let mut post =
             BlogPost::new(&blog_file, min_date, false, &base_url, temp_dir.path()).unwrap();
 
-        // The frontmatter already has created — draft should be skipped entirely
+        // The frontmatter already has created — draft should be skipped
+        // entirely
         post.write_bluesky_record_to(&store_dir).await.unwrap();
         assert_eq!(
             post.bluesky_count(),
@@ -1021,7 +1027,8 @@ created = 2026-04-03
 
     #[tokio::test]
     async fn test_write_bluesky_record_sets_created_in_frontmatter() {
-        // After write_bluesky_record_to, the .md file must have [bluesky].created set.
+        // After write_bluesky_record_to, the .md file must have
+        // [bluesky].created set.
         let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
         let content = format!(
             "{}\n\nThis is the blog post content.",
@@ -1050,7 +1057,8 @@ created = 2026-04-03
 
     #[tokio::test]
     async fn test_write_bluesky_record_created_at_matches_frontmatter_created() {
-        // The .post file's createdAt must be derived from frontmatter created date.
+        // The .post file's createdAt must be derived from frontmatter created
+        // date.
         let (temp_dir, base_url) = test_utils::setup_test_environment(LevelFilter::Debug);
         let content = format!(
             "{}\n\nThis is the blog post content.",
@@ -1084,7 +1092,8 @@ created = 2026-04-03
         let json_content = fs::read_to_string(&post_files[0]).unwrap();
         let record: serde_json::Value = serde_json::from_str(&json_content).unwrap();
         let created_at = record.get("createdAt").unwrap().as_str().unwrap();
-        // The created date in frontmatter is today; createdAt should start with today's date
+        // The created date in frontmatter is today; createdAt should start with
+        // today's date
         let md_content = fs::read_to_string(&blog_file).unwrap();
         // Extract "created = YYYY-MM-DD" from the md
         let created_line = md_content

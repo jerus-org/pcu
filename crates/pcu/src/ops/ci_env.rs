@@ -33,9 +33,11 @@ pub fn export_ci_branch(branch: &str) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::io::{Read, Seek};
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     // RED: written before the function is exported from the library.
 

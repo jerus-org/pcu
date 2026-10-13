@@ -1,8 +1,8 @@
 //! # BskyPost Submodule - Individual Post Management
 //!
-//! This submodule provides the core data structures for managing individual Bluesky posts
-//! within the larger post management workflow. It handles post state tracking and provides
-//! access to post data and metadata.
+//! This submodule provides the core data structures for managing individual
+//! Bluesky posts within the larger post management workflow. It handles post
+//! state tracking and provides access to post data and metadata.
 //!
 //! ## Components
 //!
@@ -28,22 +28,24 @@ use serde::{Deserialize, Serialize};
 
 /// Wrapper that adds optional metadata around `RecordData` for on-disk storage.
 ///
-/// Using `#[serde(flatten)]` keeps the JSON representation flat (backward compatible
-/// with old `.post` files that contain bare `RecordData`).
+/// Using `#[serde(flatten)]` keeps the JSON representation flat (backward
+/// compatible with old `.post` files that contain bare `RecordData`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct PostFile {
     #[serde(flatten)]
     pub(crate) record: RecordData,
     /// Path to the source `.md` blog post.  Written by `bsky draft` so that
-    /// `bsky post` can write back `[bluesky].published` after a successful API call.
+    /// `bsky post` can write back `[bluesky].published` after a successful API
+    /// call.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) source_path: Option<PathBuf>,
 }
 
 /// # BskyPostState - Post Lifecycle State Management
 ///
-/// Represents the current state of a Bluesky post within the publishing workflow.
-/// Posts transition through these states in a defined sequence during processing.
+/// Represents the current state of a Bluesky post within the publishing
+/// workflow. Posts transition through these states in a defined sequence during
+/// processing.
 ///
 /// ## State Transitions
 ///
@@ -62,7 +64,8 @@ pub(crate) struct PostFile {
 ///
 /// ## Design Characteristics
 ///
-/// - Implements `PartialEq` and `Eq` for state comparison in filtering operations
+/// - Implements `PartialEq` and `Eq` for state comparison in filtering
+///   operations
 /// - `Debug` and `Clone` for debugging and flexible usage patterns
 /// - States are mutually exclusive - a post can only be in one state at a time
 ///
@@ -86,7 +89,8 @@ pub(crate) enum BskyPostState {
     /// file is eligible for cleanup.
     Posted,
 
-    /// Post file has been deleted from the filesystem after successful publishing.
+    /// Post file has been deleted from the filesystem after successful
+    /// publishing.
     ///
     /// This is the final state in the post lifecycle. Posts in this state
     /// have been successfully published and their source files removed to
@@ -96,8 +100,9 @@ pub(crate) enum BskyPostState {
 
 /// # BskyPost - Individual Post Container
 ///
-/// Encapsulates a single Bluesky post with its associated metadata and state tracking.
-/// This struct bridges the gap between file-based post storage and the Bluesky API.
+/// Encapsulates a single Bluesky post with its associated metadata and state
+/// tracking. This struct bridges the gap between file-based post storage and
+/// the Bluesky API.
 ///
 /// ## Fields
 ///
@@ -114,7 +119,8 @@ pub(crate) enum BskyPostState {
 ///
 /// ## Lifecycle Management
 ///
-/// Posts are created in `Read` state and progress through the publishing workflow:
+/// Posts are created in `Read` state and progress through the publishing
+/// workflow:
 /// 1. Creation via `BskyPost::new()` with loaded post data
 /// 2. State transitions managed by the parent `Post` struct
 /// 3. File cleanup based on state tracking
@@ -136,7 +142,8 @@ pub(crate) struct BskyPost {
     /// Path to the source `.post` file for cleanup operations
     file_path: PathBuf,
 
-    /// Path to the source `.md` blog post file, used to write back `published` date.
+    /// Path to the source `.md` blog post file, used to write back `published`
+    /// date.
     source_path: Option<PathBuf>,
 
     /// Current lifecycle state of the post
@@ -144,11 +151,12 @@ pub(crate) struct BskyPost {
 }
 
 impl BskyPost {
-    /// Creates a new BskyPost instance with the specified post data and file path.
+    /// Creates a new BskyPost instance with the specified post data and file
+    /// path.
     ///
     /// Initializes a post in the `Read` state, ready for processing through the
-    /// publishing workflow. This constructor is typically called during the file
-    /// loading phase when `.post` files are deserialized.
+    /// publishing workflow. This constructor is typically called during the
+    /// file loading phase when `.post` files are deserialized.
     ///
     /// ## Parameters
     ///
@@ -274,9 +282,9 @@ impl BskyPost {
 
     /// Returns the current state of the post.
     ///
-    /// Provides access to the post's current position in the publishing lifecycle.
-    /// This state information is used for filtering, progress tracking, and
-    /// workflow control.
+    /// Provides access to the post's current position in the publishing
+    /// lifecycle. This state information is used for filtering, progress
+    /// tracking, and workflow control.
     ///
     /// ## Returns
     ///
@@ -322,7 +330,8 @@ impl BskyPost {
     ///
     /// ## State Transitions
     ///
-    /// While any transition is technically allowed, the normal workflow follows:
+    /// While any transition is technically allowed, the normal workflow
+    /// follows: 
     /// ```text
     /// Read -> Posted -> Deleted
     /// ```
@@ -366,14 +375,15 @@ impl BskyPost {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use bsky_sdk::api::app::bsky::feed::post::RecordData;
     use std::path::PathBuf;
+
+    use bsky_sdk::api::app::bsky::feed::post::RecordData;
+
+    use super::*;
 
     /// Helper function to create test RecordData
     fn create_test_record_data(text: &str) -> RecordData {
-        use bsky_sdk::api::types::string::Datetime;
-        use bsky_sdk::api::types::string::Language;
+        use bsky_sdk::api::types::string::{Datetime, Language};
 
         RecordData {
             text: text.to_string(),
@@ -722,7 +732,8 @@ mod tests {
 
     #[test]
     fn test_post_file_deserializes_without_source_path() {
-        // Old-format .post files without source_path field should deserialize OK.
+        // Old-format .post files without source_path field should deserialize
+        // OK.
         let json = r#"{"text":"Hello","createdAt":"2026-04-03T00:00:00.000000Z","langs":null,"reply":null,"embed":null,"facets":null,"tags":null,"entities":null,"labels":null}"#;
         let pf: PostFile = serde_json::from_str(json).unwrap();
         assert_eq!(pf.record.text, "Hello");
@@ -731,8 +742,7 @@ mod tests {
 
     #[test]
     fn test_post_file_roundtrips_with_source_path() {
-        use bsky_sdk::api::types::string::Datetime;
-        use bsky_sdk::api::types::string::Language;
+        use bsky_sdk::api::types::string::{Datetime, Language};
         let record = RecordData {
             text: "Test".to_string(),
             created_at: Datetime::now(),

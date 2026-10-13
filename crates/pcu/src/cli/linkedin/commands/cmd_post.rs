@@ -1,11 +1,10 @@
-use std::{env, path::Path};
+use std::{env, fmt::Display, path::Path};
 
 use clap::Parser;
 use config::Config;
 use gen_linkedin::{posts::DEFAULT_API_VERSION, Post, PostError};
 
 use crate::{cli::push::Push, CIExit, Client, Error, GitOps, LinkedInExit, SignConfig};
-use std::fmt::Display;
 
 #[derive(Debug, Parser, Clone)]
 pub struct CmdPost {
@@ -113,10 +112,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::cli::linkedin::Cmd;
-    use crate::Cli;
     use clap::Parser;
+
+    use super::*;
+    use crate::{cli::linkedin::Cmd, Cli};
 
     #[test]
     fn test_linkedin_post_parses_fail_on_missing() {
@@ -166,7 +165,8 @@ mod tests {
 
     #[test]
     fn test_api_version_override_newer_than_default_is_valid() {
-        // A version newer than DEFAULT_API_VERSION should be accepted silently (info only).
+        // A version newer than DEFAULT_API_VERSION should be accepted silently
+        // (info only).
         let newer = "299901";
         assert!(newer > DEFAULT_API_VERSION);
     }

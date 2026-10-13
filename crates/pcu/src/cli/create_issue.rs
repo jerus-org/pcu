@@ -1,7 +1,8 @@
+use std::env;
+
 use clap::Parser;
 use color_eyre::Result;
 use octocrab::Octocrab;
-use std::env;
 
 use super::CIExit;
 use crate::Error;
@@ -13,7 +14,8 @@ pub struct CreateIssue {
     #[clap(long)]
     pub title: String,
 
-    /// Body of the issue (markdown). If not provided, the issue body will be empty.
+    /// Body of the issue (markdown). If not provided, the issue body will be
+    /// empty.
     #[clap(long, default_value = "")]
     pub body: String,
 

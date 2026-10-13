@@ -55,10 +55,10 @@ pub struct InjectPubkey {
     /// Minisign public key (reads $BINSTALL_SIGNING_PUBKEY if not provided)
     #[arg(long)]
     pub pubkey: Option<String>,
-    /// The binary is not published as a signed GitHub release. A missing signing
-    /// scaffold (`pubkey = "..."` under `[package.metadata.binstall.signing]`) is
-    /// then treated as a clean skip rather than an error. Reads
-    /// $PCU_NO_GITHUB_RELEASE if not set.
+    /// The binary is not published as a signed GitHub release. A missing
+    /// signing scaffold (`pubkey = "..."` under
+    /// `[package.metadata.binstall.signing]`) is then treated as a clean
+    /// skip rather than an error. Reads $PCU_NO_GITHUB_RELEASE if not set.
     #[arg(long, default_value_t = false)]
     pub no_github_release: bool,
 }
@@ -82,7 +82,8 @@ pub struct Attest {
     /// Version to attest (reads $SEMVER or $NEXT_VERSION if not provided)
     #[arg(short, long)]
     pub version: Option<String>,
-    /// Seconds to wait before downloading (allows crates.io indexing after publish)
+    /// Seconds to wait before downloading (allows crates.io indexing after
+    /// publish)
     #[arg(long, default_value_t = 30)]
     pub crates_io_delay: u64,
     /// Maximum download retry attempts
@@ -92,10 +93,11 @@ pub struct Attest {
 
 /// Publish a draft GitHub release, making it visible and marking it latest.
 ///
-/// Designed to run as the final step of every release pipeline, unconditionally:
-/// it is a no-op when the release is already published, so a pipeline that never
-/// created a draft is unaffected. A missing release is an error — reaching the
-/// final step with nothing to publish means an earlier step failed quietly.
+/// Designed to run as the final step of every release pipeline,
+/// unconditionally: it is a no-op when the release is already published, so a
+/// pipeline that never created a draft is unaffected. A missing release is an
+/// error — reaching the final step with nothing to publish means an earlier
+/// step failed quietly.
 #[derive(Debug, Parser, Clone)]
 pub struct Publish {
     /// Git tag of the release to publish
@@ -133,7 +135,8 @@ pub enum Mode {
     UploadAsset(UploadAsset),
     /// Publish a draft GitHub release (no-op if already published)
     Publish(Publish),
-    /// Attest a published crate with SLSA provenance via Sigstore keyless signing
+    /// Attest a published crate with SLSA provenance via Sigstore keyless
+    /// signing
     #[cfg(feature = "attest")]
     Attest(Attest),
 }

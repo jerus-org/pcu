@@ -5,8 +5,8 @@
 /// `String`; the original string is never mutated.
 ///
 /// For behaviour across scripts and edge cases, see the unit tests in this
-/// module (e.g. `test::test_documentation_examples`, `test::test_german_eszett`,
-/// `test::test_cyrillic_lowercase`).
+/// module (e.g. `test::test_documentation_examples`,
+/// `test::test_german_eszett`, `test::test_cyrillic_lowercase`).
 pub(crate) trait Capitalise: ToString {
     fn capitalise(&self) -> String;
 }
@@ -295,7 +295,8 @@ mod test {
         // Test with characters that use surrogate pairs in UTF-16
         let s = "𝕳ello"; // Mathematical double-struck H (U+1D573)
         let result = s.capitalise();
-        // This character should remain unchanged as it doesn't have a simple uppercase
+        // This character should remain unchanged as it doesn't have a simple
+        // uppercase
         assert!(result.starts_with("𝕳"));
         assert!(result.ends_with("ello"));
     }

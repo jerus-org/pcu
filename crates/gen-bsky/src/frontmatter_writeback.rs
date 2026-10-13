@@ -16,11 +16,12 @@ pub enum FmWriteError {
     NoFrontmatter,
 }
 
-/// Split a Zola/Hugo markdown file into `(before_first_marker, frontmatter_str, body_str)`.
+/// Split a Zola/Hugo markdown file into `(before_first_marker, frontmatter_str,
+/// body_str)`.
 ///
-/// The file is expected to start with `+++`, contain TOML frontmatter, and close
-/// with another `+++`.  Returns `FmWriteError::NoFrontmatter` if the delimiters are
-/// not found.
+/// The file is expected to start with `+++`, contain TOML frontmatter, and
+/// close with another `+++`.  Returns `FmWriteError::NoFrontmatter` if the
+/// delimiters are not found.
 fn split_frontmatter(content: &str) -> Result<(&str, &str, &str), FmWriteError> {
     // Files typically start with `+++\n`, so before_marker is empty.
     let first = content.find("+++").ok_or(FmWriteError::NoFrontmatter)?;
@@ -38,9 +39,9 @@ fn split_frontmatter(content: &str) -> Result<(&str, &str, &str), FmWriteError> 
     Ok((before_marker, fm_str, body_str))
 }
 
-/// Read an optional date field from the `[bluesky]` section of a Zola/Hugo TOML frontmatter
-/// block in `path`.  Returns `None` if the file has no `[bluesky]` section, the field is absent,
-/// or the path cannot be read.
+/// Read an optional date field from the `[bluesky]` section of a Zola/Hugo TOML
+/// frontmatter block in `path`.  Returns `None` if the file has no `[bluesky]`
+/// section, the field is absent, or the path cannot be read.
 pub(crate) fn read_bluesky_date_field(path: &Path, field: &str) -> Option<Datetime> {
     let content = fs::read_to_string(path).ok()?;
     let (_, fm_str, _) = split_frontmatter(&content).ok()?;
@@ -53,9 +54,9 @@ pub(crate) fn read_bluesky_date_field(path: &Path, field: &str) -> Option<Dateti
     }
 }
 
-/// Write a date field inside the `[bluesky]` section of a Zola/Hugo TOML frontmatter
-/// block in `path`.  If the `[bluesky]` section does not yet exist it is created.
-/// Existing field values are overwritten.
+/// Write a date field inside the `[bluesky]` section of a Zola/Hugo TOML
+/// frontmatter block in `path`.  If the `[bluesky]` section does not yet exist
+/// it is created. Existing field values are overwritten.
 pub(crate) fn write_bluesky_date_field(
     path: &Path,
     field: &str,
@@ -84,8 +85,9 @@ pub(crate) fn write_bluesky_date_field(
 mod tests {
     use std::str::FromStr;
 
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     fn make_date(s: &str) -> Datetime {
         Datetime::from_str(s).unwrap()

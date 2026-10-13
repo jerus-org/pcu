@@ -2,12 +2,12 @@
 ///
 /// ## Overview
 ///
-/// The `post` module provides functionality for managing and publishing blog posts to Bluesky.
-/// It handles the complete workflow from loading post files to authenticating with Bluesky,
-/// publishing posts, and managing post lifecycle including cleanup of successfully posted content.
+/// The `post` module provides functionality for managing and publishing blog
+/// posts to Bluesky. It handles the complete workflow from loading post files
+/// to authenticating with Bluesky, publishing posts, and managing post
+/// lifecycle including cleanup of successfully posted content.
 ///
 /// ## Module Architecture
-///
 #[doc = simple_mermaid::mermaid!("post_architecture.mmd")]
 ///
 /// ## Post Lifecycle
@@ -17,12 +17,12 @@
 /// 1. **Read**: Posts are loaded from `.post` files and ready for publishing
 /// 2. **Posted**: Posts have been successfully published to Bluesky
 /// 3. **Deleted**: Post files have been cleaned up after successful publishing
-///
 #[doc = simple_mermaid::mermaid!("post_lifecycle.mmd")]
 ///
 /// ## Key Components
 ///
-/// - **Post**: Main struct managing the posting workflow and Bluesky credentials
+/// - **Post**: Main struct managing the posting workflow and Bluesky
+///   credentials
 /// - **BskyPost**: Individual post representation with state tracking
 /// - **BskyPostState**: Enum representing the current state of each post
 /// - **PostError**: Comprehensive error handling for all posting operations
@@ -36,13 +36,14 @@
 ///
 /// ## File Format
 ///
-/// Posts are expected to be stored as JSON files with `.post` extension containing
-/// Bluesky `RecordData` structures that can be directly published to the platform.
+/// Posts are expected to be stored as JSON files with `.post` extension
+/// containing Bluesky `RecordData` structures that can be directly published to
+/// the platform.
 ///
 /// ## Testing Mode
 ///
-/// The module supports a testing mode activated by the `TESTING` environment variable,
-/// which simulates posting without actually publishing to Bluesky.
+/// The module supports a testing mode activated by the `TESTING` environment
+/// variable, which simulates posting without actually publishing to Bluesky.
 ///
 /// ## Error Handling
 ///
@@ -85,7 +86,8 @@ use thiserror::Error;
 /// # PostError - Comprehensive Error Handling for Post Operations
 ///
 /// The `PostError` enum provides detailed error information for all operations
-/// in the post module, from authentication to file handling to API communication.
+/// in the post module, from authentication to file handling to API
+/// communication.
 ///
 /// ## Error Categories
 ///
@@ -108,8 +110,14 @@ use thiserror::Error;
 /// ```rust
 /// # use gen_bsky::{Post, PostError};
 /// // Credentials are validated up front.
-/// assert!(matches!(Post::new("", "pw"), Err(PostError::NoBlueskyIdentifier)));
-/// assert!(matches!(Post::new("id", ""), Err(PostError::NoBlueskyPassword)));
+/// assert!(matches!(
+///     Post::new("", "pw"),
+///     Err(PostError::NoBlueskyIdentifier)
+/// ));
+/// assert!(matches!(
+///     Post::new("id", ""),
+///     Err(PostError::NoBlueskyPassword)
+/// ));
 /// ```
 ///
 /// ## Recovery Strategies
@@ -128,7 +136,8 @@ pub enum PostError {
     /// - The identifier parameter is whitespace-only
     ///
     /// ## Resolution
-    /// Provide a valid Bluesky handle (e.g., "user.bsky.social") or email address.
+    /// Provide a valid Bluesky handle (e.g., "user.bsky.social") or email
+    /// address.
     #[error("No bluesky identifier provided")]
     NoBlueskyIdentifier,
 
@@ -139,7 +148,8 @@ pub enum PostError {
     /// - The password parameter is whitespace-only
     ///
     /// ## Resolution
-    /// Provide a valid password or app-specific password for the Bluesky account.
+    /// Provide a valid password or app-specific password for the Bluesky
+    /// account.
     #[error("No bluesky password provided")]
     NoBlueskyPassword,
 
@@ -212,8 +222,8 @@ pub enum PostError {
 
 /// # Post - Bluesky Post Management and Publishing
 ///
-/// The `Post` struct manages the complete lifecycle of publishing posts to Bluesky,
-/// from loading post files to authentication, publishing, and cleanup.
+/// The `Post` struct manages the complete lifecycle of publishing posts to
+/// Bluesky, from loading post files to authentication, publishing, and cleanup.
 ///
 /// ## Fields
 ///
@@ -224,7 +234,8 @@ pub enum PostError {
 /// ## Memory Characteristics
 ///
 /// - Memory usage scales linearly with the number of posts loaded
-/// - Credentials are stored as owned `String` instances for the session duration
+/// - Credentials are stored as owned `String` instances for the session
+///   duration
 /// - Post data is kept in memory during the entire publishing workflow
 /// - Implements `Clone` for flexibility, but credentials are duplicated
 ///
@@ -243,7 +254,10 @@ pub enum PostError {
 ///     .await?
 ///     .delete_posted_posts()?;
 ///
-/// println!("Published and cleaned up {} posts", poster.count_deleted());
+/// println!(
+///     "Published and cleaned up {} posts",
+///     poster.count_deleted()
+/// );
 /// # Ok(())
 /// # }
 /// ```
@@ -277,12 +291,14 @@ pub struct Post {
 impl Post {
     /// Creates a new Post instance with Bluesky credentials.
     ///
-    /// Initializes a Post struct with the provided Bluesky authentication credentials.
-    /// The post collection starts empty and credentials are validated for basic requirements.
+    /// Initializes a Post struct with the provided Bluesky authentication
+    /// credentials. The post collection starts empty and credentials are
+    /// validated for basic requirements.
     ///
     /// ## Parameters
     ///
-    /// - `id`: Bluesky user identifier (handle like "user.bsky.social" or email address)
+    /// - `id`: Bluesky user identifier (handle like "user.bsky.social" or email
+    ///   address)
     /// - `password`: Account password or app-specific password
     ///
     /// ## Returns
@@ -299,7 +315,8 @@ impl Post {
     ///
     /// - Credentials are stored as plain text in memory
     /// - No validation of credential format or existence
-    /// - Consider using app-specific passwords instead of main account passwords
+    /// - Consider using app-specific passwords instead of main account
+    ///   passwords
     ///
     /// ## Examples
     ///
@@ -328,13 +345,14 @@ impl Post {
 
     /// Loads Bluesky post documents from a specified directory.
     ///
-    /// Scans the provided directory for files with `.post` extension and loads them
-    /// as JSON-formatted Bluesky `RecordData`. Successfully loaded posts are added
-    /// to the internal collection with `Read` state.
+    /// Scans the provided directory for files with `.post` extension and loads
+    /// them as JSON-formatted Bluesky `RecordData`. Successfully loaded
+    /// posts are added to the internal collection with `Read` state.
     ///
     /// ## Parameters
     ///
-    /// - `directory`: Path to directory containing `.post` files (implements `AsRef<Path> + Display`)
+    /// - `directory`: Path to directory containing `.post` files (implements
+    ///   `AsRef<Path> + Display`)
     ///
     /// ## Returns
     ///
@@ -343,7 +361,8 @@ impl Post {
     ///
     /// ## Errors
     ///
-    /// - `PostError::Io`: Directory doesn't exist, permission denied, or I/O errors
+    /// - `PostError::Io`: Directory doesn't exist, permission denied, or I/O
+    ///   errors
     /// - `PostError::SerdeJsonError`: Invalid JSON format or schema mismatch
     ///
     /// ## behaviour
@@ -355,7 +374,8 @@ impl Post {
     ///
     /// ## File Format
     ///
-    /// Post files must contain valid JSON matching Bluesky's `RecordData` schema:
+    /// Post files must contain valid JSON matching Bluesky's `RecordData`
+    /// schema: 
     /// ```json
     /// {
     ///   "text": "Your post content here",
@@ -376,8 +396,8 @@ impl Post {
     /// # use gen_bsky::Post;
     /// # fn main() -> Result<(), gen_bsky::PostError> {
     /// let mut poster = Post::new("user", "pass")?;
-    /// poster.load("./posts")?;        // load all `.post` files in a directory
-    /// poster.load("./more_posts")?;   // calls accumulate
+    /// poster.load("./posts")?; // load all `.post` files in a directory
+    /// poster.load("./more_posts")?; // calls accumulate
     /// # Ok(())
     /// # }
     /// ```
@@ -409,18 +429,20 @@ impl Post {
 
     /// Publishes all loaded posts to Bluesky.
     ///
-    /// Authenticates with Bluesky using stored credentials, then publishes all posts
-    /// currently in `Read` state. Posts are processed sequentially, and individual
-    /// failures don't stop the overall process.
+    /// Authenticates with Bluesky using stored credentials, then publishes all
+    /// posts currently in `Read` state. Posts are processed sequentially,
+    /// and individual failures don't stop the overall process.
     ///
     /// ## Returns
     ///
-    /// - `Ok(&mut Self)`: Publishing completed (check individual post states for results)
+    /// - `Ok(&mut Self)`: Publishing completed (check individual post states
+    ///   for results)
     /// - `Err(PostError)`: Authentication or SDK initialization failure
     ///
     /// ## Errors
     ///
-    /// - `PostError::BlueskyLoginError`: Invalid credentials or authentication failure
+    /// - `PostError::BlueskyLoginError`: Invalid credentials or authentication
+    ///   failure
     /// - `PostError::BskySdk`: Network errors, API errors, or SDK issues
     ///
     /// ## Async behaviour
@@ -492,7 +514,8 @@ impl Post {
             .iter_mut()
             .filter(|p| p.state() == &BskyPostState::Read)
         {
-            // Skip posts whose source markdown already has [bluesky].published set.
+            // Skip posts whose source markdown already has [bluesky].published
+            // set.
             if let Some(src) = bsky_post.source_path() {
                 if crate::frontmatter_writeback::read_bluesky_date_field(src, "published").is_some()
                 {
@@ -504,8 +527,9 @@ impl Post {
             log::debug!("Post: {}", bsky_post.post().text.clone());
 
             if testing {
-                // log::debug!("Deleting related file: {:?}", bsky_post.file_path);
-                // fs::remove_file(&bsky_post.file_path)?;
+                // log::debug!("Deleting related file: {:?}",
+                // bsky_post.file_path); fs::remove_file(&
+                // bsky_post.file_path)?;
 
                 log::info!(
                     "Successfully posted `{}` to Bluesky",
@@ -545,12 +569,14 @@ impl Post {
     ///
     /// ## Returns
     ///
-    /// - `Ok(&mut Self)`: Cleanup completed (check individual post states for results)
+    /// - `Ok(&mut Self)`: Cleanup completed (check individual post states for
+    ///   results)
     /// - `Err(PostError)`: File system errors during deletion
     ///
     /// ## Errors
     ///
-    /// - `PostError::Io`: File deletion failures, permission issues, or I/O errors
+    /// - `PostError::Io`: File deletion failures, permission issues, or I/O
+    ///   errors
     ///
     /// ## behaviour
     ///
@@ -606,7 +632,8 @@ impl Post {
             .iter_mut()
             .filter(|p| p.state() == &BskyPostState::Posted)
         {
-            // Write `published = <today>` back to the source .md file when known.
+            // Write `published = <today>` back to the source .md file when
+            // known.
             if let Some(src) = bsky_post.source_path() {
                 let today = crate::draft::today();
                 match crate::frontmatter_writeback::write_bluesky_date_field(
@@ -643,8 +670,8 @@ impl Post {
     /// Returns the count of posts that have been successfully deleted.
     ///
     /// Counts all posts currently in `Deleted` state, which indicates they were
-    /// successfully published to Bluesky and their source files have been removed
-    /// from the filesystem.
+    /// successfully published to Bluesky and their source files have been
+    /// removed from the filesystem.
     ///
     /// ## Returns
     ///
@@ -688,11 +715,11 @@ impl Post {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::env;
-    use std::fs;
-    use std::io::Write;
+    use std::{env, fs, io::Write};
+
     use tempfile::TempDir;
+
+    use super::*;
 
     /// Helper function to create a test Post instance
     fn create_test_post() -> Result<Post, PostError> {
@@ -901,9 +928,10 @@ mod tests {
         // Clean up environment variable
         unsafe { env::remove_var("TESTING") };
 
-        // Note: This test might fail due to actual network calls even in testing mode
-        // depending on the implementation. The current code still tries to authenticate.
-        // For a proper test, we'd need to mock the BskyAgent.
+        // Note: This test might fail due to actual network calls even in
+        // testing mode depending on the implementation. The current
+        // code still tries to authenticate. For a proper test, we'd
+        // need to mock the BskyAgent.
 
         // If authentication fails, that's expected with fake credentials
         match result {
@@ -911,7 +939,8 @@ mod tests {
                 // Expected with fake credentials
             }
             Ok(_) => {
-                // Success in testing mode (if implementation is properly mocked)
+                // Success in testing mode (if implementation is properly
+                // mocked)
             }
             Err(e) => {
                 // Other errors might indicate implementation issues
@@ -1134,7 +1163,8 @@ mod tests {
 
     #[test]
     fn test_delete_posted_posts_writes_published_to_frontmatter() {
-        // delete_posted_posts is where the write-back happens; no network needed.
+        // delete_posted_posts is where the write-back happens; no network
+        // needed.
         let mut post = create_test_post().unwrap();
         let temp_dir = tempfile::tempdir().unwrap();
 

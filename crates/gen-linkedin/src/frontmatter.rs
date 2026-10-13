@@ -1,9 +1,9 @@
 //! Frontmatter types for LinkedIn-enabled blog posts.
 //!
 //! Provides serde-deserializable types for parsing the `[linkedin]` section of
-//! Zola/Hugo TOML frontmatter. Intentionally parallel to the `[bluesky]` parsing
-//! in `gen-bsky` — the two crates target different frontmatter sections with
-//! different schemas and semantics and are kept separate.
+//! Zola/Hugo TOML frontmatter. Intentionally parallel to the `[bluesky]`
+//! parsing in `gen-bsky` — the two crates target different frontmatter sections
+//! with different schemas and semantics and are kept separate.
 //!
 //! # Example frontmatter
 //!
@@ -46,7 +46,8 @@ pub struct LinkedIn {
     /// Date the LinkedIn draft was created (written by `pcu linkedin draft`).
     pub created: Option<Datetime>,
 
-    /// Date the post was published to LinkedIn (written by `pcu linkedin post`).
+    /// Date the post was published to LinkedIn (written by `pcu linkedin
+    /// post`).
     pub published: Option<Datetime>,
 }
 
@@ -106,8 +107,9 @@ impl FrontMatter {
 mod tests {
     use std::fs;
 
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     // ── FrontMatter::from_content ────────────────────────────────────────────
 

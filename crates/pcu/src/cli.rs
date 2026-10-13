@@ -233,7 +233,8 @@ impl Commands {
     }
 }
 
-/// Resolve the repository owner from an explicit value or CIRCLE_PROJECT_USERNAME.
+/// Resolve the repository owner from an explicit value or
+/// CIRCLE_PROJECT_USERNAME.
 pub(super) fn resolve_owner(explicit: Option<String>) -> Result<String, crate::Error> {
     explicit
         .or_else(|| env::var("CIRCLE_PROJECT_USERNAME").ok())
@@ -244,7 +245,8 @@ pub(super) fn resolve_owner(explicit: Option<String>) -> Result<String, crate::E
         })
 }
 
-/// Resolve the repository name from an explicit value or CIRCLE_PROJECT_REPONAME.
+/// Resolve the repository name from an explicit value or
+/// CIRCLE_PROJECT_REPONAME.
 pub(super) fn resolve_repo(explicit: Option<String>) -> Result<String, crate::Error> {
     explicit
         .or_else(|| env::var("CIRCLE_PROJECT_REPONAME").ok())
@@ -293,9 +295,10 @@ pub(crate) fn with_skip_ci(message: &str, skip_ci: bool, on_default_branch: bool
 
 #[cfg(test)]
 mod tests {
+    use clap::Parser;
+
     use super::*;
     use crate::SignConfig;
-    use clap::Parser;
 
     #[test]
     fn with_skip_ci_appends_marker_only_on_default_branch() {
@@ -320,11 +323,12 @@ mod tests {
     #[test]
     fn release_skip_ci_defaults_to_skip_and_is_negatable() {
         // Unlike `pcu pr` (which defaults to validate and is skipped only when
-        // the toolkit forces --skip-ci), the `release` command OWNS the default:
-        // the release work itself already validated, so the one-line
-        // post-release prlog commit skips by default. This lets the skip take
-        // effect even when the orb passes no flag (e.g. the toolkit's own
-        // release pulling unreleased pcu from main via update_pcu).
+        // the toolkit forces --skip-ci), the `release` command OWNS the
+        // default: the release work itself already validated, so the
+        // one-line post-release prlog commit skips by default. This
+        // lets the skip take effect even when the orb passes no flag
+        // (e.g. the toolkit's own release pulling unreleased pcu from
+        // main via update_pcu).
         let skip = |args: &[&str]| -> bool {
             match Cli::try_parse_from(args).unwrap().command {
                 Commands::Release(r) => r.should_skip_ci(),

@@ -1,6 +1,7 @@
+use git2::{Commit, Oid, Repository};
+
 use super::signature_ops::{CommitInfo, SignatureStatus};
 use crate::Error;
-use git2::{Commit, Oid, Repository};
 
 /// Extract commits from a git repository in a given range
 ///
@@ -190,8 +191,9 @@ fn extract_signature_info(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::TempDir;
+
+    use super::*;
 
     fn create_test_repo() -> (TempDir, Repository) {
         let dir = TempDir::new().unwrap();

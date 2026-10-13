@@ -1,11 +1,10 @@
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 use clap::Parser;
 use config::Config;
 use gen_linkedin::{Draft, DraftError};
 
 use crate::{CIExit, Client, Error, GitOps, LinkedInExit, SignConfig};
-use std::env;
 
 const DEFAULT_PATH: &str = "content/blog";
 const DEFAULT_STORE: &str = "linkedin";
@@ -14,7 +13,8 @@ const DEFAULT_STORE: &str = "linkedin";
 pub struct CmdDraft {
     /// Optional path to file or directory of blog post(s) to process.
     pub paths: Vec<PathBuf>,
-    /// Optional minimum date filter (YYYY-MM-DD). Posts with a `date` before this are skipped.
+    /// Optional minimum date filter (YYYY-MM-DD). Posts with a `date` before
+    /// this are skipped.
     #[arg(short, long)]
     pub date: Option<toml::value::Datetime>,
     /// Warn instead of failing when no blog posts match the filter.
@@ -90,10 +90,10 @@ fn resolve_draft_exit(push_requested: bool, commits_ahead: usize) -> CIExit {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::cli::linkedin::Cmd;
-    use crate::Cli;
     use clap::Parser;
+
+    use super::*;
+    use crate::{cli::linkedin::Cmd, Cli};
 
     #[test]
     fn test_linkedin_draft_parses_push_flag() {

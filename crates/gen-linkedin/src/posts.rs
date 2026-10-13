@@ -7,7 +7,8 @@ use crate::{auth::TokenProvider, client::Client, Error};
 /// Response returned when a post is created.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PostResponse {
-    /// The LinkedIn-generated ID/URN of the new post (from `x-restli-id` or `location`).
+    /// The LinkedIn-generated ID/URN of the new post (from `x-restli-id` or
+    /// `location`).
     pub id: String,
 }
 
@@ -18,7 +19,8 @@ pub struct TextPost {
     pub author_urn: String,
     /// The post text content.
     pub text: String,
-    /// Optional link to include with the post (will be appended to text for now).
+    /// Optional link to include with the post (will be appended to text for
+    /// now).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub link: Option<url::Url>,
     /// Visibility setting, default PUBLIC.
@@ -48,7 +50,8 @@ impl TextPost {
     }
 }
 
-/// Default `LinkedIn-Version` header value used when `PCU_LINKEDIN_API_VERSION` is not set.
+/// Default `LinkedIn-Version` header value used when `PCU_LINKEDIN_API_VERSION`
+/// is not set.
 pub const DEFAULT_API_VERSION: &str = "202604";
 
 /// Client for interacting with LinkedIn's Posts API.
@@ -81,7 +84,8 @@ impl<TP: TokenProvider> PostsClient<TP> {
     ///
     /// Notes
     /// - Requires the header `X-Restli-Protocol-Version: 2.0.0`.
-    /// - On success, LinkedIn typically returns 201 with `x-restli-id` or `location` headers.
+    /// - On success, LinkedIn typically returns 201 with `x-restli-id` or
+    ///   `location` headers.
     pub async fn create_text_post(&self, post: &TextPost) -> Result<PostResponse, Error> {
         // Build endpoint
         let url = self

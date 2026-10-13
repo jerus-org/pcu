@@ -35,7 +35,6 @@ use crate::Capitalise;
 /// 5. **Hashtag Prefix Addition**: Adds `#` prefix to create the final hashtag
 ///
 /// ### Processing Pipeline
-///
 #[doc = simple_mermaid::mermaid!("hashtags_pipeline.mmd")]
 ///
 /// ## Input Format Handling
@@ -386,7 +385,8 @@ mod tests {
     // Performance and memory tests
     #[test]
     fn test_empty_words_in_tag() {
-        // This tests the behaviour when split_whitespace encounters multiple spaces
+        // This tests the behaviour when split_whitespace encounters multiple
+        // spaces
         let tags = vec!["word1   word2".to_string()];
         let result = hashtags(tags);
         assert_eq!(result, vec!["#Word1Word2"]);

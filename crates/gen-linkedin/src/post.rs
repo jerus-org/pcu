@@ -259,8 +259,9 @@ async fn publish_one(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     fn write_linkedin_file(dir: &Path, name: &str, text: &str, source: Option<&Path>) -> PathBuf {
         let record = LinkedinFile {

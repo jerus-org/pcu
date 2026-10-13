@@ -16,7 +16,8 @@ pub enum FmWriteError {
     NoFrontmatter,
 }
 
-/// Split a Zola/Hugo markdown file into `(before_first_marker, frontmatter_str, body_str)`.
+/// Split a Zola/Hugo markdown file into `(before_first_marker, frontmatter_str,
+/// body_str)`.
 pub(crate) fn split_frontmatter(content: &str) -> Result<(&str, &str, &str), FmWriteError> {
     let first = content.find("+++").ok_or(FmWriteError::NoFrontmatter)?;
     let after_first = &content[first + 3..];
@@ -75,14 +76,16 @@ fn write_section_date_field(
 
 const SECTION: &str = "linkedin";
 
-/// Read an optional date field from the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
-/// Returns `None` if the section or field is absent, or the file cannot be read.
+/// Read an optional date field from the `[linkedin]` section of a Zola/Hugo
+/// TOML frontmatter. Returns `None` if the section or field is absent, or the
+/// file cannot be read.
 pub(crate) fn read_linkedin_date_field(path: &Path, field: &str) -> Option<Datetime> {
     read_section_date_field(path, SECTION, field)
 }
 
-/// Write a date field inside the `[linkedin]` section of a Zola/Hugo TOML frontmatter.
-/// Creates the `[linkedin]` section if absent. Overwrites existing values.
+/// Write a date field inside the `[linkedin]` section of a Zola/Hugo TOML
+/// frontmatter. Creates the `[linkedin]` section if absent. Overwrites existing
+/// values.
 pub(crate) fn write_linkedin_date_field(
     path: &Path,
     field: &str,
@@ -95,8 +98,9 @@ pub(crate) fn write_linkedin_date_field(
 mod tests {
     use std::str::FromStr;
 
-    use super::*;
     use tempfile::tempdir;
+
+    use super::*;
 
     fn make_date(s: &str) -> Datetime {
         Datetime::from_str(s).unwrap()

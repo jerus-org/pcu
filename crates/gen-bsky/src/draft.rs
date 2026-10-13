@@ -827,8 +827,8 @@ mod tests {
         let builder2 = Draft::builder(base_url.clone(), Some(&root_path));
 
         // Each call should create a new instance
-        // We can't directly compare the builders since they don't implement PartialEq
-        // but we can verify they have the same values
+        // We can't directly compare the builders since they don't implement
+        // PartialEq but we can verify they have the same values
         assert_eq!(builder1.base_url(), builder2.base_url());
         assert_eq!(builder1.root(), builder2.root());
     }
@@ -885,7 +885,8 @@ mod tests {
 
     #[test]
     fn test_builder_functional_style() {
-        // Test that the builder method works well in functional programming style
+        // Test that the builder method works well in functional programming
+        // style
         let create_builder = |url_str: &str, root: Option<&str>| -> DraftBuilder {
             let base_url = Url::parse(url_str).unwrap();
             let root_path = root.map(PathBuf::from);
@@ -1078,7 +1079,8 @@ mod tests {
             .await
             .unwrap();
 
-        // Create a file where we want to create a directory (will cause conflict)
+        // Create a file where we want to create a directory (will cause
+        // conflict)
         let conflicting_path = temp_dir.path().join("static");
         fs::write(&conflicting_path, "file content").unwrap();
 

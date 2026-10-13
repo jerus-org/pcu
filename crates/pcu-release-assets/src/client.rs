@@ -348,7 +348,8 @@ impl ReleaseAssetClient {
     /// Download a named asset from the release for `tag`, returning its raw
     /// bytes. Refuses a draft release unless `allow_draft` is `true`.
     ///
-    /// Exposed (in addition to the published-only [`Self::download_release_asset`])
+    /// Exposed (in addition to the published-only
+    /// [`Self::download_release_asset`])
     /// because `pcu::Client::download_release_asset` needs the same fetch with
     /// its caller-supplied `allow_draft`.
     pub async fn download_release_asset_allowing_draft(

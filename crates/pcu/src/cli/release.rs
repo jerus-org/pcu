@@ -1,8 +1,12 @@
 #[cfg(feature = "linkedin")]
 async fn share_release_to_linkedin(prefix: &str, version: &str) -> Result<(), Error> {
+    use gen_linkedin::{
+        auth::StaticTokenProvider,
+        client::Client as LiClient,
+        posts::{PostsClient, TextPost},
+    };
+
     use crate::utilities::linkedin_post::{build_release_text, compute_release_url};
-    use gen_linkedin::posts::{PostsClient, TextPost};
-    use gen_linkedin::{auth::StaticTokenProvider, client::Client as LiClient};
 
     let settings = super::Commands::Release(Release {
         update_prlog: false,
@@ -166,8 +170,8 @@ async fn ensure_github_release(
 ) -> Result<(), Error> {
     let tag = format!("{prefix}{version}");
     // Each effect is retried/loud in its own right (tag visibility, release
-    // existence, creation); the orchestration guarantees we never report success
-    // without an ensured release. See the 0.0.53 stranding in
+    // existence, creation); the orchestration guarantees we never report
+    // success without an ensured release. See the 0.0.53 stranding in
     // ensure_release_for_tag's docs.
     let outcome = ensure_release_for_tag(
         &tag,
@@ -205,10 +209,10 @@ enum PublishAction {
 /// The publish step runs as the last step of *every* release job, with no
 /// condition attached, so that the ordering rule stays a single reviewable line
 /// in the pipeline instead of a per-shape conditional. That only works if the
-/// step is harmless wherever it does not apply: a release that was never a draft
-/// is left alone. A missing release is the exception — reaching the final step
-/// with nothing to publish means an earlier step failed quietly, which is the
-/// failure mode that stranded gen-circleci-orb 0.0.53.
+/// step is harmless wherever it does not apply: a release that was never a
+/// draft is left alone. A missing release is the exception — reaching the final
+/// step with nothing to publish means an earlier step failed quietly, which is
+/// the failure mode that stranded gen-circleci-orb 0.0.53.
 fn publish_decision(found: Option<(i64, bool)>) -> PublishAction {
     match found {
         Some((id, true)) => PublishAction::Publish(id),
@@ -217,8 +221,8 @@ fn publish_decision(found: Option<(i64, bool)>) -> PublishAction {
     }
 }
 
-/// Resolve a version from an optional CLI argument, falling back to $SEMVER or $NEXT_VERSION.
-/// Returns "none" when no version is available.
+/// Resolve a version from an optional CLI argument, falling back to $SEMVER or
+/// $NEXT_VERSION. Returns "none" when no version is available.
 fn resolve_version(version_opt: &Option<String>) -> String {
     if let Some(v) = version_opt {
         return v.clone();
@@ -333,8 +337,8 @@ pub struct Release {
     /// (only takes effect on the default branch). This is the DEFAULT for
     /// `release`: the release work itself was validated, so the one-line
     /// post-release prlog commit need not be revalidated. `--skip-ci` states it
-    /// explicitly; pass `--no-skip-ci` to opt back into validation. The effective
-    /// decision is computed by [`Release::should_skip_ci`].
+    /// explicitly; pass `--no-skip-ci` to opt back into validation. The
+    /// effective decision is computed by [`Release::should_skip_ci`].
     #[arg(long, overrides_with = "no_skip_ci", default_value_t = false)]
     pub skip_ci: bool,
     /// Opt back into CI validation on the prlog update commit (release skips by
@@ -346,11 +350,12 @@ pub struct Release {
     /// Create the GitHub release as a draft, leaving it unpublished until
     /// `pcu release publish` runs.
     ///
-    /// Required on repositories with **immutable releases** enabled (the default
-    /// for repositories created recently): GitHub freezes a release's assets at
-    /// publication, so a release that is published on creation can never receive
-    /// its binary, signature or attestation assets. Draft-first defers
-    /// publication until every asset is attached.
+    /// Required on repositories with **immutable releases** enabled (the
+    /// default for repositories created recently): GitHub freezes a
+    /// release's assets at publication, so a release that is published on
+    /// creation can never receive its binary, signature or attestation
+    /// assets. Draft-first defers publication until every asset is
+    /// attached.
     ///
     /// Opt-in rather than the default: a pipeline that creates drafts without a
     /// publish step would leave every release unpublished while still reporting
@@ -717,8 +722,8 @@ impl Release {
     ///
     /// The last step of a draft-first release: assets are frozen at publication
     /// on repositories with immutable releases, so everything — binary,
-    /// signature, attestation bundle — must already be attached by the time this
-    /// runs. Safe to call unconditionally; see [`publish_decision`].
+    /// signature, attestation bundle — must already be attached by the time
+    /// this runs. Safe to call unconditionally; see [`publish_decision`].
     async fn publish(self, client: Client) -> Result<CIExit, Error> {
         let Mode::Publish(ref cmd) = self.mode else {
             return Err(Error::NoPackageSpecified);
@@ -864,8 +869,9 @@ mod release_package_tests {
 
     #[test]
     fn publish_decision_is_a_no_op_for_a_published_release() {
-        // The publish step runs unconditionally as the last step of every release
-        // job, so every path that never created a draft must land here harmlessly.
+        // The publish step runs unconditionally as the last step of every
+        // release job, so every path that never created a draft must
+        // land here harmlessly.
         assert_eq!(
             publish_decision(Some((42, false))),
             PublishAction::AlreadyPublished(42)
@@ -883,8 +889,8 @@ mod release_package_tests {
 /// Maps a `kdeets_lib::version_exists` result to `Result<bool, Error>`.
 ///
 /// `CrateNotFoundOnIndex` is treated as "not published" (`Ok(false)`) so that
-/// a brand-new crate that has never appeared on the index does not block publishing.
-/// All other kdeets errors propagate as `Error::GitError`.
+/// a brand-new crate that has never appeared on the index does not block
+/// publishing. All other kdeets errors propagate as `Error::GitError`.
 fn map_kdeets_result(result: Result<bool, kdeets_lib::Error>) -> Result<bool, Error> {
     match result {
         Ok(exists) => Ok(exists),
@@ -895,9 +901,11 @@ fn map_kdeets_result(result: Result<bool, kdeets_lib::Error>) -> Result<bool, Er
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::io::Read;
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     #[test]
     fn test_resolve_version_returns_explicit() {
@@ -905,7 +913,8 @@ mod tests {
     }
 
     // Env-var-dependent cases run sequentially within one function to avoid
-    // races with other tests that might concurrently read SEMVER / NEXT_VERSION.
+    // races with other tests that might concurrently read SEMVER /
+    // NEXT_VERSION.
     #[test]
     fn test_resolve_version_env_fallbacks() {
         // Explicit arg overrides any env var.
@@ -991,8 +1000,9 @@ mod tests {
 
 #[cfg(test)]
 mod ensure_release_tests {
-    use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
+
+    use super::*;
 
     #[tokio::test]
     async fn creates_release_when_tag_present_and_release_absent() {
@@ -1184,7 +1194,8 @@ path = "src/lib.rs"
 
     #[test]
     fn auto_detected_main_rs_makes_it_binary() {
-        // No [[bin]] in the manifest, but src/main.rs on disk → cargo builds a binary.
+        // No [[bin]] in the manifest, but src/main.rs on disk → cargo builds a
+        // binary.
         assert!(crate_is_binary(LIB_MANIFEST, true, false).unwrap());
     }
 
@@ -1226,7 +1237,8 @@ path = "src/lib.rs"
 
     #[test]
     fn binary_missing_scaffold_is_skipped_when_not_required() {
-        // --no-github-release: an unpublished binary may legitimately lack scaffold.
+        // --no-github-release: an unpublished binary may legitimately lack
+        // scaffold.
         let outcome = inject_pubkey_value(BIN_MANIFEST_NO_SCAFFOLD, "RWNEWKEY111", false).unwrap();
         assert_eq!(outcome, PubkeyOutcome::SkippedNoScaffold);
     }
