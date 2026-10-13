@@ -375,7 +375,7 @@ impl Post {
     /// ## File Format
     ///
     /// Post files must contain valid JSON matching Bluesky's `RecordData`
-    /// schema: 
+    /// schema:
     /// ```json
     /// {
     ///   "text": "Your post content here",

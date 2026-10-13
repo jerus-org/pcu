@@ -331,7 +331,7 @@ impl BskyPost {
     /// ## State Transitions
     ///
     /// While any transition is technically allowed, the normal workflow
-    /// follows: 
+    /// follows:
     /// ```text
     /// Read -> Posted -> Deleted
     /// ```
