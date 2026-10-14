@@ -51,7 +51,7 @@ sigstore = { workspace = true, optional = true }
 sigstore_protobuf_specs = { workspace = true, optional = true }
 tempfile.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 toml.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
