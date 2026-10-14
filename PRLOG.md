@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate aws-lc-rs to 1.18.2(pr [#1104])
 - deps: update rust crate serde_json to 1.0.154(pr [#1105])
 - deps: update rust crate octocrab to 0.54.4(pr [#1108])
+- deps: update rust crate tokio to 1.53.3(pr [#1109])
 
 ## [0.6.38] - 2026-10-01
 
@@ -2701,6 +2702,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1105]: https://github.com/jerus-org/pcu/pull/1105
 [#1107]: https://github.com/jerus-org/pcu/pull/1107
 [#1108]: https://github.com/jerus-org/pcu/pull/1108
+[#1109]: https://github.com/jerus-org/pcu/pull/1109
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
