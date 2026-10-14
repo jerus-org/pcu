@@ -5,9 +5,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.43] - 2026-10-14
+
+Summary: Chore[1], Fixed[5]
+
+### Fixed
+
+ - fix(deps): update rust crate tokio to 1.53.3
+ - fix: cargo fmt --all
+ - fix(deps): update rust crate serde_json to 1.0.154
+ - fix(deps): update rust crate toml to 1.1.8
+ - fix(deps): update rust crate tokio to 1.53.2
+
 ## [0.1.42] - 2026-10-01
 
-Summary: 
+Summary: Chore[1]
 
 ## [0.1.41] - 2026-09-30
 
@@ -507,7 +519,8 @@ Summary: Added[21], Build[4], Changed[25], Chore[5], Documentation[10], Fixed[70
  - ♻️ refactor(gen-bsky): streamline error handling
  - ♻️ refactor(lib): restructure gen-bsky module
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.41...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.42...HEAD
+[0.1.42]: https://github.com/jerus-org/pcu/compare/v0.1.41...v0.1.42
 [0.1.41]: https://github.com/jerus-org/pcu/compare/v0.1.40...v0.1.41
 [0.1.40]: https://github.com/jerus-org/pcu/compare/v0.1.39...v0.1.40
 [0.1.39]: https://github.com/jerus-org/pcu/compare/v0.1.38...v0.1.39
