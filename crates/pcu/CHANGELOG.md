@@ -5,9 +5,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.39] - 2026-10-14
+
+Summary: Chore[3], Fixed[12]
+
+### Fixed
+
+ - fix(deps): update rust crate tokio to 1.53.3
+ - fix(deps): update rust crate octocrab to 0.54.4
+ - fix: adopt octocrab exported EncodingKey
+ - fix(deps): update rust crate serde_json to 1.0.154
+ - fix(deps): update rust crate aws-lc-rs to 1.18.2
+ - fix(deps): update rust crate sha2 to 0.11.1
+ - fix(deps): update rust crate uuid to 1.28.0
+ - fix(deps): update rust crate toml to 1.1.8
+ - fix(deps): update rust crate tokio to 1.53.2
+ - fix(deps): update rust crate config to 0.15.27
+ - fix(deps): update rust crate aws-lc-rs to 1.18.1
+ - fix(deps): update rust crate octocrab to 0.54.3
+
 ## [0.6.38] - 2026-10-01
 
-Summary: Chore[1], Fixed[3]
+Summary: Chore[2], Fixed[3]
 
 ### Fixed
 
@@ -35,7 +54,7 @@ Summary: Chore[2], Fixed[3]
 
 ## [0.6.35] - 2026-09-23
 
-Summary: Chore[2], Fixed[10], Security[1]
+Summary: Chore[2], Fixed[9], Security[1]
 
 ### Fixed
 
@@ -43,7 +62,6 @@ Summary: Chore[2], Fixed[10], Security[1]
  - fix(deps): update rust crate rstest to 0.27.0
  - fix(deps): update rust crate toml to 1.1.6
  - fix(deps): update rust crate reqwest to 0.13.5
- - fix(deps): update rust crate jsonwebtoken to 10.4.0
  - fix(deps): update rust crate config to 0.15.26
  - fix(deps): update rust crate clap to 4.6.7
  - fix(deps): update rust crate cargo_toml to 1.0.1
@@ -818,7 +836,8 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
 
  - chore(deps): update rust crate rstest to 0.21.0
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.37...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
+[0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
 [0.6.36]: https://github.com/jerus-org/pcu/compare/v0.6.35...v0.6.36
 [0.6.35]: https://github.com/jerus-org/pcu/compare/v0.6.34...v0.6.35

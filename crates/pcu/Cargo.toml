@@ -1,6 +1,6 @@
 [package]
 name = "pcu"
-version = "0.6.38"
+version = "0.6.39"
 edition.workspace = true
 authors.workspace = true
 description = "A CI tool to update change log in a PR"
@@ -103,4 +103,4 @@ bin-dir = "{ bin }{ binary-ext }"
 # pcu has nothing to replace and the signature is published unverifiable.
 [package.metadata.binstall.signing]
 algorithm = "minisign"
-pubkey = "RWQosRfaMCrTSeoPQp1uVr7ga7lJ97Ny9a6UgzViR1IWhwnUztWmhxNj"
+pubkey = "RWSVVkf/u+4wMwvOe0yq2r7PnipFysJPxTttJFs3j2lv8JBBKjZsFSnF"
