@@ -160,6 +160,28 @@ fn signed_commit_records_the_identity_and_a_signoff() {
 }
 
 #[test]
+fn a_signed_commit_on_a_detached_head_moves_head() {
+    let fx = Fixture::new();
+    let key = fx.keyring.generate_key("alpha");
+    fx.git_ok(&["checkout", "-q", "--detach"]);
+    let before = fx.head();
+    fx.stage("b.txt");
+
+    fx.commit(
+        identity(SignConfig::new(Sign::Gpg).with_signing_key(&key)),
+        None,
+    )
+    .expect("signed commit");
+
+    assert!(
+        !fx.git(&["symbolic-ref", "-q", "HEAD"]).status.success(),
+        "HEAD must stay detached"
+    );
+    assert_eq!(fx.git_ok(&["rev-parse", "HEAD^"]), before);
+    assert!(fx.git(&["verify-commit", "HEAD"]).status.success());
+}
+
+#[test]
 fn an_explicit_signing_key_wins_over_the_configured_one() {
     let fx = Fixture::new();
     let explicit = fx.keyring.generate_key("alpha");
@@ -235,6 +257,9 @@ fn a_signed_release_tag_verifies_and_points_at_the_new_commit() {
     .expect("signed commit and tag");
 
     assert_eq!(fx.git_ok(&["cat-file", "-t", "v1.0.0"]), "tag");
+    assert!(fx
+        .git_ok(&["cat-file", "tag", "v1.0.0"])
+        .contains("-----BEGIN PGP SIGNATURE-----"));
     let verify = fx.git(&["tag", "-v", "v1.0.0"]);
     assert!(
         verify.status.success(),
@@ -253,6 +278,8 @@ fn an_unsigned_release_tag_is_annotated_but_unverifiable() {
         .expect("unsigned commit and tag");
 
     assert_eq!(fx.git_ok(&["cat-file", "-t", "v1.0.0"]), "tag");
-    assert!(!fx.git(&["tag", "-v", "v1.0.0"]).status.success());
+    assert!(!fx
+        .git_ok(&["cat-file", "tag", "v1.0.0"])
+        .contains("BEGIN PGP SIGNATURE"));
     assert_eq!(fx.git_ok(&["rev-parse", "v1.0.0^{commit}"]), fx.head());
 }
