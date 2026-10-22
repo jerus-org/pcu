@@ -5,9 +5,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.40] - 2026-10-22
+
+Summary: Changed[1], Chore[1], Fixed[5], Testing[3]
+
+### Fixed
+
+ - fix: report gpg's own error when it exits early
+ - fix(deps): update rust crate rstest to 0.28.0
+ - fix(deps): update rust crate octocrab to 0.54.5
+ - fix(deps): update rust crate kdeets to 0.1.34
+ - fix(deps): update rust crate tokio to 1.54.1
+
+### Changed
+
+ - refactor: extract GpgSigner from commit_staged
+
 ## [0.6.39] - 2026-10-14
 
-Summary: Chore[3], Fixed[12]
+Summary: Chore[4], Fixed[12]
 
 ### Fixed
 
@@ -836,7 +852,8 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
 
  - chore(deps): update rust crate rstest to 0.21.0
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.38...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.39...HEAD
+[0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
 [0.6.37]: https://github.com/jerus-org/pcu/compare/v0.6.36...v0.6.37
 [0.6.36]: https://github.com/jerus-org/pcu/compare/v0.6.35...v0.6.36
