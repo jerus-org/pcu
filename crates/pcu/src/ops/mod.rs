@@ -2,6 +2,9 @@ mod ci_env;
 mod git_ops;
 pub mod git_signature_ops;
 mod gpg_ops;
+mod gpg_sign;
+#[cfg(test)]
+mod gpg_testing;
 mod make_release;
 pub mod signature_ops;
 pub mod trust_fetcher;
