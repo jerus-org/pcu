@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- refactor-extract GpgSigner and test commit and tag signing(pr [#1116])
+
 ### Fixed
 
 - deps: lock file maintenance(pr [#1115])
@@ -2720,6 +2724,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1112]: https://github.com/jerus-org/pcu/pull/1112
 [#1113]: https://github.com/jerus-org/pcu/pull/1113
 [#1114]: https://github.com/jerus-org/pcu/pull/1114
+[#1116]: https://github.com/jerus-org/pcu/pull/1116
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.39...HEAD
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
