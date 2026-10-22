@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, ffi::OsString, fmt::Debug, sync::Arc};
+use std::{collections::HashMap, env, ffi::OsString, fmt::Debug, path::PathBuf, sync::Arc};
 
 pub(crate) mod graphql;
 mod pull_request;
@@ -50,6 +50,10 @@ pub struct Client {
     pub(crate) prlog_parse_options: ChangelogParseOptions,
     pub(crate) prlog_update: Option<PrTitle>,
     pub(crate) commit_message: String,
+    /// `GNUPGHOME` handed to the `gpg` and `git tag -s` subprocesses. `None`
+    /// inherits the environment, as production wants; tests point it at an
+    /// ephemeral keyring instead of mutating the process environment.
+    pub(crate) gnupg_home: Option<PathBuf>,
 }
 
 impl Debug for Client {
@@ -201,6 +205,7 @@ impl Client {
             prlog_parse_options,
             prlog_update: None,
             commit_message,
+            gnupg_home: None,
         })
     }
 
@@ -477,6 +482,7 @@ impl Client {
             prlog_parse_options,
             prlog_update: None,
             commit_message: String::new(),
+            gnupg_home: None,
         })
     }
 

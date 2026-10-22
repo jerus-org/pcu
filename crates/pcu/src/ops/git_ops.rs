@@ -294,10 +294,12 @@ impl GitOps for Client {
 
         log::trace!("Creating GPG-signed tag {tag} in {}", workdir.display());
 
-        let output = Command::new("git")
-            .args(["tag", "-s", tag, "-m", tag])
-            .current_dir(workdir)
-            .output()?;
+        let mut cmd = Command::new("git");
+        cmd.args(["tag", "-s", tag, "-m", tag]).current_dir(workdir);
+        if let Some(home) = &self.gnupg_home {
+            cmd.env("GNUPGHOME", home);
+        }
+        let output = cmd.output()?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -653,6 +655,9 @@ impl GitOps for Client {
                     .stdin(Stdio::piped())
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped());
+                if let Some(home) = &self.gnupg_home {
+                    cmd.env("GNUPGHOME", home);
+                }
 
                 let mut child = cmd.spawn()?;
 
@@ -1739,3 +1744,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod signing_tests;
