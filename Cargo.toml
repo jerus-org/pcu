@@ -38,7 +38,7 @@ keep-a-changelog = "0.1.4"
 link-bridge = "0.2.7"
 # keep-a-changelog = { git = "https://github.com/jerusdp/keep-a-changelog-rs.git", branch = "feat-add-link" }
 log = "0.4.34"
-octocrab = { version = "0.54.4", default-features = false, features = [
+octocrab = { version = "0.54.5", default-features = false, features = [
     "follow-redirect",
     "retry",
     "rustls",
