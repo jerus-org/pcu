@@ -47,6 +47,33 @@ impl TestKeyring {
         self.fingerprint(&uid)
     }
 
+    /// The fingerprint of the key that made `signature` over `payload`, or `None`
+    /// when gpg does not accept it as a valid detached signature.
+    pub(crate) fn signer_of(&self, signature: &str, payload: &[u8]) -> Option<String> {
+        let dir = tempfile::tempdir().expect("create verification directory");
+        let sig_path = dir.path().join("payload.sig");
+        let payload_path = dir.path().join("payload");
+        std::fs::write(&sig_path, signature).expect("write signature");
+        std::fs::write(&payload_path, payload).expect("write payload");
+
+        let out = self.gpg(&[
+            "--batch",
+            "--status-fd",
+            "1",
+            "--verify",
+            sig_path.to_str().expect("utf-8 path"),
+            payload_path.to_str().expect("utf-8 path"),
+        ]);
+        if !out.status.success() {
+            return None;
+        }
+        String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .find_map(|line| line.strip_prefix("[GNUPG:] VALIDSIG "))
+            .and_then(|rest| rest.split_whitespace().next())
+            .map(str::to_string)
+    }
+
     fn fingerprint(&self, uid: &str) -> String {
         let out = self.gpg(&["--batch", "--with-colons", "--list-secret-keys", uid]);
         String::from_utf8_lossy(&out.stdout)

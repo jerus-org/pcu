@@ -1,8 +1,7 @@
 use std::{
     fmt::Display,
-    io::Write,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Command,
 };
 
 use clap::ValueEnum;
@@ -15,6 +14,7 @@ use log::log_enabled;
 use owo_colors::{OwoColorize, Style};
 use tracing::instrument;
 
+use super::gpg_sign::GpgSigner;
 use crate::{
     client::graphql::{GraphQLGetOpenPRs, GraphQLGetTag, GraphQLLabelPR},
     Client, Error,
@@ -605,7 +605,10 @@ impl GitOps for Client {
         let mut index = self.git_repo.index()?;
         let tree_id = index.write_tree()?;
         let head = self.git_repo.head()?;
-        let parent = self.git_repo.find_commit(head.target().unwrap())?;
+        let head_id = head
+            .target()
+            .ok_or_else(|| Error::GitError("HEAD does not point at a commit".to_string()))?;
+        let parent = self.git_repo.find_commit(head_id)?;
         // Prefer an explicit identity supplied by the caller; fall back to the
         // repository's merged git config when none is given.
         let sig = match sign_config.explicit_signature()? {
@@ -635,68 +638,22 @@ impl GitOps for Client {
                     &self.git_repo.find_tree(tree_id)?,
                     &[&parent],
                 )?;
-                let commit_str = std::str::from_utf8(&commit_buffer).unwrap();
+                let commit_str = std::str::from_utf8(&commit_buffer)?;
 
                 // Prefer an explicit signing key supplied by the caller; fall
                 // back to `user.signingkey` from the git config otherwise.
-                let signature = match sign_config.explicit_signing_key() {
+                let key = match sign_config.explicit_signing_key() {
                     Some(key) => key.to_string(),
                     None => self.git_repo.config()?.get_string(GIT_USER_SIGNATURE)?,
                 };
 
-                let short_sign = signature.get(12..).unwrap_or(signature.as_str());
-                log::trace!("Signature short: {short_sign}");
-
-                let gpg_args = vec!["--status-fd", "2", "-bsau", signature.as_str()];
-                log::trace!("gpg args: {gpg_args:?}");
-
-                let mut cmd = Command::new("gpg");
-                cmd.args(gpg_args)
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .stderr(Stdio::piped());
-                if let Some(home) = &self.gnupg_home {
-                    cmd.env("GNUPGHOME", home);
-                }
-
-                let mut child = cmd.spawn()?;
-
-                let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
-                log::trace!("Secured access to stdin");
-
-                log::trace!("Input for signing:\n-----\n{commit_str}\n-----");
-
-                stdin.write_all(commit_str.as_bytes())?;
-                log::trace!("writing complete");
-                drop(stdin); // close stdin to not block indefinitely
-                log::trace!("stdin closed");
-
-                let output = child.wait_with_output()?;
-                log::trace!("secured output");
-
-                if !output.status.success() {
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    log::trace!("stderr: {stderr}");
-                    return Err(Error::Stdout(stderr.to_string()));
-                }
-
-                let stderr = std::str::from_utf8(&output.stderr)?;
-
-                if !stderr.contains("\n[GNUPG:] SIG_CREATED ") {
-                    return Err(Error::GpgError(
-                        "failed to sign data, program gpg failed, SIG_CREATED not seen in stderr"
-                            .to_string(),
-                    ));
-                }
-                log::trace!("Error checking completed without error");
-
-                let commit_signature = std::str::from_utf8(&output.stdout)?;
-
+                let commit_signature =
+                    GpgSigner::new(key, self.gnupg_home.clone()).sign(&commit_buffer)?;
                 log::trace!("secured signed commit:\n{commit_signature}");
 
                 let commit_id =
                     self.git_repo
-                        .commit_signed(commit_str, commit_signature, Some("gpgsig"))?;
+                        .commit_signed(commit_str, &commit_signature, Some("gpgsig"))?;
 
                 // manually advance to the new commit id
                 self.git_repo
