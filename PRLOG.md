@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: lock file maintenance(pr [#1115])
 - deps: update rust crate tokio to 1.54.1(pr [#1111])
 - deps: update rust crate kdeets to 0.1.34(pr [#1112])
+- deps: update rust crate octocrab to 0.54.5(pr [#1113])
 
 ## [0.6.39] - 2026-10-14
 
@@ -2716,6 +2717,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1115]: https://github.com/jerus-org/pcu/pull/1115
 [#1111]: https://github.com/jerus-org/pcu/pull/1111
 [#1112]: https://github.com/jerus-org/pcu/pull/1112
+[#1113]: https://github.com/jerus-org/pcu/pull/1113
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.39...HEAD
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38
