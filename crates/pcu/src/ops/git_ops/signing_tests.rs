@@ -21,6 +21,13 @@ impl Fixture {
     fn new() -> Self {
         let dir = tempfile::tempdir().expect("create repository directory");
         let repo = git2::Repository::init(dir.path()).expect("init repository");
+        // `git tag -s` takes the tagger from git config, so the repository carries its own
+        // identity and the tests do not depend on the machine's global config.
+        let mut config = repo.config().expect("config");
+        config.set_str("user.name", "Seed").expect("set user.name");
+        config
+            .set_str("user.email", "seed@example.com")
+            .expect("set user.email");
 
         std::fs::write(dir.path().join("a.txt"), "a\n").expect("write a.txt");
         let mut index = repo.index().expect("index");
