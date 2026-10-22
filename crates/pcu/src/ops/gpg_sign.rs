@@ -12,7 +12,7 @@ use crate::Error;
 ///
 /// Runs `gpg --status-fd 2 -bsau <key>`, the invocation git itself makes, so
 /// `git verify-commit` and `git verify-tag` accept the result. The payload is
-/// any git object text, which lets commit and tag buffers share this one step.
+/// arbitrary bytes, not only commit text.
 pub(crate) struct GpgSigner {
     key: String,
     /// `GNUPGHOME` for the subprocess; `None` inherits the environment.
@@ -40,7 +40,7 @@ impl GpgSigner {
         let mut child = cmd.spawn()?;
 
         let mut stdin = child.stdin.take().ok_or(Error::Stdin)?;
-        stdin.write_all(payload)?;
+        let written = stdin.write_all(payload);
         // gpg reads to end of input before it signs.
         drop(stdin);
 
@@ -51,6 +51,9 @@ impl GpgSigner {
                 String::from_utf8_lossy(&output.stderr).to_string(),
             ));
         }
+        // gpg can exit without reading its input (an unknown key, say), which breaks the
+        // pipe mid-write; its own diagnostic above is the useful error in that case.
+        written?;
 
         // Exit status alone is not proof of a signature; git requires this status line too.
         let stderr = std::str::from_utf8(&output.stderr)?;
@@ -68,7 +71,7 @@ impl GpgSigner {
 #[cfg(test)]
 mod tests {
     use super::GpgSigner;
-    use crate::ops::gpg_testing::TestKeyring;
+    use crate::{ops::gpg_testing::TestKeyring, Error};
 
     fn signer(keyring: &TestKeyring, key: &str) -> GpgSigner {
         GpgSigner::new(key, Some(keyring.home().to_path_buf()))
@@ -123,6 +126,22 @@ mod tests {
         let signature = signer(&keyring, &key).sign(&payload).expect("sign");
 
         assert_eq!(keyring.signer_of(&signature, &payload), Some(key));
+    }
+
+    #[test]
+    fn an_unknown_key_reports_gpgs_own_diagnostic_even_for_a_large_payload() {
+        let keyring = TestKeyring::new();
+        let _key = keyring.generate_key("alpha");
+        // Larger than a pipe buffer, so gpg exiting without reading it all
+        // would break the pipe mid-write.
+        let payload = vec![b'x'; 1 << 20];
+
+        let result = signer(&keyring, "0000000000000000000000000000000000000000").sign(&payload);
+
+        assert!(
+            matches!(&result, Err(Error::Stdout(message)) if message.contains("secret key")),
+            "expected gpg's own diagnostic, got {result:?}"
+        );
     }
 
     #[test]
