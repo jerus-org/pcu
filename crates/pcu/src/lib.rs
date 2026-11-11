@@ -14,8 +14,8 @@ pub use cli::{CIExit, Cli, Commands};
 pub use client::Client;
 pub use error::{Error, GraphQLWrapper};
 pub use ops::{
-    export_ci_branch, import_gpg_key, write_ci_branch_export, GitOps, MakeRelease, Sign,
-    SignConfig, UpdateFromPr,
+    export_ci_branch, export_ci_checkout, import_gpg_key, write_ci_branch_export,
+    write_ci_checkout_env, GitOps, MakeRelease, Sign, SignConfig, UpdateFromPr,
 };
 pub use pr_title::PrTitle;
 pub use workspace::{Package, Workspace};
