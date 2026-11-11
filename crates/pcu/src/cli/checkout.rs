@@ -4,8 +4,16 @@ use clap::Parser;
 use color_eyre::Result;
 
 use super::{CIExit, GitOps};
-use crate::{write_ci_checkout_env, Client, Error};
+use crate::{write_ci_branch_export, write_ci_checkout_env, Client, Error};
 
+/// Fetch and check out the head of a branch (local git only, no GitHub
+/// credentials needed).
+///
+/// When `$BASH_ENV` is set, also exports `CIRCLE_BRANCH` and `CIRCLE_SHA1` for
+/// the new head and unsets the pull request variables (`CIRCLE_PULL_REQUEST`,
+/// `CIRCLE_PULL_REQUESTS`, `CI_PULL_REQUEST`, `CIRCLE_PR_NUMBER`,
+/// `CIRCLE_PR_REPONAME`, `CIRCLE_PR_USERNAME`) so later steps describe the
+/// branch head rather than the commit the pipeline started for.
 #[derive(Debug, Parser, Clone)]
 pub struct Checkout {
     /// Target branch to switch to
@@ -14,7 +22,7 @@ pub struct Checkout {
 }
 
 impl Checkout {
-    pub async fn run(&self) -> Result<CIExit, Error> {
+    pub fn run(&self) -> Result<CIExit, Error> {
         self.run_at(Path::new("."), std::env::var("BASH_ENV").ok().as_deref())
     }
 
@@ -27,10 +35,20 @@ impl Checkout {
         client.fetch_branch(&self.branch)?;
         client.checkout_branch(&self.branch)?;
 
-        let sha = client.git_repo.head()?.peel_to_commit()?.id().to_string();
+        // Exporting is best effort: the branch is already switched, so a
+        // failure here must not turn the command into an error.
         match bash_env {
             Some(path) => {
-                if let Err(e) = write_ci_checkout_env(&self.branch, &sha, path) {
+                let result = match client.git_repo.head().and_then(|h| h.peel_to_commit()) {
+                    Ok(commit) => {
+                        write_ci_checkout_env(&self.branch, &commit.id().to_string(), path)
+                    }
+                    Err(e) => {
+                        log::warn!("Could not resolve HEAD, exporting branch only: {e}");
+                        write_ci_branch_export(&self.branch, path)
+                    }
+                };
+                if let Err(e) = result {
                     log::warn!("{e}");
                 }
             }
@@ -98,5 +116,47 @@ mod tests {
             crate::Commands::Checkout(c) => assert_eq!(c.branch, "main"),
             _ => panic!("expected Checkout command"),
         }
+    }
+
+    #[test]
+    fn test_checkout_fast_forwards_existing_branch_and_tolerates_no_bash_env() {
+        let origin_dir = tempfile::tempdir().unwrap();
+        let origin = Repository::init(origin_dir.path()).unwrap();
+        let sig = Signature::now("t", "t@example.com").unwrap();
+        let tree = origin
+            .find_tree(origin.index().unwrap().write_tree().unwrap())
+            .unwrap();
+        let first = origin
+            .commit(Some("refs/heads/feature"), &sig, &sig, "one", &tree, &[])
+            .unwrap();
+
+        let work_dir = tempfile::tempdir().unwrap();
+        let work = Repository::init(work_dir.path()).unwrap();
+        work.remote("origin", origin_dir.path().to_str().unwrap())
+            .unwrap();
+        let cmd = Checkout {
+            branch: "feature".to_string(),
+        };
+
+        // No BASH_ENV: still succeeds.
+        cmd.run_at(work_dir.path(), None).unwrap();
+
+        // Origin advances; the existing local branch is fast-forwarded.
+        let parent = origin.find_commit(first).unwrap();
+        let second = origin
+            .commit(
+                Some("refs/heads/feature"),
+                &sig,
+                &sig,
+                "two",
+                &tree,
+                &[&parent],
+            )
+            .unwrap();
+        let env_file = work_dir.path().join("bash_env");
+        cmd.run_at(work_dir.path(), env_file.to_str()).unwrap();
+
+        let contents = std::fs::read_to_string(&env_file).unwrap();
+        assert!(contents.contains(&format!("export CIRCLE_SHA1={second}\n")));
     }
 }
