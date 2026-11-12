@@ -17,8 +17,21 @@ ignore = [
     # advisory concerns private-key decryption observable over a network, so
     # a CLI in CI is not exposed. Library consumers that do not attest can take
     # `default-features = false` and drop rsa entirely (see crates/pcu/README.md).
-    # Remove when openidconnect updates rsa.
+    # Remove wh en openidconnect updates rsa.
     { id = "RUSTSEC-2023-0071", reason = "transitive via sigstore 0.13.0; no fix available upstream" },
+
+    # RUSTSEC-2026-0253: lru 0.16.4 — unsound use-after-free in
+    # `LruCache::pop()` (no panic safety). Fix attempted: `cargo update -p lru
+    # --dry-run` finds no newer compatible version; the advisory lists no
+    # patched release. Path: bsky-sdk 0.1.24 → atrium-api 0.25.8 →
+    # atrium-common 0.1.4 → lru 0.16.4 (a non-host/wasm-target dependency —
+    # only visible with `cargo tree --target all`). Present only under the
+    # `bsky` feature (default-on for the binary). Library consumers that do
+    # not use Bluesky posting can take `default-features = false`, or keep
+    # `linkedin`/`attest` and just drop `bsky`, to remove lru entirely.
+    # Remove when atrium-common updates lru or ships a fix. Tracked:
+    # jerus-org/pcu#1037.
+    { id = "RUSTSEC-2026-0253", reason = "transitive via sigstore 0.14.0; no fix available upstream" },
 ]
 
 # This section is considered when running `cargo deny check licenses`
