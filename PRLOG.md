@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- deps: lock file maintenance(pr [#1118])
+- deps: update rust crate uuid to 1.29.2(pr [#1117])
+- deps: update rust crate link-bridge to 0.2.8(pr [#1123])
+- deps: update rust crate log to 0.4.35(pr [#1124])
+- deps: update rust crate octocrab to 0.54.9(pr [#1125])
+- deps: update rust crate aws-lc-rs to 1.19.0(pr [#1126])
+- deps: update rust crate bsky-sdk to 0.2.0(pr [#1127])
+- deps: update rust crate openidconnect to 4.1.0(pr [#1128])
+- deps: update rust crate toml to 1.2.1(pr [#1130])
+
 ## [0.6.40] - 2026-10-22
 
 ### Changed
@@ -2725,6 +2739,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1113]: https://github.com/jerus-org/pcu/pull/1113
 [#1114]: https://github.com/jerus-org/pcu/pull/1114
 [#1116]: https://github.com/jerus-org/pcu/pull/1116
+[#1118]: https://github.com/jerus-org/pcu/pull/1118
+[#1117]: https://github.com/jerus-org/pcu/pull/1117
+[#1123]: https://github.com/jerus-org/pcu/pull/1123
+[#1124]: https://github.com/jerus-org/pcu/pull/1124
+[#1125]: https://github.com/jerus-org/pcu/pull/1125
+[#1126]: https://github.com/jerus-org/pcu/pull/1126
+[#1127]: https://github.com/jerus-org/pcu/pull/1127
+[#1128]: https://github.com/jerus-org/pcu/pull/1128
+[#1130]: https://github.com/jerus-org/pcu/pull/1130
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.40...HEAD
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38

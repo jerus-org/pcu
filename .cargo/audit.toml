@@ -1,42 +1,12 @@
-# cargo audit configuration
-#
-# Policy: warnings are denied in CI (`-D warnings`). Before ignoring an
-# advisory we must:
-#   1. Attempt to fix it (cargo update, dependency upgrade, code change).
-#   2. Establish why a fix is not currently possible.
-#   3. Document the practical risk level and the resolution path.
-#
-# Advisory IDs listed here MUST also appear in `ignore_advisories` in
-# .circleci/config.yml so the CI command and this file stay in sync.
-
+# DERIVED FILE — do not edit by hand.
+# Regenerated from the canonical deny.toml [advisories].ignore by
+# `jci-audit sync`. deny.toml is the single source of truth for advisory
+# ignores; this file lets `cargo audit` (run without cargo-deny) honour the
+# same ignore set.
 [advisories]
 ignore = [
-    # RUSTSEC-2023-0071: rsa 0.9.10 — Marvin Attack timing side-channel
-    # (CVSS 5.9 Medium). Fix attempted: no patched rsa 0.9.x exists upstream.
-    # Path: openidconnect 4.0.1 → rsa 0.9.10, both directly and via
-    # sigstore 0.14.0. Present only under the `attest` feature (default-on for
-    # the binary). pcu uses these to SIGN CI attestations, never to decrypt, so
-    # the Marvin Attack — which needs a decryption oracle observable over a
-    # network — cannot be triggered. Library consumers that do not attest can
-    # take `default-features = false` and drop rsa from their graph entirely.
-    # Remove when openidconnect updates rsa. Tracked: jerus-org/pcu#940.
+    # rsa 0.9.10: Marvin Attack timing side-channel (CVSS 5.9 medium).
     "RUSTSEC-2023-0071",
-
     # RUSTSEC-2026-0253: lru 0.16.4 — unsound use-after-free in
-    # `LruCache::pop()` (no panic safety). Fix attempted: `cargo update -p lru
-    # --dry-run` finds no newer compatible version; the advisory lists no
-    # patched release. Path: bsky-sdk 0.1.24 → atrium-api 0.25.8 →
-    # atrium-common 0.1.4 → lru 0.16.4 (a non-host/wasm-target dependency —
-    # only visible with `cargo tree --target all`). Present only under the
-    # `bsky` feature (default-on for the binary). Library consumers that do
-    # not use Bluesky posting can take `default-features = false`, or keep
-    # `linkedin`/`attest` and just drop `bsky`, to remove lru entirely.
-    # Remove when atrium-common updates lru or ships a fix. Tracked:
-    # jerus-org/pcu#1037.
     "RUSTSEC-2026-0253",
-
 ]
-
-# Yanked-package checking re-enabled: core2 0.4.0 was removed from the
-# dependency tree by the cargo update on 2026-04-18 (bsky-sdk chain now
-# resolves without it).
