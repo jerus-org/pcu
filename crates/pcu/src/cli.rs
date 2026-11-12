@@ -198,7 +198,8 @@ impl Commands {
             Commands::VerifySignatures(_) => {
                 settings.set_override("command", "verify-signatures")?
             }
-            Commands::Checkout(_) => settings.set_override("command", "checkout")?,
+            // checkout is local-only and never builds a configured `Client`.
+            Commands::Checkout(_) => settings,
             Commands::Trigger(_) => settings.set_override("command", "trigger")?,
             Commands::CreateIssue(_) => settings.set_override("command", "create-issue")?,
             Commands::CommentPr(_) => settings.set_override("command", "comment-pr")?,

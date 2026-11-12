@@ -10,7 +10,7 @@ pub mod signature_ops;
 pub mod trust_fetcher;
 mod update_from_pr;
 
-pub use ci_env::{export_ci_branch, write_ci_branch_export};
+pub use ci_env::{export_ci_branch, write_ci_branch_export, write_ci_checkout_env};
 pub use git_ops::{GitOps, Sign, SignConfig};
 pub use gpg_ops::import_gpg_key;
 pub use make_release::MakeRelease;

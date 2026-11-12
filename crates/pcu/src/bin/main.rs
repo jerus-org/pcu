@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
         #[cfg(feature = "linkedin")]
         Commands::Linkedin(li_args) => li_args.run().await,
         Commands::VerifySignatures(verify_args) => verify_args.run_verify().await,
-        Commands::Checkout(checkout_args) => checkout_args.run().await,
+        Commands::Checkout(checkout_args) => checkout_args.run(),
         Commands::Trigger(trigger_args) => trigger_args.run().await,
         Commands::CreateIssue(create_issue_args) => create_issue_args.run().await,
         Commands::CommentPr(comment_pr_args) => comment_pr_args.run().await,
