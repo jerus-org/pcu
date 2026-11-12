@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - deps: lock file maintenance(pr [#1118])
+- deps: update rust crate uuid to 1.29.2(pr [#1117])
 
 ## [0.6.40] - 2026-10-22
 
@@ -2732,6 +2733,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1114]: https://github.com/jerus-org/pcu/pull/1114
 [#1116]: https://github.com/jerus-org/pcu/pull/1116
 [#1118]: https://github.com/jerus-org/pcu/pull/1118
+[#1117]: https://github.com/jerus-org/pcu/pull/1117
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.40...HEAD
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
