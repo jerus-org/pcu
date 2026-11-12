@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate octocrab to 0.54.9(pr [#1125])
 - deps: update rust crate aws-lc-rs to 1.19.0(pr [#1126])
 - deps: update rust crate bsky-sdk to 0.2.0(pr [#1127])
+- deps: update rust crate openidconnect to 4.1.0(pr [#1128])
 
 ## [0.6.40] - 2026-10-22
 
@@ -2744,6 +2745,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1125]: https://github.com/jerus-org/pcu/pull/1125
 [#1126]: https://github.com/jerus-org/pcu/pull/1126
 [#1127]: https://github.com/jerus-org/pcu/pull/1127
+[#1128]: https://github.com/jerus-org/pcu/pull/1128
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.40...HEAD
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
