@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- checkout needs no GitHub credentials and exports CIRCLE_SHA1(pr [#1122])
+
 ### Fixed
 
 - deps: lock file maintenance(pr [#1118])
@@ -2748,6 +2752,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1127]: https://github.com/jerus-org/pcu/pull/1127
 [#1128]: https://github.com/jerus-org/pcu/pull/1128
 [#1130]: https://github.com/jerus-org/pcu/pull/1130
+[#1122]: https://github.com/jerus-org/pcu/pull/1122
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.40...HEAD
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
