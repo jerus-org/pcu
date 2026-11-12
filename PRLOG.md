@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate uuid to 1.29.2(pr [#1117])
 - deps: update rust crate link-bridge to 0.2.8(pr [#1123])
 - deps: update rust crate log to 0.4.35(pr [#1124])
+- deps: update rust crate octocrab to 0.54.9(pr [#1125])
 
 ## [0.6.40] - 2026-10-22
 
@@ -2738,6 +2739,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1117]: https://github.com/jerus-org/pcu/pull/1117
 [#1123]: https://github.com/jerus-org/pcu/pull/1123
 [#1124]: https://github.com/jerus-org/pcu/pull/1124
+[#1125]: https://github.com/jerus-org/pcu/pull/1125
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.40...HEAD
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
