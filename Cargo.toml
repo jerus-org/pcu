@@ -47,7 +47,7 @@ octocrab = { version = "0.54.9", default-features = false, features = [
     "rustls-ring",
     "jwt-aws-lc-rs",
 ] }
-openidconnect = { version = "4.0.1", default-features = false }
+openidconnect = { version = "4.1.0", default-features = false }
 owo-colors = "4.4.0"
 pcu-release-assets = { path = "crates/pcu-release-assets", version = "0.1.7" }
 regex = "1.13.1"
