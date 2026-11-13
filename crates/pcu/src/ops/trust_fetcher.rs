@@ -47,11 +47,16 @@ pub async fn fetch_trust_list(
     log::info!("Fetching trusted collaborators from GitHub API");
 
     // Fetch collaborators with push/admin permissions
-    let collaborators = github
+    // Every page, not just the first (30): a collaborator beyond it would
+    // otherwise never have their keys imported while the trust data still
+    // looked complete.
+    let first_page = github
         .repos(owner, repo)
         .list_collaborators()
+        .per_page(100)
         .send()
         .await?;
+    let collaborators = github.all_pages(first_page).await?;
 
     // Filter to only those with write or admin access
     let trusted_collaborators: Vec<_> = collaborators
@@ -65,7 +70,9 @@ pub async fn fetch_trust_list(
     );
 
     let mut trust_map = TrustMap::new();
-    let total_keys = process_collaborators(github, trusted_collaborators, &mut trust_map).await?;
+    let collaborator_count = trusted_collaborators.len();
+    let (total_keys, failed_fetches) =
+        process_collaborators(github, trusted_collaborators, &mut trust_map).await?;
 
     log::info!("Imported {total_keys} GPG key(s)");
     log::info!(
@@ -73,18 +80,88 @@ pub async fn fetch_trust_list(
         trust_map.len()
     );
 
+    ensure_trust_data_complete(collaborator_count, total_keys, failed_fetches)?;
+
     // Also add GitHub's web-flow key for merge commits
     add_github_webflow_key(&mut trust_map)?;
 
     Ok(trust_map)
 }
 
+/// Refuse to verify when the trust data could not be fully obtained.
+///
+/// Two cases, both of which would otherwise fail open:
+/// - a key fetch failed: that collaborator would be reported as an external
+///   contributor and their commits pass unverified;
+/// - collaborators exist but no key was imported: the trust map is empty and
+///   every commit passes as external.
+///
+/// A collaborator with no registered key is not a failure. Counts only, never
+/// logins, to keep the CI log privacy-safe.
+fn ensure_trust_data_complete(
+    collaborators: usize,
+    imported_keys: usize,
+    failed_fetches: usize,
+) -> Result<(), Error> {
+    if failed_fetches > 0 {
+        return Err(Error::GpgError(format!(
+            "Could not fetch GPG keys for {failed_fetches} of {collaborators} collaborator(s) \
+             with write access; refusing to verify with incomplete trust data"
+        )));
+    }
+    if collaborators > 0 && imported_keys == 0 {
+        return Err(Error::GpgError(format!(
+            "No GPG keys were imported for {collaborators} collaborator(s) with write access; \
+             refusing to verify against an empty trust map, which would let every commit pass \
+             as external"
+        )));
+    }
+    Ok(())
+}
+
+/// HTTP status of a failed key fetch, when GitHub answered at all.
+fn fetch_error_status(e: &octocrab::Error) -> Option<u16> {
+    match e {
+        octocrab::Error::GitHub { source, .. } => Some(source.status_code.as_u16()),
+        _ => None,
+    }
+}
+
+/// Only an explicit 404 means the account is gone. Everything else (rate
+/// limit, 5xx, auth failure, network error, unparseable body) is an error in
+/// getting the verification data and must still fail closed.
+fn is_account_not_found(status: Option<u16>) -> bool {
+    status == Some(404)
+}
+
+/// Describe a failed key fetch without echoing the request URL (which holds
+/// the collaborator's login) into CI logs.
+fn describe_fetch_error(e: &octocrab::Error) -> String {
+    match e {
+        octocrab::Error::GitHub { source, .. } => {
+            format!(
+                "GitHub API returned {}: {}",
+                source.status_code, source.message
+            )
+        }
+        octocrab::Error::Serde { source, .. } => {
+            format!("response could not be parsed: {source}")
+        }
+        octocrab::Error::Json { source, .. } => {
+            format!("response could not be parsed: {source}")
+        }
+        _ => "request failed".to_string(),
+    }
+}
+
+/// Returns `(keys imported, collaborators whose key fetch failed)`.
 async fn process_collaborators(
     github: &Octocrab,
     trusted_collaborators: Vec<Collaborator>,
     trust_map: &mut TrustMap,
-) -> Result<usize, Error> {
+) -> Result<(usize, usize), Error> {
     let mut total_keys = 0;
+    let mut failed_fetches = 0;
 
     for collaborator in trusted_collaborators {
         let username = &collaborator.author.login;
@@ -96,7 +173,20 @@ async fn process_collaborators(
         let gpg_keys = match github.get::<Vec<GpgKey>, _, ()>(route, None).await {
             Ok(keys) => keys,
             Err(e) => {
-                log::debug!("Failed to fetch GPG keys for user: {e}");
+                if is_account_not_found(fetch_error_status(&e)) {
+                    // A removed or renamed account has no keys to trust, and
+                    // would otherwise fail every run until collaborators are
+                    // edited. Nothing is lost by skipping it: it cannot sign.
+                    log::warn!(
+                        "A collaborator's account was not found (404); treating it as having no keys"
+                    );
+                } else {
+                    failed_fetches += 1;
+                    log::warn!(
+                        "Failed to fetch GPG keys for a collaborator: {}",
+                        describe_fetch_error(&e)
+                    );
+                }
                 continue;
             }
         };
@@ -109,7 +199,7 @@ async fn process_collaborators(
         total_keys += process_gpg_keys(gpg_keys, &collaborator, trust_map)?;
     }
 
-    Ok(total_keys)
+    Ok((total_keys, failed_fetches))
 }
 
 fn process_gpg_keys(
@@ -286,6 +376,37 @@ mod tests {
     const TEST_SUBKEY: &str = "9C0D1E2F3A4B5C6D";
     const TEST_USER: &str = "test-user-999";
     const TEST_USER_ID: i64 = 999_000_001;
+
+    #[test]
+    fn test_only_a_404_means_the_account_is_gone() {
+        assert!(is_account_not_found(Some(404)));
+        for status in [Some(401), Some(403), Some(429), Some(500), Some(502), None] {
+            assert!(
+                !is_account_not_found(status),
+                "{status:?} must still fail closed"
+            );
+        }
+    }
+
+    #[test]
+    fn test_empty_trust_map_with_collaborators_is_an_error() {
+        let err = ensure_trust_data_complete(3, 0, 0).unwrap_err().to_string();
+        assert!(err.contains("3 collaborator(s)"), "got: {err}");
+        assert!(err.contains("empty trust map"), "got: {err}");
+    }
+
+    #[test]
+    fn test_any_failed_key_fetch_is_an_error_even_if_other_keys_imported() {
+        let err = ensure_trust_data_complete(3, 2, 1).unwrap_err().to_string();
+        assert!(err.contains("1 of 3"), "got: {err}");
+        assert!(err.contains("incomplete trust data"), "got: {err}");
+    }
+
+    #[test]
+    fn test_complete_or_collaborator_free_trust_data_is_ok() {
+        assert!(ensure_trust_data_complete(3, 2, 0).is_ok());
+        assert!(ensure_trust_data_complete(0, 0, 0).is_ok());
+    }
 
     #[test]
     fn test_subkey_ids_added_to_trust_map() {

@@ -298,14 +298,15 @@ fn write_external_contributors(
     for result in results.iter().filter(|r| {
         matches!(
             r.reason,
-            VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+            VerificationReason::ExternalUnsigned | VerificationReason::ExternalInvalidSignature
         )
     }) {
         let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
         let status = match &result.reason {
-            VerificationReason::ExternalUnsigned => "Unsigned (expected for bots/external)",
-            VerificationReason::ExternalSigned => "Signed",
-            _ => "",
+            VerificationReason::ExternalInvalidSignature => {
+                "⚠️ Invalid signature (bad, expired or revoked key)"
+            }
+            _ => "Unsigned (expected for bots/external)",
         };
         writeln!(
             comment,
@@ -488,7 +489,7 @@ fn display_summary(
         .filter(|r| {
             matches!(
                 r.reason,
-                VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+                VerificationReason::ExternalUnsigned | VerificationReason::ExternalInvalidSignature
             )
         })
         .collect();
