@@ -14,13 +14,13 @@
 # (anyone else's, or a local checkout) are unaffected. Never prints a secret.
 set -euo pipefail
 
-if [ -z "${AGENT_GPG_KEY:-}" ]; then
+if [[ -z "${AGENT_GPG_KEY:-}" ]]; then
   echo "agent-signing: AGENT_GPG_KEY not set; leaving git configuration unchanged"
   exit 0
 fi
 
 for var in AGENT_GPG_TRUST AGENT_GIT_NAME AGENT_GIT_EMAIL; do
-  if [ -z "${!var:-}" ]; then
+  if [[ -z "${!var:-}" ]]; then
     echo "agent-signing: $var is not set" >&2
     exit 1
   fi
