@@ -13,7 +13,7 @@ use crate::{
     Error,
 };
 
-#[derive(Debug, Parser, Clone)]
+#[derive(Parser, Clone)]
 pub struct VerifySignatures {
     /// Base ref for commit range
     #[clap(long, default_value = "origin/main")]
@@ -51,6 +51,78 @@ pub struct VerifySignatures {
     /// If not provided, will use GITHUB_TOKEN env var
     #[clap(long)]
     pub github_token: Option<String>,
+}
+
+impl std::fmt::Debug for VerifySignatures {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VerifySignatures")
+            .field("base", &self.base)
+            .field("head", &self.head)
+            .field("repo_owner", &self.repo_owner)
+            .field("repo_name", &self.repo_name)
+            .field("fetch_depth", &self.fetch_depth)
+            .field("fail_on_unsigned", &self.fail_on_unsigned)
+            .field("post_comment", &self.post_comment)
+            .field("pr_number", &self.pr_number)
+            .field("github_token", &super::Redacted(&self.github_token))
+            .finish()
+    }
+}
+
+/// Longest author email or subject written into the PR comment.
+const MAX_UNTRUSTED_LEN: usize = 120;
+
+/// Make attacker-controlled text safe inside a markdown code span (the author
+/// email in the table). Control characters, backticks and pipes would end the
+/// span, add a table column or start a new line, letting a commit author
+/// render their own markdown in a comment posted under the bot's name.
+fn sanitize_code_span(text: &str) -> String {
+    let mut out: String = text
+        .chars()
+        .take(MAX_UNTRUSTED_LEN)
+        .map(|c| {
+            if c.is_control() || c == '`' || c == '|' {
+                '?'
+            } else {
+                c
+            }
+        })
+        .collect();
+    if text.chars().count() > MAX_UNTRUSTED_LEN {
+        out.push('…');
+    }
+    out
+}
+
+/// Make attacker-controlled text safe as plain markdown text (the commit
+/// subject): neutralise markup, links, images, HTML and `@mentions`, and keep
+/// it on one line.
+fn escape_markdown_text(text: &str) -> String {
+    let mut out = String::new();
+    for c in text.chars().take(MAX_UNTRUSTED_LEN) {
+        match c {
+            c if c.is_control() => out.push(' '),
+            '@' => out.push_str("@\u{200B}"),
+            '\\' | '`' | '*' | '_' | '[' | ']' | '(' | ')' | '<' | '>' | '|' | '~' | '!' | '#'
+            | '&' => {
+                out.push('\\');
+                out.push(c);
+            }
+            c => out.push(c),
+        }
+    }
+    if text.chars().count() > MAX_UNTRUSTED_LEN {
+        out.push('…');
+    }
+    out
+}
+
+/// Replace control characters (terminal escape sequences) in text printed to
+/// the CI log.
+fn strip_control(text: &str) -> String {
+    text.chars()
+        .map(|c| if c.is_control() { '?' } else { c })
+        .collect()
 }
 
 impl VerifySignatures {
@@ -233,7 +305,7 @@ fn write_failed_commits(
             comment,
             "- `{}` {} - {}",
             sha_short,
-            result.commit.subject,
+            escape_markdown_text(&result.commit.subject),
             result.reason.display_message()
         )?;
     }
@@ -298,19 +370,22 @@ fn write_external_contributors(
     for result in results.iter().filter(|r| {
         matches!(
             r.reason,
-            VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+            VerificationReason::ExternalUnsigned | VerificationReason::ExternalInvalidSignature
         )
     }) {
         let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
         let status = match &result.reason {
-            VerificationReason::ExternalUnsigned => "Unsigned (expected for bots/external)",
-            VerificationReason::ExternalSigned => "Signed",
-            _ => "",
+            VerificationReason::ExternalInvalidSignature => {
+                "⚠️ Invalid signature (bad, expired or revoked key)"
+            }
+            _ => "Unsigned (expected for bots/external)",
         };
         writeln!(
             comment,
             "| `{}` | `{}` | {} |",
-            sha_short, result.commit.author_email, status
+            sha_short,
+            sanitize_code_span(&result.commit.author_email),
+            status
         )?;
     }
     Ok(())
@@ -439,7 +514,7 @@ fn display_results(results: &[crate::ops::signature_ops::VerificationResult]) {
             status_symbol,
             if result.passed { "OK" } else { "FAIL" },
             sha_short.bold(),
-            result.commit.subject
+            strip_control(&result.commit.subject)
         );
 
         // Show reason (privacy-safe, no PII)
@@ -488,7 +563,7 @@ fn display_summary(
         .filter(|r| {
             matches!(
                 r.reason,
-                VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned
+                VerificationReason::ExternalUnsigned | VerificationReason::ExternalInvalidSignature
             )
         })
         .collect();
@@ -497,7 +572,11 @@ fn display_summary(
         println!("{}", "External Contributors:".bold());
         for result in external {
             let sha_short = &result.commit.sha[..8.min(result.commit.sha.len())];
-            println!("  {} {}", sha_short.bold(), result.commit.author_email);
+            println!(
+                "  {} {}",
+                sha_short.bold(),
+                strip_control(&result.commit.author_email)
+            );
         }
         println!();
     }
@@ -641,5 +720,113 @@ mod tests {
             !comment.contains("### External Contributors"),
             "Comment should not contain external contributors section when there are none, got:\n{comment}"
         );
+    }
+
+    fn summary_for(failures: usize, external: usize) -> VerificationSummary {
+        VerificationSummary {
+            commits_checked: failures + external,
+            trusted_verified: 0,
+            external_contributors: external,
+            failures,
+        }
+    }
+
+    /// An author email that closes the code span must not be able to render
+    /// markup (a link, an image) in the comment posted under the bot's name.
+    #[test]
+    fn test_comment_neutralises_markdown_in_author_email() {
+        let hostile = "a`[Approve](https://evil.example)`@b.test";
+        let comment = build_comment(
+            &[make_external_result("a1b2c3d4e5f6", hostile)],
+            &summary_for(0, 1),
+        )
+        .unwrap();
+
+        let row = comment
+            .lines()
+            .find(|l| l.contains("a1b2c3d4"))
+            .expect("table row");
+        assert_eq!(
+            row.matches('`').count(),
+            4,
+            "only the sha and email spans may use backticks: {row}"
+        );
+        assert!(!row.contains('\n'));
+    }
+
+    #[test]
+    fn test_comment_keeps_the_table_to_three_columns() {
+        let comment = build_comment(
+            &[make_external_result(
+                "a1b2c3d4e5f6",
+                "x|y|z@b.test\n## fake",
+            )],
+            &summary_for(0, 1),
+        )
+        .unwrap();
+
+        let row = comment
+            .lines()
+            .find(|l| l.contains("a1b2c3d4"))
+            .expect("table row");
+        assert_eq!(row.matches('|').count(), 4, "three columns: {row}");
+        assert!(!comment.contains("\n## fake"));
+    }
+
+    #[test]
+    fn test_escape_markdown_text_neutralises_links_mentions_and_newlines() {
+        let escaped = escape_markdown_text("[click](https://evil.example) @maintainer\n## hi <b>");
+
+        assert!(!escaped.contains("]("), "no live link: {escaped}");
+        assert!(!escaped.contains('\n'));
+        assert!(
+            escaped.contains("@\u{200B}maintainer"),
+            "mention broken: {escaped}"
+        );
+        assert!(!escaped.contains("<b>"));
+    }
+
+    #[test]
+    fn test_untrusted_text_is_truncated() {
+        let long = "a".repeat(MAX_UNTRUSTED_LEN + 50);
+
+        assert_eq!(
+            sanitize_code_span(&long).chars().count(),
+            MAX_UNTRUSTED_LEN + 1
+        );
+        assert_eq!(
+            escape_markdown_text(&long).chars().count(),
+            MAX_UNTRUSTED_LEN + 1
+        );
+    }
+
+    #[test]
+    fn test_strip_control_removes_terminal_escapes() {
+        assert_eq!(strip_control("ok\x1b[31mred\x07"), "ok?[31mred?");
+    }
+
+    /// The token must not appear when the CLI arguments are debug-logged.
+    #[test]
+    fn test_debug_output_redacts_the_github_token() {
+        use clap::Parser;
+
+        let secret = "ghp_SECRETVALUE0123456789";
+        let verify = VerifySignatures::parse_from(["verify-signatures", "--github-token", secret]);
+        let shown = format!("{verify:?}");
+        assert!(!shown.contains(secret), "token leaked: {shown}");
+        assert!(shown.contains("<redacted>"), "got: {shown}");
+
+        let comment =
+            crate::cli::comment_pr::CommentPr::parse_from(["comment-pr", "--github-token", secret]);
+        assert!(!format!("{comment:?}").contains(secret));
+
+        let issue = crate::cli::create_issue::CreateIssue::parse_from([
+            "create-issue",
+            "--title",
+            "t",
+            "--github-token",
+            secret,
+        ]);
+        assert!(!format!("{issue:?}").contains(secret));
     }
 }

@@ -64,10 +64,17 @@ pub struct VerificationResult {
 pub enum VerificationReason {
     /// Trusted identity with valid signature
     TrustedVerified,
-    /// External contributor (unsigned allowed)
+    /// Author is not a trusted identity. Reported as unsigned whatever the
+    /// commit's signature: only trusted identities are verified, so a
+    /// signature from an unknown author (a bot, or a potentially malicious
+    /// external contributor) is never presented as a good one.
     ExternalUnsigned,
-    /// External contributor (signed bonus)
-    ExternalSigned,
+    /// Author is not a trusted identity AND the commit carries a signature
+    /// that is bad, expired or made with an expired or revoked key. Unlike a
+    /// plain unsigned commit this is an active warning sign (tampering, a
+    /// forged signature, a compromised key). Still allowed today; the
+    /// hard-stop mode (#1132) is where it can be made to fail.
+    ExternalInvalidSignature,
     /// Trusted identity missing signature (FAIL)
     ImpersonationAttempt,
     /// Trusted identity signed with wrong key (FAIL)
@@ -86,8 +93,12 @@ impl VerificationReason {
     pub fn display_message(&self) -> &'static str {
         match self {
             VerificationReason::TrustedVerified => "Trusted identity (signed, verified)",
-            VerificationReason::ExternalUnsigned => "External contributor (unsigned, allowed)",
-            VerificationReason::ExternalSigned => "External contributor (signed)",
+            VerificationReason::ExternalUnsigned => {
+                "External contributor (not a trusted identity, allowed)"
+            }
+            VerificationReason::ExternalInvalidSignature => {
+                "External contributor (INVALID signature, allowed)"
+            }
             VerificationReason::ImpersonationAttempt => {
                 "Impersonation attempt: trusted identity unsigned"
             }
@@ -106,9 +117,27 @@ pub struct VerificationSummary {
     pub failures: usize,
 }
 
+/// Look up a commit author's approved keys, ignoring the case of the email.
+///
+/// GitHub attributes a commit to an account whatever the case of the author
+/// email, so `Jerry@Example.test` shows as the maintainer's own commit. An
+/// exact-case lookup would classify it as an unknown external author, and an
+/// unsigned impersonation would pass instead of failing. Trust-map keys are
+/// stored lowercase; the fallback scan also covers a map built another way.
+fn trusted_keys<'a>(trust_map: &'a TrustMap, email: &str) -> Option<&'a Vec<String>> {
+    let email = email.trim();
+    trust_map.get(email).or_else(|| {
+        let wanted = email.to_lowercase();
+        trust_map
+            .iter()
+            .find(|(known, _)| known.trim().to_lowercase() == wanted)
+            .map(|(_, keys)| keys)
+    })
+}
+
 /// Verify a single commit against the trust map
 pub fn verify_commit(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationResult {
-    let is_trusted = trust_map.contains_key(&commit.author_email);
+    let is_trusted = trusted_keys(trust_map, &commit.author_email).is_some();
 
     if is_trusted {
         verify_trusted_commit(commit, trust_map)
@@ -137,7 +166,7 @@ fn verify_trusted_commit(commit: &CommitInfo, trust_map: &TrustMap) -> Verificat
 
 /// Verify the signature of a trusted commit
 fn verify_trusted_signature(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationResult {
-    let Some(allowed_keys) = trust_map.get(&commit.author_email) else {
+    let Some(allowed_keys) = trusted_keys(trust_map, &commit.author_email) else {
         return create_result(commit, false, VerificationReason::ImpersonationAttempt);
     };
 
@@ -168,9 +197,15 @@ fn is_key_approved(key_id: &str, allowed_keys: &[String]) -> bool {
 
 /// Verify a commit from an external contributor
 fn verify_external_commit(commit: &CommitInfo) -> VerificationResult {
+    // The author is not in the trust map, so nothing vouches for the commit
+    // whatever its signature. A signature that is actively invalid is still
+    // told apart from an honest absence of one.
     match &commit.signature_status {
-        SignatureStatus::Good | SignatureStatus::Unknown => {
-            create_result(commit, true, VerificationReason::ExternalSigned)
+        SignatureStatus::Bad
+        | SignatureStatus::Expired
+        | SignatureStatus::ExpiredKey
+        | SignatureStatus::Revoked => {
+            create_result(commit, true, VerificationReason::ExternalInvalidSignature)
         }
         _ => create_result(commit, true, VerificationReason::ExternalUnsigned),
     }
@@ -206,7 +241,7 @@ pub fn verify_commits(
             VerificationReason::TrustedVerified => {
                 summary.trusted_verified += 1;
             }
-            VerificationReason::ExternalUnsigned | VerificationReason::ExternalSigned => {
+            VerificationReason::ExternalUnsigned | VerificationReason::ExternalInvalidSignature => {
                 summary.external_contributors += 1;
             }
             _ => {}
@@ -367,5 +402,151 @@ mod tests {
         assert_eq!(summary.trusted_verified, 1);
         assert_eq!(summary.external_contributors, 1);
         assert_eq!(summary.failures, 0);
+    }
+
+    /// A signature from an author outside the trust map (renovate, or a
+    /// potentially malicious contributor) must not be reported as signed.
+    #[test]
+    fn test_external_contributor_with_good_signature_is_still_unsigned() {
+        let commit = CommitInfo {
+            sha: "abc123".to_string(),
+            author_email: "external@example.test".to_string(),
+            author_name: "External User".to_string(),
+            subject: "test commit".to_string(),
+            signature_status: SignatureStatus::Good,
+            key_id: Some("SOMEKEY".to_string()),
+            signer: None,
+        };
+
+        let result = verify_commit(&commit, &TrustMap::new());
+
+        assert!(result.passed);
+        assert!(matches!(
+            result.reason,
+            VerificationReason::ExternalUnsigned
+        ));
+    }
+
+    /// A bad, expired or revoked signature from an untrusted author is not the
+    /// same as no signature: it must be reported distinctly (still allowed).
+    #[test]
+    fn test_external_contributor_with_invalid_signature_is_flagged() {
+        for status in [
+            SignatureStatus::Bad,
+            SignatureStatus::Expired,
+            SignatureStatus::ExpiredKey,
+            SignatureStatus::Revoked,
+        ] {
+            let commit = CommitInfo {
+                sha: "abc123".to_string(),
+                author_email: "external@example.test".to_string(),
+                author_name: "External User".to_string(),
+                subject: "test commit".to_string(),
+                signature_status: status.clone(),
+                key_id: None,
+                signer: None,
+            };
+
+            let (results, summary) = verify_commits(vec![commit], &TrustMap::new());
+
+            assert!(
+                matches!(
+                    results[0].reason,
+                    VerificationReason::ExternalInvalidSignature
+                ),
+                "{status:?} should be flagged"
+            );
+            assert!(results[0].passed, "still allowed until the hard stop");
+            assert_eq!(summary.external_contributors, 1);
+            assert_eq!(summary.failures, 0);
+        }
+    }
+
+    fn trusted_map() -> TrustMap {
+        let mut trust_map = TrustMap::new();
+        trust_map.insert(
+            "trusted@example.test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+        trust_map
+    }
+
+    fn commit_by(email: &str, status: SignatureStatus, key: Option<&str>) -> CommitInfo {
+        CommitInfo {
+            sha: "abc123".to_string(),
+            author_email: email.to_string(),
+            author_name: "Someone".to_string(),
+            subject: "test commit".to_string(),
+            signature_status: status,
+            key_id: key.map(str::to_string),
+            signer: None,
+        }
+    }
+
+    /// An unsigned commit authored with a differently-cased trusted email is an
+    /// impersonation attempt, not an unknown external author who passes.
+    #[test]
+    fn test_trusted_email_in_other_case_unsigned_is_impersonation() {
+        for email in [
+            "Trusted@Example.Test",
+            "TRUSTED@EXAMPLE.TEST",
+            " trusted@example.test ",
+        ] {
+            let commit = commit_by(email, SignatureStatus::None, None);
+
+            let result = verify_commit(&commit, &trusted_map());
+
+            assert!(!result.passed, "{email:?} must not pass as external");
+            assert!(matches!(
+                result.reason,
+                VerificationReason::ImpersonationAttempt
+            ));
+        }
+    }
+
+    #[test]
+    fn test_trusted_email_in_other_case_with_correct_key_passes() {
+        let commit = commit_by(
+            "Trusted@Example.Test",
+            SignatureStatus::Good,
+            Some("TESTKEY12345"),
+        );
+
+        let result = verify_commit(&commit, &trusted_map());
+
+        assert!(result.passed);
+        assert!(matches!(result.reason, VerificationReason::TrustedVerified));
+    }
+
+    /// A trust map built with a mixed-case key still matches a lowercase commit.
+    #[test]
+    fn test_mixed_case_trust_map_key_matches_lowercase_commit() {
+        let mut trust_map = TrustMap::new();
+        trust_map.insert(
+            "Trusted@Example.Test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+        let commit = commit_by("trusted@example.test", SignatureStatus::None, None);
+
+        let result = verify_commit(&commit, &trust_map);
+
+        assert!(!result.passed);
+        assert!(matches!(
+            result.reason,
+            VerificationReason::ImpersonationAttempt
+        ));
+    }
+
+    #[test]
+    fn test_different_email_is_still_external() {
+        let commit = commit_by("other@example.test", SignatureStatus::None, None);
+
+        let result = verify_commit(&commit, &trusted_map());
+
+        assert!(result.passed);
+        assert!(matches!(
+            result.reason,
+            VerificationReason::ExternalUnsigned
+        ));
     }
 }

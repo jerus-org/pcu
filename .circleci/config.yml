@@ -168,6 +168,41 @@ jobs:
               bin/pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>"
             fi
 
+  # Runs `verify-signatures` with the pcu built from the branch under test
+  # (via test-setup's workspace), unlike toolkit/verify_commit_signatures
+  # above, which runs the pcu baked into its image (`update_pcu: false`) and so
+  # never exercises a change to the verifier itself. This is the regression
+  # test for the verifier: it fails if the trust data cannot be fully
+  # obtained, and its debug log names the reason (jerus-org/pcu#1131). It does
+  # not post a comment and does not fail on external contributors; the hard
+  # stop for those is jerus-org/pcu#1132.
+  test-verify-signatures:
+    executor:
+      name: toolkit/rust_env_rolling
+    parameters:
+      pcu_verbosity:
+        type: string
+        default: "-vv"
+        description: "The verbosity of the pcu command"
+      github_token:
+        type: env_var_name
+        default: GITHUB_TOKEN
+        description: "Env var holding a token that can list collaborators and read their GPG keys"
+    steps:
+      - checkout
+      # Start with the test setup workspace (bin/pcu built from this branch)
+      - attach_workspace:
+          at: .
+      - run:
+          name: Verify commit signatures with pcu built from this branch
+          command: |
+            set -eo pipefail
+            bin/pcu --version
+            bin/pcu << parameters.pcu_verbosity >> verify-signatures \
+              --github-token "${<< parameters.github_token >>}" \
+              --base origin/main \
+              --head HEAD
+
   test-push:
     executor:
       name: toolkit/rust_env_rolling
@@ -504,6 +539,25 @@ workflows:
           filters:
             branches:
               ignore: main
+
+      # Runs pcu built from the branch with a GitHub token. It cannot run for
+      # fork PRs (`pull/N` refs): CircleCI does not supply the `bot-check`
+      # context to them, so the token would be empty and the job could only
+      # fail. Skip them, as the trusted verify job above does; forks are
+      # verified by the released pcu without secrets. The filter also keeps
+      # this job off fork-controlled code should CircleCI ever be set to pass
+      # secrets to forked PRs.
+      - test-verify-signatures:
+          pcu_verbosity: "-vvv"
+          context:
+            - bot-check
+          requires:
+            - test-setup
+          filters:
+            branches:
+              ignore:
+                - main
+                - /pull\/[0-9]+/
 
       - test-commit:
           pcu_verbosity: "-vvvv"

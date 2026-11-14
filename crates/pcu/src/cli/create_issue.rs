@@ -7,7 +7,7 @@ use octocrab::Octocrab;
 use super::CIExit;
 use crate::Error;
 
-#[derive(Debug, Parser, Clone)]
+#[derive(Parser, Clone)]
 /// Create a GitHub issue on the target repository
 pub struct CreateIssue {
     /// Title of the issue to create
@@ -42,6 +42,21 @@ pub struct CreateIssue {
     /// Skip label creation and application entirely
     #[clap(long)]
     pub no_label: bool,
+}
+
+impl std::fmt::Debug for CreateIssue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CreateIssue")
+            .field("title", &self.title)
+            .field("body", &self.body)
+            .field("owner", &self.owner)
+            .field("repo", &self.repo)
+            .field("github_token", &super::Redacted(&self.github_token))
+            .field("dry_run", &self.dry_run)
+            .field("label", &self.label)
+            .field("no_label", &self.no_label)
+            .finish()
+    }
 }
 
 const DEFAULT_LABEL: &str = "ci-created";

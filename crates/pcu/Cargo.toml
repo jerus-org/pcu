@@ -78,6 +78,7 @@ linkedin = ["dep:gen-linkedin"]
 
 [dev-dependencies]
 rstest.workspace = true
+tokio = { workspace = true, features = ["net", "io-util"] }
 uuid.workspace = true
 
 [lib]

@@ -13,6 +13,23 @@ mod release;
 mod trigger;
 mod verify_signatures;
 
+/// Debug-prints an optional secret as `Some(<redacted>)` / `None`.
+///
+/// The CLI structs are logged with `{:?}` at debug level, and a derived
+/// `Debug` prints a `--github-token` value in plain text. CircleCI masks
+/// context secrets in its logs, but a local run, or a token not held in a
+/// masked variable, would leak it.
+pub(crate) struct Redacted<'a>(pub(crate) &'a Option<String>);
+
+impl std::fmt::Debug for Redacted<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            Some(_) => f.write_str("Some(<redacted>)"),
+            None => f.write_str("None"),
+        }
+    }
+}
+
 use std::{env, fmt::Display, fs};
 
 #[cfg(feature = "bsky")]

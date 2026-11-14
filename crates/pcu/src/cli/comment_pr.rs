@@ -7,7 +7,7 @@ use octocrab::Octocrab;
 use super::CIExit;
 use crate::Error;
 
-#[derive(Debug, Parser, Clone)]
+#[derive(Parser, Clone)]
 /// Post a markdown comment on the current pull request
 pub struct CommentPr {
     /// Body of the comment (markdown).
@@ -34,6 +34,19 @@ pub struct CommentPr {
     /// Log what would happen without making the API request
     #[clap(long)]
     pub dry_run: bool,
+}
+
+impl std::fmt::Debug for CommentPr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CommentPr")
+            .field("body", &self.body)
+            .field("pr_number", &self.pr_number)
+            .field("owner", &self.owner)
+            .field("repo", &self.repo)
+            .field("github_token", &super::Redacted(&self.github_token))
+            .field("dry_run", &self.dry_run)
+            .finish()
+    }
 }
 
 impl CommentPr {
