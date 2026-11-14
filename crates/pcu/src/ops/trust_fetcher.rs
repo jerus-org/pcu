@@ -24,6 +24,10 @@ struct GpgKey {
 #[derive(Debug, Clone, Deserialize)]
 struct GpgKeyEmail {
     email: Option<String>,
+    /// GitHub only vouches for an email on a key once it is verified on the
+    /// account. A missing flag is treated as unverified.
+    #[serde(default)]
+    verified: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -259,6 +263,10 @@ fn process_gpg_keys(
 
         // Map each email to all key IDs (primary and subkeys)
         for email_obj in &key.emails {
+            if !email_obj.verified {
+                log::debug!("Skipping an unverified email on a GPG key");
+                continue;
+            }
             if let Some(email) = &email_obj.email {
                 for kid in &all_key_ids {
                     trust_map
@@ -386,7 +394,7 @@ mod tests {
 
         serde_json::from_str(&format!(
             r#"{{"key_id":"{primary_id}","raw_key":null,
-               "emails":[{{"email":"{email}"}}],"subkeys":[{subkeys_json}]}}"#
+               "emails":[{{"email":"{email}","verified":true}}],"subkeys":[{subkeys_json}]}}"#
         ))
         .unwrap()
     }
@@ -465,6 +473,25 @@ mod tests {
             "every key lowercase: {:?}",
             trust_map.keys().collect::<Vec<_>>()
         );
+    }
+
+    /// An email GitHub has not verified on the key must not be trusted: it
+    /// could name someone else. The login-based noreply identities still map.
+    #[test]
+    fn test_unverified_key_email_is_not_trusted() {
+        let collaborator = make_collaborator(TEST_USER, TEST_USER_ID);
+        let key: GpgKey = serde_json::from_str(&format!(
+            r#"{{"key_id":"{TEST_PRIMARY_KEY}","raw_key":null,
+               "emails":[{{"email":"victim@example.test","verified":false}},
+                         {{"email":"no-flag@example.test"}}],"subkeys":[]}}"#
+        ))
+        .unwrap();
+        let mut trust_map = TrustMap::new();
+        process_gpg_keys(vec![key], &collaborator, &mut trust_map).unwrap();
+
+        assert!(!trust_map.contains_key("victim@example.test"));
+        assert!(!trust_map.contains_key("no-flag@example.test"));
+        assert!(trust_map.contains_key("test-user-999@users.noreply.github.com"));
     }
 
     #[test]

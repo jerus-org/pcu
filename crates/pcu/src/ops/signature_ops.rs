@@ -93,7 +93,9 @@ impl VerificationReason {
     pub fn display_message(&self) -> &'static str {
         match self {
             VerificationReason::TrustedVerified => "Trusted identity (signed, verified)",
-            VerificationReason::ExternalUnsigned => "External contributor (unsigned, allowed)",
+            VerificationReason::ExternalUnsigned => {
+                "External contributor (not a trusted identity, allowed)"
+            }
             VerificationReason::ExternalInvalidSignature => {
                 "External contributor (INVALID signature, allowed)"
             }
