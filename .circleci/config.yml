@@ -540,6 +540,10 @@ workflows:
             branches:
               ignore: main
 
+      # Runs pcu built from the branch with a GitHub token, so it must not run
+      # for fork PRs (`pull/N` refs): their author controls that code. Same
+      # filter as the trusted verify job above; forks are verified by the
+      # released pcu without secrets.
       - test-verify-signatures:
           pcu_verbosity: "-vvv"
           context:
@@ -548,7 +552,9 @@ workflows:
             - test-setup
           filters:
             branches:
-              ignore: main
+              ignore:
+                - main
+                - /pull\/[0-9]+/
 
       - test-commit:
           pcu_verbosity: "-vvvv"

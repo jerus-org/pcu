@@ -115,9 +115,27 @@ pub struct VerificationSummary {
     pub failures: usize,
 }
 
+/// Look up a commit author's approved keys, ignoring the case of the email.
+///
+/// GitHub attributes a commit to an account whatever the case of the author
+/// email, so `Jerry@Example.test` shows as the maintainer's own commit. An
+/// exact-case lookup would classify it as an unknown external author, and an
+/// unsigned impersonation would pass instead of failing. Trust-map keys are
+/// stored lowercase; the fallback scan also covers a map built another way.
+fn trusted_keys<'a>(trust_map: &'a TrustMap, email: &str) -> Option<&'a Vec<String>> {
+    let email = email.trim();
+    trust_map.get(email).or_else(|| {
+        let wanted = email.to_lowercase();
+        trust_map
+            .iter()
+            .find(|(known, _)| known.trim().to_lowercase() == wanted)
+            .map(|(_, keys)| keys)
+    })
+}
+
 /// Verify a single commit against the trust map
 pub fn verify_commit(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationResult {
-    let is_trusted = trust_map.contains_key(&commit.author_email);
+    let is_trusted = trusted_keys(trust_map, &commit.author_email).is_some();
 
     if is_trusted {
         verify_trusted_commit(commit, trust_map)
@@ -146,7 +164,7 @@ fn verify_trusted_commit(commit: &CommitInfo, trust_map: &TrustMap) -> Verificat
 
 /// Verify the signature of a trusted commit
 fn verify_trusted_signature(commit: &CommitInfo, trust_map: &TrustMap) -> VerificationResult {
-    let Some(allowed_keys) = trust_map.get(&commit.author_email) else {
+    let Some(allowed_keys) = trusted_keys(trust_map, &commit.author_email) else {
         return create_result(commit, false, VerificationReason::ImpersonationAttempt);
     };
 
@@ -440,5 +458,93 @@ mod tests {
             assert_eq!(summary.external_contributors, 1);
             assert_eq!(summary.failures, 0);
         }
+    }
+
+    fn trusted_map() -> TrustMap {
+        let mut trust_map = TrustMap::new();
+        trust_map.insert(
+            "trusted@example.test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+        trust_map
+    }
+
+    fn commit_by(email: &str, status: SignatureStatus, key: Option<&str>) -> CommitInfo {
+        CommitInfo {
+            sha: "abc123".to_string(),
+            author_email: email.to_string(),
+            author_name: "Someone".to_string(),
+            subject: "test commit".to_string(),
+            signature_status: status,
+            key_id: key.map(str::to_string),
+            signer: None,
+        }
+    }
+
+    /// An unsigned commit authored with a differently-cased trusted email is an
+    /// impersonation attempt, not an unknown external author who passes.
+    #[test]
+    fn test_trusted_email_in_other_case_unsigned_is_impersonation() {
+        for email in [
+            "Trusted@Example.Test",
+            "TRUSTED@EXAMPLE.TEST",
+            " trusted@example.test ",
+        ] {
+            let commit = commit_by(email, SignatureStatus::None, None);
+
+            let result = verify_commit(&commit, &trusted_map());
+
+            assert!(!result.passed, "{email:?} must not pass as external");
+            assert!(matches!(
+                result.reason,
+                VerificationReason::ImpersonationAttempt
+            ));
+        }
+    }
+
+    #[test]
+    fn test_trusted_email_in_other_case_with_correct_key_passes() {
+        let commit = commit_by(
+            "Trusted@Example.Test",
+            SignatureStatus::Good,
+            Some("TESTKEY12345"),
+        );
+
+        let result = verify_commit(&commit, &trusted_map());
+
+        assert!(result.passed);
+        assert!(matches!(result.reason, VerificationReason::TrustedVerified));
+    }
+
+    /// A trust map built with a mixed-case key still matches a lowercase commit.
+    #[test]
+    fn test_mixed_case_trust_map_key_matches_lowercase_commit() {
+        let mut trust_map = TrustMap::new();
+        trust_map.insert(
+            "Trusted@Example.Test".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+        let commit = commit_by("trusted@example.test", SignatureStatus::None, None);
+
+        let result = verify_commit(&commit, &trust_map);
+
+        assert!(!result.passed);
+        assert!(matches!(
+            result.reason,
+            VerificationReason::ImpersonationAttempt
+        ));
+    }
+
+    #[test]
+    fn test_different_email_is_still_external() {
+        let commit = commit_by("other@example.test", SignatureStatus::None, None);
+
+        let result = verify_commit(&commit, &trusted_map());
+
+        assert!(result.passed);
+        assert!(matches!(
+            result.reason,
+            VerificationReason::ExternalUnsigned
+        ));
     }
 }

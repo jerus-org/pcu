@@ -262,7 +262,7 @@ fn process_gpg_keys(
             if let Some(email) = &email_obj.email {
                 for kid in &all_key_ids {
                     trust_map
-                        .entry(email.clone())
+                        .entry(email.to_lowercase())
                         .or_default()
                         .push(kid.clone());
                 }
@@ -271,8 +271,9 @@ fn process_gpg_keys(
         }
 
         // Also add GitHub noreply email formats with all key IDs
-        let noreply_email = format!("{username}@users.noreply.github.com");
-        let id_email = format!("{user_id}+{username}@users.noreply.github.com");
+        // Lowercase: verification matches author emails case-insensitively.
+        let noreply_email = format!("{username}@users.noreply.github.com").to_lowercase();
+        let id_email = format!("{user_id}+{username}@users.noreply.github.com").to_lowercase();
         for kid in &all_key_ids {
             trust_map
                 .entry(noreply_email.clone())
@@ -444,6 +445,25 @@ mod tests {
         assert!(
             keys.contains(&TEST_SUBKEY.to_string()),
             "subkey ID should be in trust map"
+        );
+    }
+
+    /// Trust-map keys are lowercase whatever the case GitHub reports, so the
+    /// case-insensitive lookup in verification has one entry per identity.
+    #[test]
+    fn test_trust_map_emails_are_lowercase() {
+        let collaborator = make_collaborator("Test-User-999", TEST_USER_ID);
+        let key = make_gpg_key(TEST_PRIMARY_KEY, "Test-User-999@Example.Test", &[]);
+        let mut trust_map = TrustMap::new();
+        process_gpg_keys(vec![key], &collaborator, &mut trust_map).unwrap();
+
+        assert!(trust_map.contains_key("test-user-999@example.test"));
+        assert!(trust_map.contains_key("test-user-999@users.noreply.github.com"));
+        assert!(trust_map.contains_key("999000001+test-user-999@users.noreply.github.com"));
+        assert!(
+            trust_map.keys().all(|k| *k == k.to_lowercase()),
+            "every key lowercase: {:?}",
+            trust_map.keys().collect::<Vec<_>>()
         );
     }
 
