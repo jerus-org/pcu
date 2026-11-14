@@ -540,10 +540,13 @@ workflows:
             branches:
               ignore: main
 
-      # Runs pcu built from the branch with a GitHub token, so it must not run
-      # for fork PRs (`pull/N` refs): their author controls that code. Same
-      # filter as the trusted verify job above; forks are verified by the
-      # released pcu without secrets.
+      # Runs pcu built from the branch with a GitHub token. It cannot run for
+      # fork PRs (`pull/N` refs): CircleCI does not supply the `bot-check`
+      # context to them, so the token would be empty and the job could only
+      # fail. Skip them, as the trusted verify job above does; forks are
+      # verified by the released pcu without secrets. The filter also keeps
+      # this job off fork-controlled code should CircleCI ever be set to pass
+      # secrets to forked PRs.
       - test-verify-signatures:
           pcu_verbosity: "-vvv"
           context:
