@@ -150,8 +150,28 @@ fn describe_fetch_error(e: &octocrab::Error) -> String {
         octocrab::Error::Json { source, .. } => {
             format!("response could not be parsed: {source}")
         }
-        _ => "request failed".to_string(),
+        // The request failed before GitHub answered (bad URI, transport...).
+        // Name the variant only: its payload can hold the request URL, which
+        // contains the collaborator's login.
+        other => {
+            let debug = format!("{other:?}");
+            let kind = debug
+                .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                .next()
+                .unwrap_or("unknown");
+            format!("request failed ({kind})")
+        }
     }
+}
+
+/// Fetch one user's public GPG keys. Kept separate so the request can be
+/// exercised against a local server in tests.
+async fn fetch_gpg_keys(github: &Octocrab, username: &str) -> Result<Vec<GpgKey>, octocrab::Error> {
+    // The leading slash matters: octocrab 0.54 rejects a relative route as an
+    // invalid URI before sending anything, so every key fetch failed with no
+    // HTTP status (jerus-org/pcu#1131).
+    let route = format!("/users/{username}/gpg_keys");
+    github.get::<Vec<GpgKey>, _, ()>(route, None).await
 }
 
 /// Returns `(keys imported, collaborators whose key fetch failed)`.
@@ -169,8 +189,7 @@ async fn process_collaborators(
         // Fetch GPG keys for this user — no dedicated octocrab wrapper for
         // this endpoint, so it goes through the generic route (see the
         // module-level `GpgKey` doc comment).
-        let route = format!("users/{username}/gpg_keys");
-        let gpg_keys = match github.get::<Vec<GpgKey>, _, ()>(route, None).await {
+        let gpg_keys = match fetch_gpg_keys(github, username).await {
             Ok(keys) => keys,
             Err(e) => {
                 if is_account_not_found(fetch_error_status(&e)) {
@@ -472,5 +491,110 @@ mod tests {
         assert_eq!(trust_map["test@example.test"].len(), 2);
         assert!(trust_map["test@example.test"].contains(&"KEY1".to_string()));
         assert!(trust_map["test@example.test"].contains(&"KEY2".to_string()));
+    }
+
+    /// A minimal HTTP/1.1 server that answers every request with `body` and
+    /// records each request line. No mock-server dependency needed.
+    async fn serve_json(
+        body: &'static str,
+    ) -> (
+        std::net::SocketAddr,
+        std::sync::Arc<std::sync::Mutex<Vec<String>>>,
+    ) {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let requests = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = std::sync::Arc::clone(&requests);
+        tokio::spawn(async move {
+            loop {
+                let (mut sock, _) = listener.accept().await.unwrap();
+                let mut buf = vec![0u8; 8192];
+                let n = sock.read(&mut buf).await.unwrap();
+                let request = String::from_utf8_lossy(&buf[..n]);
+                seen.lock()
+                    .unwrap()
+                    .push(request.lines().next().unwrap_or("").to_string());
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\n\
+                     content-length: {}\r\nconnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                sock.write_all(response.as_bytes()).await.unwrap();
+            }
+        });
+        (addr, requests)
+    }
+
+    fn client_for(addr: std::net::SocketAddr) -> Octocrab {
+        Octocrab::builder()
+            .base_uri(format!("http://{addr}"))
+            .unwrap()
+            .build()
+            .unwrap()
+    }
+
+    const KEYS_BODY: &str = r#"[{"key_id":"1A2B3C4D5E6F7A8B","raw_key":null,
+        "emails":[{"email":"test-user-999@example.test","verified":true}],
+        "subkeys":[{"key_id":"9C0D1E2F3A4B5C6D"}]}]"#;
+
+    /// Regression for jerus-org/pcu#1131: the key request used a relative
+    /// route, which octocrab rejected as an invalid URI before sending, so
+    /// every fetch failed and the trust map was always empty.
+    #[tokio::test]
+    async fn gpg_keys_request_is_sent_and_parsed() {
+        let (addr, requests) = serve_json(KEYS_BODY).await;
+
+        let keys = fetch_gpg_keys(&client_for(addr), TEST_USER).await.unwrap();
+
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys[0].key_id, TEST_PRIMARY_KEY);
+        let seen = requests.lock().unwrap();
+        assert_eq!(seen.len(), 1, "exactly one request: {seen:?}");
+        assert!(
+            seen[0].starts_with(&format!("GET /users/{TEST_USER}/gpg_keys")),
+            "unexpected request line: {}",
+            seen[0]
+        );
+    }
+
+    /// The whole fetch path: a collaborator's keys end up in the trust map.
+    #[tokio::test]
+    async fn collaborator_keys_are_imported_into_the_trust_map() {
+        let (addr, _requests) = serve_json(KEYS_BODY).await;
+        let collaborator = make_collaborator(TEST_USER, TEST_USER_ID);
+        let mut trust_map = TrustMap::new();
+
+        let (imported, failed) =
+            process_collaborators(&client_for(addr), vec![collaborator], &mut trust_map)
+                .await
+                .unwrap();
+
+        assert_eq!((imported, failed), (1, 0));
+        let keys = trust_map.get("test-user-999@example.test").unwrap();
+        assert!(keys.contains(&TEST_PRIMARY_KEY.to_string()));
+        assert!(keys.contains(&TEST_SUBKEY.to_string()));
+    }
+
+    /// A relative route fails before any request is sent. Pins the octocrab
+    /// behaviour behind the fix, and checks the error names its kind without
+    /// echoing the URL.
+    #[tokio::test]
+    async fn relative_route_error_names_its_kind() {
+        let (addr, requests) = serve_json(KEYS_BODY).await;
+
+        let err = client_for(addr)
+            .get::<Vec<GpgKey>, _, ()>(format!("users/{TEST_USER}/gpg_keys"), None)
+            .await
+            .unwrap_err();
+
+        assert!(requests.lock().unwrap().is_empty(), "nothing was sent");
+        let described = describe_fetch_error(&err);
+        assert!(
+            described.starts_with("request failed ("),
+            "got: {described}"
+        );
+        assert!(!described.contains(TEST_USER), "login leaked: {described}");
     }
 }
