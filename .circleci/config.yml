@@ -233,8 +233,9 @@ jobs:
             bin/pcu --version
             bin/pcu << parameters.pcu_verbosity >> verify-signatures \
               --github-token "${<< parameters.github_token >>}" \
-              --base origin/main \
-              --head HEAD
+              --base 30804e0ea31e635cecbb38356d81dd7df08d8800 \
+              --head HEAD \
+              --fail-on-external
 
   test-push:
     executor:
