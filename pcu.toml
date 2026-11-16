@@ -18,3 +18,8 @@ email = "29139614+renovate[bot]@users.noreply.github.com"
 keys = ["B5690EEEBB952194"]
 pr_authors = ["renovate[bot]"]
 description = "Renovate: commits created through GitHub's API, signed by the web-flow key"
+
+[[verify_signatures.allow]]
+email = "mallory@example.test"
+keys = ["2F9376F297E04B411984E1D0BFA6B2AC93AB5559"]
+description = "test: a branch must not be able to allow-list itself"
