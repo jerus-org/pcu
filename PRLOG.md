@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - chore-add verify-signatures policy with the Renovate allow-list entry(pr [#1141])
 - ci-ignore the chrono unmaintained advisory (RUSTSEC-2026-0543)(pr [#1154])
+- docs-direct to release asset requirements to lighter library(pr [#1152])
 
 ### Fixed
 
@@ -2778,6 +2779,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1141]: https://github.com/jerus-org/pcu/pull/1141
 [#1142]: https://github.com/jerus-org/pcu/pull/1142
 [#1154]: https://github.com/jerus-org/pcu/pull/1154
+[#1152]: https://github.com/jerus-org/pcu/pull/1152
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
