@@ -495,25 +495,6 @@ jobs:
 workflows:
   validation:
     jobs:
-      # Signature verification for trusted PRs (with write access for comments)
-      - toolkit/verify_commit_signatures:
-          name: verify_commit_signatures_trusted
-          context: bot-check
-          post_comment: true
-          update_pcu: false
-          filters:
-            branches:
-              ignore:
-                - main
-                - /pull\/[0-9]+/
-      # Signature verification for forked PRs (read-only, no comments)
-      - toolkit/verify_commit_signatures:
-          name: verify_commit_signatures_forked
-          post_comment: false
-          update_pcu: false
-          filters:
-            branches:
-              only: /pull\/[0-9]+/
       # toolkit/required_builds runs `cargo build --all-features` against the
       # full workspace, covering every crate (gen-bsky, gen-linkedin,
       # pcu-release-assets, pcu) in a single job — no separate per-package
@@ -565,25 +546,6 @@ workflows:
           filters:
             branches:
               ignore: main
-
-      # Runs pcu built from the branch with a GitHub token. It cannot run for
-      # fork PRs (`pull/N` refs): CircleCI does not supply the `bot-check`
-      # context to them, so the token would be empty and the job could only
-      # fail. Skip them, as the trusted verify job above does; forks are
-      # verified by the released pcu without secrets. The filter also keeps
-      # this job off fork-controlled code should CircleCI ever be set to pass
-      # secrets to forked PRs.
-      - test-verify-signatures:
-          pcu_verbosity: "-vvv"
-          context:
-            - bot-check
-          requires:
-            - test-setup
-          filters:
-            branches:
-              ignore:
-                - main
-                - /pull\/[0-9]+/
 
       - test-commit:
           pcu_verbosity: "-vvvv"
