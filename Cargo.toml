@@ -17,7 +17,7 @@ bsky-sdk = "0.2.0"
 bytes = "1.12.2"
 cargo_toml = "1.0.1"
 chrono = "0.4.45"
-clap = "4.6.7"
+clap = "4.6.8"
 clap-verbosity-flag = "3.0.4"
 color-eyre = "0.6.5"
 config = {version = "0.15.27", features = ["toml"], default-features = false}
