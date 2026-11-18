@@ -60,6 +60,11 @@ Do not check the branch out or build it yet.
 git diff --stat origin/main...fork-pr-N
 ```
 
+**If this prints nothing, stop.** The pull request has no change against
+`main` (for example only empty commits, or its content is already on `main`),
+so there is nothing to adopt and no pull request could be opened from it. Roll
+back as described under [Abandoning](#abandoning-and-rolling-back).
+
 Flag paths that run in CI or change what runs. Any output here means those
 files need line-by-line attention:
 
@@ -104,6 +109,9 @@ files, same counts as the step 2 `--stat`):
 git diff --cached --stat
 ```
 
+If that prints nothing, nothing was staged: stop and roll back. Committing
+would fail, or the next step would appear to succeed against an older commit.
+
 ### 5. Commit as yourself, signed, crediting the contributors
 
 Use the repository's conventional commit format for the title.
@@ -125,6 +133,10 @@ Check the commit is yours and signed (expect `G`):
 ```bash
 git log -1 --format='%G? %an | %s'
 ```
+
+The line must show your name and the new title. If it shows an older commit
+(for example the bot's PRLOG update), nothing was committed: stop and roll
+back.
 
 ### 6. Push and open the pull request
 
@@ -163,11 +175,51 @@ it. Delete `contrib/pr-N` and your local `fork-pr-N` branch.
 
 | Case | What to do |
 |---|---|
+| The change is empty (no diff against `main`) | Stop at step 2 and roll back. There is nothing to adopt. |
+| `main` moves while the new pull request waits | Bring the branch up to date (see below) and re-check the result before it is merged. |
 | The change touches `.circleci/**`, `.github/**` or `build.rs` | Review those files first and separately, or ask for them to be split into another change. |
 | Conflicts with `main` | Resolve in step 4, then re-check the diff against what you reviewed. |
 | The contributor pushes again after you fetched | Re-run steps 1 and 2 and review what changed since, before step 4. |
 | Several contributors | One trailer per distinct person from step 3. |
 | A very large change | Ask for it to be split; a single squashed commit is harder to review. |
+
+## Keeping the branch up to date
+
+If `main` moves before the new pull request is merged, bring the branch up to
+date with the GitHub "Update branch" button or locally:
+
+```bash
+git fetch origin main
+```
+
+```bash
+git merge origin/main
+```
+
+- Do not rebase a branch you have pushed.
+- Any push dismisses existing approvals, and the ruleset requires approval of
+  the last push, so someone other than the person who pushed must approve
+  again.
+- `pcu verify-signatures` does not check merge commits, so it will not look at
+  the merge result. If the merge needed conflict resolution, review the
+  result yourself.
+
+## Abandoning and rolling back
+
+If you stop part-way (an empty change, an unsuitable change, or the
+contributor withdraws), undo the local work and anything pushed:
+
+```bash
+git switch --detach origin/main
+```
+
+```bash
+git branch -D contrib/pr-N fork-pr-N
+```
+
+If you already pushed, delete the remote branch (`git push origin --delete
+contrib/pr-N`) and close any pull request opened from it. Then comment on the
+original pull request to say what happened.
 
 ## Notes to record while you try this
 
