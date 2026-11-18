@@ -9,6 +9,6 @@ ignore = [
     "RUSTSEC-2023-0071",
     # RUSTSEC-2026-0253: lru 0.16.4 — unsound use-after-free in
     "RUSTSEC-2026-0253",
-    # RUSTSEC-2026-0543: chrono 0.4.45 is unmaintained (informational, not a
+    # RUSTSEC-2026-0543: chrono is unmaintained (informational).
     "RUSTSEC-2026-0543",
 ]
