@@ -34,6 +34,8 @@ A CI utility to update the Unreleased section of the changelog with the title of
 - [x] Use GitHub as source control system
 - [x] Use of CircleCI as CI
 
+If only Release Asset management is required use the pcu-release-assets library as a lighter weight alternative which avoids loading the additional git/CLI/changelog toolkit.
+
 ## Cargo features
 
 | Feature | Default | Provides |

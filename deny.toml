@@ -32,6 +32,17 @@ ignore = [
     # Remove when atrium-common updates lru or ships a fix. Tracked:
     # jerus-org/pcu#1037.
     { id = "RUSTSEC-2026-0253", reason = "transitive via sigstore 0.14.0; no fix available upstream" },
+
+    # RUSTSEC-2026-0543: chrono 0.4.45 is unmaintained (informational, not a
+    # vulnerability). All versions are affected and no patched release exists.
+    # We use chrono directly in pcu, gen-bsky and gen-linkedin, and it is also
+    # pulled in by atrium-api, bsky-sdk, keep-a-changelog, link-bridge, oauth2,
+    # octocrab, openidconnect and sigstore, so migrating our own code does not
+    # remove it from the tree. Ignored so that CI does not fail on every pull
+    # request while the migration to jiff or time is planned.
+    # Remove when no crate in the dependency tree uses chrono. Tracked:
+    # jerus-org/pcu#1153.
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained; migration planned, see jerus-org/pcu#1153" },
 ]
 
 # This section is considered when running `cargo deny check licenses`
