@@ -15,7 +15,8 @@ api="${GITHUB_API_URL:-https://api.github.com}"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
-# The key is stored as PEM, as base64 of the PEM, or with literal \n.
+# The key is stored as PEM, as base64 of the PEM, with literal \n, or with
+# spaces or quotes in place of line breaks. Rebuild a PEM openssl accepts.
 key="$PCU_PRIVATE_KEY"
 case "$key" in
   *BEGIN*) ;;
@@ -23,6 +24,14 @@ case "$key" in
        { echo "PCU_PRIVATE_KEY is neither PEM nor valid base64" >&2; exit 1; } ;;
 esac
 key="$(printf '%b' "$key")"
+begin="$(printf '%s' "$key" | grep -oE -- '-----BEGIN [A-Z ]+-----' | head -n1 || true)"
+end="$(printf '%s' "$key" | grep -oE -- '-----END [A-Z ]+-----' | head -n1 || true)"
+if [ -z "$begin" ] || [ -z "$end" ]; then
+  echo "PCU_PRIVATE_KEY has no PEM header and footer" >&2
+  exit 1
+fi
+body="$(printf '%s' "$key" | sed -E 's/-----(BEGIN|END) [A-Z ]+-----//g' | tr -d "[:space:]\"'")"
+key="$(printf '%s\n%s\n%s\n' "$begin" "$(printf '%s' "$body" | fold -w 64)" "$end")"
 
 b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 now="$(date +%s)"
