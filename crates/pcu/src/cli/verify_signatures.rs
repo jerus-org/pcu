@@ -67,8 +67,11 @@ pub struct VerifySignatures {
     #[clap(long, required_if_eq("post_comment", "true"))]
     pub pr_number: Option<u64>,
 
-    /// GitHub token for read-only access (fetching trust list)
-    /// If not provided, will use GITHUB_TOKEN env var
+    /// GitHub token for the read-only work (trust list, keys, PR opener).
+    /// If not provided, GITHUB_TOKEN is used. Ignored when a GitHub App is
+    /// configured (`PCU_APP_ID` and `PCU_PRIVATE_KEY`), which is preferred for
+    /// reading because it can be read-only. The PR comment always uses
+    /// GITHUB_TOKEN.
     #[clap(long)]
     pub github_token: Option<String>,
 }
@@ -157,15 +160,26 @@ impl VerifySignatures {
         // Get owner and repo (auto-detect from git config if not provided)
         let (owner, repo) = detect_repository(&git_repo, &self.repo_owner, &self.repo_name)?;
 
-        // Initialize GitHub client for read-only operations (fetching trust
-        // list) Uses --github-token flag or falls back to GITHUB_TOKEN
-        // env var
+        // Initialize the GitHub client for the read-only work (the trust list,
+        // keys and the PR opener). A configured GitHub App is used in
+        // preference to a token: pair it with a read-only App and the reads
+        // cannot write. The PR comment below always uses the separate
+        // `GITHUB_TOKEN`, so reads and writes never share a credential.
+        let settings = app_settings_from_env()?;
         let env_token = env::var("GITHUB_TOKEN").ok();
         let token = self.github_token.as_deref().or(env_token.as_deref());
-        let readonly_client = initialize_github_client_with_token(
-            token,
-            "Read-only GitHub token not provided (use --github-token or set GITHUB_TOKEN env var)",
-        )?;
+        let readonly_client = match choose_read_auth(&settings, token)? {
+            ReadAuth::App => {
+                log::info!("Reading from GitHub as the GitHub App (PCU_APP_ID)");
+                crate::client::app_installation_client(&settings, &owner, &repo)
+                    .await?
+                    .0
+            }
+            ReadAuth::Token(token) => {
+                log::info!("Reading from GitHub with a token (no GitHub App configured)");
+                Octocrab::builder().personal_token(token).build()?
+            }
+        };
 
         println!("\n{}\n", "=== Commit Signature Verification ===".bold());
         println!("Repository: {owner}/{repo}\n");
@@ -628,16 +642,40 @@ fn initialize_github_client_from_env() -> Result<Octocrab, Error> {
     Ok(Octocrab::builder().personal_token(github_token).build()?)
 }
 
-/// Initialize GitHub API client with provided token or fallback
-fn initialize_github_client_with_token(
-    token: Option<&str>,
-    error_msg: &str,
-) -> Result<Octocrab, Error> {
-    let github_token = token
-        .map(String::from)
-        .ok_or_else(|| Error::GpgError(error_msg.to_string()))?;
+/// How the read-only client authenticates.
+#[derive(Debug, PartialEq, Eq)]
+enum ReadAuth {
+    /// The GitHub App from `PCU_APP_ID` and `PCU_PRIVATE_KEY`.
+    App,
+    /// A personal or fine-grained token.
+    Token(String),
+}
 
-    Ok(Octocrab::builder().personal_token(github_token).build()?)
+/// Settings read from the environment (`PCU_APP_ID`, `PCU_PRIVATE_KEY`), the
+/// same source the rest of pcu uses for the GitHub App.
+fn app_settings_from_env() -> Result<config::Config, Error> {
+    Ok(config::Config::builder()
+        .add_source(config::Environment::with_prefix("PCU"))
+        .build()?)
+}
+
+/// Pick the credential for the read-only work: the GitHub App when one is
+/// configured (`app_id` set), otherwise the token. The App wins even when a
+/// token is also supplied, so a job that holds both reads with the App (which
+/// can be read-only) and keeps the token for writing the comment. An empty
+/// token counts as none.
+fn choose_read_auth(settings: &config::Config, token: Option<&str>) -> Result<ReadAuth, Error> {
+    if settings.get::<String>("app_id").is_ok() {
+        return Ok(ReadAuth::App);
+    }
+    match token.map(str::trim).filter(|t| !t.is_empty()) {
+        Some(token) => Ok(ReadAuth::Token(token.to_string())),
+        None => Err(Error::GpgError(
+            "No GitHub credential for reading: set PCU_APP_ID and PCU_PRIVATE_KEY \
+             (a read-only GitHub App), or use --github-token or GITHUB_TOKEN"
+                .to_string(),
+        )),
+    }
 }
 
 /// Detect repository owner and name from git config or CLI args
@@ -1274,5 +1312,56 @@ mod tests {
             comment.contains("pull request not opened by one of its accounts"),
             "{comment}"
         );
+    }
+
+    fn settings(pairs: &[(&str, &str)]) -> config::Config {
+        let mut builder = config::Config::builder();
+        for (key, value) in pairs {
+            builder = builder.set_override(*key, *value).unwrap();
+        }
+        builder.build().unwrap()
+    }
+
+    #[test]
+    fn a_configured_app_is_used_for_reads() {
+        let app = settings(&[("app_id", "123456")]);
+        assert_eq!(choose_read_auth(&app, None).unwrap(), ReadAuth::App);
+    }
+
+    #[test]
+    fn the_app_wins_even_when_a_token_is_also_supplied() {
+        // A job that holds both reads with the App, so a read-only App keeps
+        // the reads read-only, and keeps the token for the comment.
+        let app = settings(&[("app_id", "123456")]);
+        assert_eq!(
+            choose_read_auth(&app, Some("a-write-token")).unwrap(),
+            ReadAuth::App
+        );
+    }
+
+    #[test]
+    fn without_an_app_the_token_is_used() {
+        let none = settings(&[]);
+        assert_eq!(
+            choose_read_auth(&none, Some(" a-token ")).unwrap(),
+            ReadAuth::Token("a-token".to_string())
+        );
+    }
+
+    #[test]
+    fn no_app_and_no_usable_token_is_an_error_naming_both_options() {
+        let none = settings(&[]);
+        for token in [None, Some(""), Some("   ")] {
+            let message = choose_read_auth(&none, token).unwrap_err().to_string();
+            assert!(message.contains("PCU_APP_ID"), "{message}");
+            assert!(message.contains("GITHUB_TOKEN"), "{message}");
+        }
+    }
+
+    #[test]
+    fn a_private_key_alone_does_not_select_the_app() {
+        // The App needs its id; a stray key must not hide a missing id.
+        let key_only = settings(&[("private_key", "not-used")]);
+        assert!(choose_read_auth(&key_only, None).is_err());
     }
 }

@@ -59,6 +59,39 @@ pub struct Client {
     pub(crate) gnupg_home: Option<PathBuf>,
 }
 
+/// A client for `owner/repo` authenticated as the GitHub App in `settings`
+/// (`app_id` and `private_key`), plus the installation token it uses.
+///
+/// The token is scoped to the repository and limited to the App's own
+/// permissions, and it expires after an hour, so a read-only App gives a
+/// read-only client. Callers that only read should use a read-only App.
+pub(crate) async fn app_installation_client(
+    settings: &Config,
+    owner: &str,
+    repo: &str,
+) -> Result<(Octocrab, String), Error> {
+    let app_id = settings
+        .get::<String>("app_id")
+        .map_err(|_| Error::NoGitHubAPIAuth)?;
+    let encoding_key = app_encoding_key(settings)?;
+
+    let app_id: u64 = app_id
+        .parse()
+        .map_err(|_| Error::InvalidAppId(app_id.clone()))?;
+
+    let app_client = Octocrab::builder()
+        .app(AppId(app_id), encoding_key)
+        .build()?;
+
+    let installation = app_client
+        .apps()
+        .get_repository_installation(owner, repo)
+        .await?;
+    let (github_rest, token) = app_client.installation_and_token(installation.id).await?;
+
+    Ok((github_rest, token.expose_secret().to_string()))
+}
+
 /// The GitHub App's signing key from the `private_key` setting.
 ///
 /// A missing setting and an unusable value are different problems and get
@@ -324,27 +357,9 @@ impl Client {
         // Does not dump `settings` — it can carry a GitHub App private key or
         // PAT, and `Config`'s Debug output has no secret redaction.
         let (github_rest, token) = match settings.get::<String>("app_id") {
-            Ok(app_id) => {
+            Ok(_) => {
                 log::info!("Using {} for authentication", "GitHub App".style(bld_style));
-
-                let encoding_key = app_encoding_key(settings)?;
-
-                let app_id: u64 = app_id
-                    .parse()
-                    .map_err(|_| Error::InvalidAppId(app_id.clone()))?;
-
-                let app_client = Octocrab::builder()
-                    .app(AppId(app_id), encoding_key)
-                    .build()?;
-
-                let installation = app_client
-                    .apps()
-                    .get_repository_installation(owner, repo)
-                    .await?;
-                let (github_rest, token) =
-                    app_client.installation_and_token(installation.id).await?;
-
-                (github_rest, token.expose_secret().to_string())
+                app_installation_client(settings, owner, repo).await?
             }
             Err(_) => {
                 let pat = settings

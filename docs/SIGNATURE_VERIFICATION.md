@@ -214,6 +214,15 @@ jobs:
       - run: bash .circleci/verify-signatures.sh
 ```
 
+### Credentials
+
+`verify-signatures` makes two kinds of GitHub call and keeps their credentials apart:
+
+- **Reads** (the collaborator list, their GPG keys, the pull request opener) use a GitHub App when `PCU_APP_ID` and `PCU_PRIVATE_KEY` are set, and otherwise `--github-token` or `GITHUB_TOKEN`. The App wins even when a token is also supplied. Use a read-only App (Metadata and Pull requests, read) so the reads cannot write. The App must be installed on the repository.
+- **The pull request comment** (`--post-comment`) always uses `GITHUB_TOKEN`, which needs write access to pull requests.
+
+A job that runs code a branch controls, such as a pcu built from the branch, should hold only the read-only App and no write token. In this repository `test-verify-signatures` does that, through the `pcu-app-test` context.
+
 ### Workflow Requirements
 
 The `trigger_success_pipeline` job requires `verify_commit_signatures` to pass, ensuring no PR can be merged without passing signature verification.

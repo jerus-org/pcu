@@ -207,8 +207,10 @@ jobs:
   # never exercises a change to the verifier itself. This is the regression
   # test for the verifier: it fails if the trust data cannot be fully
   # obtained, and its debug log names the reason (jerus-org/pcu#1131). It does
-  # not post a comment and does not fail on external contributors; the hard
-  # stop for those is jerus-org/pcu#1132.
+  # not post a comment. It reads with the read-only pcu-app-test GitHub App
+  # (PCU_APP_ID / PCU_PRIVATE_KEY from its context) and holds no write token:
+  # it runs code the branch controls (jerus-org/pcu#1139). The hard stop for
+  # external contributors comes from `pcu.toml` on main.
   test-verify-signatures:
     executor:
       name: toolkit/rust_env_rolling
@@ -217,10 +219,6 @@ jobs:
         type: string
         default: "-vv"
         description: "The verbosity of the pcu command"
-      github_token:
-        type: env_var_name
-        default: GITHUB_TOKEN
-        description: "Env var holding a token that can list collaborators and read their GPG keys"
     steps:
       - checkout
       # Start with the test setup workspace (bin/pcu built from this branch)
@@ -232,7 +230,6 @@ jobs:
             set -eo pipefail
             bin/pcu --version
             bin/pcu << parameters.pcu_verbosity >> verify-signatures \
-              --github-token "${<< parameters.github_token >>}" \
               --base origin/main \
               --head HEAD
 
@@ -576,7 +573,7 @@ workflows:
       - test-verify-signatures:
           pcu_verbosity: "-vvv"
           context:
-            - bot-check
+            - pcu-app-test
           requires:
             - test-setup
           filters:

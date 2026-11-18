@@ -167,6 +167,8 @@ Commands that call the GitHub API authenticate as a GitHub App when `PCU_APP_ID`
 
 `PCU_PRIVATE_KEY` should be the PEM exactly as GitHub gives it: a `-----BEGIN RSA PRIVATE KEY-----` (or `-----BEGIN PRIVATE KEY-----`) line, the key body, and the matching `END` line. pcu also accepts the two shapes that multi-line values commonly end up in when they are stored in a single-line setting, with a warning: the PEM base64-encoded, or with its line breaks written as the two characters `\n`. Anything else is reported as an unusable key, saying what the value appears to be, and never echoing it. A key that is missing altogether is reported separately.
 
+`comment-pr` and `create-issue` write to GitHub and authenticate with a token (`GITHUB_TOKEN` or `--github-token`) rather than the app. `verify-signatures` splits its calls: for its read-only work (the trust list, GPG keys and the pull request opener) it uses the GitHub App when `PCU_APP_ID` is set, even if a token is also supplied, and otherwise the token; the comment it posts always uses `GITHUB_TOKEN`. With a read-only app, the reads cannot write, and reads and writes never share a credential.
+
 Store these in your CI's secret store; never commit them.
 
 ## License
