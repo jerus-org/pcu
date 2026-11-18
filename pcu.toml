@@ -5,9 +5,15 @@
 # See docs/SIGNATURE_VERIFICATION.md.
 [verify_signatures]
 # Hard stop: fail the run for any commit whose author is neither a trusted
-# write collaborator nor on the allow list below. Left off while the allow list
-# is validated; turn on once a Renovate pull request reports as allow-listed.
-fail_on_external = false
+# write collaborator nor on the allow list below. A Renovate pull request
+# reported as allow-listed (#1142) and the negative cases (unknown author,
+# wrong key, impersonation, a pcu.toml self-edit, a wrong PR opener) were
+# checked before this was turned on.
+#
+# Only a pcu of v0.6.41 or later reads this file. Jobs that run an older pcu
+# (the toolkit's image-based verify jobs, until the image is updated) ignore
+# it, so they do not enforce the hard stop.
+fail_on_external = true
 
 # Renovate creates its commits through GitHub's API, so GitHub's web-flow key
 # signs them, for whatever author the caller names. That key therefore cannot
@@ -18,3 +24,15 @@ email = "29139614+renovate[bot]@users.noreply.github.com"
 keys = ["B5690EEEBB952194"]
 pr_authors = ["renovate[bot]"]
 description = "Renovate: commits created through GitHub's API, signed by the web-flow key"
+
+# The maintainer sometimes edits a pull request in the GitHub web UI (for
+# example to adjust a Renovate update). Those commits are authored with the
+# maintainer's GitHub noreply address, which is not a verified email on their
+# GPG key, and signed by GitHub's web-flow key. As with Renovate, that key
+# signs for any author, so `pr_authors` also requires that the pull request was
+# opened by the maintainer or by Renovate.
+[[verify_signatures.allow]]
+email = "47631109+jerusdp@users.noreply.github.com"
+keys = ["B5690EEEBB952194"]
+pr_authors = ["jerusdp", "renovate[bot]"]
+description = "Maintainer edits made in the GitHub web UI, signed by the web-flow key"
