@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- list collaborators with a read-only token; read with a read-only App(pr [#1161])
+
 ### Changed
 
 - chore-add verify-signatures policy with the Renovate allow-list entry(pr [#1141])
@@ -2796,6 +2800,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1158]: https://github.com/jerus-org/pcu/pull/1158
 [#1159]: https://github.com/jerus-org/pcu/pull/1159
 [#1173]: https://github.com/jerus-org/pcu/pull/1173
+[#1161]: https://github.com/jerus-org/pcu/pull/1161
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
