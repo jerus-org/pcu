@@ -44,9 +44,11 @@ struct GpgSubkey {
 ///
 /// Privacy: Only logs aggregate counts, not individual names/emails
 pub async fn fetch_trust_list(
-    github: &Octocrab,
+    collaborators_client: &Octocrab,
+    keys_client: &Octocrab,
     owner: &str,
     repo: &str,
+    min_trusted: usize,
 ) -> Result<TrustMap, Error> {
     log::info!("Fetching trusted collaborators from GitHub API");
 
@@ -54,13 +56,17 @@ pub async fn fetch_trust_list(
     // Every page, not just the first (30): a collaborator beyond it would
     // otherwise never have their keys imported while the trust data still
     // looked complete.
-    let first_page = github
+    let first_page = collaborators_client
         .repos(owner, repo)
         .list_collaborators()
         .per_page(100)
         .send()
-        .await?;
-    let collaborators = github.all_pages(first_page).await?;
+        .await
+        .map_err(collaborator_list_error)?;
+    let collaborators = collaborators_client
+        .all_pages(first_page)
+        .await
+        .map_err(collaborator_list_error)?;
 
     // Filter to only those with write or admin access
     let trusted_collaborators: Vec<_> = collaborators
@@ -76,7 +82,7 @@ pub async fn fetch_trust_list(
     let mut trust_map = TrustMap::new();
     let collaborator_count = trusted_collaborators.len();
     let (total_keys, failed_fetches) =
-        process_collaborators(github, trusted_collaborators, &mut trust_map).await?;
+        process_collaborators(keys_client, trusted_collaborators, &mut trust_map).await?;
 
     log::info!("Imported {total_keys} GPG key(s)");
     log::info!(
@@ -84,7 +90,7 @@ pub async fn fetch_trust_list(
         trust_map.len()
     );
 
-    ensure_trust_data_complete(collaborator_count, total_keys, failed_fetches)?;
+    ensure_trust_data_complete(collaborator_count, total_keys, failed_fetches, min_trusted)?;
 
     // Also add GitHub's web-flow key for merge commits
     add_github_webflow_key(&mut trust_map)?;
@@ -94,7 +100,10 @@ pub async fn fetch_trust_list(
 
 /// Refuse to verify when the trust data could not be fully obtained.
 ///
-/// Two cases, both of which would otherwise fail open:
+/// Three cases, all of which would otherwise fail open or wrongly:
+/// - fewer collaborators than the policy's `min_trusted` were visible: the
+///   credential cannot see them all, and the missing ones would be reported as
+///   external contributors;
 /// - a key fetch failed: that collaborator would be reported as an external
 ///   contributor and their commits pass unverified;
 /// - collaborators exist but no key was imported: the trust map is empty and
@@ -106,7 +115,16 @@ fn ensure_trust_data_complete(
     collaborators: usize,
     imported_keys: usize,
     failed_fetches: usize,
+    min_trusted: usize,
 ) -> Result<(), Error> {
+    if collaborators < min_trusted {
+        return Err(Error::GpgError(format!(
+            "Only {collaborators} collaborator(s) with write access were visible, but the policy \
+             requires at least {min_trusted} (`min_trusted` under `[verify_signatures]` in \
+             `pcu.toml`). The credential that lists collaborators probably cannot see them all; \
+             refusing to verify against a partial trust list"
+        )));
+    }
     if failed_fetches > 0 {
         return Err(Error::GpgError(format!(
             "Could not fetch GPG keys for {failed_fetches} of {collaborators} collaborator(s) \
@@ -136,6 +154,31 @@ fn fetch_error_status(e: &octocrab::Error) -> Option<u16> {
 /// getting the verification data and must still fail closed.
 fn is_account_not_found(status: Option<u16>) -> bool {
     status == Some(404)
+}
+
+/// The error for a failed collaborator listing, saying what to check.
+fn collaborator_list_error(e: octocrab::Error) -> Error {
+    Error::GpgError(format!(
+        "Could not list collaborators: {}. {}",
+        describe_fetch_error(&e),
+        collaborator_list_hint(fetch_error_status(&e))
+    ))
+}
+
+/// What to check when listing collaborators fails with this HTTP status.
+fn collaborator_list_hint(status: Option<u16>) -> &'static str {
+    match status {
+        Some(401) => {
+            "The credential was rejected, so it is probably expired or revoked: \
+             rotate PCU_COLLAB_READ (or the token or GitHub App used to list collaborators)"
+        }
+        Some(403) | Some(404) => {
+            "The credential cannot read this repository's collaborators: check that \
+             PCU_COLLAB_READ (or the token used to list them) belongs to an organisation \
+             member with write access and covers this repository"
+        }
+        _ => "Check the credential used to list collaborators (PCU_COLLAB_READ when set)",
+    }
 }
 
 /// Describe a failed key fetch without echoing the request URL (which holds
@@ -595,22 +638,80 @@ mod tests {
 
     #[test]
     fn test_empty_trust_map_with_collaborators_is_an_error() {
-        let err = ensure_trust_data_complete(3, 0, 0).unwrap_err().to_string();
+        let err = ensure_trust_data_complete(3, 0, 0, 0)
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("3 collaborator(s)"), "got: {err}");
         assert!(err.contains("empty trust map"), "got: {err}");
     }
 
     #[test]
     fn test_any_failed_key_fetch_is_an_error_even_if_other_keys_imported() {
-        let err = ensure_trust_data_complete(3, 2, 1).unwrap_err().to_string();
+        let err = ensure_trust_data_complete(3, 2, 1, 0)
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("1 of 3"), "got: {err}");
         assert!(err.contains("incomplete trust data"), "got: {err}");
     }
 
     #[test]
     fn test_complete_or_collaborator_free_trust_data_is_ok() {
-        assert!(ensure_trust_data_complete(3, 2, 0).is_ok());
-        assert!(ensure_trust_data_complete(0, 0, 0).is_ok());
+        assert!(ensure_trust_data_complete(3, 2, 0, 0).is_ok());
+        assert!(ensure_trust_data_complete(0, 0, 0, 0).is_ok());
+    }
+
+    #[test]
+    fn test_fewer_collaborators_than_the_minimum_is_an_error_naming_the_setting() {
+        let err = ensure_trust_data_complete(1, 3, 0, 2)
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("1 collaborator(s)"), "got: {err}");
+        assert!(err.contains("at least 2"), "got: {err}");
+        assert!(err.contains("min_trusted"), "got: {err}");
+    }
+
+    #[test]
+    fn test_a_rejected_credential_hint_says_to_rotate_the_token() {
+        let hint = collaborator_list_hint(Some(401));
+        assert!(hint.contains("PCU_COLLAB_READ"), "got: {hint}");
+        assert!(hint.contains("expired or revoked"), "got: {hint}");
+    }
+
+    #[test]
+    fn test_a_forbidden_or_missing_repository_hint_says_the_credential_lacks_access() {
+        for status in [Some(403), Some(404)] {
+            let hint = collaborator_list_hint(status);
+            assert!(hint.contains("cannot read"), "{status:?}: {hint}");
+            assert!(hint.contains("PCU_COLLAB_READ"), "{status:?}: {hint}");
+        }
+    }
+
+    #[test]
+    fn test_other_failures_still_name_the_credential_used_for_listing() {
+        for status in [Some(500), Some(429), None] {
+            let hint = collaborator_list_hint(status);
+            assert!(hint.contains("PCU_COLLAB_READ"), "{status:?}: {hint}");
+        }
+    }
+
+    #[test]
+    fn test_exactly_the_minimum_is_enough() {
+        assert!(ensure_trust_data_complete(2, 3, 0, 2).is_ok());
+        assert!(ensure_trust_data_complete(5, 3, 0, 2).is_ok());
+    }
+
+    #[test]
+    fn test_a_minimum_of_zero_turns_the_check_off() {
+        assert!(ensure_trust_data_complete(0, 0, 0, 0).is_ok());
+        assert!(ensure_trust_data_complete(1, 1, 0, 0).is_ok());
+    }
+
+    #[test]
+    fn test_an_empty_list_fails_a_nonzero_minimum() {
+        let err = ensure_trust_data_complete(0, 0, 0, 1)
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("0 collaborator(s)"), "got: {err}");
     }
 
     #[test]

@@ -59,14 +59,21 @@ pub(crate) const WEB_FLOW_KEY_ID: &str = "B5690EEEBB952194";
 /// signature; shorter IDs collide too easily to be a safe match.
 const MIN_KEY_ID_LEN: usize = 16;
 
+/// Fewest collaborators with write access the trust list must contain.
+pub const DEFAULT_MIN_TRUSTED: usize = 2;
+
 /// The verification policy.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifyConfig {
     /// Fail verification for any commit from an author who is neither a
     /// trusted identity nor on the allow list.
     pub fail_on_external: bool,
     /// Identities accepted without being collaborators.
     pub allow: Vec<AllowEntry>,
+    /// Fewest collaborators with write access the trust list must contain; a
+    /// smaller list means the credential cannot see them all. `0` turns the
+    /// check off, for a repository with a single maintainer.
+    pub min_trusted: usize,
     /// Not part of the file: the GitHub login that opened the pull request
     /// under review, set by the caller from the GitHub API. `None` when it is
     /// unknown (no PR, or the lookup failed).
@@ -89,6 +96,17 @@ pub struct AllowEntry {
     pub github_user: Option<String>,
     /// Why the identity is allowed: a note for whoever reads the policy.
     pub description: Option<String>,
+}
+
+impl Default for VerifyConfig {
+    fn default() -> Self {
+        Self {
+            fail_on_external: false,
+            allow: Vec::new(),
+            min_trusted: DEFAULT_MIN_TRUSTED,
+            pr_author: None,
+        }
+    }
 }
 
 impl VerifyConfig {
@@ -127,6 +145,7 @@ impl VerifyConfig {
         Ok(Self {
             fail_on_external: raw.fail_on_external,
             allow,
+            min_trusted: raw.min_trusted.unwrap_or(DEFAULT_MIN_TRUSTED),
             pr_author: None,
         })
     }
@@ -290,6 +309,8 @@ struct RawVerify {
     fail_on_external: bool,
     #[serde(default)]
     allow: Vec<RawAllow>,
+    #[serde(default)]
+    min_trusted: Option<usize>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -382,6 +403,29 @@ mod tests {
 
         assert!(!config.fail_on_external);
         assert!(config.allow.is_empty());
+    }
+
+    #[test]
+    fn the_default_policy_requires_two_trusted_collaborators() {
+        assert_eq!(VerifyConfig::default().min_trusted, DEFAULT_MIN_TRUSTED);
+        assert_eq!(DEFAULT_MIN_TRUSTED, 2);
+        assert_eq!(VerifyConfig::from_toml("").unwrap().min_trusted, 2);
+    }
+
+    #[test]
+    fn min_trusted_can_be_set_in_the_file() {
+        for (setting, want) in [("1", 1), ("0", 0), ("5", 5)] {
+            let text = format!("[verify_signatures]\nmin_trusted = {setting}\n");
+            assert_eq!(VerifyConfig::from_toml(&text).unwrap().min_trusted, want);
+        }
+    }
+
+    #[test]
+    fn min_trusted_must_be_a_whole_number() {
+        for bad in ["-1", "\"two\"", "1.5", "true"] {
+            let text = format!("[verify_signatures]\nmin_trusted = {bad}\n");
+            assert!(VerifyConfig::from_toml(&text).is_err(), "{bad}");
+        }
     }
 
     #[test]

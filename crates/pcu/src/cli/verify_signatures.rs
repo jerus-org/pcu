@@ -1,4 +1,4 @@
-use std::env;
+use std::{collections::HashMap, env};
 
 use clap::Parser;
 use octocrab::Octocrab;
@@ -160,18 +160,31 @@ impl VerifySignatures {
         // Get owner and repo (auto-detect from git config if not provided)
         let (owner, repo) = detect_repository(&git_repo, &self.repo_owner, &self.repo_name)?;
 
-        // Initialize the GitHub client for the read-only work (the trust list,
-        // keys and the PR opener). A configured GitHub App is used in
-        // preference to a token: pair it with a read-only App and the reads
-        // cannot write. The PR comment below always uses the separate
-        // `GITHUB_TOKEN`, so reads and writes never share a credential.
-        let settings = app_settings_from_env()?;
+        // The policy comes from the policy ref, never the branch under review:
+        // a PR must not be able to allow-list itself or lower the minimum.
+        let mut policy = resolve_policy(&git_repo, &self.policy_ref, self.fail_on_external)?;
+        log::info!(
+            "Policy from {}: {} allow-list entr{}, hard stop for external contributors {}, \
+             at least {} trusted collaborator(s)",
+            self.policy_ref,
+            policy.allow.len(),
+            if policy.allow.len() == 1 { "y" } else { "ies" },
+            if policy.fail_on_external { "on" } else { "off" },
+            policy.min_trusted
+        );
+
+        // Reads use a read-only GitHub App when one is configured, else a token.
+        // The collaborator list needs a caller with write access, which an App
+        // does not have, so `PCU_COLLAB_READ` (a read-only token) lists it.
+        // The PR comment below uses `GITHUB_TOKEN`: reads and writes never
+        // share a credential.
+        let settings = env_settings(None)?;
         let env_token = env::var("GITHUB_TOKEN").ok();
         let token = self.github_token.as_deref().or(env_token.as_deref());
         let readonly_client = match choose_read_auth(&settings, token)? {
-            ReadAuth::App => {
+            ReadAuth::App(app_id) => {
                 log::info!("Reading from GitHub as the GitHub App (PCU_APP_ID)");
-                crate::client::app_installation_client(&settings, &owner, &repo)
+                crate::client::app_installation_client(&app_id, &settings, &owner, &repo, true)
                     .await?
                     .0
             }
@@ -180,24 +193,27 @@ impl VerifySignatures {
                 Octocrab::builder().personal_token(token).build()?
             }
         };
+        let collaborators_client = match collaborator_token(&settings) {
+            Some(token) => {
+                log::info!("Listing collaborators with PCU_COLLAB_READ");
+                Octocrab::builder().personal_token(token).build()?
+            }
+            None => readonly_client.clone(),
+        };
 
         println!("\n{}\n", "=== Commit Signature Verification ===".bold());
         println!("Repository: {owner}/{repo}\n");
 
         // Step 1: Fetch trust list from GitHub
         log::info!("Fetching trust list from GitHub...");
-        let trust_map = fetch_trust_list(&readonly_client, &owner, &repo).await?;
-
-        // Policy (allow list, hard stop) from the policy ref, never the branch
-        // under review: a PR must not be able to allow-list itself.
-        let mut policy = resolve_policy(&git_repo, &self.policy_ref, self.fail_on_external)?;
-        log::info!(
-            "Policy from {}: {} allow-list entr{}, hard stop for external contributors {}",
-            self.policy_ref,
-            policy.allow.len(),
-            if policy.allow.len() == 1 { "y" } else { "ies" },
-            if policy.fail_on_external { "on" } else { "off" }
-        );
+        let trust_map = fetch_trust_list(
+            &collaborators_client,
+            &readonly_client,
+            &owner,
+            &repo,
+            policy.min_trusted,
+        )
+        .await?;
 
         // Allow-listed keys must be in the keyring for git to verify them.
         import_allow_list_keys(&readonly_client, &policy).await?;
@@ -645,28 +661,32 @@ fn initialize_github_client_from_env() -> Result<Octocrab, Error> {
 /// How the read-only client authenticates.
 #[derive(Debug, PartialEq, Eq)]
 enum ReadAuth {
-    /// The GitHub App from `PCU_APP_ID` and `PCU_PRIVATE_KEY`.
-    App,
+    /// The GitHub App with this id (`PCU_APP_ID`, with `PCU_PRIVATE_KEY`).
+    App(String),
     /// A personal or fine-grained token.
     Token(String),
 }
 
-/// Settings read from the environment (`PCU_APP_ID`, `PCU_PRIVATE_KEY`), the
-/// same source the rest of pcu uses for the GitHub App.
-fn app_settings_from_env() -> Result<config::Config, Error> {
+/// Settings from the environment (`PCU_APP_ID`, `PCU_PRIVATE_KEY`,
+/// `PCU_COLLAB_READ`), never from `pcu.toml`: a file on the branch under review
+/// must not choose the credential. `env` replaces the process environment in
+/// tests.
+fn env_settings(env: Option<HashMap<String, String>>) -> Result<config::Config, Error> {
     Ok(config::Config::builder()
-        .add_source(config::Environment::with_prefix("PCU"))
+        .add_source(
+            config::Environment::with_prefix("PCU")
+                .ignore_empty(true)
+                .source(env),
+        )
         .build()?)
 }
 
 /// Pick the credential for the read-only work: the GitHub App when one is
-/// configured (`app_id` set), otherwise the token. The App wins even when a
-/// token is also supplied, so a job that holds both reads with the App (which
-/// can be read-only) and keeps the token for writing the comment. An empty
-/// token counts as none.
+/// configured, otherwise the token. The App wins even when a token is also
+/// supplied. A blank value counts as unset.
 fn choose_read_auth(settings: &config::Config, token: Option<&str>) -> Result<ReadAuth, Error> {
-    if settings.get::<String>("app_id").is_ok() {
-        return Ok(ReadAuth::App);
+    if let Some(app_id) = non_blank(settings, "app_id") {
+        return Ok(ReadAuth::App(app_id));
     }
     match token.map(str::trim).filter(|t| !t.is_empty()) {
         Some(token) => Ok(ReadAuth::Token(token.to_string())),
@@ -676,6 +696,21 @@ fn choose_read_auth(settings: &config::Config, token: Option<&str>) -> Result<Re
                 .to_string(),
         )),
     }
+}
+
+/// The token that lists collaborators (`PCU_COLLAB_READ`), when set.
+fn collaborator_token(settings: &config::Config) -> Option<String> {
+    non_blank(settings, "collab_read")
+}
+
+/// A setting's value with surrounding whitespace removed, or `None` when it is
+/// missing or blank.
+fn non_blank(settings: &config::Config, key: &str) -> Option<String> {
+    settings
+        .get::<String>(key)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
 }
 
 /// Detect repository owner and name from git config or CLI args
@@ -1322,21 +1357,41 @@ mod tests {
         builder.build().unwrap()
     }
 
+    fn env(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
+    }
+
     #[test]
     fn a_configured_app_is_used_for_reads() {
         let app = settings(&[("app_id", "123456")]);
-        assert_eq!(choose_read_auth(&app, None).unwrap(), ReadAuth::App);
+        assert_eq!(
+            choose_read_auth(&app, None).unwrap(),
+            ReadAuth::App("123456".to_string())
+        );
     }
 
     #[test]
     fn the_app_wins_even_when_a_token_is_also_supplied() {
-        // A job that holds both reads with the App, so a read-only App keeps
-        // the reads read-only, and keeps the token for the comment.
         let app = settings(&[("app_id", "123456")]);
         assert_eq!(
             choose_read_auth(&app, Some("a-write-token")).unwrap(),
-            ReadAuth::App
+            ReadAuth::App("123456".to_string())
         );
+    }
+
+    #[test]
+    fn a_blank_app_id_counts_as_unset_and_the_token_is_used() {
+        for blank in ["", "   "] {
+            let app = settings(&[("app_id", blank)]);
+            assert_eq!(
+                choose_read_auth(&app, Some("a-token")).unwrap(),
+                ReadAuth::Token("a-token".to_string()),
+                "{blank:?}"
+            );
+        }
     }
 
     #[test]
@@ -1360,8 +1415,44 @@ mod tests {
 
     #[test]
     fn a_private_key_alone_does_not_select_the_app() {
-        // The App needs its id; a stray key must not hide a missing id.
         let key_only = settings(&[("private_key", "not-used")]);
         assert!(choose_read_auth(&key_only, None).is_err());
+    }
+
+    #[test]
+    fn the_environment_maps_pcu_variables_to_settings() {
+        let cfg = env_settings(Some(env(&[
+            ("PCU_APP_ID", "42"),
+            ("PCU_PRIVATE_KEY", "key"),
+            ("PCU_COLLAB_READ", "tok"),
+            ("UNRELATED", "x"),
+        ])))
+        .unwrap();
+        assert_eq!(cfg.get::<String>("app_id").unwrap(), "42");
+        assert_eq!(cfg.get::<String>("private_key").unwrap(), "key");
+        assert_eq!(cfg.get::<String>("collab_read").unwrap(), "tok");
+        assert!(cfg.get::<String>("unrelated").is_err());
+    }
+
+    #[test]
+    fn an_empty_environment_value_is_unset() {
+        let cfg = env_settings(Some(env(&[("PCU_APP_ID", ""), ("PCU_COLLAB_READ", "")]))).unwrap();
+        assert!(cfg.get::<String>("app_id").is_err());
+        assert_eq!(collaborator_token(&cfg), None);
+        assert_eq!(
+            choose_read_auth(&cfg, Some("t")).unwrap(),
+            ReadAuth::Token("t".to_string())
+        );
+    }
+
+    #[test]
+    fn the_collaborator_token_is_trimmed_and_blank_means_none() {
+        let set = settings(&[("collab_read", "  github_pat_x\n")]);
+        assert_eq!(collaborator_token(&set), Some("github_pat_x".to_string()));
+        for blank in ["", "  \n"] {
+            let cfg = settings(&[("collab_read", blank)]);
+            assert_eq!(collaborator_token(&cfg), None, "{blank:?}");
+        }
+        assert_eq!(collaborator_token(&settings(&[])), None);
     }
 }
