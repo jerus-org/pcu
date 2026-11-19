@@ -9,7 +9,10 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use config::Config;
 use git2::Repository;
 use keep_a_changelog::{ChangeKind, ChangelogParseOptions};
-use octocrab::{models::AppId, Octocrab};
+use octocrab::{
+    models::{AppId, InstallationId},
+    Octocrab,
+};
 use owo_colors::{OwoColorize, Style};
 use secrecy::ExposeSecret;
 use tokio::sync::OnceCell;
@@ -57,6 +60,70 @@ pub struct Client {
     /// inherits the environment, as production wants; tests point it at an
     /// ephemeral keyring instead of mutating the process environment.
     pub(crate) gnupg_home: Option<PathBuf>,
+}
+
+/// Names of the installation's permissions that are more than read access.
+///
+/// Reads the raw `permissions` object: octocrab's typed model drops any
+/// permission it does not list, which would hide a write permission. An
+/// installation that reports no permissions object is refused, not assumed
+/// read-only.
+pub(crate) fn write_permissions(permissions: &serde_json::Value) -> Result<Vec<String>, Error> {
+    let object = permissions.as_object().ok_or_else(|| {
+        Error::AppNotReadOnly("the installation reported no permissions".to_string())
+    })?;
+    let mut names: Vec<String> = object
+        .iter()
+        .filter(|(_, level)| level.as_str() != Some("read"))
+        .map(|(name, _)| name.clone())
+        .collect();
+    names.sort();
+    Ok(names)
+}
+
+/// A client for `owner/repo` authenticated as GitHub App `app_id` (with the
+/// `private_key` in `settings`), plus the installation token it uses.
+///
+/// The token is scoped to the repository, limited to the App's own
+/// permissions, and expires after an hour. With `read_only` the App is refused
+/// when any of its permissions is more than read, so a caller that only reads
+/// cannot end up holding a privileged App's credentials.
+pub(crate) async fn app_installation_client(
+    app_id: &str,
+    settings: &Config,
+    owner: &str,
+    repo: &str,
+    read_only: bool,
+) -> Result<(Octocrab, String), Error> {
+    let encoding_key = app_encoding_key(settings)?;
+    let numeric_id: u64 = app_id
+        .trim()
+        .parse()
+        .map_err(|_| Error::InvalidAppId(app_id.to_string()))?;
+
+    let app_client = Octocrab::builder()
+        .app(AppId(numeric_id), encoding_key)
+        .build()?;
+
+    // The leading slash matters: octocrab rejects a relative route.
+    let installation: serde_json::Value = app_client
+        .get::<_, _, ()>(format!("/repos/{owner}/{repo}/installation"), None)
+        .await?;
+    let installation_id = installation
+        .get("id")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or(Error::NoGitHubAPIAuth)?;
+    if read_only {
+        let writable = write_permissions(&installation["permissions"])?;
+        if !writable.is_empty() {
+            return Err(Error::AppNotReadOnly(writable.join(", ")));
+        }
+    }
+    let (github_rest, token) = app_client
+        .installation_and_token(InstallationId(installation_id))
+        .await?;
+
+    Ok((github_rest, token.expose_secret().to_string()))
 }
 
 /// The GitHub App's signing key from the `private_key` setting.
@@ -326,25 +393,7 @@ impl Client {
         let (github_rest, token) = match settings.get::<String>("app_id") {
             Ok(app_id) => {
                 log::info!("Using {} for authentication", "GitHub App".style(bld_style));
-
-                let encoding_key = app_encoding_key(settings)?;
-
-                let app_id: u64 = app_id
-                    .parse()
-                    .map_err(|_| Error::InvalidAppId(app_id.clone()))?;
-
-                let app_client = Octocrab::builder()
-                    .app(AppId(app_id), encoding_key)
-                    .build()?;
-
-                let installation = app_client
-                    .apps()
-                    .get_repository_installation(owner, repo)
-                    .await?;
-                let (github_rest, token) =
-                    app_client.installation_and_token(installation.id).await?;
-
-                (github_rest, token.expose_secret().to_string())
+                app_installation_client(&app_id, settings, owner, repo, false).await?
             }
             Err(_) => {
                 let pat = settings
@@ -989,6 +1038,43 @@ mod tests {
                 "the message leaks part of the key: {message}"
             );
             assert!(message.len() < 400, "short and fixed: {message}");
+        }
+    }
+
+    fn permissions(json: &str) -> serde_json::Value {
+        serde_json::from_str(json).unwrap()
+    }
+
+    #[test]
+    fn a_read_only_installation_has_no_write_permissions() {
+        let read_only =
+            permissions(r#"{"contents":"read","metadata":"read","pull_requests":"read"}"#);
+        assert!(write_permissions(&read_only).unwrap().is_empty());
+    }
+
+    #[test]
+    fn write_and_admin_permissions_are_named_including_ones_octocrab_does_not_model() {
+        let broad = permissions(
+            r#"{"contents":"write","metadata":"read","administration":"admin","issues":"read"}"#,
+        );
+        assert_eq!(
+            write_permissions(&broad).unwrap(),
+            vec!["administration".to_string(), "contents".to_string()]
+        );
+    }
+
+    #[test]
+    fn an_empty_permissions_object_is_read_only() {
+        assert!(write_permissions(&permissions("{}")).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_missing_permissions_object_is_refused_not_assumed_read_only() {
+        for bad in ["null", "[]", "\"read\""] {
+            let err = write_permissions(&permissions(bad))
+                .unwrap_err()
+                .to_string();
+            assert!(err.contains("reported no permissions"), "{bad}: {err}");
         }
     }
 }

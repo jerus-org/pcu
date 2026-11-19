@@ -201,14 +201,11 @@ jobs:
               bin/pcu << parameters.pcu_verbosity >> commit --commit-message "<< parameters.pcu_commit_message >>"
             fi
 
-  # Runs `verify-signatures` with the pcu built from the branch under test
-  # (via test-setup's workspace), unlike toolkit/verify_commit_signatures
-  # above, which runs the pcu baked into its image (`update_pcu: false`) and so
-  # never exercises a change to the verifier itself. This is the regression
-  # test for the verifier: it fails if the trust data cannot be fully
-  # obtained, and its debug log names the reason (jerus-org/pcu#1131). It does
-  # not post a comment and does not fail on external contributors; the hard
-  # stop for those is jerus-org/pcu#1132.
+  # Runs verify-signatures with the pcu built from the branch, so a change to
+  # the verifier is exercised (toolkit/verify_commit_signatures runs the pcu in
+  # its image). Reads with the read-only pcu-app-test App and lists
+  # collaborators with the read-only token in pcu-collab-read. Holds no write
+  # token, because it runs code the branch controls.
   test-verify-signatures:
     executor:
       name: toolkit/rust_env_rolling
@@ -217,10 +214,6 @@ jobs:
         type: string
         default: "-vv"
         description: "The verbosity of the pcu command"
-      github_token:
-        type: env_var_name
-        default: GITHUB_TOKEN
-        description: "Env var holding a token that can list collaborators and read their GPG keys"
     steps:
       - checkout
       # Start with the test setup workspace (bin/pcu built from this branch)
@@ -232,7 +225,6 @@ jobs:
             set -eo pipefail
             bin/pcu --version
             bin/pcu << parameters.pcu_verbosity >> verify-signatures \
-              --github-token "${<< parameters.github_token >>}" \
               --base origin/main \
               --head HEAD
 
@@ -576,7 +568,8 @@ workflows:
       - test-verify-signatures:
           pcu_verbosity: "-vvv"
           context:
-            - bot-check
+            - pcu-app-test
+            - pcu-collab-read
           requires:
             - test-setup
           filters:

@@ -214,6 +214,31 @@ jobs:
       - run: bash .circleci/verify-signatures.sh
 ```
 
+### Credentials
+
+`verify-signatures` makes three kinds of GitHub call and keeps their credentials apart. The credentials come from the environment only, never from `pcu.toml`, so a file on the branch under review cannot choose them.
+
+| Call | Credential | Notes |
+|---|---|---|
+| **Collaborator list** | `PCU_COLLAB_READ`, a fine-grained read-only token, when set; otherwise the reads credential below | The endpoint returns only what the caller may see: it needs a caller with write access who is an organisation member. A GitHub App is neither, and sees only direct collaborators. |
+| **Other reads** (GPG keys, the pull request opener) | The GitHub App when `PCU_APP_ID` is set (with `PCU_PRIVATE_KEY`), otherwise `--github-token` or `GITHUB_TOKEN` | The App wins even when a token is supplied, and is refused if any of its permissions is more than read. Blank values count as unset. |
+| **The pull request comment** (`--post-comment`) | `GITHUB_TOKEN` | Needs write access to pull requests. |
+
+**`PCU_COLLAB_READ`** is a fine-grained personal access token with the organisation as resource owner, access to the repositories that run the check, and Metadata (read) only. Its owner must be an organisation member with write access to those repositories. Give it an expiry and a rotation owner. Hold it in a context loaded only by the verify job.
+
+A job that runs code a branch controls, such as a pcu built from the branch, should hold only read-only credentials and no write token.
+
+### Minimum trusted collaborators
+
+The trust list is refused when it holds fewer collaborators with write access than the policy's `min_trusted`, because a credential that cannot see every collaborator would report the missing ones as external contributors. The default is `2`:
+
+```toml
+[verify_signatures]
+min_trusted = 2   # 0 turns the check off, for a repository with a single maintainer
+```
+
+Like the rest of the policy it is read from the policy ref, so a branch cannot lower it.
+
 ### Workflow Requirements
 
 The `trigger_success_pipeline` job requires `verify_commit_signatures` to pass, ensuring no PR can be merged without passing signature verification.

@@ -54,6 +54,9 @@ pub enum Error {
     InvalidGitHubAPIPrivateKey(String),
     #[error("No GitHub API Authorisation found")]
     NoGitHubAPIAuth,
+    /// A GitHub App with write access was offered for a read-only job.
+    #[error("The GitHub App has more than read access ({0}); refusing to read with it. Use a read-only App, or unset PCU_APP_ID to read with the token")]
+    AppNotReadOnly(String),
     #[error("Invalid GitHub App id {0:?}: expected a numeric id")]
     InvalidAppId(String),
     #[error("Unknown format for pull request: {0}")]
