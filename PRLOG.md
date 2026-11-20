@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs-work instruction for adopting a fork pull request(pr [#1149])
 - chore-turn on the verify-signatures hard stop for this repository(pr [#1145])
 - chore-trim policy file comments(pr [#1173])
+- docs-add CLAUDE.md with working rules(pr [#1176])
 
 ### Fixed
 
@@ -2801,6 +2802,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1159]: https://github.com/jerus-org/pcu/pull/1159
 [#1173]: https://github.com/jerus-org/pcu/pull/1173
 [#1161]: https://github.com/jerus-org/pcu/pull/1161
+[#1176]: https://github.com/jerus-org/pcu/pull/1176
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
