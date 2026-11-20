@@ -491,14 +491,12 @@ mod tests {
             "unknown opener fails closed"
         );
 
-        let web_ui = policy
-            .allow_entry("47631109+jerusdp@users.noreply.github.com")
-            .expect("the maintainer's web UI edits are allow-listed");
-        assert_eq!(web_ui.keys, vec![WEB_FLOW_KEY_ID.to_string()]);
-        assert!(web_ui.opener_allowed(Some("jerusdp")));
-        assert!(web_ui.opener_allowed(Some("renovate[bot]")));
-        assert!(!web_ui.opener_allowed(Some("someone-else")));
-        assert!(!web_ui.opener_allowed(None), "unknown opener fails closed");
+        assert!(
+            policy
+                .allow_entry("47631109+jerusdp@users.noreply.github.com")
+                .is_none(),
+            "a trusted collaborator is judged by their own keys, so an allow entry for them never applies"
+        );
     }
 
     #[test]
@@ -793,6 +791,20 @@ mod tests {
         assert!(entry.opener_allowed(Some("  renovate[bot] ")));
         assert!(!entry.opener_allowed(Some("someone-else")));
         assert!(!entry.opener_allowed(Some("")));
+    }
+
+    #[test]
+    fn opener_allowed_accepts_any_listed_login_and_refuses_others() {
+        let config = VerifyConfig::from_toml(&format!(
+            "[[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{OTHER_KEY}\"]\n\
+             pr_authors = [\"first-login\", \"second-login\"]\n"
+        ))
+        .unwrap();
+        let entry = &config.allow[0];
+
+        assert!(entry.opener_allowed(Some("first-login")));
+        assert!(entry.opener_allowed(Some("second-login")));
+        assert!(!entry.opener_allowed(Some("third-login")));
     }
 
     /// When the opener is unknown the check cannot be confirmed, so it fails.
