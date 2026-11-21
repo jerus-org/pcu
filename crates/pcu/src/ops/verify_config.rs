@@ -125,9 +125,21 @@ impl VerifyConfig {
 
     /// Parse the policy from the text of a `pcu.toml`.
     pub fn from_toml(text: &str) -> Result<Self, Error> {
+        Self::from_toml_named(text, POLICY_PATH)
+    }
+
+    /// As [`Self::from_toml`], with `name` as the file a parse error names.
+    fn from_toml_named(text: &str, name: &str) -> Result<Self, Error> {
+        Self::parse(text, name).map(|(config, _)| config)
+    }
+
+    /// Parse the policy, and say whether the file had a `[verify_signatures]`
+    /// section at all: without one the default policy applies.
+    fn parse(text: &str, name: &str) -> Result<(Self, bool), Error> {
         let file: RawFile =
-            toml::from_str(text).map_err(|e| Error::VerifyConfig(format!("{POLICY_PATH}: {e}")))?;
-        let raw = file.verify_signatures;
+            toml::from_str(text).map_err(|e| Error::VerifyConfig(format!("{name}: {e}")))?;
+        let has_section = file.verify_signatures.is_some();
+        let raw = file.verify_signatures.unwrap_or_default();
 
         let mut allow: Vec<AllowEntry> = Vec::new();
         for (index, entry) in raw.allow.into_iter().enumerate() {
@@ -142,12 +154,66 @@ impl VerifyConfig {
             allow.push(entry);
         }
 
-        Ok(Self {
-            fail_on_external: raw.fail_on_external,
-            allow,
-            min_trusted: raw.min_trusted.unwrap_or(DEFAULT_MIN_TRUSTED),
-            pr_author: None,
-        })
+        Ok((
+            Self {
+                fail_on_external: raw.fail_on_external,
+                allow,
+                min_trusted: raw.min_trusted.unwrap_or(DEFAULT_MIN_TRUSTED),
+                pr_author: None,
+            },
+            has_section,
+        ))
+    }
+
+    /// Read the policy from a file on disk, with the same rules as the ref
+    /// loader except that a missing file, or one with no `[verify_signatures]`
+    /// section, is an error: a lint that falls back to the default policy has
+    /// checked nothing.
+    pub fn load_from_path(path: &Path) -> Result<Self, Error> {
+        let text = std::fs::read_to_string(path)
+            .map_err(|e| Error::VerifyConfig(format!("{}: {e}", path.display())))?;
+        let name = path.display().to_string();
+        let (config, has_section) = Self::parse(&text, &name)?;
+        if !has_section {
+            return Err(Error::VerifyConfig(format!(
+                "{name}: no [verify_signatures] section, so the default policy would apply \
+                 (is the table name misspelt?)"
+            )));
+        }
+        Ok(config)
+    }
+
+    /// The policy as the loader resolved it, one entry per line, for a person
+    /// to check against what they meant.
+    pub fn summary(&self) -> String {
+        let mut out = format!(
+            "hard stop: {}, {}",
+            if self.fail_on_external { "on" } else { "off" },
+            if self.min_trusted == 0 {
+                "no minimum number of trusted collaborators".to_string()
+            } else {
+                format!("at least {} trusted collaborator(s)", self.min_trusted)
+            }
+        );
+        if self.allow.is_empty() {
+            out.push_str("\nno allow-list entries");
+        }
+        for entry in &self.allow {
+            out.push_str(&format!(
+                "\nallow {}: keys {}; pr_authors {}",
+                entry.email,
+                entry.keys.join(", "),
+                if entry.pr_authors.is_empty() {
+                    "any".to_string()
+                } else {
+                    entry.pr_authors.join(", ")
+                }
+            ));
+            if let Some(user) = &entry.github_user {
+                out.push_str(&format!("; github_user {user}"));
+            }
+        }
+        out
     }
 
     /// Read the policy from `pcu.toml` at `base_ref`. A missing file is the
@@ -296,8 +362,7 @@ fn normalise_key_id(raw: &str, position: usize) -> Result<String, Error> {
 /// settings in the file belong to other pcu commands and are ignored here.
 #[derive(Debug, Deserialize)]
 struct RawFile {
-    #[serde(default)]
-    verify_signatures: RawVerify,
+    verify_signatures: Option<RawVerify>,
 }
 
 /// Unknown keys are an error: a misspelt `fail_on_external` must not silently
@@ -497,6 +562,128 @@ mod tests {
                 .is_none(),
             "a trusted collaborator is judged by their own keys, so an allow entry for them never applies"
         );
+    }
+
+    fn write_policy(dir: &tempfile::TempDir, text: &str) -> std::path::PathBuf {
+        let path = dir.path().join("pcu.toml");
+        std::fs::write(&path, text).unwrap();
+        path
+    }
+
+    #[test]
+    fn a_policy_file_is_loaded_with_the_same_rules_as_the_ref() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = write_policy(&dir, &renovate_policy());
+
+        let from_file = VerifyConfig::load_from_path(&path).unwrap();
+
+        assert_eq!(
+            from_file,
+            VerifyConfig::from_toml(&renovate_policy()).unwrap()
+        );
+    }
+
+    #[test]
+    fn an_invalid_policy_file_is_an_error() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = write_policy(
+            &dir,
+            "[[verify_signatures.allow]]\nemail = \"a@example.test\"\n",
+        );
+
+        let err = VerifyConfig::load_from_path(&path).unwrap_err().to_string();
+
+        assert!(err.contains("`keys` is required"), "got: {err}");
+    }
+
+    #[test]
+    fn a_policy_file_without_the_section_is_an_error_not_the_default_policy() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = write_policy(&dir, "[verify_signature]\nfail_on_external = true\n");
+
+        let err = VerifyConfig::load_from_path(&path).unwrap_err().to_string();
+
+        assert!(err.contains("[verify_signatures]"), "got: {err}");
+        assert!(err.contains("default policy"), "got: {err}");
+    }
+
+    #[test]
+    fn an_empty_policy_section_is_a_valid_policy_file() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = write_policy(&dir, "[verify_signatures]\n");
+
+        assert_eq!(
+            VerifyConfig::load_from_path(&path).unwrap(),
+            VerifyConfig::default()
+        );
+    }
+
+    #[test]
+    fn a_parse_error_names_the_file_that_was_checked() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("elsewhere.toml");
+        std::fs::write(&path, "[verify_signatures\n").unwrap();
+
+        let err = VerifyConfig::load_from_path(&path).unwrap_err().to_string();
+
+        assert!(err.contains("elsewhere.toml"), "got: {err}");
+    }
+
+    #[test]
+    fn a_missing_policy_file_is_an_error_naming_the_path() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("absent.toml");
+
+        let err = VerifyConfig::load_from_path(&path).unwrap_err().to_string();
+
+        assert!(err.contains("absent.toml"), "got: {err}");
+    }
+
+    #[test]
+    fn the_summary_shows_each_entry_as_the_loader_resolved_it() {
+        let config = VerifyConfig::from_toml(&format!(
+            "[verify_signatures]\nfail_on_external = true\nmin_trusted = 3\n\n\
+             [[verify_signatures.allow]]\nemail = \"Bot@Example.Test\"\nkeys = [\"{}\"]\n\
+             pr_authors = [\" Opener \"]\ngithub_user = \"Some-User\"\n",
+            OTHER_KEY.to_lowercase()
+        ))
+        .unwrap();
+
+        let summary = config.summary();
+
+        assert!(summary.contains("hard stop: on"), "got: {summary}");
+        assert!(summary.contains("at least 3 trusted"), "got: {summary}");
+        assert!(
+            summary.contains("bot@example.test"),
+            "lowercased: {summary}"
+        );
+        assert!(
+            summary.contains(&OTHER_KEY.to_uppercase()),
+            "got: {summary}"
+        );
+        assert!(summary.contains("opener"), "normalised login: {summary}");
+    }
+
+    #[test]
+    fn the_summary_names_the_github_user_and_a_minimum_of_zero() {
+        let config = VerifyConfig::from_toml(&format!(
+            "[verify_signatures]\nmin_trusted = 0\n\n[[verify_signatures.allow]]\n\
+             email = \"a@example.test\"\nkeys = [\"{OTHER_KEY}\"]\ngithub_user = \"Some-User\"\n"
+        ))
+        .unwrap();
+
+        let summary = config.summary();
+
+        assert!(summary.contains("no minimum"), "got: {summary}");
+        assert!(summary.contains("github_user some-user"), "got: {summary}");
+    }
+
+    #[test]
+    fn the_summary_of_an_empty_policy_says_so() {
+        let summary = VerifyConfig::default().summary();
+
+        assert!(summary.contains("hard stop: off"), "got: {summary}");
+        assert!(summary.contains("no allow-list entries"), "got: {summary}");
     }
 
     #[test]

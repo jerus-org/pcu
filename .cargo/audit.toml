@@ -11,4 +11,6 @@ ignore = [
     "RUSTSEC-2026-0253",
     # RUSTSEC-2026-0543: chrono is unmaintained (informational).
     "RUSTSEC-2026-0543",
+    # RUSTSEC-2026-0542: humantime is unmaintained (informational).
+    "RUSTSEC-2026-0542",
 ]

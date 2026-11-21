@@ -132,6 +132,17 @@ pcu reads `pcu.toml` from the git object at `--policy-ref` (default `origin/main
 - A missing file means the default policy.
 - A file that exists but is invalid is an **error**, never the default. Unknown keys are errors too, so a misspelt `fail_on_external` cannot silently leave the hard stop off.
 
+### Checking a policy file before it reaches the default branch
+
+An invalid policy fails every run once it is on the default branch, including the pull request that would fix it, so check an edit first:
+
+```bash
+pcu verify-signatures --check-policy            # checks ./pcu.toml
+pcu verify-signatures --check-policy path/to/pcu.toml
+```
+
+It parses the file with the loader a verify run uses, prints the hard stop, the minimum number of trusted collaborators and each allow entry as resolved (emails lowercased, keys uppercased, logins normalised), and exits non-zero on any error, including a file that is not there and a file with no `[verify_signatures]` section (a misspelt table name would otherwise leave the default policy in force). It cannot be combined with the other `verify-signatures` options. It reads no git history and needs no network or token, so a CI job or a pre-commit hook can run it on a branch. It does not look up keys or the PR opener on GitHub.
+
 ### Failures always fail the run
 
 Any failed commit makes `pcu verify-signatures` exit non-zero, and the PR comment is posted **before** it fails, so a failing run replaces an earlier "success" comment instead of leaving it on the PR. The old `--fail-on-unsigned` switch is deprecated: it could only ever be on, and nothing turns a failure into a pass.
@@ -156,7 +167,7 @@ These are understood and not yet fixed. None weakens the gate: each fails closed
 | `description` | Parsed and shown nowhere. | Show it in the allow-listed table, or remove the field. |
 | Key identity | Keys are matched by ID suffix. A fingerprint is recommended but pcu does not compare the signer's fingerprint (`%GF`). | Compare the full fingerprint when an entry lists one, and pin the web-flow fingerprint. |
 | Web UI edits by a trusted collaborator | The commit is signed by the web-flow key, so it fails as a key mismatch, and an allow entry for the same address is ignored without a message. | Warn when an allow entry names a trusted identity. |
-| Policy file | The policy shares `pcu.toml` with other commands, and there is no lint-only mode. | Add `--check-policy` and consider a dedicated policy file. |
+| Policy file | The policy shares `pcu.toml` with other commands. `--check-policy` lints it, but nothing runs that check in CI yet. | Run the check in CI on a branch, and consider a dedicated policy file. |
 | Where it is enforced | The hard stop is enforced only where pcu v0.6.41 or later runs. In this repository that is `test-verify-signatures` (pcu built from the branch). The toolkit's `verify_commit_signatures` jobs run the pcu in the `base_env` image, so they do not enforce it until the image carries pcu v0.6.41 or later and the toolkit is updated. | Update the image, release the toolkit, then update this repository's toolkit pin (each step by Renovate). |
 | Fork pull requests | This project builds GitHub App pipelines, which CircleCI never builds for forked pull requests, so a fork PR gets no CircleCI run (including no signature check). Confirmed on test fork PRs: no check runs or statuses, and GitHub reports them as blocked because the required `validation` check never reports. To accept a contribution, a maintainer follows [ADOPTING_FORK_PRS.md](ADOPTING_FORK_PRS.md): the change is reviewed and brought onto a branch in this repository as one signed commit, crediting the contributor, so `test-verify-signatures` runs on it and the hard stop applies. | Automate the steps as `pcu adopt-pr` ([#1148](https://github.com/jerus-org/pcu/issues/1148)) once the manual process has been refined. If a check on fork PRs themselves is wanted, it has to come from outside CircleCI's pipelines for this project, for example a GitHub Actions `pull_request_target` workflow. |
 | Test code | Duplicate helpers across the test modules. | Consolidate into `test_support`. |
