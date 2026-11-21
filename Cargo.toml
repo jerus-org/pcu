@@ -70,7 +70,7 @@ trycmd = "1.2.1"
 unicode-segmentation = "1.13.3"
 url = "2.5.9"
 uuid = { version = "1.29.3", features = ["v4"] }
-walkdir = "2.5.0"
+walkdir = "2.5.1"
 wiremock = "0.6.5"
 
 [workspace.lints.clippy]
