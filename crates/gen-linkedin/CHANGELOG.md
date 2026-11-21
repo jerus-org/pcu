@@ -5,9 +5,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.38] - 2026-11-16
+## [0.1.39] - 2026-11-21
 
 Summary: Fixed[2]
+
+### Fixed
+
+ - fix(deps): update rust crate url to 2.5.9
+ - fix(deps): update rust crate toml to 1.2.2
+
+## [0.1.38] - 2026-11-16
+
+Summary: Chore[1], Fixed[2]
 
 ### Fixed
 
@@ -377,7 +386,8 @@ Summary: Added[2], Fixed[78]
  - fix(deps): update rust crate log to v0.4.22
  - fix(deps): update rust crate url to v2.5.2
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.37...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.38...HEAD
+[0.1.38]: https://github.com/jerus-org/pcu/compare/v0.1.37...v0.1.38
 [0.1.37]: https://github.com/jerus-org/pcu/compare/v0.1.36...v0.1.37
 [0.1.36]: https://github.com/jerus-org/pcu/compare/v0.1.35...v0.1.36
 [0.1.35]: https://github.com/jerus-org/pcu/compare/v0.1.34...v0.1.35
