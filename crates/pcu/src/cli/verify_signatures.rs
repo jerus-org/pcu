@@ -8,7 +8,7 @@ use super::CIExit;
 use crate::{
     ops::{
         git_signature_ops::extract_commits,
-        signature_ops::verify_commits_with,
+        signature_ops::{shadowed_allow_entries, verify_commits_with},
         trust_fetcher::{fetch_trust_list, import_allow_list_keys},
         verify_config::VerifyConfig,
     },
@@ -244,6 +244,18 @@ impl VerifySignatures {
             policy.min_trusted,
         )
         .await?;
+
+        // An allow entry for a trusted collaborator is never read, so say so
+        // instead of leaving the policy to look as if it did something.
+        for entry in shadowed_allow_entries(&policy, &trust_map) {
+            let email = strip_control(&entry.email);
+            log::warn!("Allow entry for {email} is ignored: it is a trusted collaborator");
+            println!(
+                "{} allow entry for {email} is ignored: this identity is a trusted \
+                 collaborator and is judged by its own keys\n",
+                "warning:".yellow()
+            );
+        }
 
         // Allow-listed keys must be in the keyring for git to verify them.
         import_allow_list_keys(&readonly_client, &policy).await?;

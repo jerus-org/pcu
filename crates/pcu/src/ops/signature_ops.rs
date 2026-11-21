@@ -169,6 +169,20 @@ fn trusted_keys<'a>(trust_map: &'a TrustMap, email: &str) -> Option<&'a Vec<Stri
     })
 }
 
+/// Allow-list entries whose email is also a trusted identity. Such an entry is
+/// never read, because a trusted identity is judged by its own keys, so the
+/// policy file says something the verifier does not do.
+pub fn shadowed_allow_entries<'a>(
+    config: &'a VerifyConfig,
+    trust_map: &TrustMap,
+) -> Vec<&'a AllowEntry> {
+    config
+        .allow
+        .iter()
+        .filter(|entry| trusted_keys(trust_map, &entry.email).is_some())
+        .collect()
+}
+
 /// Verify a single commit against the trust map, with the default policy (no
 /// allow list, no hard stop).
 #[cfg(test)]
@@ -763,6 +777,31 @@ mod tests {
             result.reason,
             VerificationReason::ImpersonationAttempt
         ));
+    }
+
+    #[test]
+    fn a_shadowed_allow_entry_is_found_ignoring_case() {
+        let config = VerifyConfig::from_toml(&format!(
+            "[[verify_signatures.allow]]\nemail = \"Trusted@Example.Test\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n\n\
+             [[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
+        ))
+        .unwrap();
+
+        let shadowed = shadowed_allow_entries(&config, &trusted_map());
+
+        assert_eq!(shadowed.len(), 1);
+        assert_eq!(shadowed[0].email, "trusted@example.test");
+    }
+
+    #[test]
+    fn no_allow_entry_is_shadowed_when_none_names_a_trusted_identity() {
+        let config = VerifyConfig::from_toml(&format!(
+            "[[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
+        ))
+        .unwrap();
+
+        assert!(shadowed_allow_entries(&config, &trusted_map()).is_empty());
+        assert!(shadowed_allow_entries(&VerifyConfig::default(), &trusted_map()).is_empty());
     }
 
     #[test]
