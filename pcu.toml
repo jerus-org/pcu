@@ -10,9 +10,3 @@ email = "29139614+renovate[bot]@users.noreply.github.com"
 keys = ["B5690EEEBB952194"]
 pr_authors = ["renovate[bot]"]
 description = "Renovate: commits created through GitHub's API, signed by the web-flow key"
-
-[[verify_signatures.allow]]
-email = "47631109+jerusdp@users.noreply.github.com"
-keys = ["B5690EEEBB952194"]
-pr_authors = ["jerusdp", "renovate[bot]"]
-description = "Maintainer edits made in the GitHub web UI, signed by the web-flow key"

@@ -71,6 +71,8 @@ The following identities are considered trusted and **must** sign all their comm
 
 GitHub signs merge commits with its web-flow key `B5690EEEBB952194`. This key is trusted for merge commits performed via GitHub's web interface.
 
+A change a trusted collaborator makes in the web UI is not a merge commit: GitHub signs it with the web-flow key, not with one of the author's own keys, so it fails as a key mismatch. An allow-list entry for that author is never read. Make such changes locally and sign them, or have another account open them.
+
 ## Allow List and Hard Stop
 
 By default an author who is not a trusted identity passes, whatever the commit's signature. That keeps the barrier low for outside contributors, but it means the check cannot act as a gate: a commit from an unexpected or compromised identity can pass, and with auto-merge be merged. Two settings change that. Both live in `pcu.toml` under `[verify_signatures]`.
@@ -153,6 +155,7 @@ These are understood and not yet fixed. None weakens the gate: each fails closed
 | Failure message | A policy failure (bad `pcu.toml`, unknown ref) shows the generic "possible impersonation" action text. | Give policy and configuration failures their own text. |
 | `description` | Parsed and shown nowhere. | Show it in the allow-listed table, or remove the field. |
 | Key identity | Keys are matched by ID suffix. A fingerprint is recommended but pcu does not compare the signer's fingerprint (`%GF`). | Compare the full fingerprint when an entry lists one, and pin the web-flow fingerprint. |
+| Web UI edits by a trusted collaborator | The commit is signed by the web-flow key, so it fails as a key mismatch, and an allow entry for the same address is ignored without a message. | Warn when an allow entry names a trusted identity. |
 | Policy file | The policy shares `pcu.toml` with other commands, and there is no lint-only mode. | Add `--check-policy` and consider a dedicated policy file. |
 | Where it is enforced | The hard stop is enforced only where pcu v0.6.41 or later runs. In this repository that is `test-verify-signatures` (pcu built from the branch). The toolkit's `verify_commit_signatures` jobs run the pcu in the `base_env` image, so they do not enforce it until the image carries pcu v0.6.41 or later and the toolkit is updated. | Update the image, release the toolkit, then update this repository's toolkit pin (each step by Renovate). |
 | Fork pull requests | This project builds GitHub App pipelines, which CircleCI never builds for forked pull requests, so a fork PR gets no CircleCI run (including no signature check). Confirmed on test fork PRs: no check runs or statuses, and GitHub reports them as blocked because the required `validation` check never reports. To accept a contribution, a maintainer follows [ADOPTING_FORK_PRS.md](ADOPTING_FORK_PRS.md): the change is reviewed and brought onto a branch in this repository as one signed commit, crediting the contributor, so `test-verify-signatures` runs on it and the hard stop applies. | Automate the steps as `pcu adopt-pr` ([#1148](https://github.com/jerus-org/pcu/issues/1148)) once the manual process has been refined. If a check on fork PRs themselves is wanted, it has to come from outside CircleCI's pipelines for this project, for example a GitHub Actions `pull_request_target` workflow. |
