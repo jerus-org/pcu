@@ -81,6 +81,36 @@ pub(crate) fn write_permissions(permissions: &serde_json::Value) -> Result<Vec<S
     Ok(names)
 }
 
+/// The HTTP status GitHub answered with, when the error is a GitHub API error.
+fn installation_status(err: &octocrab::Error) -> Option<u16> {
+    match err {
+        octocrab::Error::GitHub { source, .. } => Some(source.status_code.as_u16()),
+        _ => None,
+    }
+}
+
+/// A clear error for the statuses of the installation lookup that have a
+/// known cause: 404 (the App is not installed on the repository) and 401 (the
+/// App id or key was rejected). Any other status is left to the generic error.
+fn classify_installation_status(
+    status: u16,
+    app_id: &str,
+    owner: &str,
+    repo: &str,
+) -> Option<Error> {
+    match status {
+        404 => Some(Error::AppNotInstalled {
+            app_id: app_id.trim().to_string(),
+            owner: owner.to_string(),
+            repo: repo.to_string(),
+        }),
+        401 => Some(Error::AppRejected {
+            app_id: app_id.trim().to_string(),
+        }),
+        _ => None,
+    }
+}
+
 /// A client for `owner/repo` authenticated as GitHub App `app_id` (with the
 /// `private_key` in `settings`), plus the installation token it uses.
 ///
@@ -108,7 +138,12 @@ pub(crate) async fn app_installation_client(
     // The leading slash matters: octocrab rejects a relative route.
     let installation: serde_json::Value = app_client
         .get::<_, _, ()>(format!("/repos/{owner}/{repo}/installation"), None)
-        .await?;
+        .await
+        .map_err(|err| {
+            installation_status(&err)
+                .and_then(|status| classify_installation_status(status, app_id, owner, repo))
+                .unwrap_or(Error::Octocrab(err))
+        })?;
     let installation_id = installation
         .get("id")
         .and_then(serde_json::Value::as_u64)
@@ -1038,6 +1073,41 @@ mod tests {
                 "the message leaks part of the key: {message}"
             );
             assert!(message.len() < 400, "short and fixed: {message}");
+        }
+    }
+
+    #[test]
+    fn a_404_from_the_installation_lookup_says_the_app_is_not_installed() {
+        let err =
+            classify_installation_status(404, "12345", "acme", "tool").expect("404 is classified");
+
+        let message = err.to_string();
+        assert!(message.contains("12345"), "names the App: {message}");
+        assert!(
+            message.contains("acme/tool"),
+            "names the repository: {message}"
+        );
+        assert!(message.contains("not installed"), "got: {message}");
+    }
+
+    #[test]
+    fn a_401_from_the_installation_lookup_says_the_app_credentials_were_rejected() {
+        let err =
+            classify_installation_status(401, "12345", "acme", "tool").expect("401 is classified");
+
+        let message = err.to_string();
+        assert!(message.contains("12345"), "names the App: {message}");
+        assert!(message.contains("rejected"), "got: {message}");
+        assert!(!message.contains("not installed"), "got: {message}");
+    }
+
+    #[test]
+    fn other_statuses_are_left_to_the_generic_error() {
+        for status in [403, 500, 502] {
+            assert!(
+                classify_installation_status(status, "12345", "acme", "tool").is_none(),
+                "{status}"
+            );
         }
     }
 
