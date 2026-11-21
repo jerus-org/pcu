@@ -36,6 +36,11 @@ ignore = [
     # RUSTSEC-2026-0543: chrono is unmaintained (informational). Used directly and
     # by eight dependencies. Remove when none depend on it. Tracked: #1153.
     { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained; migration planned, see jerus-org/pcu#1153" },
+
+    # RUSTSEC-2026-0542: humantime is unmaintained (informational). Reaches the
+    # tree only through trycmd, a dev-dependency of pcu used by the CLI tests,
+    # so it is not in the shipped binary. Remove when trycmd stops using it.
+    { id = "RUSTSEC-2026-0542", reason = "humantime is unmaintained; dev-dependency only, via trycmd" },
 ]
 
 # This section is considered when running `cargo deny check licenses`
