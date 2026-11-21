@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs-add CLAUDE.md with working rules(pr [#1176])
 - docs-add a security policy(pr [#1178])
 - chore-drop the dead maintainer allow entry(pr [#1179])
+- ci-check the policy file on every branch(pr [#1183])
 
 ### Fixed
 
@@ -2811,6 +2812,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1179]: https://github.com/jerus-org/pcu/pull/1179
 [#1181]: https://github.com/jerus-org/pcu/pull/1181
 [#1182]: https://github.com/jerus-org/pcu/pull/1182
+[#1183]: https://github.com/jerus-org/pcu/pull/1183
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
