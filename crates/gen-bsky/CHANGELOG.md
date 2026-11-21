@@ -5,9 +5,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.46] - 2026-11-21
+
+Summary: Fixed[5]
+
+### Fixed
+
+ - fix(deps): update rust crate walkdir to 2.5.1
+ - fix(deps): update rust crate url to 2.5.9
+ - fix(deps): update rust crate toml to 1.2.2
+ - fix(deps): update rust crate env_logger to 0.11.12
+ - fix(deps): update rust crate regex to 1.13.2
+
 ## [0.1.45] - 2026-11-16
 
-Summary: Fixed[4]
+Summary: Chore[1], Fixed[4]
 
 ### Fixed
 
@@ -538,7 +550,8 @@ Summary: Added[21], Build[4], Changed[25], Chore[5], Documentation[10], Fixed[70
  - ♻️ refactor(gen-bsky): streamline error handling
  - ♻️ refactor(lib): restructure gen-bsky module
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.44...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.1.45...HEAD
+[0.1.45]: https://github.com/jerus-org/pcu/compare/v0.1.44...v0.1.45
 [0.1.44]: https://github.com/jerus-org/pcu/compare/v0.1.43...v0.1.44
 [0.1.43]: https://github.com/jerus-org/pcu/compare/v0.1.42...v0.1.43
 [0.1.42]: https://github.com/jerus-org/pcu/compare/v0.1.41...v0.1.42
