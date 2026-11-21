@@ -5,9 +5,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.42] - 2026-11-21
+
+Summary: Added[4], Chore[5], Documentation[1], Fixed[8]
+
+### Added
+
+ - feat: warn about an allow entry for a trusted identity
+ - feat: add verify-signatures --check-policy
+ - feat: list collaborators with a read-only token
+ - feat: read with a GitHub App in verify-signatures; drop the write token from test-verify-signatures
+
+### Fixed
+
+ - fix(deps): update rust crate url to 2.5.9
+ - fix(deps): update rust crate toml to 1.2.2
+ - fix(deps): update rust crate env_logger to 0.11.12
+ - fix(deps): update rust crate clap to 4.6.9
+ - fix: say why the App installation lookup failed
+ - fix(deps): update rust crate uuid to 1.29.3
+ - fix(deps): update rust crate regex to 1.13.2
+ - fix(deps): update rust crate clap to 4.6.8
+
 ## [0.6.41] - 2026-11-16
 
-Summary: Added[3], Chore[2], Fixed[14]
+Summary: Added[3], Chore[3], Fixed[14]
 
 ### Added
 
@@ -879,7 +901,8 @@ Summary: Added[11], Build[1], Changed[40], Chore[15], Documentation[7], Fixed[14
 
  - chore(deps): update rust crate rstest to 0.21.0
 
-[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.40...HEAD
+[Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
+[0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
 [0.6.39]: https://github.com/jerus-org/pcu/compare/v0.6.38...v0.6.39
 [0.6.38]: https://github.com/jerus-org/pcu/compare/v0.6.37...v0.6.38

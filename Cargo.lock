@@ -3474,7 +3474,7 @@ dependencies = [
 
 [[package]]
 name = "pcu"
-version = "0.6.41"
+version = "0.6.42"
 dependencies = [
  "aws-lc-rs",
  "base62",
