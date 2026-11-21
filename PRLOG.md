@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate regex to 1.13.2(pr [#1157])
 - deps: update rust crate uuid to 1.29.3(pr [#1158])
 - deps: lock file maintenance(pr [#1159])
+- say why the App installation lookup failed(pr [#1181])
 
 ## [0.6.41] - 2026-11-16
 
@@ -2807,6 +2808,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1176]: https://github.com/jerus-org/pcu/pull/1176
 [#1178]: https://github.com/jerus-org/pcu/pull/1178
 [#1179]: https://github.com/jerus-org/pcu/pull/1179
+[#1181]: https://github.com/jerus-org/pcu/pull/1181
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
