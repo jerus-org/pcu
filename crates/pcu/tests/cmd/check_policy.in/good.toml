@@ -1,0 +1,8 @@
+[verify_signatures]
+fail_on_external = true
+min_trusted = 3
+
+[[verify_signatures.allow]]
+email = "Bot@Example.Test"
+keys = ["1a2b3c4d5e6f7a8b"]
+pr_authors = ["Opener"]

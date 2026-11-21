@@ -1,0 +1,63 @@
+A valid file passes and is shown as the loader resolved it.
+
+```console
+$ pcu verify-signatures --check-policy good.toml
+good.toml is valid
+  hard stop: on, at least 3 trusted collaborator(s)
+  allow bot@example.test: keys 1A2B3C4D5E6F7A8B; pr_authors opener
+
+```
+
+With no path, `pcu.toml` in the current directory is checked.
+
+```console
+$ pcu verify-signatures --check-policy
+pcu.toml is valid
+  hard stop: on, at least 2 trusted collaborator(s)
+  no allow-list entries
+
+```
+
+An unknown key fails.
+
+```console
+$ pcu verify-signatures --check-policy unknown_key.toml
+? failed
+...
+Error: Invalid verify-signatures policy: unknown_key.toml: TOML parse error[..]
+...
+
+```
+
+A misspelt table name fails instead of leaving the default policy in force.
+
+```console
+$ pcu verify-signatures --check-policy misspelt_table.toml
+? failed
+...
+Error: Invalid verify-signatures policy: misspelt_table.toml: no [verify_signatures] section, so the default policy would apply (is the table name misspelt?)
+...
+
+```
+
+A file that is not there fails.
+
+```console
+$ pcu verify-signatures --check-policy absent.toml
+? failed
+...
+Error: Invalid verify-signatures policy: absent.toml: [..]
+...
+
+```
+
+The check cannot be combined with the verify options.
+
+```console
+$ pcu verify-signatures --check-policy --post-comment --pr-number 1
+? 2
+error: the argument '--check-policy [<PATH>]' cannot be used with:
+  --post-comment
+...
+
+```

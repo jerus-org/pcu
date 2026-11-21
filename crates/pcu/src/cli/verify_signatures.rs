@@ -74,6 +74,21 @@ pub struct VerifySignatures {
     /// GITHUB_TOKEN.
     #[clap(long)]
     pub github_token: Option<String>,
+
+    /// Check a policy file and exit: parse it with the loader the verify run
+    /// uses, print each entry as resolved, and fail on an error. Reads no
+    /// git history and needs no network or token. Defaults to `pcu.toml`.
+    #[clap(
+        long,
+        value_name = "PATH",
+        num_args = 0..=1,
+        default_missing_value = "pcu.toml",
+        conflicts_with_all = [
+            "base", "policy_ref", "head", "repo_owner", "repo_name", "fetch_depth",
+            "fail_on_unsigned", "fail_on_external", "post_comment", "pr_number", "github_token",
+        ]
+    )]
+    pub check_policy: Option<std::path::PathBuf>,
 }
 
 impl std::fmt::Debug for VerifySignatures {
@@ -90,6 +105,7 @@ impl std::fmt::Debug for VerifySignatures {
             .field("post_comment", &self.post_comment)
             .field("pr_number", &self.pr_number)
             .field("github_token", &super::Redacted(&self.github_token))
+            .field("check_policy", &self.check_policy)
             .finish()
     }
 }
@@ -150,8 +166,22 @@ fn strip_control(text: &str) -> String {
         .collect()
 }
 
+/// Check the policy file at `path` and print it as the loader resolved it.
+fn check_policy(path: &std::path::Path) -> Result<CIExit, Error> {
+    let policy = VerifyConfig::load_from_path(path)?;
+    println!("{} is valid", strip_control(&path.display().to_string()));
+    for line in policy.summary().lines() {
+        println!("  {}", strip_control(line));
+    }
+    Ok(CIExit::VerificationPassed)
+}
+
 impl VerifySignatures {
     pub async fn run_verify(self) -> Result<CIExit, Error> {
+        if let Some(path) = &self.check_policy {
+            return check_policy(path);
+        }
+
         log::info!("=== Commit Signature Verification ===");
 
         // Open git repository
@@ -853,6 +883,53 @@ mod tests {
     use crate::ops::signature_ops::{
         CommitInfo, SignatureStatus, VerificationReason, VerificationResult, VerificationSummary,
     };
+
+    #[test]
+    fn check_policy_defaults_to_pcu_toml_and_takes_an_optional_path() {
+        let none = VerifySignatures::try_parse_from(["verify"]).unwrap();
+        assert_eq!(none.check_policy, None);
+
+        let bare = VerifySignatures::try_parse_from(["verify", "--check-policy"]).unwrap();
+        assert_eq!(
+            bare.check_policy,
+            Some(std::path::PathBuf::from("pcu.toml"))
+        );
+
+        let path =
+            VerifySignatures::try_parse_from(["verify", "--check-policy", "other.toml"]).unwrap();
+        assert_eq!(
+            path.check_policy,
+            Some(std::path::PathBuf::from("other.toml"))
+        );
+    }
+
+    #[test]
+    fn check_policy_cannot_be_combined_with_the_verify_options() {
+        for extra in [
+            &["--post-comment", "--pr-number", "1"][..],
+            &["--base", "origin/main"][..],
+            &["--fail-on-external"][..],
+        ] {
+            let mut args = vec!["verify", "--check-policy"];
+            args.extend_from_slice(extra);
+            assert!(VerifySignatures::try_parse_from(args).is_err(), "{extra:?}");
+        }
+    }
+
+    #[test]
+    fn checking_a_valid_policy_passes_and_an_invalid_one_fails() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let good = dir.path().join("good.toml");
+        std::fs::write(&good, "[verify_signatures]\nfail_on_external = true\n").unwrap();
+        let bad = dir.path().join("bad.toml");
+        std::fs::write(&bad, "[verify_signatures]\nunknown_key = 1\n").unwrap();
+
+        assert!(matches!(
+            check_policy(&good),
+            Ok(CIExit::VerificationPassed)
+        ));
+        assert!(matches!(check_policy(&bad), Err(Error::VerifyConfig(_))));
+    }
 
     fn make_external_result(sha: &str, email: &str) -> VerificationResult {
         VerificationResult {
