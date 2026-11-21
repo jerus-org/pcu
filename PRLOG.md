@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - list collaborators with a read-only token; read with a read-only App(pr [#1161])
+- add verify-signatures --check-policy(pr [#1182])
 
 ### Changed
 
@@ -2809,6 +2810,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1178]: https://github.com/jerus-org/pcu/pull/1178
 [#1179]: https://github.com/jerus-org/pcu/pull/1179
 [#1181]: https://github.com/jerus-org/pcu/pull/1181
+[#1182]: https://github.com/jerus-org/pcu/pull/1182
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
