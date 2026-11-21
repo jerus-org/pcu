@@ -59,6 +59,16 @@ pub enum Error {
     AppNotReadOnly(String),
     #[error("Invalid GitHub App id {0:?}: expected a numeric id")]
     InvalidAppId(String),
+    /// GitHub answered 404 to the installation lookup.
+    #[error("GitHub App {app_id} is not installed on {owner}/{repo} (404): install it on this repository, or check the repository name and that PCU_APP_ID names the right App")]
+    AppNotInstalled {
+        app_id: String,
+        owner: String,
+        repo: String,
+    },
+    /// GitHub answered 401 to the installation lookup.
+    #[error("GitHub rejected GitHub App {app_id} (401): check that PCU_APP_ID and the private key belong to the same App and that the runner clock is correct")]
+    AppRejected { app_id: String },
     #[error("Unknown format for pull request: {0}")]
     UnknownPullRequestFormat(String),
     #[error("No default prlog file found")]
