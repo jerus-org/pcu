@@ -220,6 +220,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
+          name: Check the policy file with pcu built from this branch
+          command: |
+            set -eo pipefail
+            bin/pcu verify-signatures --check-policy
+      - run:
           name: Verify commit signatures with pcu built from this branch
           command: |
             set -eo pipefail
