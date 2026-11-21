@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - deps: update rust crate toml to 1.2.2(pr [#1187])
 - deps: update rust crate url to 2.5.9(pr [#1188])
 - deps: update rust crate walkdir to 2.5.1(pr [#1189])
+- deps: lock file maintenance(pr [#1190])
 
 ## [0.6.41] - 2026-11-16
 
@@ -2825,6 +2826,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1187]: https://github.com/jerus-org/pcu/pull/1187
 [#1188]: https://github.com/jerus-org/pcu/pull/1188
 [#1189]: https://github.com/jerus-org/pcu/pull/1189
+[#1190]: https://github.com/jerus-org/pcu/pull/1190
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.41...HEAD
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
 [0.6.40]: https://github.com/jerus-org/pcu/compare/v0.6.39...v0.6.40
