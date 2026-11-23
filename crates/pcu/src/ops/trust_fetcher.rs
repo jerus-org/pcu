@@ -4,7 +4,7 @@ use octocrab::{models::Collaborator, Octocrab};
 use serde::Deserialize;
 
 use super::signature_ops::TrustMap;
-use crate::Error;
+use crate::{client::api_route, Error};
 
 /// The subset of GitHub's `GET /users/{username}/gpg_keys` response that
 /// `process_gpg_keys` actually reads. octocrab has no dedicated wrapper for
@@ -214,10 +214,7 @@ fn describe_fetch_error(e: &octocrab::Error) -> String {
 /// Fetch one user's public GPG keys. Kept separate so the request can be
 /// exercised against a local server in tests.
 async fn fetch_gpg_keys(github: &Octocrab, username: &str) -> Result<Vec<GpgKey>, octocrab::Error> {
-    // The leading slash matters: octocrab 0.54 rejects a relative route as an
-    // invalid URI before sending anything, so every key fetch failed with no
-    // HTTP status (jerus-org/pcu#1131).
-    let route = format!("/users/{username}/gpg_keys");
+    let route = api_route(&format!("users/{username}/gpg_keys"));
     github.get::<Vec<GpgKey>, _, ()>(route, None).await
 }
 
