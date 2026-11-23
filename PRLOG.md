@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - chore-clear the manifest warnings from Rust 1.100(pr [#1196])
+- refactor-build generic GitHub routes with api_route(pr [#1198])
 
 ### Fixed
 
@@ -2848,6 +2849,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1196]: https://github.com/jerus-org/pcu/pull/1196
 [#1192]: https://github.com/jerus-org/pcu/pull/1192
 [#1197]: https://github.com/jerus-org/pcu/pull/1197
+[#1198]: https://github.com/jerus-org/pcu/pull/1198
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.42...HEAD
 [0.6.42]: https://github.com/jerus-org/pcu/compare/v0.6.41...v0.6.42
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
