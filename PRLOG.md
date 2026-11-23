@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - BREAKING: allow only bots in the allow list(pr [#1195])
 
+### Changed
+
+- chore-clear the manifest warnings from Rust 1.100(pr [#1196])
+
 ### Fixed
 
 - deps: update dependency toolkit to v8.1.0(pr [#1191])
@@ -2839,6 +2843,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1190]: https://github.com/jerus-org/pcu/pull/1190
 [#1195]: https://github.com/jerus-org/pcu/pull/1195
 [#1191]: https://github.com/jerus-org/pcu/pull/1191
+[#1196]: https://github.com/jerus-org/pcu/pull/1196
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.42...HEAD
 [0.6.42]: https://github.com/jerus-org/pcu/compare/v0.6.41...v0.6.42
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
