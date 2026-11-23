@@ -81,6 +81,13 @@ pub(crate) fn write_permissions(permissions: &serde_json::Value) -> Result<Vec<S
     Ok(names)
 }
 
+/// An absolute GitHub REST route for the generic octocrab calls this crate
+/// makes (`get`). octocrab rejects a relative route as an invalid URI before
+/// it sends anything, so write the natural path and let this add the slash.
+pub(crate) fn api_route(path: &str) -> String {
+    format!("/{}", path.trim_start_matches('/'))
+}
+
 /// The HTTP status GitHub answered with, when the error is a GitHub API error.
 fn installation_status(err: &octocrab::Error) -> Option<u16> {
     match err {
@@ -135,9 +142,11 @@ pub(crate) async fn app_installation_client(
         .app(AppId(numeric_id), encoding_key)
         .build()?;
 
-    // The leading slash matters: octocrab rejects a relative route.
     let installation: serde_json::Value = app_client
-        .get::<_, _, ()>(format!("/repos/{owner}/{repo}/installation"), None)
+        .get::<_, _, ()>(
+            api_route(&format!("repos/{owner}/{repo}/installation")),
+            None,
+        )
         .await
         .map_err(|err| {
             installation_status(&err)
@@ -1109,6 +1118,30 @@ mod tests {
                 "{status}"
             );
         }
+    }
+
+    #[test]
+    fn a_relative_path_becomes_an_absolute_route() {
+        assert_eq!(
+            api_route("repos/acme/tool/installation"),
+            "/repos/acme/tool/installation"
+        );
+    }
+
+    #[test]
+    fn an_absolute_path_is_left_as_it_is() {
+        assert_eq!(
+            api_route("/users/someone/gpg_keys"),
+            "/users/someone/gpg_keys"
+        );
+    }
+
+    #[test]
+    fn repeated_leading_slashes_collapse_to_one() {
+        assert_eq!(
+            api_route("//users/someone/gpg_keys"),
+            "/users/someone/gpg_keys"
+        );
     }
 
     fn permissions(json: &str) -> serde_json::Value {
