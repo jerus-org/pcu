@@ -95,7 +95,9 @@ The hard stop can also be turned on with `pcu verify-signatures --fail-on-extern
 
 ### Allow-list entries
 
-- **`email`** is the commit's author email, matched ignoring case.
+- **`email`** is the commit's author email, matched ignoring case. It must be a GitHub App bot address, `<name>[bot]@users.noreply.github.com`; pcu refuses to load an entry for anything else. People are trusted by being collaborators with write access, so adding someone as a collaborator is the only way they pass verification, and a real email address can never end up in the file.
+
+Before rolling out a pcu that has this rule, run `pcu verify-signatures --check-policy` with that pcu in each repository and remove any entry it refuses. Policy is read from the default branch, so a refused entry fails every run, including the pull request that removes it.
 - **`keys` is required.** An author email is self-declared: anyone can write `renovate[bot]@…` into a commit. An entry with no keys would allow-list whoever forges it, so pcu refuses to load one. A commit matches only when its signature is good and made with one of the listed keys (16 to 40 hex digits: a long key ID or a fingerprint).
 - **`pr_authors`** is a list of GitHub logins, one of which must have opened the pull request. It is **required when `keys` names GitHub's web-flow key** and optional otherwise (see below).
 - **`description`** is a note for whoever reads the file.

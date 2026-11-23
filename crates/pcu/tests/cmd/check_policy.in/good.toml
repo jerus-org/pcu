@@ -3,6 +3,6 @@ fail_on_external = true
 min_trusted = 3
 
 [[verify_signatures.allow]]
-email = "Bot@Example.Test"
+email = "Bot[Bot]@Users.Noreply.GitHub.Com"
 keys = ["1a2b3c4d5e6f7a8b"]
 pr_authors = ["Opener"]

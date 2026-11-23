@@ -591,6 +591,17 @@ mod tests {
         trust_map
     }
 
+    /// The only way left for an allow entry to name a trusted identity: a bot
+    /// address that also appears on a collaborator's key.
+    fn trusted_bot_map() -> TrustMap {
+        let mut trust_map = trusted_map();
+        trust_map.insert(
+            "trusted[bot]@users.noreply.github.com".to_string(),
+            vec!["TESTKEY12345".to_string()],
+        );
+        trust_map
+    }
+
     fn commit_by(email: &str, status: SignatureStatus, key: Option<&str>) -> CommitInfo {
         CommitInfo {
             sha: "abc123".to_string(),
@@ -765,12 +776,16 @@ mod tests {
     #[test]
     fn test_trusted_identity_is_judged_as_trusted_even_if_also_allow_listed() {
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"trusted@example.test\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
+            "[[verify_signatures.allow]]\nemail = \"trusted[bot]@users.noreply.github.com\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
         ))
         .unwrap();
-        let commit = commit_by("trusted@example.test", SignatureStatus::None, None);
+        let commit = commit_by(
+            "trusted[bot]@users.noreply.github.com",
+            SignatureStatus::None,
+            None,
+        );
 
-        let result = verify_commit_with(&commit, &trusted_map(), &config);
+        let result = verify_commit_with(&commit, &trusted_bot_map(), &config);
 
         assert!(!result.passed);
         assert!(matches!(
@@ -782,21 +797,21 @@ mod tests {
     #[test]
     fn a_shadowed_allow_entry_is_found_ignoring_case() {
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"Trusted@Example.Test\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n\n\
-             [[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
+            "[[verify_signatures.allow]]\nemail = \"Trusted[Bot]@Users.Noreply.GitHub.Com\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n\n\
+             [[verify_signatures.allow]]\nemail = \"bot[bot]@users.noreply.github.com\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
         ))
         .unwrap();
 
-        let shadowed = shadowed_allow_entries(&config, &trusted_map());
+        let shadowed = shadowed_allow_entries(&config, &trusted_bot_map());
 
         assert_eq!(shadowed.len(), 1);
-        assert_eq!(shadowed[0].email, "trusted@example.test");
+        assert_eq!(shadowed[0].email, "trusted[bot]@users.noreply.github.com");
     }
 
     #[test]
     fn no_allow_entry_is_shadowed_when_none_names_a_trusted_identity() {
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
+            "[[verify_signatures.allow]]\nemail = \"bot[bot]@users.noreply.github.com\"\nkeys = [\"{WEB_FLOW}\"]\npr_authors = [\"renovate[bot]\"]\n"
         ))
         .unwrap();
 
@@ -956,11 +971,11 @@ mod tests {
     #[test]
     fn test_entry_without_pr_authors_does_not_need_the_opener() {
         let config = VerifyConfig::from_toml(
-            "[[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"1A2B3C4D5E6F7A8B\"]\n",
+            "[[verify_signatures.allow]]\nemail = \"bot[bot]@users.noreply.github.com\"\nkeys = [\"1A2B3C4D5E6F7A8B\"]\n",
         )
         .unwrap();
         let commit = commit_by(
-            "bot@example.test",
+            "bot[bot]@users.noreply.github.com",
             SignatureStatus::Good,
             Some("1A2B3C4D5E6F7A8B"),
         );

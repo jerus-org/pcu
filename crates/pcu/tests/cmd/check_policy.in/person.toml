@@ -1,0 +1,3 @@
+[[verify_signatures.allow]]
+email = "1000001+someone@users.noreply.github.com"
+keys = ["1A2B3C4D5E6F7A8B"]
