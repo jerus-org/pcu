@@ -1213,11 +1213,11 @@ mod tests {
         assert_eq!(post.bsky_posts.len(), 100);
 
         // Test counting with different states
-        for i in 0..30 {
-            post.bsky_posts[i].set_state(BskyPostState::Posted);
+        for bsky_post in post.bsky_posts.iter_mut().take(30) {
+            bsky_post.set_state(BskyPostState::Posted);
         }
-        for i in 30..50 {
-            post.bsky_posts[i].set_state(BskyPostState::Deleted);
+        for bsky_post in post.bsky_posts.iter_mut().take(50).skip(30) {
+            bsky_post.set_state(BskyPostState::Deleted);
         }
 
         assert_eq!(post.count_deleted(), 20);
