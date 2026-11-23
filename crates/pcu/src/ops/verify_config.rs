@@ -22,6 +22,14 @@
 //! from the git object at `--base` (for example `origin/main`), so a change to
 //! it only takes effect once it has been merged.
 //!
+//! # Only bots are allow-listed
+//!
+//! An entry's `email` must be a GitHub App bot address
+//! (`<name>[bot]@users.noreply.github.com`). People are trusted by being
+//! collaborators with write access, so adding someone as a collaborator is the
+//! only way they pass verification; an allow entry for a person would be a
+//! second way.
+//!
 //! # Entries must name signing keys
 //!
 //! An author email is self-declared: anyone can write `renovate[bot]@…` into a
@@ -239,6 +247,19 @@ impl VerifyConfig {
     }
 }
 
+/// Whether `email` (lowercase) is a GitHub App bot's noreply address, such as
+/// `29139614+renovate[bot]@users.noreply.github.com`.
+fn is_bot_address(email: &str) -> bool {
+    email
+        .strip_suffix("[bot]@users.noreply.github.com")
+        .is_some_and(|name| {
+            !name.is_empty()
+                && name
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '_' | '.'))
+        })
+}
+
 impl AllowEntry {
     /// Whether `key_id` (from a commit's signature) is one of this entry's
     /// keys. A long key ID matches the tail of a fingerprint, either way
@@ -275,6 +296,15 @@ impl AllowEntry {
         if email.is_empty() || !email.contains('@') {
             return Err(Error::VerifyConfig(format!(
                 "allow entry {position}: `email` must be an email address"
+            )));
+        }
+
+        if !is_bot_address(&email) {
+            return Err(Error::VerifyConfig(format!(
+                "allow entry {position}: `email` must be a GitHub App bot address \
+                 (`<name>[bot]@users.noreply.github.com`). People are trusted by being \
+                 collaborators with write access, so an entry for a person would be a second \
+                 way past verification"
             )));
         }
 
@@ -521,14 +551,14 @@ mod tests {
     #[test]
     fn github_user_is_normalised_and_bad_values_refused() {
         let ok = VerifyConfig::from_toml(
-            "[[verify_signatures.allow]]\nemail = \"a@b.test\"\nkeys = [\"1A2B3C4D5E6F7A8B\"]\ngithub_user = \" Some-User \"\n",
+            "[[verify_signatures.allow]]\nemail = \"a[bot]@users.noreply.github.com\"\nkeys = [\"1A2B3C4D5E6F7A8B\"]\ngithub_user = \" Some-User \"\n",
         )
         .unwrap();
         assert_eq!(ok.allow[0].github_user.as_deref(), Some("some-user"));
 
         for bad in ["a b", "owner/repo"] {
             let text = format!(
-                "[[verify_signatures.allow]]\nemail = \"a@b.test\"\nkeys = [\"1A2B3C4D5E6F7A8B\"]\ngithub_user = \"{bad}\"\n"
+                "[[verify_signatures.allow]]\nemail = \"a[bot]@users.noreply.github.com\"\nkeys = [\"1A2B3C4D5E6F7A8B\"]\ngithub_user = \"{bad}\"\n"
             );
             assert!(VerifyConfig::from_toml(&text).is_err(), "{bad}");
         }
@@ -554,13 +584,6 @@ mod tests {
         assert!(
             !renovate.opener_allowed(None),
             "unknown opener fails closed"
-        );
-
-        assert!(
-            policy
-                .allow_entry("47631109+jerusdp@users.noreply.github.com")
-                .is_none(),
-            "a trusted collaborator is judged by their own keys, so an allow entry for them never applies"
         );
     }
 
@@ -588,7 +611,7 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         let path = write_policy(
             &dir,
-            "[[verify_signatures.allow]]\nemail = \"a@example.test\"\n",
+            "[[verify_signatures.allow]]\nemail = \"a[bot]@users.noreply.github.com\"\n",
         );
 
         let err = VerifyConfig::load_from_path(&path).unwrap_err().to_string();
@@ -643,7 +666,7 @@ mod tests {
     fn the_summary_shows_each_entry_as_the_loader_resolved_it() {
         let config = VerifyConfig::from_toml(&format!(
             "[verify_signatures]\nfail_on_external = true\nmin_trusted = 3\n\n\
-             [[verify_signatures.allow]]\nemail = \"Bot@Example.Test\"\nkeys = [\"{}\"]\n\
+             [[verify_signatures.allow]]\nemail = \"Bot[Bot]@Users.Noreply.GitHub.Com\"\nkeys = [\"{}\"]\n\
              pr_authors = [\" Opener \"]\ngithub_user = \"Some-User\"\n",
             OTHER_KEY.to_lowercase()
         ))
@@ -654,7 +677,7 @@ mod tests {
         assert!(summary.contains("hard stop: on"), "got: {summary}");
         assert!(summary.contains("at least 3 trusted"), "got: {summary}");
         assert!(
-            summary.contains("bot@example.test"),
+            summary.contains("bot[bot]@users.noreply.github.com"),
             "lowercased: {summary}"
         );
         assert!(
@@ -668,7 +691,7 @@ mod tests {
     fn the_summary_names_the_github_user_and_a_minimum_of_zero() {
         let config = VerifyConfig::from_toml(&format!(
             "[verify_signatures]\nmin_trusted = 0\n\n[[verify_signatures.allow]]\n\
-             email = \"a@example.test\"\nkeys = [\"{OTHER_KEY}\"]\ngithub_user = \"Some-User\"\n"
+             email = \"a[bot]@users.noreply.github.com\"\nkeys = [\"{OTHER_KEY}\"]\ngithub_user = \"Some-User\"\n"
         ))
         .unwrap();
 
@@ -701,7 +724,7 @@ mod tests {
     fn an_entry_with_an_empty_key_list_is_refused() {
         let message = err(r#"
             [[verify_signatures.allow]]
-            email = "a@example.test"
+            email = "a[bot]@users.noreply.github.com"
             keys = []
             "#);
 
@@ -715,7 +738,7 @@ mod tests {
 
         let message = err(r#"
             [[verify_signatures.allow]]
-            email = "a@example.test"
+            email = "a[bot]@users.noreply.github.com"
             keys = ["B5690EEEBB952194"]
             kyes = ["B5690EEEBB952194"]
             "#);
@@ -725,6 +748,55 @@ mod tests {
     #[test]
     fn malformed_toml_is_an_error() {
         assert!(err("[verify_signatures\n").contains(POLICY_PATH));
+    }
+
+    #[test]
+    fn an_allow_entry_for_a_person_is_refused() {
+        for email in [
+            "1000001+someone@users.noreply.github.com",
+            "someone@users.noreply.github.com",
+            "someone@example.test",
+        ] {
+            let message = err(&format!(
+                "[[verify_signatures.allow]]\nemail = \"{email}\"\nkeys = [\"{OTHER_KEY}\"]\n"
+            ));
+
+            assert!(message.contains("GitHub App bot"), "{email}: {message}");
+            assert!(message.contains("collaborator"), "{email}: {message}");
+        }
+    }
+
+    #[test]
+    fn a_malformed_bot_address_is_refused() {
+        for email in [
+            "[bot]@users.noreply.github.com",
+            "x[bot]@users.noreply.github.com.evil.test",
+            "x[bot]@example.test",
+            "a@b[bot]@users.noreply.github.com",
+            "x y[bot]@users.noreply.github.com",
+        ] {
+            let message = err(&format!(
+                "[[verify_signatures.allow]]\nemail = \"{email}\"\nkeys = [\"{OTHER_KEY}\"]\n"
+            ));
+
+            assert!(message.contains("GitHub App bot"), "{email}: {message}");
+        }
+    }
+
+    #[test]
+    fn bot_addresses_are_accepted_in_any_case() {
+        for email in [
+            "29139614+renovate[bot]@users.noreply.github.com",
+            "Renovate[Bot]@Users.Noreply.GitHub.com",
+            "49699333+dependabot[bot]@users.noreply.github.com",
+        ] {
+            let config = VerifyConfig::from_toml(&format!(
+                "[[verify_signatures.allow]]\nemail = \"{email}\"\nkeys = [\"{OTHER_KEY}\"]\n"
+            ))
+            .unwrap_or_else(|e| panic!("{email}: {e}"));
+
+            assert_eq!(config.allow[0].email, email.to_lowercase());
+        }
     }
 
     #[test]
@@ -746,7 +818,7 @@ mod tests {
             &"A".repeat(41),
         ] {
             let message = err(&format!(
-                "[[verify_signatures.allow]]\nemail = \"a@example.test\"\nkeys = [\"{key}\"]\n"
+                "[[verify_signatures.allow]]\nemail = \"a[bot]@users.noreply.github.com\"\nkeys = [\"{key}\"]\n"
             ));
             assert!(message.contains("hex digits"), "{key:?}: {message}");
         }
@@ -757,13 +829,16 @@ mod tests {
         let config = VerifyConfig::from_toml(
             r#"
             [[verify_signatures.allow]]
-            email = "  Renovate@Example.Test "
+            email = "  Renovate[Bot]@Users.Noreply.GitHub.Com "
             keys = ["0x1a2b3c4d5e6f7a8b", "1a2b 3c4d 5e6f 7a8b"]
             "#,
         )
         .unwrap();
 
-        assert_eq!(config.allow[0].email, "renovate@example.test");
+        assert_eq!(
+            config.allow[0].email,
+            "renovate[bot]@users.noreply.github.com"
+        );
         assert_eq!(
             config.allow[0].keys,
             vec![OTHER_KEY.to_string(), OTHER_KEY.to_string()]
@@ -775,10 +850,10 @@ mod tests {
         let message = err(&format!(
             r#"
             [[verify_signatures.allow]]
-            email = "a@example.test"
+            email = "a[bot]@users.noreply.github.com"
             keys = ["{OTHER_KEY}"]
             [[verify_signatures.allow]]
-            email = "A@Example.Test"
+            email = "A[Bot]@Users.Noreply.GitHub.Com"
             keys = ["{OTHER_KEY}"]
             "#
         ));
@@ -814,7 +889,7 @@ mod tests {
     fn approves_a_fingerprint_entry_from_a_long_id() {
         let fingerprint = format!("{}{WEB_FLOW}", "A".repeat(24));
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"a@example.test\"\nkeys = [\"{fingerprint}\"]\npr_authors = [\"renovate[bot]\"]\n"
+            "[[verify_signatures.allow]]\nemail = \"a[bot]@users.noreply.github.com\"\nkeys = [\"{fingerprint}\"]\npr_authors = [\"renovate[bot]\"]\n"
         ))
         .unwrap();
 
@@ -853,7 +928,7 @@ mod tests {
             [verify_signatures]
             fail_on_external = false
             [[verify_signatures.allow]]
-            email = "attacker@example.test"
+            email = "attacker[bot]@users.noreply.github.com"
             keys = ["{OTHER_KEY}"]
             "#
         );
@@ -863,11 +938,13 @@ mod tests {
 
         assert!(judged_by_base.fail_on_external, "hard stop stays on");
         assert!(judged_by_base
-            .allow_entry("attacker@example.test")
+            .allow_entry("attacker[bot]@users.noreply.github.com")
             .is_none());
         // The branch's own file does say otherwise; that is what is ignored.
         let own = VerifyConfig::load_from_ref(&repo, "feature").unwrap();
-        assert!(own.allow_entry("attacker@example.test").is_some());
+        assert!(own
+            .allow_entry("attacker[bot]@users.noreply.github.com")
+            .is_some());
     }
 
     #[test]
@@ -931,7 +1008,7 @@ mod tests {
     #[test]
     fn a_key_that_signs_only_for_its_owner_needs_no_pr_authors() {
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{OTHER_KEY}\"]\n"
+            "[[verify_signatures.allow]]\nemail = \"bot[bot]@users.noreply.github.com\"\nkeys = [\"{OTHER_KEY}\"]\n"
         ))
         .unwrap();
 
@@ -950,7 +1027,7 @@ mod tests {
     #[test]
     fn pr_authors_are_normalised_and_blank_ones_refused() {
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"a@example.test\"\nkeys = [\"{OTHER_KEY}\"]\n\
+            "[[verify_signatures.allow]]\nemail = \"a[bot]@users.noreply.github.com\"\nkeys = [\"{OTHER_KEY}\"]\n\
              pr_authors = [\"  Renovate[bot] \"]\n"
         ))
         .unwrap();
@@ -961,7 +1038,7 @@ mod tests {
 
         for bad in ["\"\"", "\"   \"", "\"two words\""] {
             let message = err(&format!(
-                "[[verify_signatures.allow]]\nemail = \"a@example.test\"\nkeys = [\"{OTHER_KEY}\"]\n\
+                "[[verify_signatures.allow]]\nemail = \"a[bot]@users.noreply.github.com\"\nkeys = [\"{OTHER_KEY}\"]\n\
                  pr_authors = [{bad}]\n"
             ));
             assert!(message.contains("GitHub logins"), "{bad}: {message}");
@@ -983,7 +1060,7 @@ mod tests {
     #[test]
     fn opener_allowed_accepts_any_listed_login_and_refuses_others() {
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{OTHER_KEY}\"]\n\
+            "[[verify_signatures.allow]]\nemail = \"bot[bot]@users.noreply.github.com\"\nkeys = [\"{OTHER_KEY}\"]\n\
              pr_authors = [\"first-login\", \"second-login\"]\n"
         ))
         .unwrap();
@@ -1005,7 +1082,7 @@ mod tests {
     #[test]
     fn an_entry_without_pr_authors_ignores_the_opener() {
         let config = VerifyConfig::from_toml(&format!(
-            "[[verify_signatures.allow]]\nemail = \"bot@example.test\"\nkeys = [\"{OTHER_KEY}\"]\n"
+            "[[verify_signatures.allow]]\nemail = \"bot[bot]@users.noreply.github.com\"\nkeys = [\"{OTHER_KEY}\"]\n"
         ))
         .unwrap();
 

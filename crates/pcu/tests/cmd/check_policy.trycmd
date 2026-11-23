@@ -4,7 +4,7 @@ A valid file passes and is shown as the loader resolved it.
 $ pcu verify-signatures --check-policy good.toml
 good.toml is valid
   hard stop: on, at least 3 trusted collaborator(s)
-  allow bot@example.test: keys 1A2B3C4D5E6F7A8B; pr_authors opener
+  allow bot[bot]@users.noreply.github.com: keys 1A2B3C4D5E6F7A8B; pr_authors opener
 
 ```
 
@@ -36,6 +36,17 @@ $ pcu verify-signatures --check-policy misspelt_table.toml
 ? failed
 ...
 Error: Invalid verify-signatures policy: misspelt_table.toml: no [verify_signatures] section, so the default policy would apply (is the table name misspelt?)
+...
+
+```
+
+An allow entry for a person fails: people are trusted by being collaborators.
+
+```console
+$ pcu verify-signatures --check-policy person.toml
+? failed
+...
+Error: Invalid verify-signatures policy: allow entry 1: `email` must be a GitHub App bot address [..]
 ...
 
 ```
