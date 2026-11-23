@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - deps: update dependency toolkit to v8.1.0(pr [#1191])
 - deps: lock file maintenance(pr [#1192])
+- replace a release asset with a valid delete(pr [#1197])
 
 ## [0.6.42] - 2026-11-21
 
@@ -2846,6 +2847,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1191]: https://github.com/jerus-org/pcu/pull/1191
 [#1196]: https://github.com/jerus-org/pcu/pull/1196
 [#1192]: https://github.com/jerus-org/pcu/pull/1192
+[#1197]: https://github.com/jerus-org/pcu/pull/1197
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.42...HEAD
 [0.6.42]: https://github.com/jerus-org/pcu/compare/v0.6.41...v0.6.42
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
