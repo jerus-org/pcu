@@ -169,19 +169,13 @@ impl ReleaseAssetWriter {
             .await?
         {
             log::info!("Replacing existing asset '{asset_name}' (id={asset_id})");
-            // octocrab's `ReleasesHandler` has no dedicated delete-asset
-            // method, so this goes through the generic route — see
-            // jerus-org/pcu#1070.
-            let delete_route = format!(
-                "repos/{}/{}/releases/assets/{asset_id}",
-                self.owner, self.repo
-            );
-            if let Err(e) = self
-                .reader
-                .octocrab()
-                .await?
-                .delete::<(), _, ()>(delete_route, None)
-                .await
+            if let Err(e) = delete_asset(
+                self.reader.octocrab().await?,
+                &self.owner,
+                &self.repo,
+                asset_id,
+            )
+            .await
             {
                 // A concurrent or previous partial run may have already
                 // deleted this asset between the listing above and this
@@ -194,7 +188,7 @@ impl ReleaseAssetWriter {
                     .await?
                     .is_some()
                 {
-                    return Err(map_asset_upload_error(tag, &describe_api_error(&e)));
+                    return Err(map_asset_upload_error(tag, &e));
                 }
                 log::info!("Asset '{asset_name}' was already gone; treating delete as a no-op");
             }
@@ -295,6 +289,31 @@ impl ReleaseAssetWriter {
 
         Ok(())
     }
+}
+
+/// Delete release asset `asset_id`.
+///
+/// octocrab's `ReleasesHandler` has no delete-asset method, so this goes
+/// through the generic route. The route must be absolute, and the reply is
+/// read as a plain response: GitHub answers a successful delete with
+/// `204 No Content` and an empty body, which the typed `delete` cannot parse.
+async fn delete_asset(
+    octocrab: &Octocrab,
+    owner: &str,
+    repo: &str,
+    asset_id: i64,
+) -> Result<(), String> {
+    let response = octocrab
+        ._delete(
+            format!("/repos/{owner}/{repo}/releases/assets/{asset_id}"),
+            None::<&()>,
+        )
+        .await
+        .map_err(|e| describe_api_error(&e))?;
+    octocrab::map_github_error(response)
+        .await
+        .map_err(|e| describe_api_error(&e))?;
+    Ok(())
 }
 
 /// POST `content` as `asset_name` to release `release_id`, returning what
@@ -946,5 +965,58 @@ mod tests {
         .unwrap_err();
         assert!(err.contains("422"), "status missing: {err}");
         assert!(err.contains("Validation Failed"), "message missing: {err}");
+    }
+    /// A client whose REST base is a mock server.
+    fn client_against(server: &wiremock::MockServer) -> Octocrab {
+        Octocrab::builder()
+            .base_uri(server.uri())
+            .unwrap()
+            .personal_token("token".to_string())
+            .build()
+            .unwrap()
+    }
+
+    /// GitHub answers a successful asset delete with `204 No Content` and an
+    /// empty body. The delete must send an absolute route and accept that
+    /// empty reply, or replacing an existing asset fails.
+    #[tokio::test]
+    async fn delete_asset_accepts_githubs_empty_204_reply() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("DELETE"))
+            .and(wiremock::matchers::path(
+                "/repos/test-org/test-repo/releases/assets/7",
+            ))
+            .respond_with(wiremock::ResponseTemplate::new(204))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let result = delete_asset(&client_against(&server), "test-org", "test-repo", 7).await;
+
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    /// A rejected delete reports GitHub's status and message, so the caller
+    /// can tell a missing asset from a permission failure.
+    #[tokio::test]
+    async fn delete_asset_reports_githubs_rejection() {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("DELETE"))
+            .respond_with(
+                wiremock::ResponseTemplate::new(403)
+                    .set_body_json(serde_json::json!({"message": "Resource not accessible"})),
+            )
+            .mount(&server)
+            .await;
+
+        let err = delete_asset(&client_against(&server), "test-org", "test-repo", 7)
+            .await
+            .unwrap_err();
+
+        assert!(err.contains("403"), "status missing: {err}");
+        assert!(
+            err.contains("Resource not accessible"),
+            "message missing: {err}"
+        );
     }
 }
