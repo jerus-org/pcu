@@ -6,7 +6,6 @@ authors.workspace = true
 description = "Minimal LinkedIn Posts API client for CI usage"
 license = "MIT OR Apache-2.0"
 repository.workspace = true
-homepage = "https://github.com/jerus-org/pcu"
 documentation = "https://docs.rs/gen-linkedin"
 readme = "README.md"
 keywords = ["linkedin", "api", "client"]
