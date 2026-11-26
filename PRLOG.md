@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - replace a release asset with a valid delete(pr [#1197])
 - authenticate fetches and never wait for a prompt in CI(pr [#1202])
 - deps: update rust crate sigstore to 0.15.1(pr [#1199])
+- deps: update rust crate rstest to 0.29.0(pr [#1200])
 
 ## [0.6.42] - 2026-11-21
 
@@ -2854,6 +2855,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1198]: https://github.com/jerus-org/pcu/pull/1198
 [#1202]: https://github.com/jerus-org/pcu/pull/1202
 [#1199]: https://github.com/jerus-org/pcu/pull/1199
+[#1200]: https://github.com/jerus-org/pcu/pull/1200
 [Unreleased]: https://github.com/jerus-org/pcu/compare/v0.6.42...HEAD
 [0.6.42]: https://github.com/jerus-org/pcu/compare/v0.6.41...v0.6.42
 [0.6.41]: https://github.com/jerus-org/pcu/compare/v0.6.40...v0.6.41
