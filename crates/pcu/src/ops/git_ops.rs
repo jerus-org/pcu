@@ -1,5 +1,6 @@
 use std::{
     fmt::Display,
+    io::IsTerminal,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -9,7 +10,7 @@ use git2::{
     build::CheckoutBuilder, BranchType, Direction, FetchOptions, Oid, PushOptions, RemoteCallbacks,
     Signature, Status, StatusOptions,
 };
-use git2_credentials::CredentialHandler;
+use git2_credentials::{CredentialHandler, CredentialUI};
 use log::log_enabled;
 use owo_colors::{OwoColorize, Style};
 use tracing::instrument;
@@ -718,12 +719,13 @@ impl GitOps for Client {
         let remote_url = remote.url().unwrap_or("<unknown>").to_string();
         log::info!("Push target: {remote_url}");
         let mut callbacks = RemoteCallbacks::new();
+        let mut connect_creds = GitCredentials::new(&token_connect);
         callbacks.credentials(move |url, username, allowed| {
             log::info!(
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            make_credential(&token_connect, url, username, allowed)
+            connect_creds.next(url, username, allowed)
         });
         let mut connection = remote.connect_auth(Direction::Push, Some(callbacks), None)?;
         let remote = connection.remote();
@@ -763,12 +765,13 @@ impl GitOps for Client {
         // Declared before the callbacks that borrow it (#1089).
         let updates = std::cell::RefCell::new(Vec::new());
         let mut call_backs = RemoteCallbacks::new();
+        let mut push_creds = GitCredentials::new(&token_push);
         call_backs.credentials(move |url, username, allowed| {
             log::info!(
                 "Push auth: url={url}, username={}, credential_types={allowed:?}",
                 username.unwrap_or("<none>")
             );
-            make_credential(&token_push, url, username, allowed)
+            push_creds.next(url, username, allowed)
         });
         call_backs.push_transfer_progress(progress_bar);
         // Remote::push returns Ok even when the server rejects a ref (branch
@@ -863,11 +866,8 @@ impl GitOps for Client {
     fn fetch_origin(&self) -> Result<(), Error> {
         let mut remote = self.git_repo.find_remote("origin")?;
         let mut callbacks = RemoteCallbacks::new();
-        let git_config = git2::Config::open_default().unwrap();
-        let mut ch = CredentialHandler::new(git_config);
-        callbacks.credentials(move |url, username, allowed| {
-            ch.try_next_credential(url, username, allowed)
-        });
+        let mut creds = GitCredentials::new(&self.github_token);
+        callbacks.credentials(move |url, username, allowed| creds.next(url, username, allowed));
         let mut fetch_opts = FetchOptions::new();
         fetch_opts.remote_callbacks(callbacks);
         remote.fetch(&[] as &[&str], Some(&mut fetch_opts), None)?;
@@ -875,22 +875,7 @@ impl GitOps for Client {
     }
 
     fn fetch_branch(&self, branch: &str) -> Result<(), Error> {
-        let mut remote = self.git_repo.find_remote("origin")?;
-        let git_config = git2::Config::open_default().unwrap();
-        let mut ch = CredentialHandler::new(git_config);
-        let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(move |url, username, allowed| {
-            ch.try_next_credential(url, username, allowed)
-        });
-
-        let mut fetch_opts = FetchOptions::new();
-        fetch_opts.remote_callbacks(callbacks);
-
-        let refspec = format!("refs/heads/{branch}:refs/remotes/origin/{branch}");
-        remote.fetch(&[&refspec], Some(&mut fetch_opts), None)?;
-
-        log::debug!("Fetched branch: {branch}");
-        Ok(())
+        self.fetch_branch_with(branch, GitCredentials::new(&self.github_token))
     }
 
     fn checkout_branch(&self, branch: &str) -> Result<(), Error> {
@@ -936,6 +921,24 @@ impl GitOps for Client {
     }
 }
 
+impl Client {
+    /// Fetch `branch` from `origin`, authenticating with `creds`.
+    fn fetch_branch_with(&self, branch: &str, mut creds: GitCredentials) -> Result<(), Error> {
+        let mut remote = self.git_repo.find_remote("origin")?;
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(move |url, username, allowed| creds.next(url, username, allowed));
+
+        let mut fetch_opts = FetchOptions::new();
+        fetch_opts.remote_callbacks(callbacks);
+
+        let refspec = format!("refs/heads/{branch}:refs/remotes/origin/{branch}");
+        remote.fetch(&[&refspec], Some(&mut fetch_opts), None)?;
+
+        log::debug!("Fetched branch: {branch}");
+        Ok(())
+    }
+}
+
 /// Fail when the remote rejected any pushed ref. `updates` holds each ref's
 /// outcome from libgit2's `push_update_reference` callback: `None` accepted,
 /// `Some(reason)` rejected. Without this a rejected push (e.g. to a protected
@@ -969,18 +972,99 @@ fn ensure_fast_forward(branch: &str, behind: usize) -> Result<(), Error> {
     Ok(())
 }
 
-fn make_credential(
-    token: &str,
-    url: &str,
-    username: Option<&str>,
-    allowed: git2::CredentialType,
-) -> Result<git2::Cred, git2::Error> {
-    if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !token.is_empty() {
-        log::info!("Authenticating with GitHub App/PAT token");
-        git2::Cred::userpass_plaintext("x-access-token", token)
-    } else {
-        let git_config = git2::Config::open_default().unwrap();
-        CredentialHandler::new(git_config).try_next_credential(url, username, allowed)
+/// Whether a person can answer a credential prompt: only with a terminal on
+/// stdin and outside CI, where a prompt would wait for an answer that never
+/// comes until the step times out.
+fn prompt_allowed(stdin_is_terminal: bool, ci: Option<&str>) -> bool {
+    stdin_is_terminal && ci.is_none_or(str::is_empty)
+}
+
+/// A credential UI that never asks: it fails at once, so the caller can say
+/// which remote has no credential.
+struct NoPrompt;
+
+impl CredentialUI for NoPrompt {
+    fn ask_user_password(
+        &self,
+        _username: &str,
+    ) -> Result<(String, String), Box<dyn std::error::Error>> {
+        Err("prompting is off".into())
+    }
+
+    fn ask_ssh_passphrase(
+        &self,
+        _passphrase_prompt: &str,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        Err("prompting is off".into())
+    }
+}
+
+/// How many times the token is offered before it counts as rejected. libgit2
+/// asks again only when the server refuses what it was given, so a second ask
+/// is allowed for a legitimate re-authentication; a third means the token is
+/// being refused.
+const MAX_TOKEN_OFFERS: u8 = 2;
+
+/// The credentials a git2 callback offers for one connection: the client's
+/// token first, then git's own helpers and SSH keys.
+struct GitCredentials {
+    token: String,
+    handler: CredentialHandler,
+    token_offers: u8,
+    prompting: bool,
+}
+
+impl GitCredentials {
+    fn new(token: &str) -> Self {
+        let prompting = prompt_allowed(
+            std::io::stdin().is_terminal(),
+            std::env::var("CI").ok().as_deref(),
+        );
+        Self::with_config(token, git2::Config::open_default().unwrap(), prompting)
+    }
+
+    fn with_config(token: &str, config: git2::Config, prompting: bool) -> Self {
+        let handler = if prompting {
+            CredentialHandler::new(config)
+        } else {
+            CredentialHandler::new_with_ui(config, Box::new(NoPrompt))
+        };
+        Self {
+            token: token.to_string(),
+            handler,
+            token_offers: 0,
+            prompting,
+        }
+    }
+
+    fn next(
+        &mut self,
+        url: &str,
+        username: Option<&str>,
+        allowed: git2::CredentialType,
+    ) -> Result<git2::Cred, git2::Error> {
+        if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !self.token.is_empty() {
+            if self.token_offers >= MAX_TOKEN_OFFERS {
+                return Err(git2::Error::from_str(&format!(
+                    "the token was rejected by {url}"
+                )));
+            }
+            self.token_offers += 1;
+            log::info!("Authenticating with GitHub App/PAT token");
+            return git2::Cred::userpass_plaintext("x-access-token", &self.token);
+        }
+        self.handler
+            .try_next_credential(url, username, allowed)
+            .map_err(|e| {
+                if self.prompting {
+                    e
+                } else {
+                    git2::Error::from_str(&format!(
+                        "no credential for {url} and prompting is off ({e}): set a token, \
+                         configure a git credential helper or use an SSH remote"
+                    ))
+                }
+            })
     }
 }
 
@@ -1278,6 +1362,143 @@ mod tests {
                 .starts_with("chore: regenerate orb"),
             "remote must hold the pushed commit"
         );
+    }
+
+    #[test]
+    fn prompting_needs_a_terminal_and_no_ci() {
+        assert!(prompt_allowed(true, None));
+        assert!(prompt_allowed(true, Some("")));
+        assert!(
+            !prompt_allowed(false, None),
+            "no terminal, nobody can answer"
+        );
+        assert!(!prompt_allowed(true, Some("true")), "CI never answers");
+        assert!(!prompt_allowed(false, Some("true")));
+    }
+
+    #[test]
+    fn credentials_offer_the_token_twice_then_say_it_was_rejected() {
+        let mut creds = GitCredentials::with_config("tok", git2::Config::new().unwrap(), false);
+        let plaintext = git2::CredentialType::USER_PASS_PLAINTEXT;
+        let url = "https://example.test/o/r.git";
+
+        for attempt in 1..=MAX_TOKEN_OFFERS {
+            let cred = creds.next(url, None, plaintext);
+            assert!(cred.is_ok(), "offer {attempt}: {:?}", cred.err());
+            assert_eq!(
+                cred.unwrap().credtype(),
+                git2::CredentialType::USER_PASS_PLAINTEXT.bits()
+            );
+        }
+
+        let refused = creds
+            .next(url, None, plaintext)
+            .err()
+            .expect("a refused token is not offered again");
+        assert!(refused.message().contains("rejected"), "{refused}");
+        assert!(refused.message().contains("example.test"), "{refused}");
+    }
+
+    #[test]
+    fn without_a_credential_and_with_prompting_off_the_error_names_the_remote() {
+        let mut creds = GitCredentials::with_config("", git2::Config::new().unwrap(), false);
+
+        let err = creds
+            .next(
+                "https://example.test/o/r.git",
+                None,
+                git2::CredentialType::USER_PASS_PLAINTEXT,
+            )
+            .err()
+            .expect("nothing can supply a credential");
+
+        let message = err.message().to_string();
+        assert!(message.contains("example.test/o/r.git"), "{message}");
+        assert!(message.contains("prompting is off"), "{message}");
+    }
+
+    /// A minimal HTTP server for the git smart protocol's first request:
+    /// it demands basic authentication, answers 404 once the request carries
+    /// it, and records every request it sees.
+    fn serve_basic_auth() -> (
+        std::net::SocketAddr,
+        std::sync::Arc<std::sync::Mutex<Vec<String>>>,
+    ) {
+        use std::io::{Read, Write};
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let log = std::sync::Arc::clone(&seen);
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { return };
+                let mut buf = vec![0u8; 8192];
+                let n = stream.read(&mut buf).unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]).to_string();
+                let authorised = request.to_lowercase().contains("authorization: basic");
+                log.lock().unwrap().push(request);
+                let response = if authorised {
+                    "HTTP/1.1 404 Not Found\r\ncontent-length: 0\r\nconnection: close\r\n\r\n"
+                } else {
+                    "HTTP/1.1 401 Unauthorized\r\nwww-authenticate: Basic realm=\"git\"\r\n\
+                     content-length: 0\r\nconnection: close\r\n\r\n"
+                };
+                let _ = stream.write_all(response.as_bytes());
+            }
+        });
+        (addr, seen)
+    }
+
+    /// The fetch before a push must authenticate with the client's token, as
+    /// the push does, or a private HTTPS remote asks for a username.
+    #[test]
+    fn fetch_branch_authenticates_with_the_token() {
+        let (dir, mut client) = make_test_client();
+        let (addr, seen) = serve_basic_auth();
+        git2::Repository::open(dir.path())
+            .unwrap()
+            .remote("origin", &format!("http://{addr}/org/repo.git"))
+            .unwrap();
+        client.github_token = "tok".to_string();
+
+        let _ = client.fetch_branch("main");
+
+        let requests = seen.lock().unwrap();
+        let expected = {
+            use base64::{engine::general_purpose::STANDARD, Engine as _};
+            format!(
+                "authorization: Basic {}",
+                STANDARD.encode("x-access-token:tok")
+            )
+        };
+        assert!(
+            requests
+                .iter()
+                .any(|r| r.to_lowercase().contains(&expected.to_lowercase())),
+            "no request carried the token: {requests:?}"
+        );
+    }
+
+    /// With no credential and nobody to ask, the fetch must fail at once with
+    /// an error that names the remote, not wait for input.
+    #[test]
+    fn fetch_branch_fails_at_once_without_a_credential() {
+        let (dir, client) = make_test_client();
+        let (addr, _seen) = serve_basic_auth();
+        git2::Repository::open(dir.path())
+            .unwrap()
+            .remote("origin", &format!("http://{addr}/org/repo.git"))
+            .unwrap();
+
+        let creds = GitCredentials::with_config("", git2::Config::new().unwrap(), false);
+        let err = client
+            .fetch_branch_with("main", creds)
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains(&addr.to_string()), "{err}");
+        assert!(err.contains("prompting is off"), "{err}");
     }
 
     #[test]
