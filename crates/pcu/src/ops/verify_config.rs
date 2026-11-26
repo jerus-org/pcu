@@ -48,9 +48,12 @@
 //! author on someone else's PR no longer matches. When the opener cannot be
 //! determined the commit fails rather than passes.
 
-use std::path::Path;
+use std::{
+    path::Path,
+    process::{Command, Stdio},
+};
 
-use git2::{ErrorCode, Repository};
+use git2::{ErrorCode, ObjectType, Oid, Repository};
 use serde::Deserialize;
 
 use super::git_signature_ops::resolve_reference;
@@ -240,10 +243,58 @@ impl VerifyConfig {
             Err(e) => return Err(e.into()),
         };
 
-        let blob = repo.find_blob(entry.id())?;
-        let text = std::str::from_utf8(blob.content())
+        let content = read_policy_blob(repo, entry.id(), base_ref)?;
+        let text = std::str::from_utf8(&content)
             .map_err(|_| Error::VerifyConfig(format!("{POLICY_PATH} is not valid UTF-8")))?;
         Self::from_toml(text)
+    }
+}
+
+/// The content of the policy blob `oid` found at `base_ref`.
+///
+/// A partial clone (a blobless CI checkout) holds the base's tree but not
+/// necessarily its files, and libgit2 cannot fetch a missing object from the
+/// remote the clone came from. git can, so when libgit2 does not have the blob
+/// it asks `git cat-file`, which fetches it on demand without ever prompting.
+fn read_policy_blob(repo: &Repository, oid: Oid, base_ref: &str) -> Result<Vec<u8>, Error> {
+    match repo.find_blob(oid) {
+        Ok(blob) => Ok(blob.content().to_vec()),
+        Err(e) if e.code() == ErrorCode::NotFound => {
+            log::debug!("{POLICY_PATH} at {base_ref} is not in this checkout; asking git for it");
+            let output = Command::new("git")
+                .arg("--git-dir")
+                .arg(repo.path())
+                .args(["cat-file", "blob"])
+                .arg(oid.to_string())
+                .env("GIT_TERMINAL_PROMPT", "0")
+                .stdin(Stdio::null())
+                .output();
+            let cause = match output {
+                Ok(output) if output.status.success() => {
+                    return checked_blob(oid, output.stdout, base_ref);
+                }
+                Ok(output) => format!("git exited with {}", output.status),
+                Err(e) => format!("git could not be run: {}", e.kind()),
+            };
+            Err(Error::VerifyConfig(format!(
+                "{POLICY_PATH} at {base_ref} is not in this checkout and could not be fetched \
+                 ({cause}): a partial clone does not hold the base's files. Use a full checkout, \
+                 or fetch {base_ref} with its files"
+            )))
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
+/// `bytes` if they are the content of the blob `oid`: the policy gates
+/// verification, so what git hands back must be what the base ref's tree names.
+fn checked_blob(oid: Oid, bytes: Vec<u8>, base_ref: &str) -> Result<Vec<u8>, Error> {
+    if Oid::hash_object(ObjectType::Blob, &bytes)? == oid {
+        Ok(bytes)
+    } else {
+        Err(Error::VerifyConfig(format!(
+            "{POLICY_PATH} fetched for {base_ref} does not match the file the ref names"
+        )))
     }
 }
 
@@ -462,6 +513,7 @@ pub(crate) mod test_support {
 #[cfg(test)]
 mod tests {
     use git2::Oid;
+    use tempfile::TempDir;
 
     use super::test_support::{commit_policy, temp_repo};
     use super::*;
@@ -915,6 +967,118 @@ mod tests {
 
         assert!(config.fail_on_external);
         assert!(config.allow_entry(RENOVATE).is_some());
+    }
+
+    /// Run git with no global or system configuration, so a test never reads
+    /// the machine's.
+    fn git_isolated(dir: &std::path::Path, args: &[&str]) -> std::process::Output {
+        std::process::Command::new("git")
+            .current_dir(dir)
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env("GIT_TERMINAL_PROMPT", "0")
+            .args(args)
+            .output()
+            .expect("git runs")
+    }
+
+    /// A partial clone of a repository whose `main` holds `pcu.toml`: the
+    /// commit and tree are local, the blob is not (the shape of a blobless CI
+    /// checkout). Returns the server directory, the clone directory and the
+    /// policy blob's id.
+    fn blobless_clone() -> (TempDir, TempDir, git2::Oid) {
+        let (server_dir, server) = temp_repo();
+        let oid = commit_file(&server, "refs/heads/main", &renovate_policy(), None);
+        let blob = server
+            .find_commit(oid)
+            .unwrap()
+            .tree()
+            .unwrap()
+            .get_path(Path::new(POLICY_PATH))
+            .unwrap()
+            .id();
+        let mut config = server.config().unwrap();
+        config.set_bool("uploadpack.allowfilter", true).unwrap();
+        config
+            .set_bool("uploadpack.allowanysha1inwant", true)
+            .unwrap();
+
+        let clone_dir = TempDir::new().unwrap();
+        let out = git_isolated(
+            clone_dir.path(),
+            &[
+                "clone",
+                "--quiet",
+                "--filter=blob:none",
+                "--no-checkout",
+                "--branch",
+                "main",
+                &format!("file://{}", server_dir.path().display()),
+                ".",
+            ],
+        );
+        assert!(
+            out.status.success(),
+            "clone: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        (server_dir, clone_dir, blob)
+    }
+
+    /// A pull request that edits `pcu.toml` is verified in a checkout where the
+    /// base's copy was never downloaded. git fetches such a blob on demand;
+    /// libgit2 cannot, so the policy read must not depend on it.
+    #[test]
+    fn the_policy_is_read_when_its_blob_is_not_in_a_partial_clone() {
+        let (_server, clone_dir, blob) = blobless_clone();
+        let clone = Repository::open(clone_dir.path()).unwrap();
+        assert!(clone.find_blob(blob).is_err(), "the blob must not be local");
+
+        let config = VerifyConfig::load_from_ref(&clone, "origin/main").unwrap();
+
+        assert!(config.fail_on_external);
+        assert!(config.allow_entry(RENOVATE).is_some());
+    }
+
+    /// The policy gates verification, so bytes git hands back must be the very
+    /// blob the base ref's tree names.
+    #[test]
+    fn a_fetched_policy_blob_must_match_the_id_in_the_tree() {
+        let content = b"[verify_signatures]\n".to_vec();
+        let oid = Oid::hash_object(git2::ObjectType::Blob, &content).unwrap();
+
+        assert_eq!(
+            checked_blob(oid, content.clone(), "origin/main").unwrap(),
+            content
+        );
+
+        let err = checked_blob(
+            oid,
+            b"[verify_signatures]\nfail_on_external = false\n".to_vec(),
+            "origin/main",
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("origin/main"), "got: {err}");
+        assert!(err.contains("does not match"), "got: {err}");
+    }
+
+    /// When the blob cannot be fetched either, the error says what is missing
+    /// and why, instead of a bare "object not found".
+    #[test]
+    fn an_unfetchable_policy_blob_is_reported_with_the_ref_and_the_file() {
+        let (server_dir, clone_dir, _blob) = blobless_clone();
+        let clone = Repository::open(clone_dir.path()).unwrap();
+        drop(server_dir);
+
+        let err = VerifyConfig::load_from_ref(&clone, "origin/main")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("origin/main"), "got: {err}");
+        assert!(err.contains(POLICY_PATH), "got: {err}");
+        assert!(err.contains("partial"), "got: {err}");
+        assert!(err.contains("exited with"), "names what git did: {err}");
     }
 
     /// The point of reading from the base: a branch cannot allow-list its own
